@@ -4,6 +4,10 @@
  * 요약 밴드와 상태 필터는 "이번 달을 어떻게 볼 것인가" 라는 한 가지 관심사라 함께 접힌다.
  * 화면(schedule.tsx)에서 분리한 이유는 두 가지다 — 화면이 이미 800줄 상한을 넘었고,
  * 접힘 상태의 표시 규칙은 화면 전체를 마운트하지 않고 단독으로 검증해야 한다.
+ *
+ * 구인자 IA S2b — 앱은 돈을 보내지 않는다. 사장이 `지급 완료` 를 누르는 흐름을 없앴으므로
+ * `정산 완료 / 정산 예정` 두 칸과 `미지급 N건` 칩은 영원히 "미지급" 을 가리키게 된다.
+ * 금액은 `이번 달 근무 금액` 한 칸으로 합치고, 입금 주체를 밝힌다.
  */
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
@@ -29,6 +33,9 @@ interface StatsCardProps {
   isLoading: boolean;
 }
 
+/** 금액 칸의 이름 — 화면 라벨과 접근성 라벨이 같은 말을 쓴다. */
+const MONTH_EARNINGS_LABEL = '이번 달 근무 금액';
+
 // StatsCard — full-bleed 밴드로 전환 (옵션 A). MonthNavigator와 동일한 시각 언어
 // (bg-surface-card + px-4 py-3 + border-b border-divider)를 사용해
 // TabHeader 아래 정보 패널이 하나의 띠 구조로 연결되도록 함.
@@ -52,16 +59,18 @@ function StatsCard({ stats, isLoading, toggle }: StatsCardProps) {
         </View>
         {/* 내부 구분선 */}
         <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2" />
-        {/* 2행: 수익 스켈레톤 — 실제 레이아웃(완료 좌 / 예정 우)과 같은 자리를 잡는다. */}
-        <View className="flex-row items-end justify-between px-2">
+        {/* 2행: 금액 스켈레톤 — 실제 레이아웃(한 칸)과 같은 자리를 잡는다. */}
+        <View className="px-2">
           <Skeleton width={110} height={22} />
-          <Skeleton width={80} height={18} />
         </View>
       </View>
     );
   }
 
   if (!stats) return null;
+
+  // 받은 돈/받을 돈으로 나누던 두 값을 합친다. 'failed' 는 서비스 집계에서 이미 빠져 있다.
+  const monthEarnings = stats.settledEarnings + stats.estimatedEarnings;
 
   return (
     <View className={BAND_CLASS}>
@@ -116,35 +125,22 @@ function StatsCard({ stats, isLoading, toggle }: StatsCardProps) {
       </View>
       {/* 내부 구분선 */}
       <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2" />
-      {/* 2행: 수익 — '수익' 한 단어는 스코프(어느 달)와 성격(받은 돈/추정치)을 둘 다 숨겨
-          입금 예정액으로 오해된다. 정산 완료분과 예정분을 분리해 밝힌다. */}
+      {/* 2행: 금액 — '수익' 한 단어는 스코프(어느 달)를 숨겨 입금 예정액으로 오해됐다.
+          달을 밝히고, 입금은 앱이 아니라 사장님이 한다고 함께 적는다. */}
       <View
         className="px-2"
         accessible
-        accessibilityLabel={`정산 완료 ${formatCurrency(stats.settledEarnings)}, 정산 예정 ${formatCurrency(
-          stats.estimatedEarnings
-        )}`}
+        accessibilityLabel={`${MONTH_EARNINGS_LABEL} ${formatCurrency(monthEarnings)}`}
       >
-        {/* 완료/예정을 한 줄에 나란히 — 라벨과 금액을 각각 두 줄로 쌓던 것을 접었다.
-            금액 크기 차이(xl vs sm)가 "받은 돈"과 "추정치"를 계속 구분한다. */}
-        <View className="flex-row items-end justify-between">
-          <View>
-            <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
-              정산 완료
-            </Text>
-            <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
-              {formatCurrency(stats.settledEarnings)}
-            </Text>
-          </View>
-          <View className="items-end">
-            <Text className="text-xs text-content-muted dark:text-secondary-500 font-sans">
-              정산 예정 (추정)
-            </Text>
-            <Text className="text-sm font-sans-medium text-content-secondary">
-              {formatCurrency(stats.estimatedEarnings)}
-            </Text>
-          </View>
-        </View>
+        <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+          {MONTH_EARNINGS_LABEL}
+        </Text>
+        <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
+          {formatCurrency(monthEarnings)}
+        </Text>
+        <Text className="mt-0.5 text-micro text-content-muted dark:text-secondary-500 font-sans">
+          입금은 사장님이 직접 보냅니다
+        </Text>
       </View>
     </View>
   );
@@ -157,7 +153,6 @@ export interface ScheduleDashboardProps {
   onToggle: () => void;
   /** 접었을 때도 계속 보여줄 활성 필터 라벨. 전체('all')면 null */
   activeFilterLabel: string | null;
-  unpaidCount: number;
   /** 펼쳤을 때 대시보드 안에 들어가는 상태 필터 UI */
   children?: React.ReactNode;
 }
@@ -168,9 +163,8 @@ export interface ScheduleDashboardProps {
  * 요약 밴드와 필터가 따로 놓여 리스트가 시작하기까지 세로가 길었다. 둘은 "이번 달을
  * 어떻게 볼 것인가" 라는 한 가지 관심사라 함께 접힌다.
  *
- * 🔴 접었을 때도 **미지급 건수와 활성 필터는 계속 보인다.** `unpaid` 축은 미지급 근무를
- * 찾는 유일한 경로이고, 필터가 걸린 채로 접히면 사용자는 리스트가 왜 비었는지 알 수 없다
- * — 접기가 상태를 숨기면 그건 접기가 아니라 실종이다.
+ * 🔴 접었을 때도 **활성 필터는 계속 보인다.** 필터가 걸린 채로 접히면 사용자는 리스트가
+ * 왜 비었는지 알 수 없다 — 접기가 상태를 숨기면 그건 접기가 아니라 실종이다.
  */
 export function ScheduleDashboard({
   stats,
@@ -178,18 +172,16 @@ export function ScheduleDashboard({
   collapsed,
   onToggle,
   activeFilterLabel,
-  unpaidCount,
   children,
 }: ScheduleDashboardProps) {
   // 🔴 접힘 헤더의 접근성 라벨은 칩 상태에서 **합성해야 한다.**
   // Pressable 은 기본 accessible=true 라 자식 텍스트가 한 노드로 병합되는데, 명시
-  // accessibilityLabel 이 그 파생 라벨을 통째로 덮어쓴다. 고정 문구만 두면 필터 칩과
-  // 미지급 칩이 화면에만 있고 음성으로는 존재하지 않아, "접어도 계속 보인다" 는
+  // accessibilityLabel 이 그 파생 라벨을 통째로 덮어쓴다. 고정 문구만 두면 필터 칩이
+  // 화면에만 있고 음성으로는 존재하지 않아, "접어도 계속 보인다" 는
   // 이 컴포넌트의 불변식이 스크린리더 사용자에게만 깨진다.
   const collapsedA11yLabel = [
     '이번 달 요약과 필터 펼치기',
     activeFilterLabel ? `필터 ${activeFilterLabel} 적용 중` : null,
-    unpaidCount > 0 ? `미지급 ${unpaidCount}건` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -212,13 +204,6 @@ export function ScheduleDashboard({
                 <View className="rounded bg-primary-100 px-1.5 py-0.5 dark:bg-primary-900/30">
                   <Text className="text-micro font-sans-semibold text-primary-700 dark:text-primary-300">
                     {activeFilterLabel}
-                  </Text>
-                </View>
-              ) : null}
-              {unpaidCount > 0 ? (
-                <View className="rounded bg-warning-100 px-1.5 py-0.5 dark:bg-warning-900/30">
-                  <Text className="text-micro font-sans-semibold text-warning-700 dark:text-warning-300">
-                    미지급 {unpaidCount}건
                   </Text>
                 </View>
               ) : null}
