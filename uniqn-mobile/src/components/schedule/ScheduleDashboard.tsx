@@ -35,6 +35,8 @@ interface StatsCardProps {
 
 /** 금액 칸의 이름 — 화면 라벨과 접근성 라벨이 같은 말을 쓴다. */
 const MONTH_EARNINGS_LABEL = '이번 달 근무 금액';
+/** 입금 주체 안내 — 화면 문구와 접근성 라벨이 같은 값을 쓴다(한쪽만 바뀌면 낭독이 어긋난다). */
+const PAYOUT_NOTICE = '입금은 사장님이 직접 보냅니다';
 
 // StatsCard — full-bleed 밴드로 전환 (옵션 A). MonthNavigator와 동일한 시각 언어
 // (bg-surface-card + px-4 py-3 + border-b border-divider)를 사용해
@@ -59,9 +61,12 @@ function StatsCard({ stats, isLoading, toggle }: StatsCardProps) {
         </View>
         {/* 내부 구분선 */}
         <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2" />
-        {/* 2행: 금액 스켈레톤 — 실제 레이아웃(한 칸)과 같은 자리를 잡는다. */}
+        {/* 2행: 금액 스켈레톤 — 실제 레이아웃(라벨 · 금액 · 입금 안내 세 줄)과 같은 높이를 잡는다.
+            한 줄만 두면 로딩이 끝나는 순간 밴드가 늘어나 아래 필터·리스트가 밀려 내려간다. */}
         <View className="px-2">
-          <Skeleton width={110} height={22} />
+          <Skeleton width={70} height={12} />
+          <Skeleton width={110} height={22} className="mt-1" />
+          <Skeleton width={150} height={10} className="mt-1" />
         </View>
       </View>
     );
@@ -127,10 +132,12 @@ function StatsCard({ stats, isLoading, toggle }: StatsCardProps) {
       <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2" />
       {/* 2행: 금액 — '수익' 한 단어는 스코프(어느 달)를 숨겨 입금 예정액으로 오해됐다.
           달을 밝히고, 입금은 앱이 아니라 사장님이 한다고 함께 적는다. */}
+      {/* 🔴 `accessible` + 명시 라벨이라 자식 Text 는 낭독되지 않는다 — 화면에 보이는 입금 안내를
+          라벨에도 넣어야 스크린리더 사용자에게도 "앱이 지급을 보증하지 않는다" 가 전달된다. */}
       <View
         className="px-2"
         accessible
-        accessibilityLabel={`${MONTH_EARNINGS_LABEL} ${formatCurrency(monthEarnings)}`}
+        accessibilityLabel={`${MONTH_EARNINGS_LABEL} ${formatCurrency(monthEarnings)}, ${PAYOUT_NOTICE}`}
       >
         <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
           {MONTH_EARNINGS_LABEL}
@@ -139,7 +146,7 @@ function StatsCard({ stats, isLoading, toggle }: StatsCardProps) {
           {formatCurrency(monthEarnings)}
         </Text>
         <Text className="mt-0.5 text-micro text-content-muted dark:text-secondary-500 font-sans">
-          입금은 사장님이 직접 보냅니다
+          {PAYOUT_NOTICE}
         </Text>
       </View>
     </View>

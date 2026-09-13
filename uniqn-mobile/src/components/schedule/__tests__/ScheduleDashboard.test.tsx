@@ -52,13 +52,23 @@ describe('ScheduleDashboard', () => {
 
       expect(queryByText('정산 완료')).toBeNull();
       expect(queryByText(/정산 예정/)).toBeNull();
-      expect(getByLabelText('이번 달 근무 금액 ₩400,000')).toBeTruthy();
+      expect(getByLabelText(/^이번 달 근무 금액 ₩400,000/)).toBeTruthy();
     });
 
     it('입금 주체를 밝힌다 — 앱이 지급을 보증하는 것처럼 읽히면 안 된다', () => {
       const { getByText } = renderDashboard();
 
       expect(getByText(/입금은 사장님이 직접 보냅니다/)).toBeTruthy();
+    });
+
+    // 🔴 부모 View 가 `accessible` + 명시 accessibilityLabel 이라 자식 Text 는 낭독되지 않는다.
+    //    화면에 그려지는 것(getByText)만 보면 스크린리더 사용자에게 안내가 사라진 걸 못 잡는다.
+    it('입금 주체 안내가 금액 칸의 접근성 라벨에도 들어 있다', () => {
+      const { getByLabelText } = renderDashboard();
+
+      expect(
+        getByLabelText('이번 달 근무 금액 ₩400,000, 입금은 사장님이 직접 보냅니다')
+      ).toBeTruthy();
     });
 
     it('접기 버튼을 누르면 onToggle 이 호출된다', () => {
