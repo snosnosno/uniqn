@@ -8,6 +8,10 @@
  *  - 인원 추가: AddSlotSheet(풀/전화/공고).
  *  - 슬롯 편집: VenueDayDetail 행 탭 → WorkLogEditSheet(3개 진입점 공용 통합 시트).
  *
+ * 구인자 IA S4 — 밀도: 칩 3개(현재/필요/부족) + 입력칸 + 저장 버튼이 세로로 쌓여 사람 줄이
+ *    화면 아래로 밀려났다. `3/5명 · 2명 부족` 한 줄로 접고, 줄을 누르면 목표 편집이 펼쳐진다.
+ *    편집 영역은 여전히 **수동 목표만** 다룬다(PR #490 분리).
+ *
  * 🔴 **`isContainer` 게이트가 사라졌다.** 예전에는 컨테이너 직속 배치만 `useConfirmedStaff` 로
  *    실적(출퇴근)을 해소할 수 있어, 공고 스팬 슬롯에서는 실적 편집 입구가 통째로 증발했다
  *    (설계 결함 ②). 읽기 RPC 가 실적을 함께 내려주게 되면서 원인이 사라졌으므로, 슬롯이
@@ -21,13 +25,12 @@
  * 플래그 OFF면 상위(work-schedule 화면)에서 미노출.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import {
   UsersIcon,
-  FlagOutlineIcon,
   AlertTriangleIcon,
   UserPlusIcon,
   MegaphoneIcon,
@@ -102,44 +105,41 @@ function toEditInitial(slot: VenueDaySlot, fallbackDate: string): WorkLogEditIni
   };
 }
 
-type ChipTone = 'neutral' | 'warning' | 'success';
+type SummaryTone = 'neutral' | 'warning' | 'success';
 
-/** 요약 칩 톤별 정적 클래스(NativeWind dark: 유실 방지 — 동적 조립 금지). */
-const CHIP_TONE: Record<ChipTone, { box: string; text: string }> = {
-  neutral: {
-    box: 'bg-surface-card border border-divider dark:bg-surface-elevated',
-    text: 'text-content-secondary',
-  },
-  warning: { box: 'bg-warning-500/15', text: 'text-warning-700 dark:text-warning-300' },
-  success: { box: 'bg-success-500/15', text: 'text-success-700 dark:text-success-300' },
+/** 요약 줄 톤별 정적 클래스(NativeWind dark: 유실 방지 — 동적 조립 금지). */
+const SUMMARY_TONE_TEXT: Record<SummaryTone, string> = {
+  neutral: 'text-content-primary',
+  warning: 'text-warning-700 dark:text-warning-300',
+  success: 'text-success-700 dark:text-success-300',
 };
 
-/** 요약 칩 한 칸 — U1: 아이콘+라벨+수치 병기 + a11y 라벨(색상 단독 금지). */
-function StatChip({
-  icon,
-  label,
-  value,
-  a11yLabel,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  a11yLabel: string;
-  tone: ChipTone;
-}) {
-  const toneClass = CHIP_TONE[tone];
-  return (
-    <View
-      accessible
-      accessibilityLabel={a11yLabel}
-      className={`flex-row items-center gap-1 rounded-sm px-3 py-1.5 ${toneClass.box}`}
-    >
-      {icon}
-      <Text className={`text-xs font-sans-medium ${toneClass.text}`}>{label}</Text>
-      <Text className={`text-sm font-sans-semibold ${toneClass.text}`}>{value}</Text>
-    </View>
-  );
+/**
+ * 한 줄 요약 — 문구·스크린리더 라벨·톤. U1: 색상 단독 금지(수치·상태를 글자로 병기).
+ *  - 부족: `3/5명 · 2명 부족`
+ *  - 충원: `5/5명 · 충원 완료`
+ *  - 목표 없음: `3명 배치`
+ */
+function describeDaySummary(headcount: number, softTarget: number, shortage: number) {
+  if (softTarget > 0 && shortage > 0) {
+    return {
+      text: `${headcount}/${softTarget}명 · ${shortage}명 부족`,
+      a11y: `현재 ${headcount}명, 필요 ${softTarget}명, ${shortage}명 부족`,
+      tone: 'warning' as SummaryTone,
+    };
+  }
+  if (softTarget > 0) {
+    return {
+      text: `${headcount}/${softTarget}명 · 충원 완료`,
+      a11y: `현재 ${headcount}명, 필요 ${softTarget}명, 충원 완료`,
+      tone: 'success' as SummaryTone,
+    };
+  }
+  return {
+    text: `${headcount}명 배치`,
+    a11y: `현재 ${headcount}명 배치`,
+    tone: 'neutral' as SummaryTone,
+  };
 }
 
 export function VenueDayPanel({
@@ -163,6 +163,7 @@ export function VenueDayPanel({
   //    공고를 마감해 좌석이 사라지면 있지도 않던 목표만 남아 매일 부족을 외친다(기준선 §5.1).
   const manualTarget = cell?.manualTarget ?? 0;
   const derivedRequired = cell?.derivedRequired ?? 0;
+  const summary = describeDaySummary(headcount, softTarget, shortage);
 
   // 형제 슬롯 — 지금 쓰는 곳은 **시간 일괄 변경 시트(3-C)** 와 헤더 버튼 노출 판정뿐이다.
   // (중복충돌 경고는 통합 시트로 넘어오면서 사라졌다 — `slotEdit.detectSlotConflicts` 주석 참조.)
@@ -175,6 +176,8 @@ export function VenueDayPanel({
   const [timeChangeVisible, setTimeChangeVisible] = useState(false);
   /** 빼기 확인 대상(카드 액션). 시트와 겹치지 않는다 — 카드에서 바로 뜬다. */
   const [deleteTarget, setDeleteTarget] = useState<VenueDaySlot | null>(null);
+  /** 목표 인원 편집 펼침(S4) — 요약 줄을 눌러 연다. 날짜를 옮기면 닫는다. */
+  const [isTargetEditorOpen, setIsTargetEditorOpen] = useState(false);
 
   const deleteSlot = useDeleteSlot();
 
@@ -232,6 +235,11 @@ export function VenueDayPanel({
     setTargetInput(manualTarget > 0 ? String(manualTarget) : '');
   }, [manualTarget, date]);
 
+  // 다른 날짜로 옮기면 편집을 닫는다 — 열린 채 두면 어느 날짜의 목표를 고치는지 헷갈린다.
+  useEffect(() => {
+    setIsTargetEditorOpen(false);
+  }, [date]);
+
   const setSoftTarget = useSetVenueSoftTarget();
 
   // 입력 정규화(빈값=0, 음수/NaN=무효, 상한 99 클램프). 저장 버튼 활성/검증 공통 사용.
@@ -256,7 +264,10 @@ export function VenueDayPanel({
       // E5: write 경계에서 날짜키 정규화(레포도 재정규화하나 클라단 일관성 보장).
       { venueId, date: toDateString(date), count: parsedTarget },
       {
-        onSuccess: () => toastSuccess('목표 인원을 저장했어요.'),
+        onSuccess: () => {
+          toastSuccess('목표 인원을 저장했어요.');
+          setIsTargetEditorOpen(false);
+        },
         onError: () => toastError(saveFailed('목표 인원', { retry: true })),
       }
     );
@@ -295,40 +306,33 @@ export function VenueDayPanel({
         </View>
       </View>
 
-      {/* U1 부족신호 요약(아이콘+숫자+a11y, 색상 단독 금지) */}
+      {/* U1 부족신호 한 줄 요약(수치·상태를 글자로 병기, 색상 단독 금지) — 누르면 목표 편집(S4) */}
       {isSummaryAvailable ? (
-        <View className="flex-row flex-wrap items-center gap-2 px-4 pt-2">
-          <StatChip
-            icon={<UsersIcon size={14} color={SECONDARY_PALETTE[500]} />}
-            label="현재"
-            value={`${headcount}명`}
-            a11yLabel={`현재 배치 인원 ${headcount}명`}
-            tone="neutral"
-          />
-          <StatChip
-            icon={<FlagOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />}
-            label="필요"
-            value={`${softTarget}명`}
-            a11yLabel={`필요 인원 ${softTarget}명`}
-            tone="neutral"
-          />
-          {shortage > 0 ? (
-            <StatChip
-              icon={<AlertTriangleIcon size={14} color={STATUS_COLORS.warning} />}
-              label="부족"
-              value={`${shortage}명`}
-              a11yLabel={`부족 인원 ${shortage}명`}
-              tone="warning"
-            />
-          ) : softTarget > 0 ? (
-            <StatChip
-              icon={<UsersIcon size={14} color={STATUS_COLORS.success} />}
-              label="충원"
-              value="완료"
-              a11yLabel="필요 인원 충원 완료"
-              tone="success"
-            />
-          ) : null}
+        <View className="px-4 pt-2">
+          <Pressable
+            testID="day-summary-line"
+            onPress={() => setIsTargetEditorOpen((open) => !open)}
+            accessibilityRole="button"
+            accessibilityLabel={`${summary.a11y}. 눌러서 목표 인원 편집`}
+            className="min-h-[44px] flex-row items-center gap-2 rounded-md border border-divider bg-surface-card px-3 active:opacity-70 dark:bg-surface-elevated"
+          >
+            {summary.tone === 'warning' ? (
+              <AlertTriangleIcon size={16} color={STATUS_COLORS.warning} />
+            ) : (
+              <UsersIcon
+                size={16}
+                color={summary.tone === 'success' ? STATUS_COLORS.success : SECONDARY_PALETTE[500]}
+              />
+            )}
+            <Text
+              className={`flex-1 text-sm font-sans-semibold ${SUMMARY_TONE_TEXT[summary.tone]}`}
+            >
+              {summary.text}
+            </Text>
+            <Text className="text-xs font-sans-medium text-primary-600 dark:text-primary-400">
+              {isTargetEditorOpen ? '닫기' : '목표 편집'}
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <View
@@ -342,29 +346,9 @@ export function VenueDayPanel({
         </View>
       )}
 
-      {/* P2-1: 부족신호 → 프리필 공고 깔때기 — 그리드가 아는 것(운영처·날짜·부족 인원)을 폼에 실어 보낸다 */}
-      {isSummaryAvailable && shortage > 0 ? (
-        <View className="px-4 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onPress={() =>
-              router.push({
-                pathname: '/(employer)/my-postings/create',
-                params: { venueId, date, count: String(shortage) },
-              })
-            }
-            icon={<MegaphoneIcon size={16} color={SECONDARY_PALETTE[500]} />}
-            accessibilityLabel={`부족 인원 ${shortage}명 공고로 모집`}
-          >
-            부족 {shortage}명 공고로 모집
-          </Button>
-        </View>
-      ) : null}
-
       {/* 소프트타깃 입력(그 날 목표인원) — 다루는 값은 **수동 목표** 하나다.
-          화면 위 '필요' 칩은 max(수동, 공고 좌석)이라 이 칸과 다를 수 있고, 그게 정상이다. */}
-      {isSummaryAvailable ? (
+          요약 줄의 '필요'는 max(수동, 공고 좌석)이라 이 칸과 다를 수 있고, 그게 정상이다. */}
+      {isSummaryAvailable && isTargetEditorOpen ? (
         <View className="px-4 pt-2">
           <View className="flex-row items-end gap-2">
             <View className="w-28">
@@ -391,7 +375,7 @@ export function VenueDayPanel({
               저장
             </Button>
           </View>
-          {/* 공고 좌석이 있으면 '필요' 칩이 이 입력값과 왜 다른지 그 자리에서 설명한다.
+          {/* 공고 좌석이 있으면 '필요'가 이 입력값과 왜 다른지 그 자리에서 설명한다.
               설명이 없으면 사용자는 칸의 숫자가 반영이 안 된 줄 알고 다시 저장한다. */}
           {derivedRequired > 0 ? (
             <Text className="mt-1 text-xs text-content-secondary" testID="target-source-hint">
@@ -399,6 +383,26 @@ export function VenueDayPanel({
               (둘 중 큰 값)
             </Text>
           ) : null}
+        </View>
+      ) : null}
+
+      {/* P2-1: 부족신호 → 프리필 공고 깔때기 — 그리드가 아는 것(운영처·날짜·부족 인원)을 폼에 실어 보낸다 */}
+      {isSummaryAvailable && shortage > 0 ? (
+        <View className="px-4 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() =>
+              router.push({
+                pathname: '/(employer)/my-postings/create',
+                params: { venueId, date, count: String(shortage) },
+              })
+            }
+            icon={<MegaphoneIcon size={16} color={SECONDARY_PALETTE[500]} />}
+            accessibilityLabel={`부족 인원 ${shortage}명 공고로 모집`}
+          >
+            부족 {shortage}명 공고로 모집
+          </Button>
         </View>
       ) : null}
 
@@ -414,6 +418,8 @@ export function VenueDayPanel({
           onSlotPress={setEditingSlot}
           onSlotDelete={isSummaryAvailable ? handleRequestDelete : undefined}
           onAddPress={isSummaryAvailable ? () => setAddVisible(true) : undefined}
+          // 출처 칩 → 그 공고 상세. 근무표가 공고를 거슬러 올라가는 유일한 길이다(구인자 IA S4).
+          onSourcePress={(jobPostingId) => router.push(`/(employer)/my-postings/${jobPostingId}`)}
         />
       </View>
 
