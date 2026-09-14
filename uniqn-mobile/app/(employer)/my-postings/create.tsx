@@ -186,6 +186,17 @@ export default function CreateJobPostingScreen() {
 
   const handleOrderSheetSubmit = useCallback(
     async (values: OrderSheetValues) => {
+      // 지점이 2개 이상이면 서버 자동 연결이 꺼진다(jobManagementService.resolveDefaultVenueId).
+      // 여기서 안 막으면 venue_id 없이 발행돼 그 공고는 **근무표에 영영 안 보인다** — 실패도
+      // 경고도 없는 무음 유실이라, 사장은 공고를 올렸는데 근무표가 비어 있는 상태를 보게 된다.
+      // 어느 지점인지는 앱이 대신 고를 수 없으므로(인건비가 그 지점 정산에 잡힌다) 선택을 요구한다.
+      if (showVenueChips && !selectedVenueId) {
+        addToast({
+          type: 'error',
+          message: '어느 지점의 근무표에 반영할지 먼저 골라주세요.',
+        });
+        return;
+      }
       try {
         const input = valuesToCreateInput(values);
         // 선택 지점을 반영(대회 포함 — 근무표에서 대회 인원/부족을 집계한다).
@@ -270,6 +281,7 @@ export default function CreateJobPostingScreen() {
       shareJobById,
       venueId,
       selectedVenueId,
+      showVenueChips,
       router,
       addToast,
       templateManager.templates.length,
