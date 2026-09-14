@@ -66,12 +66,17 @@ jest.mock('@/components/ui/Modal', () => {
           {footer}
         </>
       ) : null,
+    // 🔴 실제 ConfirmModal(`Modal.tsx` handleConfirm)의 `closeOnConfirm` 계약을 재현한다 —
+    //    기본값 true 면 onConfirm 직후 onClose 를 부른다. 이걸 빼면 `closeOnConfirm={false}` 가
+    //    지워져도(실패해도 확인창이 닫히는 CANCEL-14 회귀) 이 스위트가 계속 green 이다.
     ConfirmModal: ({
       visible,
       title,
       message,
       confirmText,
       onConfirm,
+      onClose,
+      closeOnConfirm = true,
       confirmTestID,
     }: {
       visible: boolean;
@@ -79,13 +84,23 @@ jest.mock('@/components/ui/Modal', () => {
       message: string;
       confirmText?: string;
       onConfirm: () => void;
+      onClose: () => void;
+      closeOnConfirm?: boolean;
       confirmTestID?: string;
     }) =>
       visible ? (
         <>
           <Text>{title}</Text>
           <Text>{message}</Text>
-          <Pressable testID={confirmTestID} onPress={onConfirm}>
+          <Pressable
+            testID={confirmTestID}
+            onPress={() => {
+              onConfirm();
+              if (closeOnConfirm) {
+                onClose();
+              }
+            }}
+          >
             <Text>{confirmText}</Text>
           </Pressable>
         </>
@@ -201,6 +216,31 @@ describe('StaffManagementTab — 취소 요청 줄', () => {
 
     expect(approveAsync).toHaveBeenCalledTimes(1);
     expect(approveAsync).toHaveBeenCalledWith('app-1');
+  });
+
+  // CANCEL-14 — 결과를 보고 성공에서만 닫는다. 실패했는데 닫히면 요청이 남은 채 확인창만 사라진다.
+  it('승인이 실패하면 확인창이 남는다', async () => {
+    approveAsync.mockRejectedValueOnce(new Error('네트워크 오류'));
+    render(<StaffManagementTab jobPostingId="job-1" />);
+
+    fireEvent.press(screen.getAllByLabelText('김딜러 취소 요청 승인')[0]);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('work-cancellation-approve-confirm'));
+    });
+
+    expect(approveAsync).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('work-cancellation-approve-confirm')).toBeTruthy();
+  });
+
+  it('승인이 성공하면 확인창이 닫힌다', async () => {
+    render(<StaffManagementTab jobPostingId="job-1" />);
+
+    fireEvent.press(screen.getAllByLabelText('김딜러 취소 요청 승인')[0]);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('work-cancellation-approve-confirm'));
+    });
+
+    expect(screen.queryByTestId('work-cancellation-approve-confirm')).toBeNull();
   });
 
   it('거절은 사유를 받아 지원서 id 와 함께 넘긴다', async () => {
