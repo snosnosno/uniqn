@@ -158,6 +158,11 @@ export function VenueDayPanel({
   const headcount = cell?.headcount ?? 0;
   const softTarget = cell?.softTarget ?? 0;
   const shortage = cell?.shortage ?? computeShortage(softTarget, headcount);
+  // 🔑 입력칸은 **수동 목표**만 다룬다. 실효 목표(softTarget = max(수동, 공고 파생))를 프리필하면
+  //    공고 좌석이 더 클 때 그 숫자가 칸에 들어앉고, 저장 한 번에 사용자의 수동 목표를 덮는다.
+  //    공고를 마감해 좌석이 사라지면 있지도 않던 목표만 남아 매일 부족을 외친다(기준선 §5.1).
+  const manualTarget = cell?.manualTarget ?? 0;
+  const derivedRequired = cell?.derivedRequired ?? 0;
 
   // 형제 슬롯 — 지금 쓰는 곳은 **시간 일괄 변경 시트(3-C)** 와 헤더 버튼 노출 판정뿐이다.
   // (중복충돌 경고는 통합 시트로 넘어오면서 사라졌다 — `slotEdit.detectSlotConflicts` 주석 참조.)
@@ -219,10 +224,13 @@ export function VenueDayPanel({
   );
 
   // 소프트타깃 입력값(문자열) — 저장값/날짜 변경 시 동기화(재진입 시 이전 값 잔존 방지).
-  const [targetInput, setTargetInput] = useState<string>(softTarget > 0 ? String(softTarget) : '');
+  // 동기화 원본은 **수동 목표**다(실효 목표 아님 — 위 manualTarget 주석 참조).
+  const [targetInput, setTargetInput] = useState<string>(
+    manualTarget > 0 ? String(manualTarget) : ''
+  );
   useEffect(() => {
-    setTargetInput(softTarget > 0 ? String(softTarget) : '');
-  }, [softTarget, date]);
+    setTargetInput(manualTarget > 0 ? String(manualTarget) : '');
+  }, [manualTarget, date]);
 
   const setSoftTarget = useSetVenueSoftTarget();
 
@@ -237,19 +245,19 @@ export function VenueDayPanel({
   }, [targetInput]);
 
   const targetValid = Number.isFinite(parsedTarget) && parsedTarget >= 0;
-  const targetDirty = targetValid && parsedTarget !== softTarget;
+  const targetDirty = targetValid && parsedTarget !== manualTarget;
 
   const handleSaveTarget = useCallback(() => {
     if (!targetValid) {
-      toastError('필요 인원은 0 이상의 숫자로 입력해주세요.');
+      toastError('목표 인원은 0 이상의 숫자로 입력해주세요.');
       return;
     }
     setSoftTarget.mutate(
       // E5: write 경계에서 날짜키 정규화(레포도 재정규화하나 클라단 일관성 보장).
       { venueId, date: toDateString(date), count: parsedTarget },
       {
-        onSuccess: () => toastSuccess('필요 인원을 저장했어요.'),
-        onError: () => toastError(saveFailed('필요 인원', { retry: true })),
+        onSuccess: () => toastSuccess('목표 인원을 저장했어요.'),
+        onError: () => toastError(saveFailed('목표 인원', { retry: true })),
       }
     );
   }, [targetValid, parsedTarget, setSoftTarget, venueId, date, toastSuccess, toastError]);
@@ -354,32 +362,43 @@ export function VenueDayPanel({
         </View>
       ) : null}
 
-      {/* 소프트타깃 입력(그 날 목표인원) */}
+      {/* 소프트타깃 입력(그 날 목표인원) — 다루는 값은 **수동 목표** 하나다.
+          화면 위 '필요' 칩은 max(수동, 공고 좌석)이라 이 칸과 다를 수 있고, 그게 정상이다. */}
       {isSummaryAvailable ? (
-        <View className="flex-row items-end gap-2 px-4 pt-2">
-          <View className="w-28">
-            <Input
-              label="필요 인원"
-              value={targetInput}
-              onChangeText={setTargetInput}
-              placeholder="0"
-              keyboardType="number-pad"
-              maxLength={3}
-              accessibilityLabel="이 날 필요 인원"
-              onSubmitEditing={handleSaveTarget}
-              returnKeyType="done"
-            />
+        <View className="px-4 pt-2">
+          <View className="flex-row items-end gap-2">
+            <View className="w-28">
+              <Input
+                label="목표 인원"
+                value={targetInput}
+                onChangeText={setTargetInput}
+                placeholder="0"
+                keyboardType="number-pad"
+                maxLength={3}
+                accessibilityLabel="이 날 직접 지정할 목표 인원"
+                onSubmitEditing={handleSaveTarget}
+                returnKeyType="done"
+              />
+            </View>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={handleSaveTarget}
+              disabled={!targetDirty}
+              loading={setSoftTarget.isPending}
+              accessibilityLabel="목표 인원 저장"
+            >
+              저장
+            </Button>
           </View>
-          <Button
-            variant="outline"
-            size="sm"
-            onPress={handleSaveTarget}
-            disabled={!targetDirty}
-            loading={setSoftTarget.isPending}
-            accessibilityLabel="필요 인원 저장"
-          >
-            저장
-          </Button>
+          {/* 공고 좌석이 있으면 '필요' 칩이 이 입력값과 왜 다른지 그 자리에서 설명한다.
+              설명이 없으면 사용자는 칸의 숫자가 반영이 안 된 줄 알고 다시 저장한다. */}
+          {derivedRequired > 0 ? (
+            <Text className="mt-1 text-xs text-content-secondary" testID="target-source-hint">
+              이 날 공고 좌석 {derivedRequired}명 · 직접 지정 {manualTarget}명 → 필요 {softTarget}명
+              (둘 중 큰 값)
+            </Text>
+          ) : null}
         </View>
       ) : null}
 

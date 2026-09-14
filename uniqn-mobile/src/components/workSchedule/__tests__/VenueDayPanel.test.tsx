@@ -70,8 +70,8 @@ function renderPanel(date = '2026-07-05') {
 it('저장 시 단건 mutate 만 호출하고 확인 다이얼로그는 뜨지 않는다', () => {
   const { getByLabelText } = renderPanel();
 
-  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '5');
-  fireEvent.press(getByLabelText('필요 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 직접 지정할 목표 인원'), '5');
+  fireEvent.press(getByLabelText('목표 인원 저장'));
 
   expect(singleMutate).toHaveBeenCalledTimes(1);
   // E5: write 경계에서 날짜키 정규화(toDateString) — venueId/date/count 매핑 검증.
@@ -83,7 +83,7 @@ it('요일 반복 체크박스가 렌더되지 않는다(반복 전제 벌크 �
   const { queryByLabelText, queryByText, getByLabelText } = renderPanel();
 
   // 대조군 — 패널 본문이 실제로 렌더됐다는 증거.
-  expect(getByLabelText('이 날 필요 인원')).not.toBeNull();
+  expect(getByLabelText('이 날 직접 지정할 목표 인원')).not.toBeNull();
 
   expect(queryByLabelText('이번 달 같은 요일 전체 적용')).toBeNull();
   expect(queryByText('이번 달 같은 요일 전체 적용')).toBeNull();
@@ -92,8 +92,8 @@ it('요일 반복 체크박스가 렌더되지 않는다(반복 전제 벌크 �
 it('상한(99) 초과 입력은 클램프된 값으로 저장한다', () => {
   const { getByLabelText } = renderPanel();
 
-  fireEvent.changeText(getByLabelText('이 날 필요 인원'), '997');
-  fireEvent.press(getByLabelText('필요 인원 저장'));
+  fireEvent.changeText(getByLabelText('이 날 직접 지정할 목표 인원'), '997');
+  fireEvent.press(getByLabelText('목표 인원 저장'));
 
   expect(singleMutate).toHaveBeenCalledTimes(1);
   expect(singleMutate.mock.calls[0][0]).toEqual({ venueId: 'v1', date: '2026-07-05', count: 99 });
@@ -115,6 +115,66 @@ it('월 요약 실패 시 0명으로 단정하지 않고 계획·충원 쓰기�
   ).toBeTruthy();
   expect(queryByLabelText('인원 추가')).toBeNull();
   expect(queryByLabelText('시간 일괄 변경')).toBeNull();
-  expect(queryByLabelText('이 날 필요 인원')).toBeNull();
-  expect(queryByLabelText('필요 인원 저장')).toBeNull();
+  expect(queryByLabelText('이 날 직접 지정할 목표 인원')).toBeNull();
+  expect(queryByLabelText('목표 인원 저장')).toBeNull();
+});
+
+/**
+ * P0-1 회귀 가드 — 목표 입력칸은 **수동 목표**만 담는다.
+ *
+ * 예전에는 `cell.softTarget`(= max(수동, 공고 좌석))을 프리필해서, 공고 좌석이 더 크면
+ * 그 숫자가 칸에 들어앉고 저장 한 번에 사용자의 수동 목표를 덮었다. 공고를 마감해 좌석이
+ * 사라지면 있지도 않던 목표만 남아 매일 부족을 외쳤다(기준선 §5.1 "수동과 파생을 섞지 않는다").
+ */
+const CELL_WITH_DERIVED = {
+  dateKey: '2026-07-05',
+  headcount: 0,
+  jobCount: 1,
+  softTarget: 8, // 실효 = max(수동 2, 공고 8)
+  manualTarget: 2,
+  derivedRequired: 8,
+  shortage: 8,
+  status: 'shortage' as const,
+  priorityBadge: { kind: 'shortage' as const, count: 8 },
+};
+
+it('공고 파생 좌석이 더 커도 입력칸에는 수동 목표만 프리필한다', () => {
+  const { getByLabelText } = render(
+    <VenueDayPanel
+      venueId="v1"
+      date="2026-07-05"
+      dateLabel="7월 5일 (일)"
+      cell={CELL_WITH_DERIVED}
+    />
+  );
+
+  expect(getByLabelText('이 날 직접 지정할 목표 인원').props.value).toBe('2');
+});
+
+it('수동 목표를 바꾸지 않은 채 저장을 눌러도 파생값이 수동 목표로 저장되지 않는다', () => {
+  const { getByLabelText } = render(
+    <VenueDayPanel
+      venueId="v1"
+      date="2026-07-05"
+      dateLabel="7월 5일 (일)"
+      cell={CELL_WITH_DERIVED}
+    />
+  );
+
+  // dirty 가 아니므로 저장 버튼은 비활성 — 눌러도 mutate 가 나가지 않는다.
+  fireEvent.press(getByLabelText('목표 인원 저장'));
+  expect(singleMutate).not.toHaveBeenCalled();
+});
+
+it('공고 좌석이 있으면 필요 인원이 입력값과 다른 이유를 그 자리에 설명한다', () => {
+  const { getByTestId } = render(
+    <VenueDayPanel
+      venueId="v1"
+      date="2026-07-05"
+      dateLabel="7월 5일 (일)"
+      cell={CELL_WITH_DERIVED}
+    />
+  );
+
+  expect(getByTestId('target-source-hint')).toBeTruthy();
 });
