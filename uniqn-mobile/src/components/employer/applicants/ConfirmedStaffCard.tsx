@@ -8,19 +8,26 @@ import { WorkTimeDisplay } from '@/shared/time';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
 import { slotColorSwatchClassName } from '@/domains/workSchedule';
+import type { PendingCancellation } from '@/domains/application/pendingCancellationIndex';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
+import { formatRelativeTime } from '@/utils/date';
+import { openExternalUrl } from '@/utils/externalLink';
+import { formatPhoneForDisplay } from '@/utils/phone';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import {
   BriefcaseIcon,
   CheckCircleIcon,
+  CheckIcon,
   ChevronRightIcon,
   ClockIcon,
   EditIcon,
   AlertTriangleIcon,
+  PhoneIcon,
   RefreshIcon,
   TrashIcon,
+  XMarkIcon,
 } from '@/components/icons';
 
 export interface ConfirmedStaffCardProps {
@@ -50,8 +57,137 @@ export interface ConfirmedStaffCardProps {
    */
   onStatusChange?: (staff: ConfirmedStaff) => void;
   onCancelNoShow?: (staff: ConfirmedStaff) => void;
+  /**
+   * 이 줄의 지원서에 걸린 검토 대기 취소 요청 (구인자 IA S1b).
+   * 있을 때만 `취소 요청` 띠가 뜬다. 승인은 지원서 단위라 같은 지원서의 날짜 줄마다 같은 요청이 온다.
+   */
+  cancellation?: PendingCancellation;
+  onApproveCancellation?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  onRejectCancellation?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  /** 이 줄의 지원서를 검토 중인지 — 이 줄의 승인·거절만 잠근다(CANCEL-15). */
+  isCancellationProcessing?: boolean;
   showActions?: boolean;
   compact?: boolean;
+}
+
+interface CancellationRequestRowProps {
+  staff: ConfirmedStaff;
+  cancellation: PendingCancellation;
+  onApprove?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  onReject?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  isProcessing: boolean;
+}
+
+/**
+ * 취소 요청 띠 — 사유와 [전화][거절][승인].
+ *
+ * 정보 영역만 `accessible` 로 묶는다. 버튼까지 묶으면 iOS 에서 버튼이 하나의 요소에 삼켜진다.
+ * 묶인 영역의 자식 Text 는 낭독되지 않으므로 사유를 라벨에 싣는다.
+ */
+function CancellationRequestRow({
+  staff,
+  cancellation,
+  onApprove,
+  onReject,
+  isProcessing,
+}: CancellationRequestRowProps) {
+  const name = staff.staffName || '스태프';
+  const { phone } = cancellation;
+
+  const handleCall = useCallback(() => {
+    if (!phone) return;
+    void openExternalUrl(`tel:${phone}`, {
+      fallbackTitle: '전화 앱을 열 수 없어요',
+      fallbackHint: '아래 번호로 직접 걸어주세요.',
+      fallbackValue: formatPhoneForDisplay(phone),
+      component: 'ConfirmedStaffCard',
+    });
+  }, [phone]);
+
+  const handleApprove = useCallback(() => {
+    if (isProcessing) return;
+    onApprove?.(staff, cancellation);
+  }, [cancellation, isProcessing, onApprove, staff]);
+
+  const handleReject = useCallback(() => {
+    if (isProcessing) return;
+    onReject?.(staff, cancellation);
+  }, [cancellation, isProcessing, onReject, staff]);
+
+  return (
+    <View
+      testID="card-cancellation-request"
+      className="mt-3 rounded-lg bg-error-50 p-3 dark:bg-error-900/20"
+    >
+      <View
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`취소 요청. 사유: ${cancellation.reason}`}
+      >
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm font-sans-semibold text-error-700 dark:text-error-400">
+            취소 요청
+          </Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            {formatRelativeTime(cancellation.requestedAt)}
+          </Text>
+        </View>
+        <Text className="mt-1 text-sm text-content-primary dark:text-off-white font-sans">
+          {cancellation.reason}
+        </Text>
+      </View>
+
+      {onApprove || onReject || phone ? (
+        <View className="mt-3 flex-row gap-2">
+          {phone ? (
+            <Pressable
+              onPress={handleCall}
+              accessibilityRole="button"
+              accessibilityLabel={`${name}에게 전화`}
+              className="min-h-[44px] flex-row items-center justify-center rounded-lg bg-surface-card px-3 active:opacity-70 dark:bg-surface"
+            >
+              <PhoneIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <Text className="ml-1 text-sm font-sans-medium text-content-primary dark:text-off-white">
+                전화
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {onReject ? (
+            <Pressable
+              onPress={handleReject}
+              disabled={isProcessing}
+              accessibilityRole="button"
+              accessibilityLabel={`${name} 취소 요청 거절`}
+              className={`min-h-[44px] flex-1 flex-row items-center justify-center rounded-lg bg-surface-card active:opacity-70 dark:bg-surface ${
+                isProcessing ? 'opacity-50' : ''
+              }`}
+            >
+              <XMarkIcon size={14} color="#DC2626" />
+              <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
+                거절
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {onApprove ? (
+            <Pressable
+              onPress={handleApprove}
+              disabled={isProcessing}
+              accessibilityRole="button"
+              accessibilityLabel={`${name} 취소 요청 승인`}
+              className={`min-h-[44px] flex-1 flex-row items-center justify-center rounded-lg bg-primary-500 active:opacity-70 dark:bg-primary-600 ${
+                isProcessing ? 'opacity-50' : ''
+              }`}
+            >
+              <CheckIcon size={14} color="#FFFFFF" />
+              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">승인</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
@@ -63,6 +199,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onDelete,
   onStatusChange,
   onCancelNoShow,
+  cancellation,
+  onApproveCancellation,
+  onRejectCancellation,
+  isCancellationProcessing = false,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
@@ -255,6 +395,17 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           </View>
         ) : null}
       </Pressable>
+
+      {/* 취소 요청 — 근태 액션보다 먼저 결정할 일이라 액션 줄 위에 둔다. 요청이 없으면 자리도 없다. */}
+      {cancellation ? (
+        <CancellationRequestRow
+          staff={staff}
+          cancellation={cancellation}
+          onApprove={onApproveCancellation}
+          onReject={onRejectCancellation}
+          isProcessing={isCancellationProcessing}
+        />
+      ) : null}
 
       {showActions && hasVisibleActions ? (
         <View

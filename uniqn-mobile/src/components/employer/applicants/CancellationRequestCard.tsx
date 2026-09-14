@@ -7,18 +7,16 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { CardStripe } from '@/components/ui/CardStripe';
-import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { ModalFooterButtons } from '@/components/ui/ModalFooterButtons';
 import { NumericText } from '@/components/ui/NumericText';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
-import { useSubmitGate } from '@/hooks/useSubmitGate';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { CancellationRejectModal } from './CancellationRejectModal';
 import { formatAppliedDate, formatRelativeTime } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
@@ -87,7 +85,6 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
   isProcessing = false,
 }: CancellationRequestCardProps) {
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: application.applicantId,
     fallbackName: application.applicantName,
@@ -117,28 +114,14 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
   // 거절 모달 닫기
   const handleCloseRejectModal = useCallback(() => {
     setShowRejectModal(false);
-    setRejectionReason('');
   }, []);
 
-  // 거절 제출 (CANCEL-14) — 결과를 보고 **성공에서만** 닫는다.
-  // 옛 코드는 결과를 안 보고 동기적으로 닫아, 실패하면 사유 200자가 사라지고 에러 토스트만
-  // 남았다. 그래서 footer 의 isLoading 도 렌더될 일이 없는 죽은 코드였다.
-  // 중복 제출 차단(EF-CAN-2)은 useSubmitGate 의 in-flight 가드가 이어받는다.
-  const rejectGate = useSubmitGate<[string]>({
-    action: (reason) => onReject(application.id, reason),
-    onSuccess: handleCloseRejectModal,
-    errorMessage: '취소 요청 거절 실패',
-    context: { applicationId: application.id },
-  });
-
-  const handleSubmitReject = useCallback(() => {
-    if (isProcessing) return;
-    if (rejectionReason.trim().length >= 3) {
-      void rejectGate.submit(rejectionReason.trim());
-    }
-  }, [isProcessing, rejectionReason, rejectGate]);
-
-  const isRejecting = isProcessing || rejectGate.isSubmitting;
+  // 거절 제출 (CANCEL-14) — 결과를 보고 **성공에서만** 닫는 규칙과 중복 제출 차단(EF-CAN-2)은
+  // CancellationRejectModal 이 소유한다. 여기서는 지원서 id 만 붙인다.
+  const handleSubmitReject = useCallback(
+    (reason: string) => onReject(application.id, reason),
+    [application.id, onReject]
+  );
 
   // 취소 요청이 없으면 렌더링하지 않음
   if (!cancellationRequest) {
@@ -276,47 +259,14 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         </CardStripe>
       </Card>
 
-      {/* 거절 사유 입력 모달 */}
-      <Modal
+      {/* 거절 사유 입력 모달 — [근무] 사람 줄과 같은 컴포넌트를 쓴다(S1b). */}
+      <CancellationRejectModal
         visible={showRejectModal}
         onClose={handleCloseRejectModal}
-        title="취소 요청 거절"
-        size="sm"
-        position="center"
-        // 액션은 footer prop 으로 — 200자 사유 입력 + 키보드가 겹치면 children 끝의
-        // 버튼이 스크롤 아래로 밀린다. size='sm' 이라 여유가 특히 좁다(2026-07-25).
-        footer={
-          <ModalFooterButtons
-            onCancel={handleCloseRejectModal}
-            onSubmit={handleSubmitReject}
-            submitText="거절하기"
-            isLoading={isRejecting}
-            submitDisabled={rejectionReason.trim().length < 3 || isRejecting}
-          />
-        }
-      >
-        <View className="-mt-2">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4 font-sans">
-            거절 사유를 입력해주세요.
-          </Text>
-
-          {/* 거절 사유 입력 */}
-          <TextInput
-            value={rejectionReason}
-            onChangeText={setRejectionReason}
-            placeholder="최소 3자 이상 입력해주세요"
-            placeholderTextColor={SECONDARY_PALETTE[400]}
-            multiline
-            numberOfLines={3}
-            maxLength={200}
-            className="bg-surface-page dark:bg-surface rounded-lg p-3 text-content-primary dark:text-off-white text-base font-sans min-h-[80px] mb-4"
-            textAlignVertical="top"
-          />
-          <Text className="text-xs text-content-placeholder text-right font-sans">
-            {rejectionReason.length}/200
-          </Text>
-        </View>
-      </Modal>
+        onSubmit={handleSubmitReject}
+        isProcessing={isProcessing}
+        applicationId={application.id}
+      />
     </>
   );
 });
