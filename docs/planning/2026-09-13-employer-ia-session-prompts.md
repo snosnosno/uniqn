@@ -212,6 +212,20 @@ PR **#490** — 근무표 진입점 복원 + P0 2건
 | `feat/employer-ia-s2` / `../T-HOLDEM-wt-employer-ia-s2` (S1 위) | `2d4f73e55` | S2a 구인자 정산 워크플로우 제거 | HIGH 1(이중 지급) · MEDIUM 3 반영 |
 | 〃 | `174e24699` | S2b 구직자 지급 상태 라벨 정리 | — |
 | 〃 | `c63624c8a` | S2b 리뷰 반영(대시보드 스크린리더 안내 · 스켈레톤 높이) | HIGH 1 · MEDIUM 1 반영 |
+| `feat/employer-ia-s1b` / `../T-HOLDEM-wt-employer-ia-s1b` (S2 위) | `b7b37010b` | S1b [근무] 사람 줄 취소 요청 승인·거절·전화 | APPROVE · MEDIUM 1 · LOW 1 |
+| 〃 | `35d12b5e0` | S1b 리뷰 반영(승인 확인창 `closeOnConfirm` 계약 테스트 고정) | MEDIUM 1 반영 · LOW 는 후속(§7.3) |
+
+- **S1b 요점**
+  - 사람 줄 ↔ 지원서 연결은 `workLog.applicationId` 로 한다. 규칙은 순수 함수 `src/domains/application/pendingCancellationIndex.ts` 가 소유한다.
+  - 승인은 지원서 단위다. 확인창 문구: `OOO님의 취소 요청을 승인할까요? 이 지원의 근무 N일이 모두 취소됩니다.`
+  - 거절 사유 모달은 `CancellationRejectModal` 로 추출해 기존 검토 화면과 함께 쓴다.
+  - 상단 배너와 검토 화면(도착지)은 그대로 둔다.
+  - UI 문구는 `취소 요청`·`승인`·`거절`·`전화`·`닫기` 로 한다. 구어체 금지(사용자 지시).
+  - 검증
+    - 영향권 jest 86스위트 · 1,012건 pass
+    - `npm run quality` exit 0 · `type-check:e2e` exit 0
+    - RED 확인
+    - `closeOnConfirm` red-green(제거 시 1건 실패, 복원 시 5건 통과)
 
 - **검증**: 슬라이스마다 아래를 모두 확인했다.
   - `npm run quality` exit 0
@@ -226,14 +240,10 @@ PR **#490** — 근무표 진입점 복원 + P0 2건
 
 ### 7.2 다음 순서
 
-1. **S1b** — 다음 착수
-   - [근무] 사람 줄(`StaffManagementTab` → `ConfirmedStaffList` → `ConfirmedStaffCard`)에 넣는 것:
-     취소 요청 상태, 승인·거절·전화 버튼
-   - 사람 줄 데이터 `ConfirmedStaff` 에는 취소 요청이 없다.
-     Application 과 `workLog.applicationId` 로 잇는다.
+1. ~~S1b~~ — **완료**(§7.1, 로컬 커밋 `b7b37010b`·`35d12b5e0`)
    - 승인 RPC `cancel_application_atomically` 는 **지원서 단위**다. 그 지원서의 날짜 줄이 한꺼번에 취소된다.
    - 기존 검토 화면 `my-postings/[id]/cancellation-requests.tsx` 와 `CancellationRequestCard` 는 남긴다(도착지 유지).
-2. **S3** — #490 의존
+2. **S3** — 다음 착수. **#490 머지 확인 → master 재통합 후** 시작한다(#490 이 `employer.tsx`·근무표 파일을 고친다).
 3. S4 · S5
 
 ### 7.3 후속 기록 (이번 웨이브 범위 밖)
@@ -247,6 +257,12 @@ PR **#490** — 근무표 진입점 복원 + P0 2건
   - S1: 공유 시트에서 링크 공유를 누르면 시트가 내려간 뒤 OS 공유창이 떠야 한다(iOS).
   - S2: 계산 근거 → 평가 화면 전환.
   - 스크린리더로 대시보드 금액 칸 낭독.
+  - S1b: [근무] 사람 줄 [전화] 를 누르면 OS 전화 앱이 열리는지(웹은 번호 안내 다이얼로그로 대체).
+  - S1b: 스크린리더가 취소 요청 띠를 `취소 요청. 사유: …` 로 읽고, 버튼 3개를 각각 따로 잡는지(iOS).
+- **S1b 리뷰 LOW(범위 밖)**
+  - `ConfirmedStaffCard` 의 거절 아이콘 색이 `#DC2626` 고정 hex 다. 다크모드에서 텍스트(`dark:text-error-400`)와 색조가 어긋난다.
+  - 같은 파일의 기존 아이콘(`CheckCircleIcon #22C55E` 등)도 같은 관례라 이번에 새로 생긴 위반은 아니다.
+  - 아이콘 색 토큰화 작업에서 함께 처리한다.
 
 ### 7.4 되돌리면 안 되는 규칙 (웨이브 누적)
 
