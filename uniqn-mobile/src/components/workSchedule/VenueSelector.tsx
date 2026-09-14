@@ -3,7 +3,9 @@
  *
  * 상단 그리드 화면에서 "어느 워크스페이스의 어느 운영처를 볼지" 고른다.
  * - 워크스페이스가 2개 이상일 때만 워크스페이스 칩 줄을 노출(단일이면 생략).
- * - 운영처(컨테이너) 칩 줄은 항상 노출. 0개면 안내 텍스트.
+ * - 운영처(컨테이너) 칩 줄은 2개 이상일 때 노출. 0개면 안내 텍스트.
+ * - 1개면 고를 게 없으므로 지점명 한 줄로 접는다(구인자 IA S4). 지점 설정(⚙)·`+ 지점 추가`는
+ *   그 줄에 남긴다 — 칩 줄과 함께 숨기면 지점을 고치거나 늘릴 입구가 사라진다.
  * 데이터 패칭은 화면(unit 7)이 담당하고 본 컴포넌트는 값+콜백만 받는 표현 컴포넌트.
  *
  * U3: 색상은 Midnight Craft 토큰 리터럴 클래스만(동적 className dark: 유실 방지).
@@ -110,56 +112,96 @@ export function VenueSelector({
       ) : null}
 
       {/* 운영처(컨테이너) 선택 */}
-      <Text className="mb-2 text-xs font-sans-medium text-content-muted">지점</Text>
       {isLoadingContainers ? (
-        <View className="h-10 flex-row items-center">
-          <ActivityIndicator size="small" />
-          <Text className="ml-2 text-sm text-content-secondary">지점 불러오는 중…</Text>
-        </View>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 8, alignItems: 'center' }}
-        >
-          {containers.length === 0 ? (
-            <View className="mr-2 h-10 justify-center">
-              <Text className="text-sm text-content-secondary">이 팀에 등록된 지점이 없어요</Text>
-            </View>
-          ) : (
-            containers.map((c) => (
-              <View key={c.id} className="flex-row items-center">
-                <Chip
-                  label={c.name}
-                  selected={c.id === selectedVenueId}
-                  onPress={handleSelectVenue(c.id)}
-                  a11yLabel={`지점 ${c.name}`}
-                />
-                {onOpenSettings && c.id === selectedVenueId ? (
-                  <Pressable
-                    onPress={() => onOpenSettings(c.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`지점 ${c.name} 설정`}
-                    hitSlop={10}
-                    className="-ml-1 mr-2 h-10 w-10 items-center justify-center"
-                  >
-                    <SettingsIcon size={18} color={SECONDARY_PALETTE[400]} />
-                  </Pressable>
-                ) : null}
-              </View>
-            ))
-          )}
+        <>
+          <Text className="mb-2 text-xs font-sans-medium text-content-muted">지점</Text>
+          <View className="h-10 flex-row items-center">
+            <ActivityIndicator size="small" />
+            <Text className="ml-2 text-sm text-content-secondary">지점 불러오는 중…</Text>
+          </View>
+        </>
+      ) : containers.length === 1 ? (
+        // S4 — 고를 게 없으면 칩 줄 대신 지점명 한 줄로 접는다. 칩 옆에 붙어 있던 지점 설정(⚙)과
+        // `+ 지점 추가` 는 남긴다 — 함께 숨기면 지점을 고치거나 늘릴 입구가 사라진다.
+        <View testID="venue-single-row" className="min-h-[40px] flex-row items-center">
+          <Text className="text-xs font-sans-medium text-content-muted">지점</Text>
+          <Text
+            className="ml-2 flex-shrink text-sm font-sans-semibold text-content-primary"
+            numberOfLines={1}
+          >
+            {containers[0]!.name}
+          </Text>
+          {onOpenSettings ? (
+            <Pressable
+              onPress={() => onOpenSettings(containers[0]!.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`지점 ${containers[0]!.name} 설정`}
+              hitSlop={10}
+              className="h-10 w-10 items-center justify-center"
+            >
+              <SettingsIcon size={18} color={SECONDARY_PALETTE[400]} />
+            </Pressable>
+          ) : null}
+          <View className="flex-1" />
           {onAddVenue ? (
             <Pressable
               onPress={onAddVenue}
               accessibilityRole="button"
               accessibilityLabel="지점 추가"
-              className="min-h-[40px] flex-row items-center justify-center rounded-full border border-dashed border-primary-400 px-4 py-2"
+              hitSlop={8}
+              className="min-h-[40px] justify-center px-2"
             >
               <Text className="text-sm font-sans-medium text-primary-500">+ 지점 추가</Text>
             </Pressable>
           ) : null}
-        </ScrollView>
+        </View>
+      ) : (
+        <>
+          <Text className="mb-2 text-xs font-sans-medium text-content-muted">지점</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingRight: 8, alignItems: 'center' }}
+          >
+            {containers.length === 0 ? (
+              <View className="mr-2 h-10 justify-center">
+                <Text className="text-sm text-content-secondary">이 팀에 등록된 지점이 없어요</Text>
+              </View>
+            ) : (
+              containers.map((c) => (
+                <View key={c.id} className="flex-row items-center">
+                  <Chip
+                    label={c.name}
+                    selected={c.id === selectedVenueId}
+                    onPress={handleSelectVenue(c.id)}
+                    a11yLabel={`지점 ${c.name}`}
+                  />
+                  {onOpenSettings && c.id === selectedVenueId ? (
+                    <Pressable
+                      onPress={() => onOpenSettings(c.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`지점 ${c.name} 설정`}
+                      hitSlop={10}
+                      className="-ml-1 mr-2 h-10 w-10 items-center justify-center"
+                    >
+                      <SettingsIcon size={18} color={SECONDARY_PALETTE[400]} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))
+            )}
+            {onAddVenue ? (
+              <Pressable
+                onPress={onAddVenue}
+                accessibilityRole="button"
+                accessibilityLabel="지점 추가"
+                className="min-h-[40px] flex-row items-center justify-center rounded-full border border-dashed border-primary-400 px-4 py-2"
+              >
+                <Text className="text-sm font-sans-medium text-primary-500">+ 지점 추가</Text>
+              </Pressable>
+            ) : null}
+          </ScrollView>
+        </>
       )}
     </View>
   );

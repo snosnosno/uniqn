@@ -66,6 +66,12 @@ export interface ConfirmedStaffCardProps {
   onRejectCancellation?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
   /** 이 줄의 지원서를 검토 중인지 — 이 줄의 승인·거절만 잠근다(CANCEL-15). */
   isCancellationProcessing?: boolean;
+  /**
+   * 이 줄이 어디서 왔는지 (구인자 IA S4 — 근무표 전용). `직접 배치` / `OO 공고에서`.
+   * `onPress` 가 있으면 누를 수 있는 칩(공고 상세로), 없으면 표시만 한다.
+   * 공고 [근무] 화면은 이미 그 공고 안이라 넘기지 않는다.
+   */
+  source?: { label: string; onPress?: () => void };
   showActions?: boolean;
   compact?: boolean;
 }
@@ -203,6 +209,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onApproveCancellation,
   onRejectCancellation,
   isCancellationProcessing = false,
+  source,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
@@ -325,6 +332,39 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   {getRoleDisplayName(staff.role, staff.customRole)}
                 </Text>
               </View>
+              {/* 출처 칩(구인자 IA S4, 근무표 전용) — 공고 출처는 누르면 공고 상세로, 직접 배치는 표시만. */}
+              {source ? (
+                source.onPress ? (
+                  <Pressable
+                    testID="staff-source-chip"
+                    onPress={source.onPress}
+                    // 칩 높이는 약 20px(text-xs + py-0.5) — 위아래 12 씩 더해 터치 타깃 44px 에 맞춘다.
+                    hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${source.label}. 공고 상세 보기`}
+                    className="mt-1 self-start rounded-sm bg-primary-500/10 px-2 py-0.5 active:opacity-70"
+                  >
+                    <Text
+                      numberOfLines={1}
+                      className="text-xs font-sans-medium text-primary-700 dark:text-primary-300"
+                    >
+                      {source.label}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View
+                    testID="staff-source-chip"
+                    className="mt-1 self-start rounded-sm bg-secondary-100 px-2 py-0.5 dark:bg-surface-overlay"
+                  >
+                    <Text
+                      numberOfLines={1}
+                      className="text-xs font-sans text-secondary-600 dark:text-secondary-300"
+                    >
+                      {source.label}
+                    </Text>
+                  </View>
+                )
+              ) : null}
             </View>
           </Pressable>
 
