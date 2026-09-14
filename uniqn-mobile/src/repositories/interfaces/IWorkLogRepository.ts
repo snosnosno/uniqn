@@ -205,6 +205,16 @@ export interface IWorkLogRepository {
   getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]>;
 
   /**
+   * 구인자(ownerId) 기준 "오늘 확인할 근무" 조회 — 내 공고 탭 오늘 한 줄(구인자 IA S3)
+   *
+   * @description 오늘 날짜의 `scheduled`(미출근 후보) + 오늘 이전의 `checked_in`(퇴근 미기록 후보).
+   *   판정(고정 공고 제외·야간 유예)은 도메인 `summarizeTodayAttention` 이 한다.
+   * @param ownerId - 구인자 ID
+   * @param today - 오늘(YYYY-MM-DD)
+   */
+  getAttentionByOwnerId(ownerId: string, today: string): Promise<WorkLog[]>;
+
+  /**
    * 구인자(ownerId)의 완료된 근무 기록 조회
    *
    * @description 미작성 평가 목록에서 employer-side pending reviews 조회용
