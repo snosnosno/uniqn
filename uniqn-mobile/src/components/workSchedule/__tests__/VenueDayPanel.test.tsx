@@ -128,6 +128,22 @@ describe('한 줄 요약 (S4)', () => {
     ).toBeTruthy();
   });
 
+  it('요약 줄은 열림 상태를 스크린리더에 알린다 — 열려 있으면 "닫기" 로 안내한다', () => {
+    const utils = renderPanel(cellOf({ headcount: 3, softTarget: 5, shortage: 2 }));
+
+    const closed = utils.getByLabelText('현재 3명, 필요 5명, 2명 부족. 눌러서 목표 인원 편집');
+    // 라벨이 주 판정이다(accessibilityState 는 웹에서 무효). 상태는 네이티브용 보조 단언.
+    expect(closed.props.accessibilityState).toEqual(expect.objectContaining({ expanded: false }));
+
+    openEditor(utils);
+
+    const opened = utils.getByLabelText('현재 3명, 필요 5명, 2명 부족. 눌러서 목표 편집 닫기');
+    expect(opened.props.accessibilityState).toEqual(expect.objectContaining({ expanded: true }));
+    expect(
+      utils.queryByLabelText('현재 3명, 필요 5명, 2명 부족. 눌러서 목표 인원 편집')
+    ).toBeNull();
+  });
+
   it('처음에는 편집이 닫혀 있고, 요약 줄을 누르면 열리고 다시 누르면 닫힌다', () => {
     const utils = renderPanel(cellOf({ headcount: 3, softTarget: 5, shortage: 2 }));
 

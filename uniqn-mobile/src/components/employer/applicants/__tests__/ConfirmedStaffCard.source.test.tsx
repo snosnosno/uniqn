@@ -62,6 +62,20 @@ describe('ConfirmedStaffCard — 출처 칩', () => {
     expect(chip.props.onPress).toBeUndefined();
   });
 
+  it('누를 수 있는 칩은 글자가 작아도 위아래로 44px 에 가까운 누름 여유를 둔다', () => {
+    render(
+      <ConfirmedStaffCard
+        staff={STAFF}
+        source={{ label: '토요일 딜러 4명 공고에서', onPress: jest.fn() }}
+      />
+    );
+
+    // 칩 자체 높이는 약 20px(text-xs + py-0.5) — 위아래 12 씩 더해야 터치 타깃 규칙(44px)에 닿는다.
+    const { hitSlop } = screen.getByTestId('staff-source-chip').props;
+    expect(hitSlop.top).toBeGreaterThanOrEqual(12);
+    expect(hitSlop.bottom).toBeGreaterThanOrEqual(12);
+  });
+
   it('누를 수 있는 칩은 목적지를 스크린리더 라벨로 알린다', () => {
     render(
       <ConfirmedStaffCard

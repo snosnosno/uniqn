@@ -313,7 +313,11 @@ export function VenueDayPanel({
             testID="day-summary-line"
             onPress={() => setIsTargetEditorOpen((open) => !open)}
             accessibilityRole="button"
-            accessibilityLabel={`${summary.a11y}. 눌러서 목표 인원 편집`}
+            // 화면 문구('목표 편집'/'닫기')와 안내를 맞춘다 — 열려 있는데 "편집"이라 읽으면 누르는 순간 닫힌다.
+            accessibilityLabel={`${summary.a11y}. ${
+              isTargetEditorOpen ? '눌러서 목표 편집 닫기' : '눌러서 목표 인원 편집'
+            }`}
+            accessibilityState={{ expanded: isTargetEditorOpen }}
             className="min-h-[44px] flex-row items-center gap-2 rounded-md border border-divider bg-surface-card px-3 active:opacity-70 dark:bg-surface-elevated"
           >
             {summary.tone === 'warning' ? (

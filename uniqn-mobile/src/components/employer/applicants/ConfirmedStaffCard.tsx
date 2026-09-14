@@ -338,7 +338,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   <Pressable
                     testID="staff-source-chip"
                     onPress={source.onPress}
-                    hitSlop={8}
+                    // 칩 높이는 약 20px(text-xs + py-0.5) — 위아래 12 씩 더해 터치 타깃 44px 에 맞춘다.
+                    hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                     accessibilityRole="button"
                     accessibilityLabel={`${source.label}. 공고 상세 보기`}
                     className="mt-1 self-start rounded-sm bg-primary-500/10 px-2 py-0.5 active:opacity-70"
