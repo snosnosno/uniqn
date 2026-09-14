@@ -71,6 +71,24 @@ describe('ScheduleCard', () => {
     expect(JSON.stringify(toJSON())).not.toContain('"children":[0]');
   });
 
+  // 구인자 IA S2b — 앱은 돈을 보내지 않는다. 사장이 `지급 완료` 를 누르는 흐름을 없앴으므로
+  // 완료 카드에 `정산 대기` 배지를 달면 영원히 "대기" 로 보인다. 금액만 남긴다.
+  it.each(['pending', 'completed', 'failed'] as const)(
+    'does not render a payroll status badge on completed cards (payrollStatus=%s)',
+    (payrollStatus) => {
+      const schedule = {
+        ...createMockScheduleEvent({ type: 'completed' }),
+        payrollStatus,
+        payrollAmount: 50000,
+      } as unknown as ScheduleEvent;
+
+      const { getByText, queryByText } = render(<ScheduleCard schedule={schedule} />);
+
+      expect(getByText('₩50,000')).toBeTruthy();
+      expect(queryByText(/^정산 (대기|완료)$/)).toBeNull();
+    }
+  );
+
   it('drops the pending-cancellation notice once approval resolves to cancelled', () => {
     const schedule = createMockScheduleEvent({
       type: 'cancelled',

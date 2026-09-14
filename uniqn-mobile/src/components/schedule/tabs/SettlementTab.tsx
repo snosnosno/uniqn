@@ -5,7 +5,6 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { Badge } from '@/components/ui';
 import { BanknotesIcon } from '@/components/icons';
 import {
   formatCurrency,
@@ -25,11 +24,8 @@ import {
 } from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
-import { PAYROLL_STATUS } from '@/constants/statusConfig';
-import { toSettlementDisplayStatus } from '@/shared/status';
-import { formatDateKorean } from '@/utils/date';
 import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
-import type { ScheduleEvent, PayrollStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 
 export interface SettlementTabProps {
   schedule: ScheduleEvent;
@@ -215,8 +211,6 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
   const isEstimate = hasBreakdown
     ? schedule.settlementBreakdown!.isEstimate
     : !schedule.checkInTime || !schedule.checkOutTime;
-  const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
 
   /**
    * 실제 지급된 동결 금액이 있는가.
@@ -292,28 +286,20 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       )}
 
-      <View className="mb-4 flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">정산 정보</Text>
-        </View>
-        <Badge variant={payrollStatusConfig.variant} size="sm">
-          {payrollStatusConfig.label}
-        </Badge>
+      <View className="mb-4 flex-row items-center">
+        <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
+        <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">정산 정보</Text>
       </View>
 
-      {/* 지급 처리 시각 — '정산 완료' 배지만으로는 언제 처리됐는지 알 수 없어
-          결국 구인자에게 전화하게 된다. 단, 처리 시각 ≠ 입금 시각이라 그 차이를 밝힌다. */}
-      {schedule.payrollStatus === STATUS.PAYROLL.COMPLETED && schedule.payrollDate && (
-        <View className="mb-4 rounded-md bg-success-50 px-3 py-2 dark:bg-success-900/20">
-          <Text className="text-sm font-sans-medium text-success-700 dark:text-success-300">
-            {formatDateKorean(schedule.payrollDate)} 지급 처리
-          </Text>
-          <Text className="mt-0.5 text-xs text-success-600 dark:text-success-400 font-sans">
-            실제 입금은 구인자 이체 시점에 따라 다를 수 있어요.
-          </Text>
-        </View>
-      )}
+      {/* 구인자 IA S2b — 지급 상태 배지(`정산 대기/완료`)와 `○월 ○일 지급 처리` 줄을 없앴다.
+          앱은 돈을 보내지 않으므로 사장이 `지급 완료` 를 누르는 흐름도 없고, 배지를 두면
+          영원히 "대기" 로 보인다. 대신 입금 주체와 문의처를 밝힌다 — 앱이 지급을 보증하는
+          것처럼 읽히면 안 된다. */}
+      <View className="mb-4 rounded-md bg-surface-page px-3 py-2 dark:bg-surface">
+        <Text className="text-xs text-content-secondary dark:text-secondary-400 font-sans">
+          입금은 사장님이 직접 보냅니다 · 금액이 다르면 사장님께 문의하세요
+        </Text>
+      </View>
 
       {/* 예상 금액 배너는 **실제로 예상액이 계산됐을 때만** 띄운다. 계산 결과가 없는데도
           "예정 시간 기준으로 계산한 예상 금액입니다" 라고 하면, 아래 '계산 전' 안내와 정면으로

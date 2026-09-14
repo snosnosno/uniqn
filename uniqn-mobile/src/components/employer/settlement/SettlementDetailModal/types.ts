@@ -1,5 +1,5 @@
 /**
- * UNIQN Mobile - 정산 상세 모달 타입
+ * UNIQN Mobile - 계산 근거 모달 타입
  *
  * @description SettlementDetailModal에서 사용하는 타입 정의
  */
@@ -8,7 +8,9 @@ import type { WorkLog, Allowances, GroupedSettlement } from '@/types';
 import type { SalaryInfo, TaxSettings } from '@/utils/settlement';
 
 /**
- * 정산 상세 모달 Props
+ * 계산 근거 모달 Props
+ *
+ * 구인자 IA S2 — `onSettle`(지급 완료 표시)·`onRevertSettlement`(지급 완료 취소)는 없앴다.
  */
 export interface SettlementDetailModalProps {
   visible: boolean;
@@ -20,12 +22,6 @@ export interface SettlementDetailModalProps {
   taxSettings?: TaxSettings;
   onEditTime?: (workLog: WorkLog) => void;
   onEditAmount?: (workLog: WorkLog) => void;
-  onSettle?: (workLog: WorkLog) => void;
-  /**
-   * 지급 완료 되돌리기 (SETTLE-3). 미전달이면 버튼을 렌더하지 않는다 —
-   * 지점 정산 화면처럼 되돌리기 배선이 없는 호출부의 기존 동작을 보존한다.
-   */
-  onRevertSettlement?: (workLog: WorkLog) => void;
   /** 통합 그룹 정보 (날짜 선택용) */
   groupedSettlement?: GroupedSettlement;
   /** 날짜 변경 콜백 */

@@ -23,18 +23,16 @@ import { useToastStore } from '@/stores/toastStore';
 import { StackHeader } from '@/components/headers';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import {
-  BanknotesIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ClockIcon,
   CurrencyDollarIcon,
   DocumentIcon,
   EditIcon,
-  EyeIcon,
+  EllipsisHorizontalIcon,
   MapPinIcon,
   ShareIcon,
   TrashIcon,
-  UserPlusIcon,
   UsersIcon,
   XCircleIcon,
 } from '@/components/icons';
@@ -83,11 +81,32 @@ import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus 
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
-import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
-import { getTodayString } from '@/utils/date';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
 import { loadFailed, notFound } from '@/constants/messages';
+import { MOTION_DURATION } from '@/constants/motion';
+
+/** 헤더 시트 옵션 값 — 테스트가 `sheet-option-*` 로 누르므로 값이 곧 계약이다. */
+const HEADER_SHEET_VALUE = {
+  shareLink: 'share-link',
+  applyQR: 'apply-qr',
+  preview: 'preview',
+  collaborators: 'collaborators',
+} as const;
+
+/**
+ * 공유 시트 — 공고를 밖으로 내보내는 길을 한곳에 모은다.
+ * 🚨 '지원 QR' 의 '지원' 을 빼지 말 것 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다.
+ */
+const SHARE_SHEET_OPTIONS: ActionSheetOption[] = [
+  { label: '링크 공유', value: HEADER_SHEET_VALUE.shareLink },
+  { label: '지원 QR', value: HEADER_SHEET_VALUE.applyQR },
+  { label: '구직자 화면 보기', value: HEADER_SHEET_VALUE.preview },
+];
+
+/** ⋯ 시트 — 가끔 쓰는 설정. 협업자는 공고 하나 단위라 팀과 범위가 다르다(S5 에서 문구로 구분). */
+const MORE_SHEET_OPTIONS: ActionSheetOption[] = [
+  { label: '함께 관리할 사람', value: HEADER_SHEET_VALUE.collaborators },
+];
 
 /**
  * 통계 한 칸 — 숫자 자체가 목적지가 된다.
@@ -278,17 +297,8 @@ export default function JobPostingDetailScreen() {
   });
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
-  // 정산 대기 건수 — 정산 화면과 **같은 셀렉터**를 쓴다. 종전에는 이 화면만 0 을 하드코딩해서
-  // 정산 대기가 쌓여도 허브에서는 영원히 0건으로 보였다(당일 운영 스트립 배지가 안 뜸).
-  // 고정 공고는 정산 화면 자체가 없으므로 빈 id 로 쿼리를 끈다(enabled: !!jobPostingId).
-  const { data: workLogs } = useWorkLogsByJobPosting(isFixed ? '' : id || '');
-  // 🔑 미래 근무는 정산 대기가 아니다 — 확정 시점에 미래 날짜 work_log 가 먼저 생기므로
-  //    날짜 하한을 안 걸면 아무도 일하기 전에 "정산할 근무 N건" 이 뜬다(셀렉터 주석 참조).
-  const todayString = getTodayString();
-  const pendingSettlementCount = useMemo(
-    () => selectPendingSettlementCount(workLogs ?? [], todayString),
-    [workLogs, todayString]
-  );
+  // 정산 대기 건수는 구인자 IA S2 에서 없앴다 — 앱은 돈을 보내지 않으므로 "대기"가 없다.
+  // 그 숫자를 세려고 열던 근무 기록 조회(useWorkLogsByJobPosting)도 함께 걷어냈다.
 
   // 상태 뱃지에서 바로 걸 수 있는 전이 — 종전에는 목록 화면에만 있어서, 상세를 보다가
   // 마감하려면 뒤로 나갔다 들어와야 했다.
@@ -347,10 +357,6 @@ export default function JobPostingDetailScreen() {
 
   const handleEdit = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/edit`);
-  }, [id, router]);
-
-  const handleCancellationRequests = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
   }, [id, router]);
 
   const handleCollaborators = useCallback(() => {
@@ -461,19 +467,56 @@ export default function JobPostingDetailScreen() {
     void shareJob(posting, SHARE_SOURCES.employerDetail);
   }, [posting, shareJob]);
 
+  /** 구직자 시선 미리보기 — 도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 수치를 부풀리지 않는다. */
   const handlePreview = useCallback(() => {
     router.push(`/(app)/jobs/${id}`);
-  }, [id]);
-
-  /** 확정 스태프 일괄 공지 (S3-2) */
-  const handleAnnounce = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/announce`);
-  }, [id]);
+  }, [id, router]);
 
   /** 지원 QR — 출퇴근 QR(`/qr`)과 다른 화면이다. 페이로드 type 부터 다르다(S3-5). */
   const handleShowApplyQR = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/apply-qr`);
-  }, [id]);
+  }, [id, router]);
+
+  // 헤더 시트 — 매일 누르지 않는 진입점을 `공유` · `⋯` 두 시트로 모았다(구인자 IA S1).
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
+  const [moreSheetVisible, setMoreSheetVisible] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (shareTimerRef.current) {
+        clearTimeout(shareTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const handleShareSheetSelect = useCallback(
+    (value: string) => {
+      if (value === HEADER_SHEET_VALUE.shareLink) {
+        // 🔑 시트는 RN Modal 이다. 내려가는 도중에 OS 공유창을 띄우면 iOS 가 표시를 무시할 수 있어
+        //    시트 퇴장 시간만큼 기다린 뒤 연다.
+        if (shareTimerRef.current) {
+          clearTimeout(shareTimerRef.current);
+        }
+        shareTimerRef.current = setTimeout(handleShare, MOTION_DURATION.sheetExit);
+      } else if (value === HEADER_SHEET_VALUE.applyQR) {
+        handleShowApplyQR();
+      } else if (value === HEADER_SHEET_VALUE.preview) {
+        handlePreview();
+      }
+    },
+    [handlePreview, handleShare, handleShowApplyQR]
+  );
+
+  const handleMoreSheetSelect = useCallback(
+    (value: string) => {
+      if (value === HEADER_SHEET_VALUE.collaborators) {
+        handleCollaborators();
+      }
+    },
+    [handleCollaborators]
+  );
 
   /**
    * 새 지원 인라인 알림 — 화면을 보고 있는 동안 지원이 들어오면 그 자리에서 알린다.
@@ -608,13 +651,15 @@ export default function JobPostingDetailScreen() {
     cancellationPendingCount: isFixed ? 0 : cancellationPendingCount,
     todayAbsentCount: isFixed ? 0 : todayAbsentCount,
     pendingApplicantCount: pendingApplicants,
-    pendingSettlementCount: isFixed ? 0 : pendingSettlementCount,
     liveOpsCount: isLiveOpsVisible ? opsTournaments.length : 0,
   });
 
-  /** "지금 할 일"이 가리키는 카드 — 미출근과 정산 대기는 둘 다 정산 화면으로 간다. */
+  /**
+   * "지금 할 일"이 가리키는 카드 — 미출근·취소 요청은 모두 [근무] 로 간다.
+   * 취소 요청은 타일을 따로 두지 않고 [근무] 화면 맨 위 한 줄에서 검토 화면으로 이어진다.
+   */
   const primaryCardKey =
-    primaryActionKey === 'todayAbsent' || primaryActionKey === 'pendingSettlement'
+    primaryActionKey === 'todayAbsent' || primaryActionKey === 'cancellationRequests'
       ? 'settlements'
       : primaryActionKey === 'pendingApplicants'
         ? 'applicants'
@@ -622,7 +667,7 @@ export default function JobPostingDetailScreen() {
 
   /**
    * 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 한다 —
-   * "스태프 관리/정산"이 미출근 때문에 올라왔는데 정산 얘기를 하면 사장은 다른 화면을 연다.
+   * [근무] 가 미출근 때문에 올라왔는데 취소 요청 얘기를 하면 사장은 다른 화면을 연다.
    * `displayTitle`/`displayDescription` 은 이 용도로 이미 준비돼 있던 확장점이다.
    */
   const primaryOverride: Partial<PrimaryActionCardProps> =
@@ -632,16 +677,20 @@ export default function JobPostingDetailScreen() {
           displayDescription: `아직 출근하지 않은 스태프가 ${todayAbsentCount}명이에요.`,
           actionLabel: '출근 현황 보기',
         }
-      : primaryActionKey === 'pendingSettlement'
+      : primaryActionKey === 'cancellationRequests'
         ? {
-            displayDescription: `정산할 근무가 ${pendingSettlementCount}건 남았어요.`,
-            actionLabel: '정산하러 가기',
+            displayTitle: '취소 요청 검토',
+            displayDescription: `스태프의 취소 요청이 ${cancellationPendingCount}건 있어요.`,
+            actionLabel: '취소 요청 검토하기',
           }
-        : primaryActionKey === 'cancellationRequests'
-          ? { actionLabel: '취소 요청 검토하기' }
-          : primaryActionKey === 'pendingApplicants'
-            ? { actionLabel: '지원자 검토하기' }
-            : { actionLabel: '운영 화면 열기' };
+        : primaryActionKey === 'pendingApplicants'
+          ? { actionLabel: '지원자 검토하기' }
+          : { actionLabel: '운영 화면 열기' };
+
+  // 상시 공고는 날짜가 없어 출퇴근·금액이 없다 — [근무] 는 근무표로 안내하는 자리가 된다.
+  const workDescription = isFixed
+    ? '실제 근무일은 근무표에서 배치합니다.'
+    : '날짜별 출퇴근과 근무 금액을 봅니다.';
 
   interface PostingActionItem extends ActionTileItem {
     visible: boolean;
@@ -670,42 +719,36 @@ export default function JobPostingDetailScreen() {
       onPress: handleLiveOps,
       testID: 'job-posting-live-ops',
     },
+    // 🔑 이름은 대상 기준이다 — "관리" 로 끝나는 타일이 셋이라 서로 구분되지 않았다.
     {
       key: 'applicants',
       visible: true,
       icon: <UsersIcon size={18} color={SECONDARY_PALETTE[500]} />,
-      title: '지원자 관리',
+      title: '지원자',
       description:
         pendingApplicants > 0
           ? `${pendingApplicants}명의 지원자가 대기중입니다.`
           : '지원자 목록을 확인합니다.',
       badge:
-        pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined,
+        pendingApplicants > 0
+          ? { label: `${pendingApplicants}명 대기`, variant: 'warning' }
+          : undefined,
       onPress: handleApplicants,
       testID: 'job-posting-manage-applicants',
     },
-    {
-      key: 'cancellationRequests',
-      visible: !isFixed,
-      icon: <XCircleIcon size={18} color={STATUS_COLORS.error} />,
-      title: '취소 요청 관리',
-      description: '스태프의 취소 요청을 검토합니다.',
-      badge:
-        cancellationPendingCount > 0
-          ? { label: `${cancellationPendingCount}건`, variant: 'error' }
-          : undefined,
-      onPress: handleCancellationRequests,
-      testID: 'job-posting-manage-cancellation-requests',
-    },
+    // [근무] — 옛 '스태프 관리/정산'. 취소 요청 타일은 여기로 흡수됐다(도착지 맨 위 한 줄).
+    // 🚨 배지를 대기 지원자와 합치지 않는다 — `할 일 6` 으로 뭉치면 눌러 봐야 무엇인지 안다.
+    // 🚨 상시 공고에서도 숨기지 않는다 — 자리가 공고 종류에 따라 움직이면 "메뉴가 없어졌다" 로 읽힌다.
+    //    도착지가 근무표로 안내한다. testID 는 e2e 가 쓰므로 옛 이름을 유지한다.
     {
       key: 'settlements',
-      visible: !isFixed,
-      icon: <BanknotesIcon size={18} color={STATUS_COLORS.success} />,
-      title: '스태프 관리/정산',
-      description: '배정된 스태프 관리와 정산을 진행합니다.',
+      visible: true,
+      icon: <ClockIcon size={18} color={STATUS_COLORS.success} />,
+      title: '근무',
+      description: workDescription,
       badge:
-        pendingSettlementCount > 0
-          ? { label: `정산 ${pendingSettlementCount}건`, variant: 'warning' }
+        !isFixed && cancellationPendingCount > 0
+          ? { label: `취소요청 ${cancellationPendingCount}`, variant: 'error' }
           : undefined,
       onPress: handleSettlements,
       testID: 'job-posting-manage-settlements',
@@ -723,44 +766,15 @@ export default function JobPostingDetailScreen() {
       onPress: handleEdit,
       testID: 'job-posting-edit-button',
     },
-    {
-      key: 'apply-qr',
-      // 🔑 상시 노출한다. 예전엔 "지원자 0명" 빈 상태 카드 안에만 있어서 **첫 지원자가
-      //    들어오는 순간 사라졌다** — 정작 더 모으고 싶을 때 진입점이 없어지는 셈이었다.
-      visible: true,
-      icon: <ShareIcon size={18} color={SECONDARY_PALETTE[500]} />,
-      title: '지원 QR',
-      // 🚨 '지원'을 앞에 둔다 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다.
-      description: '매장·홍보물에 붙이면 찍는 사람에게 공고가 바로 열립니다.',
-      onPress: handleShowApplyQR,
-      testID: 'job-posting-apply-qr',
-    },
-    {
-      key: 'announce',
-      // 배정된 스태프가 있어야 보낼 대상이 있다 — 0명일 때 띄우면 눌러 봐야 빈 화면이다.
-      visible: filledPositions > 0,
-      icon: <UsersIcon size={18} color={SECONDARY_PALETTE[500]} />,
-      title: '스태프 공지',
-      description: '확정된 스태프 전원에게 한 번에 안내를 보냅니다.',
-      onPress: handleAnnounce,
-      testID: 'job-posting-announce',
-    },
-    {
-      key: 'collaborators',
-      visible: true,
-      icon: <UserPlusIcon size={18} color={SECONDARY_PALETTE[500]} />,
-      title: '함께 관리할 사람',
-      description: '이 공고를 함께 관리할 사람을 추가하거나 제거합니다.',
-      onPress: handleCollaborators,
-      testID: 'job-posting-manage-collaborators',
-    },
+    // 지원 QR 은 헤더 `공유` 시트, 함께 관리할 사람은 헤더 `⋯` 시트, 스태프 공지는 [근무] 헤더
+    // `메시지` 로 옮겼다(구인자 IA S1). 매일 누르는 타일만 여기에 둔다.
   ];
 
   const actionItems = allActionItems.filter((item) => item.visible);
 
   const primaryItem = actionItems.find((item) => item.key === primaryCardKey);
   // 🚨 승격돼도 목록에서 빼지 않는다. 빼면 진입점 자리가 신호에 따라 움직인다 — 정산 대기가
-  //    한 건이라도 생기는 순간 '스태프 관리/정산' 이 "관리" 에서 통째로 사라져, 사장은 늘 있던
+  //    한 건이라도 생기는 순간 [근무] 가 "관리" 에서 통째로 사라져, 사장은 늘 있던
   //    자리를 훑고는 "메뉴가 없어졌다" 고 읽는다(실사고 제보). "지금 할 일" 은 알림이고 "관리"
   //    는 진입점 목록이라 역할이 다르므로, 같은 목적지가 둘 다 있는 편이 맞다.
   //    종전 제외 사유였던 testID 중복은 승격 카드에 전용 testID 를 줘서 끊는다.
@@ -773,31 +787,32 @@ export default function JobPostingDetailScreen() {
         fallbackHref="/(app)/(tabs)/employer"
         rightAction={
           <View className="flex-row items-center">
-            {/* 구직자 시선 미리보기 — 내 공고가 어떻게 보이는지 확인할 길이 없었다.
-                도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 미리보기가 수치를 부풀리지 않는다. */}
+            {/* 공유 시트 — 링크 공유 · 지원 QR · 구직자 화면 보기. 옛 눈 아이콘(미리보기)과
+                `지원 QR` 타일이 여기로 들어왔다. */}
             <Pressable
-              onPress={handlePreview}
-              hitSlop={8}
-              className="p-2"
-              accessibilityRole="button"
-              accessibilityLabel="구직자에게 보이는 화면 미리보기"
-              testID="job-posting-preview"
-            >
-              <EyeIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
-            </Pressable>
-            <Pressable
-              onPress={handleShare}
+              onPress={() => setShareSheetVisible(true)}
               disabled={isSharing}
               hitSlop={8}
               className="p-2"
               accessibilityRole="button"
-              accessibilityLabel="공고 공유하기"
+              accessibilityLabel="공유 메뉴 열기"
+              testID="job-posting-share"
             >
               <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
             </Pressable>
             {/* 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
                 판정은 컨텍스트 하나 — 형제 화면 4곳과 같은 값을 쓰므로 탭을 옮겨도 버튼이 깜빡이지 않는다. */}
             <HeaderQRAction onPress={handleShowQR} />
+            <Pressable
+              onPress={() => setMoreSheetVisible(true)}
+              hitSlop={8}
+              className="p-2"
+              accessibilityRole="button"
+              accessibilityLabel="더보기 메뉴 열기"
+              testID="job-posting-more"
+            >
+              <EllipsisHorizontalIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
+            </Pressable>
           </View>
         }
       />
@@ -1024,11 +1039,7 @@ export default function JobPostingDetailScreen() {
 
         {/* 오늘 근무가 있을 때만 뜬다(TodayOpsStrip 자체 가드). 고정 공고는 위 훅에서 이미 제외. */}
         <View className="mt-3">
-          <TodayOpsStrip
-            todayGroup={todayGroup}
-            pendingSettlementCount={pendingSettlementCount}
-            onPressSettlement={handleSettlements}
-          />
+          <TodayOpsStrip todayGroup={todayGroup} />
         </View>
 
         {/* 지원자 0명 — "0명이 대기중입니다"는 상태 보고일 뿐 다음 행동이 없다.
@@ -1243,6 +1254,22 @@ export default function JobPostingDetailScreen() {
         description={statusHint ?? undefined}
         options={statusSheetOptions}
         onSelect={handleStatusSelect}
+      />
+
+      <ActionSheet
+        visible={shareSheetVisible}
+        onClose={() => setShareSheetVisible(false)}
+        title="공유"
+        options={SHARE_SHEET_OPTIONS}
+        onSelect={handleShareSheetSelect}
+      />
+
+      <ActionSheet
+        visible={moreSheetVisible}
+        onClose={() => setMoreSheetVisible(false)}
+        title="더보기"
+        options={MORE_SHEET_OPTIONS}
+        onSelect={handleMoreSheetSelect}
       />
     </SafeAreaView>
   );

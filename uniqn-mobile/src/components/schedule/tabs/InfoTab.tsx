@@ -5,7 +5,6 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { Badge } from '@/components/ui';
 import {
   DocumentIcon,
   MapPinIcon,
@@ -36,9 +35,7 @@ import { composeFullAddress, resolveMapQuery } from '@/utils/mapLink';
 import { DirectionsButton } from '../DirectionsButton';
 import { ContactActions } from '../ContactActions';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS } from '@/constants/statusConfig';
-import { toSettlementDisplayStatus } from '@/shared/status';
-import type { ScheduleEvent, PayrollStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
 
 export interface InfoTabProps {
@@ -84,8 +81,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const timeDisplay = getTimeDisplay(schedule);
   const ownerName = schedule.postingProjection?.ownerName;
   const description = schedule.postingProjection?.description;
-  const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const payrollStatusConfig = PAYROLL_STATUS[toSettlementDisplayStatus(payrollStatus)];
 
   /**
    * 표시할 급여 — 근거가 없으면 null (감사 3-1).
@@ -471,14 +466,11 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {/* 금액은 정산 탭이 단일 소스다. 예전엔 여기가 재계산치(settlementBreakdown)를
               큰 글씨로, 정산 탭은 확정액(payrollAmount)을 큰 글씨로 띄워서 서로 다른 두
               숫자가 나란히 보였다 — "어느 게 받을 돈인지"를 사용자가 판정하게 만든 것이다.
-              여기서는 상태만 말하고 금액은 정산 탭으로 넘긴다. */}
-          <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+              구인자 IA S2b — 지급 상태 배지도 없앴다. 앱은 돈을 보내지 않는다. */}
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
             <Text className="text-sm text-content-secondary font-sans">
               금액은 정산 탭에서 확인할 수 있어요
             </Text>
-            <Badge variant={payrollStatusConfig.variant} size="sm">
-              {payrollStatusConfig.label}
-            </Badge>
           </View>
         </Section>
       )}

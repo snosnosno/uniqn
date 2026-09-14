@@ -1,8 +1,8 @@
 /**
- * UNIQN Mobile - 정산 모달 상태 관리 훅
+ * UNIQN Mobile - [근무] 화면 모달 상태 관리 훅
  *
  * @description settlements.tsx에서 추출된 모달 상태/핸들러 관리
- * @version 1.0.0
+ * @version 2.0.0 - 구인자 IA S2: 지급 완료 확인·지급 완료 취소 모달 상태 제거
  */
 
 import { useState, useCallback } from 'react';
@@ -10,54 +10,31 @@ import type { WorkLog, ConfirmedStaff, GroupedSettlement } from '@/types';
 
 const MODAL_TRANSITION_DELAY_MS = 300;
 
-interface SettleConfirmState {
-  visible: boolean;
-  workLog: WorkLog | null;
-  workLogs: WorkLog[];
-  amount: number;
-  isBulk: boolean;
-}
-
-const INITIAL_SETTLE_CONFIRM: SettleConfirmState = {
-  visible: false,
-  workLog: null,
-  workLogs: [],
-  amount: 0,
-  isBulk: false,
-};
-
 export function useSettlementModals() {
-  // 시간 수정 모달
+  // 근무 수정 시트
   const [selectedWorkLog, setSelectedWorkLog] = useState<WorkLog | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  // 정산 상세 모달
+  // 계산 근거 모달
   const [selectedWorkLogForDetail, setSelectedWorkLogForDetail] = useState<WorkLog | null>(null);
   const [selectedGroupForDetail, setSelectedGroupForDetail] = useState<GroupedSettlement | null>(
     null
   );
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
-  // 정산 확인 모달
-  const [settleConfirm, setSettleConfirm] = useState<SettleConfirmState>(INITIAL_SETTLE_CONFIRM);
-
   // 스태프 관리 모달 — 역할 변경 모달은 통합 편집 시트로 흡수돼 사라졌다.
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-  // 정산 금액 수정 모달
+  // 근무 금액 수정 모달
   const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
   const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<WorkLog | null>(null);
 
-  // 지급 완료 취소 (SETTLE-3)
-  const [isRevertModalVisible, setIsRevertModalVisible] = useState(false);
-  const [selectedWorkLogForRevert, setSelectedWorkLogForRevert] = useState<WorkLog | null>(null);
-
-  // 정산 설정 모달
+  // 급여 설정 모달
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
-  // --- 상세 모달 핸들러 ---
+  // --- 계산 근거 모달 핸들러 ---
 
   const openDetailModal = useCallback((workLog: WorkLog, group: GroupedSettlement) => {
     setSelectedWorkLogForDetail(workLog);
@@ -75,7 +52,7 @@ export function useSettlementModals() {
     setSelectedWorkLogForDetail(workLog);
   }, []);
 
-  // --- 시간 수정 모달 (상세 모달 전환) ---
+  // --- 근무 수정 시트 (계산 근거에서 전환) ---
 
   const openEditTimeFromDetail = useCallback((workLog: WorkLog) => {
     setIsDetailModalVisible(false);
@@ -91,7 +68,7 @@ export function useSettlementModals() {
     setSelectedWorkLog(null);
   }, []);
 
-  // --- 금액 수정 모달 (상세 모달 전환) ---
+  // --- 금액 수정 모달 (계산 근거에서 전환) ---
 
   const openEditAmountFromDetail = useCallback((workLog: WorkLog) => {
     setIsDetailModalVisible(false);
@@ -105,49 +82,6 @@ export function useSettlementModals() {
   const closeEditAmountModal = useCallback(() => {
     setIsEditAmountModalVisible(false);
     setSelectedWorkLogForEdit(null);
-  }, []);
-
-  // --- 지급 완료 취소 모달 (상세 모달 전환, SETTLE-3) ---
-
-  const openRevertFromDetail = useCallback((workLog: WorkLog) => {
-    setIsDetailModalVisible(false);
-    setSelectedWorkLogForDetail(null);
-    setTimeout(() => {
-      setSelectedWorkLogForRevert(workLog);
-      setIsRevertModalVisible(true);
-    }, MODAL_TRANSITION_DELAY_MS);
-  }, []);
-
-  const closeRevertModal = useCallback(() => {
-    setIsRevertModalVisible(false);
-    setSelectedWorkLogForRevert(null);
-  }, []);
-
-  // --- 정산 확인 모달 ---
-
-  const openSettleConfirm = useCallback((state: SettleConfirmState) => {
-    setSettleConfirm(state);
-  }, []);
-
-  const openSettleFromDetail = useCallback(
-    (workLog: WorkLog, amount: number) => {
-      setIsDetailModalVisible(false);
-      setSelectedWorkLogForDetail(null);
-      setTimeout(() => {
-        openSettleConfirm({
-          visible: true,
-          workLog,
-          workLogs: [],
-          amount,
-          isBulk: false,
-        });
-      }, MODAL_TRANSITION_DELAY_MS);
-    },
-    [openSettleConfirm]
-  );
-
-  const closeSettleConfirm = useCallback(() => {
-    setSettleConfirm(INITIAL_SETTLE_CONFIRM);
   }, []);
 
   // --- 스태프 관리 모달 ---
@@ -173,11 +107,11 @@ export function useSettlementModals() {
   }, []);
 
   return {
-    // 시간 수정
+    // 근무 수정
     selectedWorkLog,
     isEditModalVisible,
     closeEditModal,
-    // 상세
+    // 계산 근거
     selectedWorkLogForDetail,
     selectedGroupForDetail,
     isDetailModalVisible,
@@ -190,16 +124,6 @@ export function useSettlementModals() {
     isEditAmountModalVisible,
     openEditAmountFromDetail,
     closeEditAmountModal,
-    // 지급 완료 취소
-    selectedWorkLogForRevert,
-    isRevertModalVisible,
-    openRevertFromDetail,
-    closeRevertModal,
-    // 정산 확인
-    settleConfirm,
-    openSettleConfirm,
-    openSettleFromDetail,
-    closeSettleConfirm,
     // 스태프 관리
     showReportModal,
     selectedStaff,

@@ -1,8 +1,8 @@
 /**
- * UNIQN Mobile - 정산 상세 모달
+ * UNIQN Mobile - 계산 근거 모달
  *
- * @description 근무 기록 상세 정보 및 정산 관리 모달
- * @version 2.0.0 - 서브컴포넌트 분리 (모듈화)
+ * @description 근무 한 건의 출근·퇴근·인정 근무·단가·합계와 변경 이력
+ * @version 3.0.0 - 구인자 IA S2: 지급 완료 표시·지급 완료 취소·완료 배너 제거. 금액 계산·표시만 남긴다.
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
@@ -26,13 +26,13 @@ import { SettlementAmountSection } from './SettlementAmountSection';
 import { TimeModificationHistory } from './TimeModificationHistory';
 import { AmountModificationHistory } from './AmountModificationHistory';
 import { SettlementActionButtons } from './SettlementActionButtons';
-import { SettlementCompletedBanner } from './SettlementCompletedBanner';
 
 // Types
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
 import type { SettlementDetailModalProps } from './types';
 import { getReviewTextFallback } from '@/types/review';
+import { SHEET_DISMISS_ANIMATION_MS } from '@/constants/animation';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo } from '@/utils/settlement';
@@ -51,16 +51,12 @@ export function SettlementDetailModal({
   taxSettings,
   onEditTime,
   onEditAmount,
-  onSettle,
-  onRevertSettlement,
   groupedSettlement,
   onDateChange,
   jobPostingTitle,
 }: SettlementDetailModalProps) {
-  // 다크모드 감지
   const { isDarkMode: isDark } = useThemeStore();
 
-  // 사용자 프로필 조회
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
@@ -74,9 +70,6 @@ export function SettlementDetailModal({
   const [isTimeHistoryExpanded, setIsTimeHistoryExpanded] = useState(false);
   const [isAmountHistoryExpanded, setIsAmountHistoryExpanded] = useState(false);
 
-  // ============================================================================
-  // 날짜 네비게이션 로직 (훅 사용)
-  // ============================================================================
   const {
     isGroupMode,
     currentDateIndex,
@@ -87,7 +80,6 @@ export function SettlementDetailModal({
     handleNextDate,
   } = useSettlementDateNavigation(workLog, groupedSettlement, onDateChange);
 
-  // 계산된 값들
   const startTime = useMemo(
     () => (workLog ? parseTimestamp(workLog.checkInTime) : null),
     [workLog]
@@ -96,7 +88,7 @@ export function SettlementDetailModal({
   const workDate = useMemo(() => (workLog ? parseTimestamp(workLog.date) : null), [workLog]);
 
   // 예정시간(timeSlot) — 실제 출퇴근 기록이 없을 때 표시용 폴백.
-  // 정산 금액/정산 버튼은 실제시간(hasValidTimes)에만 의존하므로 정산 정확성에는 영향 없음.
+  // 금액은 실제시간(hasValidTimes)에만 의존하므로 계산 정확성에는 영향 없음.
   const scheduledTimes = useMemo(
     () => parseTimeSlotToDate(workLog?.timeSlot ?? null, workLog?.date ?? ''),
     [workLog?.timeSlot, workLog?.date]
@@ -110,36 +102,25 @@ export function SettlementDetailModal({
 
   const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
 
-  const payrollStatus = (workLog?.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const hasValidTimes = startTime && endTime;
+  const hasValidTimes = Boolean(startTime && endTime);
 
-  // 🔴 `payrollStatus` 는 3값(`pending | completed | failed`)이다. 특별한 것은 completed 하나뿐이고
-  //    **failed 는 pending 과 같이** 다룬다 — 정산이 실패한 건이야말로 고쳐서 다시 정산해야 한다.
-  //    (예전 게이트는 `=== PENDING` 이라 failed 가 액션 줄을 통째로 잃었다.)
-  const isSettled = payrollStatus === STATUS.PAYROLL.COMPLETED;
+  // 🔴 과거에 `지급 완료` 로 처리된 근무는 그때 확정된 금액이 진실원이다(동결값 SSOT —
+  //    `settlementGrouping.shouldUseFrozenPayrollAmount`). 지급 워크플로우는 없앴지만 그 금액까지
+  //    다시 계산하면 이미 보낸 금액과 화면 금액이 달라진다. 그래서 금액 수정만 닫아 둔다.
+  //    (서버 `protect_work_log_payroll_columns()` 도 이 행의 금액 컬럼을 잠근다.)
+  const hasFrozenAmount = workLog?.payrollStatus === STATUS.PAYROLL.COMPLETED;
 
-  // 🔴 정산 완료 건도 '시간 수정'으로 들어간다(D4·D2) — 시트가 **읽기 전용 모드**로 열려
-  //    거절 이유를 말한다. 세 진입점(근무표·스태프관리·정산)이 같은 답을 주게 하는 것이 목적이다.
-  //    다만 연 것은 **열람뿐**이라 금액 수정·지급 완료는 그대로 닫아 둔다.
   // ⚠️ 그려질 버튼을 미리 세지 않으면 `SettlementActionButtons` 가 자식 없는 껍데기(px-4 py-4)만
-  //    남긴다 — 정산 완료 + onEditTime 미배선 호출부에서 빈 여백이 된다.
+  //    남긴다 — 확정 금액 행 + onEditTime 미배선 호출부에서 빈 여백이 된다.
   const showsEditTime = Boolean(onEditTime);
-  const showsEditAmount = !isSettled && Boolean(hasValidTimes) && Boolean(onEditAmount);
-  const showsSettle = !isSettled && Boolean(hasValidTimes) && Boolean(onSettle);
-  const hasVisibleActions = showsEditTime || showsEditAmount || showsSettle;
+  const showsEditAmount = !hasFrozenAmount && hasValidTimes && Boolean(onEditAmount);
+  const hasVisibleActions = showsEditTime || showsEditAmount;
 
-  // 핸들러
   const handleEditTime = useCallback(() => {
     if (workLog && onEditTime) {
       onEditTime(workLog);
     }
   }, [workLog, onEditTime]);
-
-  const handleSettle = useCallback(() => {
-    if (workLog && onSettle) {
-      onSettle(workLog);
-    }
-  }, [workLog, onSettle]);
 
   const handleEditAmount = useCallback(() => {
     if (workLog && onEditAmount) {
@@ -147,18 +128,42 @@ export function SettlementDetailModal({
     }
   }, [workLog, onEditAmount]);
 
-  const handleRevertSettlement = useCallback(() => {
-    if (workLog && onRevertSettlement) {
-      onRevertSettlement(workLog);
-    }
-  }, [workLog, onRevertSettlement]);
+  // 🔑 평가는 **끝난 근무**에 연다. 예전엔 `지급 완료` 에 묶여 있어서, 지급 완료 버튼을 없애면
+  //    구인자 쪽 평가 진입점이 영영 안 뜨게 된다. 서버 `create_review` 는 지급 상태를 보지 않는다.
+  const handleWriteReview = useCallback(() => {
+    if (!workLog) return;
+    onClose();
+    setTimeout(() => {
+      router.push({
+        pathname: '/(app)/reviews/write',
+        params: {
+          workLogId: workLog.id,
+          revieweeId: workLog.staffId,
+          revieweeName: getReviewTextFallback(
+            displayName,
+            workLog.staffName,
+            workLog.staffNickname,
+            '스태프'
+          ),
+          reviewerType: 'employer',
+          jobPostingId: workLog.jobPostingId,
+          jobPostingTitle: getReviewTextFallback(
+            jobPostingTitle,
+            (workLog as WorkLog & { jobPostingName?: string }).jobPostingName,
+            '공고'
+          ),
+          workDate: workLog.date || '',
+        },
+      });
+      // 시트가 닫힌 뒤 넘어간다 — 두 화면 전환이 겹치지 않게(대기 값은 animation.ts SSOT).
+    }, SHEET_DISMISS_ANIMATION_MS);
+  }, [workLog, onClose, displayName, jobPostingTitle]);
 
   if (!workLog) return null;
 
   return (
-    <SheetModal visible={visible} onClose={onClose} title="정산 상세">
+    <SheetModal visible={visible} onClose={onClose} title="계산 근거">
       <View className="px-4">
-        {/* 날짜 네비게이션 (그룹 모드일 때만) */}
         {isGroupMode && workLog.date && (
           <DateNavigationHeader
             workLogDate={workLog.date}
@@ -172,18 +177,15 @@ export function SettlementDetailModal({
           />
         )}
 
-        {/* 프로필 헤더 */}
         <StaffProfileHeader
           profilePhotoURL={profilePhotoURL}
           profilePhotoURLBlurhash={profilePhotoURLBlurhash}
           displayName={displayName}
-          payrollStatus={payrollStatus}
           role={workLog.role}
           customRole={workLog.customRole}
           workDate={workDate}
         />
 
-        {/* 근무 시간 섹션 */}
         <WorkTimeSection
           startTime={startTime}
           endTime={endTime}
@@ -201,7 +203,6 @@ export function SettlementDetailModal({
           })}
         />
 
-        {/* 정산 금액 섹션 */}
         {hasValidTimes && settlement && (
           <SettlementAmountSection
             salaryInfo={salaryInfo}
@@ -210,90 +211,58 @@ export function SettlementDetailModal({
           />
         )}
 
-        {/* 시간 수정 이력 섹션 */}
+        {/* 퇴근 전 — 추정 금액을 만들지 않고, 무엇이 있어야 정해지는지 말한다. */}
+        {!hasValidTimes && (
+          <View className="mx-4 mb-3 rounded-lg bg-surface-page p-3 dark:bg-surface">
+            <Text className="text-center text-sm text-content-muted dark:text-secondary-400 font-sans">
+              퇴근을 찍어야 금액이 정해져요
+            </Text>
+          </View>
+        )}
+
+        {hasFrozenAmount && (
+          <View
+            testID="settlement-frozen-note"
+            className="mx-4 mb-3 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20"
+          >
+            <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
+              예전에 확정된 금액이라 다시 계산하지 않아요.
+            </Text>
+          </View>
+        )}
+
         <TimeModificationHistory
           modificationHistory={workLog.modificationHistory || []}
           isExpanded={isTimeHistoryExpanded}
           onToggle={() => setIsTimeHistoryExpanded(!isTimeHistoryExpanded)}
         />
 
-        {/* 금액 수정 이력 섹션 */}
         <AmountModificationHistory
           settlementModificationHistory={workLog.settlementModificationHistory || []}
           isExpanded={isAmountHistoryExpanded}
           onToggle={() => setIsAmountHistoryExpanded(!isAmountHistoryExpanded)}
         />
 
-        {/* 정산 완료 표시 + 평가 버튼 */}
-        {payrollStatus === STATUS.PAYROLL.COMPLETED && (
-          <>
-            <SettlementCompletedBanner payrollDate={workLog.payrollDate} />
-            <View className="px-4 pb-2">
-              <Pressable
-                onPress={() => {
-                  onClose();
-                  setTimeout(() => {
-                    router.push({
-                      pathname: '/(app)/reviews/write',
-                      params: {
-                        workLogId: workLog.id,
-                        revieweeId: workLog.staffId,
-                        revieweeName: getReviewTextFallback(
-                          displayName,
-                          workLog.staffName,
-                          workLog.staffNickname,
-                          '스태프'
-                        ),
-                        reviewerType: 'employer',
-                        jobPostingId: workLog.jobPostingId,
-                        jobPostingTitle: getReviewTextFallback(
-                          jobPostingTitle,
-                          (workLog as WorkLog & { jobPostingName?: string }).jobPostingName,
-                          '공고'
-                        ),
-                        workDate: workLog.date || '',
-                      },
-                    });
-                  }, 300);
-                }}
-                className="flex-row items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 active:opacity-80 dark:border-primary-800 dark:bg-primary-900/20"
-                accessibilityLabel="스태프 평가하기"
-                accessibilityRole="button"
-              >
-                <Text className="text-sm font-sans-medium text-primary-700 dark:text-primary-300">
-                  평가 남기기
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* 지급 완료 취소 (SETTLE-3) — 오지급 정정의 유일한 진입점.
-                파괴적이라 위계를 낮춘 텍스트 버튼으로 두고, 실제 확인·사유는 다음 모달이 받는다. */}
-            {onRevertSettlement && (
-              <View className="px-4 pb-2">
-                <Pressable
-                  onPress={handleRevertSettlement}
-                  hitSlop={8}
-                  className="min-h-[44px] flex-row items-center justify-center rounded-lg px-4 py-3 active:bg-surface-hover dark:active:bg-surface-hover"
-                  accessibilityLabel="지급 완료 취소"
-                  accessibilityHint="정산 대기 상태로 되돌려 금액과 시간을 다시 수정할 수 있게 합니다"
-                  accessibilityRole="button"
-                >
-                  <Text className="text-sm font-sans-medium text-error-600 dark:text-error-400">
-                    지급 완료 취소
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-          </>
+        {hasValidTimes && (
+          <View className="px-4 pb-2">
+            <Pressable
+              onPress={handleWriteReview}
+              className="flex-row items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 active:opacity-80 dark:border-primary-800 dark:bg-primary-900/20"
+              accessibilityLabel="스태프 평가하기"
+              accessibilityRole="button"
+            >
+              <Text className="text-sm font-sans-medium text-primary-700 dark:text-primary-300">
+                평가 남기기
+              </Text>
+            </Pressable>
+          </View>
         )}
 
-        {/* 액션 버튼 — 시간 수정은 항상, 금액 수정·지급 완료는 미정산·정산 실패일 때만 */}
         {hasVisibleActions && (
           <SettlementActionButtons
             testID="settlement-actions"
             onEditTime={showsEditTime ? handleEditTime : undefined}
             onEditAmount={showsEditAmount ? handleEditAmount : undefined}
-            onSettle={showsSettle ? handleSettle : undefined}
           />
         )}
 
