@@ -400,3 +400,11 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 신규 `decisions/knowledge-layer-budget.md` — MEMORY.md 예산 초과 7회의 원인 규명(완료분 `✅` 적체 15건=3,212자)과 결정 4건(완료 즉시 이동·섹션 분리·경고의 원인지목·색인은 범위를 좁힌다).
 - 신규 `sources/memory-live-traps-2026-08.md` — 졸업/잔류 대조표.
 - 실측: MEMORY.md 18,288자(131%) → 12,568자(90%) · 옵시디언 색인 11,548자(237중 126 노출) → 10,457자(124 전량) · graphify 재색인 12,440노드.
+
+## [2026-09-15] ingest | 구인자 IA 재설계 웨이브(S1~S5) 졸업 — 진입점 불변 규칙
+- 신규 `sources/employer-ia-redesign-2026-09.md` — PR#490·#492·#493·#494·#495 착지표 · 설계 요점(지원자↔근무 비합병 · 정산 워크플로우만 제거 · 출처 제목 RPC 무변경 · viewer 노쇼 안내 경로) · 접근성 3종 · 운영 교훈(괄호 경로 jest 무음 0 suites · 정션 해제 후 워크트리 제거 · 자동 삭제된 원격 브랜치 422) · 잔여 게이트.
+- 신규 `decisions/entry-point-stability.md` — 사장은 메뉴를 위치로 기억한다(실사고 `my-postings/[id]/index.tsx:778`). 숨김은 0개일 때만, 입구가 필요하면 같은 자리에서 바꾼다 · 배지 비합병 · 역할에 따른 의미 예외(`팀 보기` 소유자 전용).
+- 갱신 `decisions/semantic-merge-conflicts.md` — §스택 PR 착지(squash 저장소: 위 PR 베이스=아래 브랜치 → 아래 머지 → merge 재통합 → diff 파일 수 대조 → 베이스 master 변경).
+- 갱신 `architecture/rls-model.md` — 협업자 manager/viewer 2단 + `get_applicant_no_show_counts` 의도적 완화와 그 조건(지정 안내), 되돌리는 방법.
+- 🚨 **모순 플래그 2건**: ① 기획 문서 `docs/planning/2026-09-13-employer-ia-session-prompts.md` §2 의 "N명/N개 이상일 때만" 3항목 + `GridBadgeLegend` 제거 검토 + §5 `cmd mklink` 가 실제 코드·결정과 다르다(raw 라 수정 안 함, sources 페이지에 표기) ② `semantic-merge-conflicts` 의 "branch protection 없음"(07-28)이 `e2e-gate-absence`(PR#432 활성화)와 모순 → 정정 절 추가.
+- 계기: S5 착지 직후 사용자 요청(웨이브 마지막 항목 "S5 가 끝나면 /ingest").
