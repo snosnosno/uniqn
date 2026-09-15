@@ -181,17 +181,22 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   // 정산 관련
   // =========================================================================
 
+  // ⚠️ 정본은 DB 트리거다 — 이 두 항목은 `notify_on_work_log_update`(Case 3 · 3-B)와
+  //    `bulk_settle_work_logs` 가 쓰는 문구의 사본이다. 한쪽만 고치면 조용히 갈라진다.
+  //    문구 계약: **앱은 돈을 보내지 않는다**. 확정한 것은 금액이지 지급이 아니다.
+  //    (마이그레이션 20260915122335_settlement_notify_copy_no_payment_claim.sql)
   [NotificationType.SETTLEMENT_COMPLETED]: {
-    title: '💰 정산 완료',
-    body: (d) => `"${d.jobTitle}" 정산이 완료되었습니다. 지급액: ${d.amount}원`,
+    title: '💰 정산 금액 확정',
+    body: (d) =>
+      `"${d.jobTitle}" 정산 금액이 ${d.amount}원으로 확정되었습니다. 실제 지급은 사장님과 정한 방법으로 이루어집니다.`,
     link: () => '/schedule',
     icon: '💰',
   },
 
   [NotificationType.SETTLEMENT_REVERTED]: {
-    title: '지급 완료 취소',
+    title: '정산 금액 확정 취소',
     body: (d) =>
-      `"${d.jobTitle}" 정산 지급 완료가 취소되어 정산 대기로 되돌아갔습니다. 지급액: ${d.amount}원`,
+      `"${d.jobTitle}" 정산 금액 확정(${d.amount}원)이 취소되어 정산 대기로 되돌아갔습니다.`,
     link: () => '/schedule',
     icon: '↩️',
   },
