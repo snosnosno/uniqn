@@ -67,9 +67,11 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
       });
       return;
     }
+    // 🔒 보기 전용도 지원자 노쇼 횟수는 본다(20260813150000 결정 주석). 협업자는 관리로 추가되므로
+    //    보기 전용이 되는 길은 이 확인창뿐이다 — 사장이 모르고 지정하지 않도록 여기서 알린다(#478).
     confirmAction({
       title: '보기 전용으로 바꿀까요?',
-      message: `${who}에게는 공고 열람만 남아요. 수정·지원자 확정·정산은 할 수 없어요.`,
+      message: `${who}에게는 공고 열람만 남아요. 수정·지원자 확정·정산은 할 수 없어요.\n이 사람도 지원자 노쇼 횟수를 봅니다.`,
       confirmText: '보기 전용으로',
       onConfirm: () => onChangeRole(collaborator.userId, 'viewer'),
     });
