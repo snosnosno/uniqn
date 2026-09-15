@@ -24,6 +24,15 @@ import { NotificationType } from '@/types/notification';
 const ROOT = join(__dirname, '..', '..', '..', '..', '..');
 const MIGRATION = 'supabase/migrations/20260915122335_settlement_notify_copy_no_payment_claim.sql';
 const NORMALIZER = 'src/services/notifications/internal/notificationMessageNormalizer.ts';
+/**
+ * 🔴 6번째 정본. `notificationService.test.ts` 가 FCM 영문 페이로드의 정규화 결과를
+ *    **완전 일치(toEqual)** 로 단언한다 — 문구를 바꾸면 이 파일이 깨진다.
+ *
+ * 이 파일을 여기 넣은 이유: 처음 문구를 바꿨을 때 이 테스트를 놓쳤고, 로컬에서 고른
+ * '영향권' 패턴(`notificationMessageNormalizer`)이 **파일명이 달라 매칭되지 않아**
+ * CI 에서야 빨개졌다. 정본 목록을 사람 기억이 아니라 이 파일에 둔다.
+ */
+const CONSUMER_TEST = 'src/services/notifications/__tests__/notificationService.test.ts';
 
 function readSource(relativePath: string): string {
   return readFileSync(join(ROOT, relativePath), 'utf8');
@@ -31,6 +40,7 @@ function readSource(relativePath: string): string {
 
 const sqlRaw = readSource(MIGRATION);
 const normalizer = readSource(NORMALIZER);
+const consumerTest = readSource(CONSUMER_TEST);
 
 /**
  * 주석(`--`)을 뺀 실행 SQL.
@@ -132,6 +142,13 @@ describe('정산 알림 문구 — 정본 패리티', () => {
       expect(normalizer).toContain(SETTLED_TAIL);
       expect(normalizer).toContain("title: '정산 금액 확정'");
       expect(normalizer).not.toContain('정산이 완료되었습니다');
+    });
+
+    it('🔴 notificationService.test 의 완전일치 단언도 같은 문구를 쓴다(6번째 정본)', () => {
+      // 이 테스트가 처음 문구 교체에서 누락돼 CI 에서만 빨개졌다. 정본 목록에 편입한다.
+      expect(consumerTest).toContain(SETTLED_TAIL);
+      expect(consumerTest).toContain("title: '정산 금액 확정'");
+      expect(consumerTest).not.toContain('정산이 완료되었습니다');
     });
   });
 });
