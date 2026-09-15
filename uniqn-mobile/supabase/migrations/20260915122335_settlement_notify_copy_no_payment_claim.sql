@@ -594,28 +594,40 @@ $fn$;
 --   notify_on_work_log_update postgres=X | service_role=X            (트리거 함수 — 직접 호출 없음)
 DO $verify$
 DECLARE
+  v_oid     oid;
   v_acl     text;
   v_secdef  boolean;
   v_config  text[];
 BEGIN
-  -- ── bulk_settle_work_logs ────────────────────────────────────────────────
-  SELECT COALESCE(array_to_string(p.proacl, ' | '), '(default: PUBLIC EXECUTE)'),
-         p.prosecdef, p.proconfig
-    INTO v_acl, v_secdef, v_config
-  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public' AND p.proname = 'bulk_settle_work_logs';
+  -- ── bulk_settle_work_logs(uuid[], text) ──────────────────────────────────
+  -- 🔑 시그니처를 못 박아 조회한다. `WHERE proname = '…'` 로 찾으면 나중에 같은 이름의
+  --    오버로드가 생겼을 때 `SELECT INTO` 가 (STRICT 가 없으므로) 순서 보장 없이 첫 행만
+  --    보고 **엉뚱한 오버로드의 권한을 검증하고 통과한다.** 지금은 오버로드가 없지만
+  --    (실측 확인) 조용히 무력화될 길을 열어둘 이유가 없다.
+  --    `to_regprocedure` 는 없으면 RAISE 대신 NULL 을 주므로 우리 문구로 실패할 수 있다.
+  v_oid := to_regprocedure('public.bulk_settle_work_logs(uuid[], text)');
+  IF v_oid IS NULL THEN
+    RAISE EXCEPTION 'bulk_settle_work_logs(uuid[], text) 가 없다 — CREATE OR REPLACE 가 적용되지 않았다';
+  END IF;
 
-  -- 🔴 NULL 구멍을 먼저 막는다. 함수가 없으면 v_acl 이 NULL 이고 `NULL NOT LIKE '…'` 는
-  --    TRUE 가 아니라 NULL 이라, IF 가 거짓으로 접혀 **가장 나쁜 경우(함수 미생성)가
-  --    조용히 통과한다.** 실제로 대조군 실행에서 이 구멍을 확인했다.
-  IF NOT FOUND OR v_acl IS NULL THEN
-    RAISE EXCEPTION 'bulk_settle_work_logs 가 public 에 없다 — CREATE OR REPLACE 가 적용되지 않았다';
+  SELECT array_to_string(p.proacl, ' | '), p.prosecdef, p.proconfig
+    INTO v_acl, v_secdef, v_config
+  FROM pg_proc p WHERE p.oid = v_oid;
+
+  -- 🔴 proacl 이 NULL 이면 "권한을 한 번도 명시하지 않은 기본 상태" = **PUBLIC 에 EXECUTE 가
+  --    열려 있다**는 뜻이다. 가장 나쁜 상태인데 NULL 이라 아래 어떤 LIKE 에도 안 걸린다.
+  --    (첫 판에서는 COALESCE 로 '(default: PUBLIC EXECUTE)' 라는 읽기 좋은 문자열로 바꿨는데,
+  --     그 sentinel 이 세 패턴 중 어디에도 매칭되지 않아 **읽기 좋게 만든 것이 가드를
+  --     무력화했다**. 리뷰에서 지목돼 실측으로 확인했다.)
+  IF v_acl IS NULL THEN
+    RAISE EXCEPTION 'bulk_settle_work_logs: proacl 이 기본값(NULL)으로 되돌아갔다 — PUBLIC 에 EXECUTE 가 열렸다';
   END IF;
 
   IF v_acl NOT LIKE '%authenticated=X%' THEN
     RAISE EXCEPTION 'bulk_settle_work_logs: authenticated EXECUTE 유실 — %', v_acl;
   END IF;
-  -- proacl 에서 PUBLIC 은 grantee 가 빈 문자열(`=X/postgres`)로 나타난다.
+  -- proacl 에서 PUBLIC 은 grantee 가 빈 문자열(`=X/postgres`)로 나타난다. 배열 맨 앞이면
+  -- `=%`, 중간·끝이면 앞에 반드시 `| ` 가 붙으므로 두 패턴이 세 위치를 모두 덮는다.
   IF v_acl LIKE '=%' OR v_acl LIKE '%| =%' OR v_acl LIKE '%anon=%' THEN
     RAISE EXCEPTION 'bulk_settle_work_logs: PUBLIC/anon 에 열렸다 — %', v_acl;
   END IF;
@@ -626,17 +638,22 @@ BEGIN
     RAISE EXCEPTION 'bulk_settle_work_logs: search_path 고정 유실 — %', v_config;
   END IF;
 
-  -- ── notify_on_work_log_update ────────────────────────────────────────────
-  SELECT COALESCE(array_to_string(p.proacl, ' | '), '(default: PUBLIC EXECUTE)'),
-         p.prosecdef, p.proconfig
-    INTO v_acl, v_secdef, v_config
-  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public' AND p.proname = 'notify_on_work_log_update';
-
-  IF NOT FOUND OR v_acl IS NULL THEN
-    RAISE EXCEPTION 'notify_on_work_log_update 가 public 에 없다 — CREATE OR REPLACE 가 적용되지 않았다';
+  -- ── notify_on_work_log_update() ──────────────────────────────────────────
+  -- ⚠️ 이 함수는 `RETURNS trigger` 라 Postgres 가 트리거 발화 밖의 직접 호출을 언어 차원에서
+  --    거부한다 — EXECUTE 가 PUBLIC 에 열려도 공격 경로가 아니다. 그래도 같은 가드를 두는 건
+  --    "권한이 기본값으로 되돌아갔다"가 **다른 것도 되돌아갔다는 신호**이기 때문이다.
+  v_oid := to_regprocedure('public.notify_on_work_log_update()');
+  IF v_oid IS NULL THEN
+    RAISE EXCEPTION 'notify_on_work_log_update() 가 없다 — CREATE OR REPLACE 가 적용되지 않았다';
   END IF;
 
+  SELECT array_to_string(p.proacl, ' | '), p.prosecdef, p.proconfig
+    INTO v_acl, v_secdef, v_config
+  FROM pg_proc p WHERE p.oid = v_oid;
+
+  IF v_acl IS NULL THEN
+    RAISE EXCEPTION 'notify_on_work_log_update: proacl 이 기본값(NULL)으로 되돌아갔다 — PUBLIC 에 EXECUTE 가 열렸다';
+  END IF;
   IF v_acl LIKE '=%' OR v_acl LIKE '%| =%' OR v_acl LIKE '%anon=%' THEN
     RAISE EXCEPTION 'notify_on_work_log_update: PUBLIC/anon 에 열렸다 — %', v_acl;
   END IF;
@@ -649,10 +666,7 @@ BEGIN
 
   -- ── 트리거가 여전히 이 함수에 붙어 있는가 (문구만 바꿨으니 붙어 있어야 한다) ──
   IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger t
-    JOIN pg_proc p ON p.oid = t.tgfoid
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'notify_on_work_log_update' AND NOT t.tgisinternal
+    SELECT 1 FROM pg_trigger t WHERE t.tgfoid = v_oid AND NOT t.tgisinternal
   ) THEN
     RAISE EXCEPTION 'notify_on_work_log_update 에 붙은 트리거가 없다 — 알림이 전부 멈춘다';
   END IF;
