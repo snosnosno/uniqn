@@ -22,6 +22,10 @@
 - [워크트리 리뷰 diff는 그 워크트리에서](pitfall_worktree_review_diff_wrong_checkout.md) — 메인 체크아웃 git diff=타 세션 워킹트리 비교→유령 대량삭제 오탐. git show(객체)는 안전, diff는 아님
 - [동봉된 회귀 가드는 pre-fix 코드에 돌려 red 확인 전 신뢰 금지](pitfall_regression_guard_not_red_on_prefix.md) — 판정단위>결함단위(삼항 전체 includes)·jest 전역 useSafeAreaInsets=0 목 2종 실측
 
+## pgTAP 검증 강도
+
+- [⭐컬럼단위 GRANT 는 `attacl` 로 · "방금 기록됐다" 는 캡처한 `clock_timestamp()` 하한으로](pattern_pgtap_tight_verification_attacl_and_captured_timestamp.md) — PR#497 실증 2종. 픽스처 블랭킷 GRANT(`pg_class.relacl`)가 `has_column_privilege` 를 항상 true 로 만들지만 컬럼 ACL 은 `pg_attribute.attacl` 에 남는다(`REVOKE ON TABLE` 은 컬럼 GRANT 까지 회수, 테스트가 마이그 문장 재현하면 tautology) · 고정 과거 상수 하한(`> '2026-01-01'`)은 "성공하기만 하면 통과" — 오염값(출근시각)도 통과했다
+
 ## RN 레이아웃
 
 - [flex:1 → maxHeight/flexShrink 전환 리뷰 레시피](pattern_rn_flex_to_flexshrink_review.md) — flexShrink 기본0→KAV로 부모 줄면 헤더가 위로 오버플로. insets 패딩은 배경 가진 View에
