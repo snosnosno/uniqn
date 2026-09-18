@@ -21,6 +21,27 @@
 --
 -- `CREATE OR REPLACE FUNCTION` 은 소유자·ACL·SECURITY 속성을 보존하므로 시그니처가 같은
 -- 이 교체에는 DROP/재부여가 필요 없다(20260915122335 와 같은 패턴).
+--
+-- ⚠️ 알려진 제약 부재 (이 마이그가 만든 것이 아니라 **선재 갭**이다 — 리뷰 지적 반영)
+--   하한(`check_in_scanned_at`)과 상한(`check_in_ts`)은 쓰기 경로가 다르다:
+--     · `check_in_scanned_at` — `work_logs_protect_qr_scan_timestamps`(20260909135618)가
+--       일반 사용자 UPDATE 를 차단한다. QR RPC(SECDEF) 와 service_role 만 쓴다.
+--     · `check_in_ts` — 그런 보호가 없다. 관리자가 `update_work_log_slot`
+--       (20260810100000)로 자유롭게 재설정할 수 있고, 그 RPC 는 `check_in_scanned_at` 을
+--       건드리지 않는다. 둘의 관계를 강제하는 CHECK·트리거도 없다(pg_constraint 실측).
+--   따라서 관리자가 `check_in_ts` 를 원본 스캔시각보다 16시간 이상 **이전으로** 옮기면
+--   구간이 역전되어(하한 > 상한) 그 근무는 자동 퇴근 후보에 걸리지 않는다.
+--
+--   🔑 다만 이것은 **회귀가 아니다**. 같은 시나리오에서 옛 구간
+--   `[check_in_ts, check_in_ts + 16h]` 도 퇴근 스캔시각을 이미 벗어나 0건이었다
+--   (2026-09-18 실측 대조: 역전 케이스 옛=0건 / 새=0건 동일, 그리고 도달 가능한
+--    퇴근 스캔시각 X >= check_in_scanned_at 범위에서 새 구간은 옛 구간을 포함한다 —
+--    관리자가 출근을 미래로 옮긴 케이스에서는 새 구간만 후보를 찾는다).
+--   즉 이 마이그는 어느 케이스에서도 후보를 잃지 않고, 두 케이스에서 되찾는다.
+--
+--   근본 해결은 관리자 출근시각 정정과 QR 원본 시각의 관계를 정하는 일이며
+--   (`update_work_log_slot` 이 `check_in_scanned_at` 을 함께 클램프할지 여부),
+--   제품 판단이 필요하므로 이 마이그 범위에 넣지 않는다. 후속 과제로 남긴다.
 
 CREATE OR REPLACE FUNCTION public.process_posting_qr_attendance(
   p_job_posting_id uuid,
