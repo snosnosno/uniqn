@@ -8,14 +8,20 @@
 
 ## 0. 이번 세션의 완료 조건 (exit proof)
 
-**끝났다고 말할 수 있는 상태:**
+**끝났다고 말할 수 있는 상태:** — ✅ **6/6 전부 충족 (2026-09-19 종결)**
 
-1. DB red 4건이 **닫혔거나**, 닫지 않기로 한 것은 **왜 남기는지 문서에 적혀** 있다
-2. `npm run quality` · `tsc --noEmit` · 영향권 jest · `db:reset && test:db` 가 이 세션에서 실행돼 결과가 기록됐다
-3. fable 리뷰(코드 + DB)를 받고 지적을 반영했다
-4. **PR #497 머지 완료**, 워크트리·브랜치 정리 완료
-5. 로컬 `master` 가 `origin/master` 와 일치
-6. **배포 체크리스트가 준비돼 있고 사전검증까지 끝나 있다** — 사람이 "가자"만 하면 되는 상태
+1. ✅ DB red **4건 전부 닫힘**. baseline 차분으로 귀책(마이그 제외/포함 두 번 실행), 신규 파손 0건.
+   남긴 red 없음 → "왜 남기는지" 항목은 해당 없음.
+2. ✅ 이 세션에서 실행·기록: `npm run quality` exit 0 · `npx tsc --noEmit` exit 0 ·
+   **전체** jest 691/691 suites·7753/7753 tests · `db:reset && test:db` 123 files/**1394** tests/PASS.
+   (영향권을 파일명 패턴으로 고르지 않고 전체를 돌렸다 — §7의 교훈 적용)
+3. ✅ fable 리뷰 2종 병렬 수령. code-reviewer = **APPROVE**(CRITICAL/HIGH 0, MEDIUM 1 + LOW 1),
+   database-reviewer = MEDIUM 1. **지적 3건 전부 반영**(상세는 §6-4 및 각 커밋 메시지).
+4. ✅ PR #497 **MERGED** = `e058f3215`. 원격 브랜치 삭제, 로컬 브랜치 삭제,
+   워크트리 제거(정션 4단계 준수 — 원본 818 무손상), 아카이브 태그 2개 원격 보존.
+5. ✅ 로컬 `master` = `origin/master` = `e058f3215` (ahead 0 / behind 0).
+6. ✅ §6 이 **실측 사실로 채워짐** — prod 사전검증(마이그 4건 미적용 확증·파리티 225/102 일치·
+   함대 갈림 판정) 완료. 사람이 "가자"만 하면 되는 상태.
 
 🔴 **하지 않는 것**: `prod-migrate` 실행 · OTA 발행 · 웹 배포. 전부 다음 단계다.
 
@@ -219,38 +225,90 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
 
 ---
 
-## 6. 배포 직전 상태 만들기 (실행은 하지 않는다)
+## 6. 배포 직전 상태 — ✅ **사실로 채움 (2026-09-19 실측)**
 
-머지·정리가 끝나면 **다음 세션이 바로 실행할 수 있게** 아래를 준비·검증만 해 둔다.
+> 이 절은 계획이 아니라 **실측 기록**이다. 다음 세션은 여기 값을 그대로 쓰고 판단을 반복하지 않는다.
+> 🔴 이번 세션에서 실행하지 않은 것: `prod-migrate` · OTA 발행 · 웹 배포. 전부 다음 단계다.
 
-### 6-1. prod 마이그 2건 — 사전 검증만
-- 대상: `20260915122335`(정산 알림 문구) · `20260915133500`(권한 하드닝)
-- **적용하지 말 것.** 대신 읽기 전용으로 사전 확인:
-```sql
--- prod 가 이미 안전한가 (하드닝 마이그는 prod 에서 no-op 이어야 한다)
-SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-WHERE n.nspname='public' AND p.prokind='f' AND has_function_privilege('anon', p.oid,'EXECUTE');
--- 26 이어야 함. 아니면 그 자체가 조사 대상
--- 알림 문구는 아직 옛 문구여야 정상(미적용 상태 확인)
-SELECT position('정산이 완료되었습니다' in prosrc) > 0 FROM pg_proc WHERE proname='notify_on_work_log_update';
-```
-- `mcp__supabase__list_migrations` 로 두 마이그가 **아직 없음**을 확인해 기록.
-- ⚠️ **기록이 없어도 함수는 있을 수 있다** — `pg_proc` 실측 병행.
+### 6-0. 착지 결과
 
-### 6-2. OTA / 웹배포 — 체크리스트만
-문서에 다음을 **사실로 채워** 남긴다(다음 세션이 판단을 반복하지 않게):
-- 머지 후 `origin/master` SHA
-- 현재 앱 `version`(=runtimeVersion 정책상 appVersion) — `uniqn-mobile/package.json`
-- 🚨 **함대 갈림** — 1.0.6 잔존 기기용으로 `ota/1.0.6-production` 트리에서 **한 번 더**
-  발행해야 하는지 판단 결과와 근거
-- 🚨 `eas update` 는 **shell env 만 평가**한다(`.env` 파일 안 읽음)
-- 🚨 `app_config` 는 반드시 `{ios, android, web}` 객체
-- 🚨 웹배포는 **메인 체크아웃에서만**(워크트리면 빈 번들) · `--branch=master` 명시
-  (detached HEAD 는 Preview 로 간다)
-- 🚨 배포 후 번들 검증 거짓음성 2종: 한글은 `\uXXXX` 이스케이프 · CDN 엣지캐시
-  → **대조군 동시검사**(`grep -F`)
+| 항목 | 값 |
+|---|---|
+| PR #497 | **MERGED** (2026-09-18T02:52:45Z) |
+| **머지 후 `origin/master`** | **`e058f3215`** — `fix(notify): 정산 알림 문구에서 송금 보증 제거 + 구인자 IA 후속 2건 (#497)` |
+| 로컬 `master` | **`e058f3215`** — ahead 0 / behind 0 (정렬 완료) |
+| 원격 브랜치 | `feat/employer-ia-followup` **삭제됨** |
+| 아카이브 태그 | `archive/employer-ia-followup-20260918` = `de734b729` (원격 push) · `archive/local-master-prewave-20260915` = `b67ad14b7` (정렬 전 로컬 master) |
+| 워크트리 | `T-HOLDEM-ia-followup` 제거 완료 — 정션 4단계 절차 준수, 원본 `node_modules` **818 → 818 무손상** |
+| DB red | **0건**. `db:reset && test:db` = 123 files / **1394 tests** / PASS |
+| CI (`de734b729`) | **14/14 pass** — DB Tests · E2E · Quality 5종 포함 |
 
----
+### 6-1. prod 마이그 **4건** 대기 — 사전 검증 완료 (적용하지 않았다)
+
+⚠️ 09-18 판은 2건으로 적었으나 이번 세션이 2건을 더 만들었다. **적용 순서 = 접두사 순**:
+
+| 마이그 | 내용 | 적용 시 함수/정책 증감 |
+|---|---|---|
+| `20260915122335` | 정산 알림 문구 송금보증 제거 | 0 (CREATE OR REPLACE 2종) |
+| `20260915133500` | 권한 하드닝 복원 | 0 (GRANT/REVOKE 전용) |
+| `20260918105900` | QR 퇴근 후보 하한 = 원본 스캔시각 | 0 (CREATE OR REPLACE 1종) |
+| `20260918110000` | 댓글 권한 검사를 핀 불변식보다 먼저 | 0 (트리거 재등록) |
+
+**`list_migrations` 실측**: prod 최신 = **`20260911053907`**(work_schedule_safety_contract). 위 4건 **전부 기록 없음**.
+🔑 **`pg_proc`·트리거 실측 병행**(기록이 없어도 오브젝트는 있을 수 있으므로) — 4건 모두 미적용 확증:
+
+| 읽기 전용 확인 | prod 실측 | 기대 | 판정 |
+|---|---|---|---|
+| anon 실행가능 public 함수 | **26** | 26 | ✅ `20260915133500` 은 prod 에서 **no-op**(레포만 열려 있었다) |
+| authenticated 거부 함수 | **77** | 77 | ✅ 동일 |
+| `notify_on_work_log_update` 에 구 문구(`정산이 완료되었습니다`) | **있음** | 있음 | ✅ `20260915122335` 미적용 |
+| `board_comments` pin 트리거 이름 | **`board_comment_pin_invariants`**(구 이름) | 구 이름 | ✅ `20260918110000` 미적용 |
+| `board_comments` attacl (authenticated UPDATE) | body,image_attachments,is_pinned,mentioned_user_ids,pinned_at,pinned_by,status,updated_at | 동일 8컬럼 | ✅ 새 pgTAP 단언이 prod 에도 유효 |
+| `board_comments` attacl (anon) | **0** | 0 | ✅ |
+
+⚠️ **레포↔prod 기록명 어긋남 재확인** — 9월 마이그 7건은 prod 에 **다른 접두사**로 이미 있다. 재적용 금지:
+`20260909135618`→prod `20260910163934` · `20260910002240`→`20260910003856` · `20260910104500`→`20260910103444` ·
+`20260910110000`→`20260910103943` · `20260910123553`→`20260910163945` · `20260910123555`→`20260910163957` ·
+`20260910153217`→`20260910164009`
+
+### 6-2. 파리티 — **장부와 prod 가 일치한다**
+
+- 새 기준선 = **함수 225 / 정책 102** (`parity_baseline_guard.test.sql`, 기계 마커 `PARITY_EXPECT_FUNCS=225` / `_POLICIES=102` 동시 갱신)
+- **prod 실측 = 225 / 102** — 정확히 일치. 대기 4건은 전부 증감 0이므로 **적용 후에도 불변**.
+- 따라서 `parity-smoke`(주간)는 이제 통과 상태다. 09-12 판이 남긴 "정책 11개 감소의 정체를 밝혀라"는 **규명 완료**:
+  차이의 전부는 장부에 누락된 9월 마이그 7건이고, 정책 −11 은 `20260910002240` 한 건에서
+  정책 순감 7 + **`DROP TABLE board_votes` 로 함께 사라진 `bv_*` 정책 4** 다.
+  (09-18 판이 지목한 `20260809140000` 은 원인이 아니다 — 이미 장부에 반영돼 있었다.)
+
+### 6-3. OTA / 웹 배포 — 사실값
+
+| 항목 | 값 (근거) |
+|---|---|
+| 앱 `version` | **1.0.7** (`uniqn-mobile/package.json`) |
+| `runtimeVersion` 정책 | `{ policy: 'appVersion' }` (`app.config.ts:449`) → OTA 대상 = **1.0.7 함대** |
+| version bump 필요? | **불필요** — 이 PR 에 `package.json`·`app.config.ts`·`ios/`·`android/`·`plugins/` 변경 **0건**(네이티브 무변경) |
+| 🚨 **1.0.6 함대 추가 발행 필요?** | **불필요**. 근거: 사용자가 보는 정산 알림 문구의 실질 정본은 **DB 트리거**다 — `20260915122335` 가 prod 에 적용되면 **1.0.6 포함 전 함대**가 새 문구를 그대로 렌더한다. 클라 사본 변경(`notificationMessageNormalizer.ts`)은 `normalizeNotification` 을 타는데, 그것은 `shouldNormalizeNotification` 이 **영어 레거시 문구**(`ENGLISH_NOTIFICATION_TITLES` / `..._BODY_FRAGMENTS`)를 감지했을 때만 도는 폴백이라 한글 body 는 통과시킨다. 나머지 `notificationTemplates.ts` 는 로컬 근무 리마인더(`shiftReminderScheduler.ts`) 전용 경로다. |
+
+⚠️ 실행 시 그대로 적용되는 기존 함정(변동 없음 — 재조사 불필요):
+- `eas update` 는 **shell env 만 평가**한다(`.env` 파일을 읽지 않는다)
+- `app_config` 는 반드시 `{ios, android, web}` 객체
+- 웹배포는 **메인 체크아웃에서만**(워크트리면 빈 번들) · `--branch=master` 명시(detached HEAD 는 Preview 로 간다)
+- 배포 후 번들 검증 거짓음성 2종: 한글은 `\uXXXX` 이스케이프 · CDN 엣지캐시 → **대조군 동시검사**(`grep -F`)
+- 🚨 긴 배포·OTA 실행 **도중**에도 메인 체크아웃이 바뀐 이력이 있다 → 긴 명령 전후로 `git rev-parse HEAD` 대조
+
+### 6-4. 이번 세션이 남긴 후속 과제 (코드 잔여 아님 — 판단 필요)
+
+1. **QR 출근시각 정정과 원본 스캔시각의 관계** (fable DB 리뷰 MEDIUM, 선재 갭)
+   `check_in_scanned_at` 은 보호 트리거로 불변인데 `check_in_ts` 는 `update_work_log_slot` 로
+   자유롭게 수정되고 둘의 관계를 강제하는 CHECK·트리거가 없다(`pg_constraint` 실측).
+   관리자가 출근을 16시간 이상 앞당기면 퇴근 후보 구간이 역전된다.
+   🔑 **회귀는 아니다** — 같은 시나리오에서 옛 구간도 0건이었고, 도달 가능한 퇴근 스캔시각
+   범위에서 새 구간은 옛 구간을 포함한다(실측 대조). 근본 해결은
+   `update_work_log_slot` 이 원본 스캔시각을 함께 클램프할지의 **제품 판단**이다.
+   상세는 `20260918105900` 헤더 주석.
+2. **픽스처 블랭킷 GRANT 와 컬럼 ACL 단언** — 해결책은 확립됐다(`pg_attribute.attacl` 로 단언하면
+   픽스처의 `pg_class.relacl` 오염과 무관하다). 같은 함정이 걸린 다른 테이블이 있으면 같은 방식으로 옮긴다.
+
 
 ## 7. 검증 규율 (이전 세션이 전부 실제로 물린 것들)
 
