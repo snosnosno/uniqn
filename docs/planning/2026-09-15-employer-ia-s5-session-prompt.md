@@ -76,8 +76,26 @@ gh pr list --state open --json number,title,headRefName
 - 클라이언트 전용이라 OTA 발행 전까지 앱 사용자에게 반영되지 않는다.
 
 ## 7. 후속(이 세션 범위 밖, 기록만)
-- 출처 칩 제목 캐시 최대 10분(당겨서 새로고침으로 갱신) — 필요하면 공고 수정 시 postingTitles 무효화
-- DB 트리거 notify_on_work_log_update 의 "정산 완료" · "지급 완료 취소" 푸시 문구 — 컬럼·RPC 정리 웨이브에서 제거
-- ConfirmedStaffCard 아이콘 hex 고정 — 아이콘 색 토큰화 때 처리
-- S5 가 끝나면 웨이브 교훈을 /ingest 로 wiki 에 졸업
+- ~~출처 칩 제목 캐시 최대 10분(당겨서 새로고침으로 갱신) — 필요하면 공고 수정 시 postingTitles 무효화~~
+  ✅ **2026-09-15 종결 — 무효화는 이미 되고 있었다.** `useUpdateJobPosting` 이 `queryKeys.workSchedule.all`
+  접두사를 무효화하고(`useJobManagement.ts` onSuccess), `usePostingTitles` 의 키가 그 아래
+  (`['workSchedule','postingTitles',…]`)라 접두사 매칭으로 닿는다. 🔑 **그 결합이 암묵적이라** 키를
+  다른 트리로 옮기면 무음으로 끊긴다(칩은 그대로 그려지고 제목만 낡는다) — 회귀 테스트
+  `usePostingTitles.test.tsx` 로 잠갔다(Red-Green 확인: 키를 `jobPostings.all` 로 옮기면 그 1건만 fail).
+- ~~DB 트리거 notify_on_work_log_update 의 "정산 완료" · "지급 완료 취소" 푸시 문구~~
+  ✅ **2026-09-15 문구 교체** — `20260915122335_settlement_notify_copy_no_payment_claim.sql`.
+  `정산 완료`→`정산 금액 확정`, `지급 완료 취소`→`정산 금액 확정 취소`. **제거가 아니라 문구만** 바꿨다
+  (type·data 키·link·priority·수신자·발화조건 불변). 정본이 셋이라 함께 바꿨다 — 트리거 Case 3 ·
+  Case 3-B · `bulk_settle_work_logs` 의 배치 INSERT. ⚠️ `push_batching.test.sql` 은 건수·우선순위만 보고
+  **문구는 안 본다** — 셋이 갈라져도 초록이다. 클라 사본 2곳(`notificationTemplates.ts` ·
+  `notificationMessageNormalizer.ts`)도 같은 커밋에서 맞췄다.
+  🔴 **prod 미적용** — `prod-migrate` 로 반영해야 한다. 컬럼·RPC 정리 웨이브에서의 **제거**는 여전히 유효한 후속.
+  ⏸ 남은 것: `settle_work_log` RPC 의 반환 `'message', '정산이 완료되었습니다'` — 구인자 토스트라 표면이
+  다르고 S2 가 그 화면에서 호출부를 이미 걷어냈다(`settleWorkLog` 호출 화면 0곳). 같은 웨이브에서 정리.
+- ~~ConfirmedStaffCard 아이콘 hex 고정 — 아이콘 색 토큰화 때 처리~~
+  ✅ **2026-09-15 토큰화** — `ICON_COLORS.accent` 신설 후 `STATUS_COLORS.success`/`.error` ·
+  `getIconColor(isDarkMode,'accent')` 경유. 이 파일의 하드코딩 hex 는 0.
+  ⏸ 같은 `isDarkMode ? '#D4AF37' : '#8A7228'` 패턴이 `AllowanceEditor` · `TimePicker` · `TabHeader` ·
+  `StaffManagementTab` 에 남아 있다 — 아이콘 색 토큰화 웨이브의 본체.
+- ✅ S5 웨이브 교훈 wiki 졸업 — PR **#496**(`docs/wiki-employer-ia-wave`).
 ```

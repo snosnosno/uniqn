@@ -201,12 +201,15 @@ function buildLocalizedNotificationMessage(
           ? `${getWorkReference(data)} 근무가 완료되었습니다. ${staffName}님에 대한 평가를 남겨주세요.`
           : `${getWorkReference(data)} 근무가 완료되었습니다. 평가를 남겨주세요.`,
       };
+    // ⚠️ DB 트리거 문구의 사본이다(notify_on_work_log_update Case 3 · bulk_settle_work_logs).
+    //    문구 계약: **앱은 돈을 보내지 않는다** — 확정한 것은 금액이지 지급이 아니다.
+    //    금액을 모르면 지급 방식 문장까지 붙이지 않는다(확정 사실만 말한다).
     case NotificationTypeEnum.SETTLEMENT_COMPLETED:
       return {
-        title: '정산 완료',
+        title: '정산 금액 확정',
         body: amount
-          ? `${getJobReference(data)} 정산이 완료되었습니다. 지급액: ${amount}원`
-          : `${getJobReference(data)} 정산이 완료되었습니다.`,
+          ? `${getJobReference(data)} 정산 금액이 ${amount}원으로 확정되었습니다. 실제 지급은 사장님과 정한 방법으로 이루어집니다.`
+          : `${getJobReference(data)} 정산 금액이 확정되었습니다.`,
       };
     case NotificationTypeEnum.SCHEDULE_CHANGE: {
       const start = getNotificationDataValue(data, 'checkInTime');

@@ -1,4 +1,4 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS, getIconColor } from '@/constants/colors';
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -169,7 +169,7 @@ function CancellationRequestRow({
                 isProcessing ? 'opacity-50' : ''
               }`}
             >
-              <XMarkIcon size={14} color="#DC2626" />
+              <XMarkIcon size={14} color={STATUS_COLORS.error} />
               <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
                 거절
               </Text>
@@ -391,7 +391,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   </Text>
                   {isCheckedIn ? (
                     <View className="ml-1">
-                      <CheckCircleIcon size={12} color="#22C55E" />
+                      <CheckCircleIcon size={12} color={STATUS_COLORS.success} />
                     </View>
                   ) : null}
                 </View>
@@ -457,7 +457,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleEditTime}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
             >
-              <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+              <EditIcon size={14} color={getIconColor(isDarkMode, 'accent')} />
               {/* 라벨이 '시간 수정'이 아닌 이유 — 이 버튼이 여는 시트는 역할·색·메모도 고친다.
                   '시간'이라고 부르면 역할 편집 입구가 사라진 것처럼 보인다. */}
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -483,7 +483,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleReport}
               className="flex-row items-center justify-center rounded-lg bg-error-50 px-3 py-2 active:opacity-70 dark:bg-error-900/20"
             >
-              <AlertTriangleIcon size={14} color="#DC2626" />
+              <AlertTriangleIcon size={14} color={STATUS_COLORS.error} />
               <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
                 신고
               </Text>

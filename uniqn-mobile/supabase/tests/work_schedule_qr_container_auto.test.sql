@@ -5,9 +5,25 @@
 --   1. 컨테이너 공고(status='container') QR checkIn 허용(기존엔 active 만 허용→거부)
 --   2. auto 분기: scheduled→auto→checkIn 도출
 --   3. auto 분기: checked_in→auto→checkOut 도출
---   4. 원본보존: 기존 clocked_out_raw(비NULL) 는 checkOut 시 불변(덮어쓰기 금지)
+--   4. checkOut 이 원본 스캔시각 정본(check_out_scanned_at)을 기록
 --   5. checkOut 시 end_time_source='qr'
---   6. 무회귀: clocked_out_raw NULL→checkOut 시 세팅됨(원본보존 분기)
+--   6. 무회귀: check_out_scanned_at NULL→checkOut 시 세팅됨
+--
+-- ⚠️ 2026-09-18 갱신 — 마이그 20260909135618 이 두 가지 계약을 바꿨고, 이 파일은
+--   구 계약을 가정한 채 남아 red 였다(DB Tests 4건). 반영 내용:
+--     (1) `p_check_time` 은 **무시된다**. 함수는 `clock_timestamp()` 만 신뢰하고 적용
+--         시각을 15분 단위로 **올림**한다(디바이스 시계 조작 차단 — 계약 정본은
+--         supabase/tests/qr_checkin_time_clamp.test.sql). 따라서 "2시간 전 출근"을
+--         인자로 주입할 수 없다 → check_in_ts 를 **직접 UPDATE 로 시드**한다.
+--         (올림 때문에 출근 직후 재스캔은 v_applied_time <= check_in_ts 가 되어
+--          checkout_too_early 로 막힌다 — 0분 근무 기록 방지. 이건 결함이 아니라
+--          의도된 가드이므로, auto 분기 도출을 검증하려면 출근을 과거로 세워야 한다.)
+--     (2) `clocked_out_raw` 는 **Deprecated** 다. 원본 퇴근시각 정본은
+--         `check_out_scanned_at` 으로 이관됐다(같은 마이그의 COMMENT + 백필).
+--         읽는 주체도 0 이다 — 클라 SELECT 목록(src/repositories/supabase/
+--         workLogColumns.ts:12)에서 제외됐고, 이 컬럼을 참조하는 DB 함수는
+--         process_qr_checkin_atomically(쓰기 전용) 하나뿐이다(2026-09-18 실측).
+--         그래서 원본보존 단언을 정본 컬럼 기준으로 옮긴다.
 --   7. 무회귀: 일반 active 공고 checkIn 여전히 허용
 --   8. 음성단언: closed 공고 work_log QR → error='job_posting_inactive'
 --      (컨테이너/active 만 허용; 가드 완화가 닫힌 공고까지 열지 않음 확인)
@@ -17,7 +33,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(10);
+SELECT plan(11);
 
 CREATE TEMP TABLE _t (k text PRIMARY KEY, v text);
 
@@ -38,6 +54,7 @@ DECLARE
   v_wl_raw uuid := gen_random_uuid();
   v_result jsonb;
   v_fixed_raw timestamptz := '2026-01-01 00:00:00+00';
+  v_before_checkout timestamptz;
   v_checkin timestamptz := now() - interval '2 hours';
 BEGIN
   -- seed: owner(employer) + staff + workspace
@@ -98,23 +115,43 @@ BEGIN
     ('auto_in_status', (SELECT status::text FROM public.work_logs WHERE id = v_wl_auto));
 
   -- (3) auto: checked_in → checkOut
+  -- 15분 올림 때문에 (2)의 check_in_ts 는 최대 15분 미래다. auto **분기 도출**을
+  -- 검증하는 것이 목적이므로 출근을 2시간 전으로 시드해 duration 가드를 피한다.
+  UPDATE public.work_logs SET check_in_ts = v_checkin WHERE id = v_wl_auto;
   v_result := public.process_qr_checkin_atomically(v_wl_auto, v_staff, v_normal, 'auto', now(), v_d);
   INSERT INTO _t VALUES
     ('auto_out_action', (v_result->>'action')),
     ('auto_out_status', (SELECT status::text FROM public.work_logs WHERE id = v_wl_auto));
 
   -- (4/5) 원본보존 + end_time_source
+  -- 🔑 하한을 **호출 직전 실제 시각**으로 잡는다(리뷰 지적 반영).
+  --    고정 과거 상수(v_fixed_raw='2026-01-01')를 하한으로 쓰면 checkOut 이 성공하기만
+  --    하면 어떤 최근 시각이 들어와도 통과하는 "실패할 수 없는 검증"이 된다 —
+  --    예컨대 check_out_scanned_at 에 실수로 check_in_ts(2시간 전)를 대입하는 회귀가
+  --    들어와도 그 값 역시 2026-01-01 보다 크므로 잡히지 않는다.
+  v_before_checkout := clock_timestamp();
   v_result := public.process_qr_checkin_atomically(v_wl_raw, v_staff, v_normal, 'checkOut', now(), v_d);
+  -- 정본(check_out_scanned_at)에 **이번 스캔**의 서버 원본 시각이 기록돼야 한다.
+  -- (deprecated clocked_out_raw 의 "첫 값 보존" 계약은 위 헤더 (2) 참조)
   INSERT INTO _t
-    SELECT 'raw_preserved', (clocked_out_raw = v_fixed_raw)::text FROM public.work_logs WHERE id = v_wl_raw;
+    SELECT 'raw_scanned_set',
+      (check_out_scanned_at IS NOT NULL AND check_out_scanned_at >= v_before_checkout)::text
+    FROM public.work_logs WHERE id = v_wl_raw;
+  -- 위 단언이 공허하지 않음을 같은 트랜잭션에서 못박는다: 오염 후보값(2시간 전 출근시각)은
+  -- 하한을 넘지 못한다. 이 단언이 깨지면 하한이 다시 느슨해졌다는 뜻이다.
+  INSERT INTO _t VALUES
+    ('raw_lower_bound_is_tight', (v_checkin < v_before_checkout)::text);
   INSERT INTO _t
     SELECT 'raw_end_source', end_time_source FROM public.work_logs WHERE id = v_wl_raw;
 
   -- (6) NULL clocked_out_raw → checkOut 시 세팅(무회귀)
   v_result := public.process_qr_checkin_atomically(v_wl_normal, v_staff, v_normal, 'checkIn', v_checkin, v_d);
+  -- p_check_time 은 무시되므로(헤더 (1)) 출근을 과거로 직접 시드해야 퇴근이 성립한다.
+  UPDATE public.work_logs SET check_in_ts = v_checkin WHERE id = v_wl_normal;
   v_result := public.process_qr_checkin_atomically(v_wl_normal, v_staff, v_normal, 'checkOut', now(), v_d);
   INSERT INTO _t
-    SELECT 'null_raw_set', (clocked_out_raw IS NOT NULL)::text FROM public.work_logs WHERE id = v_wl_normal;
+    SELECT 'null_scanned_set', (check_out_scanned_at IS NOT NULL)::text
+    FROM public.work_logs WHERE id = v_wl_normal;
 
   -- (8) 음성단언: closed 공고 QR → job_posting_inactive (컨테이너/active 만 허용)
   v_result := public.process_qr_checkin_atomically(v_wl_closed, v_staff, v_closed, 'checkIn', now(), v_d);
@@ -133,12 +170,14 @@ SELECT is((SELECT v FROM _t WHERE k = 'auto_out_action'), 'checkOut',
   'auto 분기: checked_in→checkOut 도출');
 SELECT is((SELECT v FROM _t WHERE k = 'auto_out_status'), 'checked_out',
   'auto checkOut 후 status=checked_out');
-SELECT is((SELECT v FROM _t WHERE k = 'raw_preserved'), 'true',
-  'checkOut 시 기존 clocked_out_raw 원본 불변(덮어쓰기 금지)');
+SELECT is((SELECT v FROM _t WHERE k = 'raw_scanned_set'), 'true',
+  'checkOut 시 원본 스캔시각 정본(check_out_scanned_at) 기록');
+SELECT is((SELECT v FROM _t WHERE k = 'raw_lower_bound_is_tight'), 'true',
+  '위 단언의 하한이 실제로 조여 있다(출근시각 오염이 통과하지 못한다)');
 SELECT is((SELECT v FROM _t WHERE k = 'raw_end_source'), 'qr',
   'checkOut 시 end_time_source=qr');
-SELECT is((SELECT v FROM _t WHERE k = 'null_raw_set'), 'true',
-  'clocked_out_raw NULL→checkOut 시 세팅(원본보존 분기 무회귀)');
+SELECT is((SELECT v FROM _t WHERE k = 'null_scanned_set'), 'true',
+  'check_out_scanned_at NULL→checkOut 시 세팅(무회귀)');
 SELECT is((SELECT v FROM _t WHERE k = 'closed_error'), 'job_posting_inactive',
   '음성단언: closed 공고 QR 거부(컨테이너/active 만 허용, 가드 완화 비누수)');
 

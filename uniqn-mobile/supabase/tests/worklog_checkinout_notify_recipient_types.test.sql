@@ -41,8 +41,14 @@ BEGIN
   VALUES (v_wl, v_staff, v_jp, current_date, 'scheduled', 'dealer');
 
   -- 실제 출근/퇴근 전환을 태운다(트리거 경로를 우회하지 않는다).
+  --
+  -- ⚠️ 두 시각을 `now()` 로 쓰면 안 된다. `now()` 는 **트랜잭션 시작 시각**이라 이 블록
+  --    안에서는 두 번 불러도 같은 값이고, 20260910123553 이 세운 가드가
+  --    `check_out_ts <= check_in_ts` 를 거부한다(WORK_LOG_TIME_ORDER_INVALID).
+  --    이 테스트는 그 가드보다 오래됐고, 가드가 생긴 뒤로 **INSERT 단계에서 죽어
+  --    단언에 한 번도 도달하지 못했다** — 계획 3개 중 0개 실행(Bad plan).
   UPDATE public.work_logs SET check_in_ts  = now() WHERE id = v_wl;
-  UPDATE public.work_logs SET check_out_ts = now() WHERE id = v_wl;
+  UPDATE public.work_logs SET check_out_ts = now() + interval '8 hours' WHERE id = v_wl;
 
   PERFORM set_config('wl.id', v_wl::text, true);
   PERFORM set_config('wl.jp', v_jp::text, true);
