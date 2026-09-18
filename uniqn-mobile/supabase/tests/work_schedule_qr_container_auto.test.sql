@@ -33,7 +33,7 @@
 -- ============================================================
 
 BEGIN;
-SELECT plan(10);
+SELECT plan(11);
 
 CREATE TEMP TABLE _t (k text PRIMARY KEY, v text);
 
@@ -54,6 +54,7 @@ DECLARE
   v_wl_raw uuid := gen_random_uuid();
   v_result jsonb;
   v_fixed_raw timestamptz := '2026-01-01 00:00:00+00';
+  v_before_checkout timestamptz;
   v_checkin timestamptz := now() - interval '2 hours';
 BEGIN
   -- seed: owner(employer) + staff + workspace
@@ -123,13 +124,23 @@ BEGIN
     ('auto_out_status', (SELECT status::text FROM public.work_logs WHERE id = v_wl_auto));
 
   -- (4/5) 원본보존 + end_time_source
+  -- 🔑 하한을 **호출 직전 실제 시각**으로 잡는다(리뷰 지적 반영).
+  --    고정 과거 상수(v_fixed_raw='2026-01-01')를 하한으로 쓰면 checkOut 이 성공하기만
+  --    하면 어떤 최근 시각이 들어와도 통과하는 "실패할 수 없는 검증"이 된다 —
+  --    예컨대 check_out_scanned_at 에 실수로 check_in_ts(2시간 전)를 대입하는 회귀가
+  --    들어와도 그 값 역시 2026-01-01 보다 크므로 잡히지 않는다.
+  v_before_checkout := clock_timestamp();
   v_result := public.process_qr_checkin_atomically(v_wl_raw, v_staff, v_normal, 'checkOut', now(), v_d);
-  -- 정본(check_out_scanned_at)에 이번 스캔의 서버 원본 시각이 기록돼야 한다.
+  -- 정본(check_out_scanned_at)에 **이번 스캔**의 서버 원본 시각이 기록돼야 한다.
   -- (deprecated clocked_out_raw 의 "첫 값 보존" 계약은 위 헤더 (2) 참조)
   INSERT INTO _t
     SELECT 'raw_scanned_set',
-      (check_out_scanned_at IS NOT NULL AND check_out_scanned_at > v_fixed_raw)::text
+      (check_out_scanned_at IS NOT NULL AND check_out_scanned_at >= v_before_checkout)::text
     FROM public.work_logs WHERE id = v_wl_raw;
+  -- 위 단언이 공허하지 않음을 같은 트랜잭션에서 못박는다: 오염 후보값(2시간 전 출근시각)은
+  -- 하한을 넘지 못한다. 이 단언이 깨지면 하한이 다시 느슨해졌다는 뜻이다.
+  INSERT INTO _t VALUES
+    ('raw_lower_bound_is_tight', (v_checkin < v_before_checkout)::text);
   INSERT INTO _t
     SELECT 'raw_end_source', end_time_source FROM public.work_logs WHERE id = v_wl_raw;
 
@@ -161,6 +172,8 @@ SELECT is((SELECT v FROM _t WHERE k = 'auto_out_status'), 'checked_out',
   'auto checkOut 후 status=checked_out');
 SELECT is((SELECT v FROM _t WHERE k = 'raw_scanned_set'), 'true',
   'checkOut 시 원본 스캔시각 정본(check_out_scanned_at) 기록');
+SELECT is((SELECT v FROM _t WHERE k = 'raw_lower_bound_is_tight'), 'true',
+  '위 단언의 하한이 실제로 조여 있다(출근시각 오염이 통과하지 못한다)');
 SELECT is((SELECT v FROM _t WHERE k = 'raw_end_source'), 'qr',
   'checkOut 시 end_time_source=qr');
 SELECT is((SELECT v FROM _t WHERE k = 'null_scanned_set'), 'true',
