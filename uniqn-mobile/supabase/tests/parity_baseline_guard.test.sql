@@ -183,6 +183,59 @@
 --     🔴 **prod 미적용** — 마이그 **6종**이 prod 에 들어가기 전까지 주간 parity-smoke 가
 --        214/112 vs 208/110 불일치를 보고한다. 위 20260809140000 사례와 같은 상태다.
 --
+-- ✅ 2026-09-18 — 아래 2026-09-12 항목이 남긴 "11개의 정체를 밝혀라"를 **전부 규명**했다.
+--   결론: 정책 감소는 소실 사고가 아니라 9월 커뮤니케이션 게시판 폐지의 직접 증분이고,
+--   함수 증가는 9월 QR/게시판 마이그 5건의 신설분이다. 아래 출처를 세어 기준선을
+--   **함수 225 / 정책 102** 로 다시 세운다(prod 실측과 동일 — 2026-09-12 확인분).
+--
+--   원인은 갱신 누락 구간이다: 위 기준선 214/112 는 2026-08-15 판이고, 근무표
+--   마이그(20260911053907)의 +2/+1 만 얹어 216/113 으로 적었다. 그 사이에 들어온
+--   9월 마이그 **7건**(20260909135618 ~ 20260910153217)의 증분이 장부에 한 번도
+--   반영되지 않았다. 그 7건이 차이의 전부다.
+--
+--   함수 +9 (216 → 225) — 각 마이그에서 **처음 등장**하는 이름만 셌다:
+--     · 20260909135618 (QR 15분 올림 정규화) +4
+--         protect_work_log_qr_scan_timestamps · normalize_work_log_attendance_quarter_hour
+--         · recompute_work_log_duration · process_posting_qr_attendance
+--       (get_venue_day_slots 는 DROP+CREATE 시그니처 교체라 증감 0)
+--     · 20260910002240 (커뮤니케이션 게시판 하드닝) +2 순증
+--         +1 enforce_board_comment_parent_integrity
+--         +1 enqueue_schedule_board_sync_on_expiration
+--         +1 sync_schedule_board — 구본체를 `ALTER FUNCTION ... RENAME TO
+--            sync_schedule_board_legacy` 로 **남긴 채** 같은 이름으로 새로 만들었다
+--            (rename 은 삭제가 아니므로 개수가 하나 늘어난다)
+--         -1 toggle_board_post_vote (투표 폐지, DROP FUNCTION)
+--         (toggle_comment_reaction 은 DROP+CREATE OR REPLACE 라 증감 0)
+--     · 20260910123553 (QR 리뷰 반영) +1  enforce_work_log_checkout_after_checkin
+--         (process_posting_qr_attendance 는 DROP+CREATE 시그니처 교체라 증감 0)
+--     · 20260910123555 +1  enforce_board_comment_update_scope
+--     · 20260910153217 +1  enforce_board_comment_pin_invariants
+--     · 20260910104500 · 20260910110000 은 GRANT/REVOKE 전용이라 0.
+--
+--   정책 −11 (113 → 102) — 전부 20260910002240 한 건에서 나온다:
+--     · 정책 DROP 10 / CREATE 3 = **−7**
+--         DROP: bp_insert · bp_delete · bp_update · bm_insert · board_memberships_delete
+--               · bc_insert · bc_update · reaction_insert · reaction_update · reaction_delete
+--         CREATE: bp_update · bc_insert · bc_update
+--       (free/tda/substitute 게시판·투표를 폐지하고 schedule 게시판만 남긴 결과)
+--     · `DROP TABLE IF EXISTS public.board_votes` = **−4**
+--       테이블과 함께 bv_select · bv_insert · bv_update · bv_delete 가 사라진다.
+--       🔑 정책 감소를 CREATE/DROP POLICY 문장만 세서는 설명할 수 없었던 이유가 이것이다 —
+--          **테이블을 지우면 그 위의 정책도 같이 사라진다.**
+--     · 20260910123555 의 bc_update 는 DROP+CREATE 라 0.
+--     · 20260910123553 이 만든 qr_attendance_selections 는 RLS 를 켜지만 정책을 하나도
+--       만들지 않는다(deny-all — SECDEF RPC 전용 테이블)라서 0.
+--
+--   ⚠️ 2026-09-12 항목이 지목한 20260809140000(정책 111→110)은 **차이의 원인이 아니다**.
+--      그 마이그는 이 장부에 이미 반영돼 있었다(위 해당 항목 참조).
+--
+--   2026-09-15 · 2026-09-18 마이그는 함수·정책 증감 0이다:
+--     · 20260915122335(정산 알림 문구) — notify_on_work_log_update ·
+--       bulk_settle_work_logs 의 CREATE OR REPLACE 재정의만
+--     · 20260915133500(권한 하드닝 복원) — GRANT/REVOKE 전용
+--     · 20260918105900(QR 퇴근 후보 하한) — process_posting_qr_attendance 재정의만
+--     · 20260918110000(댓글 트리거 순서) — 트리거 재등록만(함수 미변경)
+--
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
 --   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
 --   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
@@ -196,13 +249,15 @@
 --    112 → **101 로 11개 줄었다**. 9월 작업이 의도한 정책 통합인지 소실 사고인지
 --    확인되지 않았고, 기대값을 102 로 맞추면 그 감소를 조용히 덮는다. 먼저 11개의
 --    정체를 밝힌 뒤 기준선을 다시 세워야 한다.
+--    → ✅ 2026-09-18 에 11개 전부의 출처를 규명해 위 항목에 적었다. 이제 기준선을
+--       225/102 로 올린다(숫자를 덮는 것이 아니라 사유를 세어 올린 것).
 --    (근무표 PR 이 새로 깨뜨린 것은 없다 — 실패 파일이 master baseline 5개와 일치함을
 --     `comm -13` 으로 대조 확인했다.)
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=216
--- PARITY_EXPECT_POLICIES=113
+-- PARITY_EXPECT_FUNCS=225
+-- PARITY_EXPECT_POLICIES=102
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -221,14 +276,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  216,
-  'public function count (216 = 214 + 근무표 배치 해제·정산 owner 2종, 2026-09-12 — 정산 완료 잠금은 기존 protect_work_log_payroll_columns 와 중복이라 철회)');
+  225,
+  'public function count (225 = 216 + 9월 QR·게시판 마이그 5건 신설분 9종, 2026-09-18 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  113,
-  'public RLS policy count (113 = 112 + work_schedule_audit_events 감사 조회 1, 2026-09-11)');
+  102,
+  'public RLS policy count (102 = 113 − 게시판 폐지 정책 순감 7 − board_votes 테이블 폐기 4, 2026-09-18)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(

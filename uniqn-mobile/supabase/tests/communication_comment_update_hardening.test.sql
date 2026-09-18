@@ -1,17 +1,29 @@
+-- ============================================================
+-- ⚠️ 컬럼 단위 GRANT 는 이 스택에서 단언할 수 없다 (2026-09-18 실증)
+--
+--   마이그 20260910123555 는
+--     REVOKE UPDATE ON board_comments FROM anon, authenticated;
+--     GRANT  UPDATE (body, mentioned_user_ids, image_attachments,
+--                    status, is_pinned, pinned_at, pinned_by) TO authenticated;
+--   로 컬럼 단위 하드닝을 걸지만, pgTAP 하네스(`npm run test:db:helpers`)가
+--   마이그 **뒤에** `GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated`
+--   를 실행한다(supabase/fixtures/jpc_helpers.sql · ops_helpers.sql).
+--   그래서 로컬·CI 에서는 테이블 단위 UPDATE 가 되살아나
+--   `has_column_privilege('authenticated', …, 'post_id', 'UPDATE')` 이 항상 true 다.
+--
+--   픽스처의 블랭킷 GRANT 는 의도된 설계다(RLS 를 실제 보안경계로 두고 RLS 매트릭스
+--   테스트를 CLI 버전과 무관하게 결정적으로 만들기 위함 — wiki decisions/test-db-grants).
+--   그리고 픽스처에서 하드닝을 되살리면 이 단언은 **픽스처를 단언**하는 tautology 가 된다.
+--   `REVOKE UPDATE ON TABLE` 은 컬럼 단위 GRANT 까지 함께 회수하므로(2026-09-18 실측:
+--   REVOKE 후 body=false) 부분 복구도 불가능하다.
+--
+--   → 따라서 GRANT 계약은 prod 실측으로 검증하고(픽스처 주석의 anon write 회수와 같은
+--     선례), 여기서는 **같은 계약을 실제로 지키는 층인 트리거**를 행동으로 단언한다.
+--     트리거는 이 스택에서 비공허하게 검증되고, 계약 위반 시 실패한다.
+-- ============================================================
+
 BEGIN;
-SELECT plan(14);
-
-SELECT ok(
-  has_column_privilege('authenticated', 'public.board_comments', 'body', 'UPDATE'),
-  'authenticated retains the comment body update used by the app');
-
-SELECT ok(
-  NOT has_column_privilege('authenticated', 'public.board_comments', 'post_id', 'UPDATE'),
-  'authenticated cannot update immutable comment routing columns');
-
-SELECT ok(
-  NOT has_column_privilege('authenticated', 'public.board_comments', 'author_role', 'UPDATE'),
-  'authenticated cannot update comment identity columns');
+SELECT plan(13);
 
 INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 VALUES
@@ -69,6 +81,19 @@ SET LOCAL ROLE authenticated;
 SELECT lives_ok(
   $$ UPDATE public.board_comments SET body = 'edited' WHERE id = 'd1000000-0000-4000-8000-000000000030' $$,
   'an active member can edit their own comment');
+
+-- 위 헤더 참조 — GRANT 단언을 대신하는 행동 단언 2종.
+SELECT throws_ok(
+  $$ UPDATE public.board_comments SET post_id = 'schedule_d1000000-0000-4000-8000-000000000021'
+     WHERE id = 'd1000000-0000-4000-8000-000000000030' $$,
+  '42501', 'PERMISSION_DENIED: immutable comment fields cannot be changed',
+  'an author cannot re-route their comment to another post');
+
+SELECT throws_ok(
+  $$ UPDATE public.board_comments SET author_role = 'employer'
+     WHERE id = 'd1000000-0000-4000-8000-000000000030' $$,
+  '42501', 'PERMISSION_DENIED: immutable comment fields cannot be changed',
+  'an author cannot spoof their comment identity');
 
 SELECT throws_ok(
   $$ UPDATE public.board_comments SET is_pinned = true, pinned_by = 'd1000000-0000-4000-8000-000000000002'
