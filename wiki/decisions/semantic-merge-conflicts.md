@@ -44,6 +44,19 @@ PR#357 은 SQL 파일만 바꿔 텍스트 충돌이 0 이었다. 그러나 근�
 - **래칫 위반은 상한을 올려 풀지 않는다.** 내가 더한 몫을 찾아 없앤다.
 - 병렬 세션이 감지되면 워크트리로 격리한다(전역 `git-workflow` 규칙) — 이 클래스를 없애지는 못하지만 **커밋 섞임**이라는 더 나쁜 변종은 막는다.
 
+## 스택 PR 착지 (squash 저장소, 2026-09-15 추가)
+
+구인자 IA 웨이브에서 S3→S4→S5 가 로컬에 쌓인 채 한 세션에 착지했다([[employer-ia-redesign-2026-09]], PR#493·#494·#495). squash 머지는 master 에 **새 커밋**을 만들므로 아래 브랜치가 원래 커밋을 들고 있어도 "이미 포함"으로 인식되지 않는다.
+
+1. 아래 PR(S3)을 master 로, 위 PR(S4)을 **S3 브랜치 베이스**로 연다 — 리뷰 diff 가 자기 몫만 보인다. 이 상태의 위 PR 에는 CI 가 돌지 않는다(`no checks reported`).
+2. 아래 PR 머지 → 위 브랜치에 `origin/master` 를 **merge** 로 재통합(rebase 금지 — 리뷰가 끝난 커밋 SHA 를 보존). 같은 hunk 라 충돌 없이 끝나지만 **종료 조건은 충돌 0 이 아니라 재검증 green** 이다(위 규칙).
+3. `git diff --stat origin/master HEAD` 가 **위 슬라이스 몫만** 남았는지 센다(S4: 14 파일, S5: 6 파일) → push → `gh pr edit <N> --base master` → 이제 CI 가 돈다.
+4. 아래 브랜치는 위 PR 베이스가 master 로 바뀌기 전까지 지우지 않는다. 머지 시 `--match-head-commit` 으로 검증한 SHA 가 그대로인지 고정한다.
+
+## ⚠️ 정정 (2026-09-15)
+
+아래 절의 "master 에는 branch protection 자체가 없다"는 **낡았다** — PR#432(2026-08-07)로 활성화됐고 required=`Quality Gate`·`E2E Gate` 다([[e2e-gate-absence]]). 원문은 07-28 시점 기록으로 남긴다.
+
 ## 왜 CI 가 최후 방어선인가
 
 위 5종 중 리뷰어의 눈으로 잡히는 건 1·5 정도다. 2·4 는 **정의상 diff 에 안 보인다**(내 변경 + 상대 변경의 곱). 그래서 이 저장소에서 CI 를 required check 로 올리는 문제는 스타일이 아니라 **정확성 문제**다 — 현재 master 에는 branch protection 자체가 없다([[e2e-gate-absence]]).
