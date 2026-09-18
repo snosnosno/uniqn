@@ -23,7 +23,8 @@
 6. ✅ §6 이 **실측 사실로 채워짐** — prod 사전검증(마이그 4건 미적용 확증·파리티 225/102 일치·
    함대 갈림 판정) 완료. 사람이 "가자"만 하면 되는 상태.
 
-🔴 **하지 않는 것**: `prod-migrate` 실행 · OTA 발행 · 웹 배포. 전부 다음 단계다.
+🟡 **원래 범위는 여기까지였다**: `prod-migrate` 실행 · OTA 발행 · 웹 배포는 제외.
+→ 🟢 **같은 날 사용자 승인으로 배포까지 실행·검증 완료.** 결과는 §6 에 있다. **`prod-migrate` 재실행 금지.**
 
 ---
 
@@ -225,10 +226,27 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
 
 ---
 
-## 6. 배포 직전 상태 — ✅ **사실로 채움 (2026-09-19 실측)**
+## 6. 배포 — ✅ **전량 실행·검증 완료 (2026-09-19)**
 
 > 이 절은 계획이 아니라 **실측 기록**이다. 다음 세션은 여기 값을 그대로 쓰고 판단을 반복하지 않는다.
-> 🔴 이번 세션에서 실행하지 않은 것: `prod-migrate` · OTA 발행 · 웹 배포. 전부 다음 단계다.
+>
+> 🟢 **`prod-migrate` 4건 · production OTA · 웹 배포까지 모두 끝났다.** 이 문서가 처음 작성될 때는
+> "배포 직전에서 멈춘다"가 범위였으나, 같은 날 사용자 승인으로 배포까지 실행했다.
+> 🔴 **남은 것은 사람 게이트뿐이다** — 프로덕션 스모크 · 실기기 QA · Supabase 콘솔 2건(§6-5).
+>
+> ⚠️ **`prod-migrate` 를 다시 돌리지 말 것.** 4건 전부 적용됐다(§6-1 표).
+
+### 6-0-a. 배포 라이브 값 (다음 세션이 쓸 값)
+
+| 항목 | 값 |
+|---|---|
+| `origin/master` = 로컬 `master` | **`2f6de5ba2`** (#499 머지) |
+| production OTA group | **`b1dee268-2c18-4f23-91f9-fb868f1bdd86`** — runtime 1.0.7 · android+ios · commit `2f6de5ba2` |
+| 웹 CF Pages 배포 | **`74de3161`** (Production/master) — uniqn.app · www.uniqn.app · uniqn-app.pages.dev 전부 **200** |
+| prod 최신 마이그 | **`20260918110000`** (board_comment_permission_before_pin_invariants) |
+| EAS Build | **하지 않았다** — 네이티브 무변경이라 불필요(version bump 없음, 1.0.7 유지) |
+
+🔑 이 OTA 는 **구인자 IA 웨이브 S1~S5 의 첫 발행**이다(직전 `46c167ca` 이후 10커밋).
 
 ### 6-0. 착지 결과
 
@@ -243,7 +261,7 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
 | DB red | **0건**. `db:reset && test:db` = 123 files / **1394 tests** / PASS |
 | CI (`de734b729`) | **14/14 pass** — DB Tests · E2E · Quality 5종 포함 |
 
-### 6-1. prod 마이그 **4건** 대기 — 사전 검증 완료 (적용하지 않았다)
+### 6-1. prod 마이그 **4건** — ✅ **적용 완료 · 재적용 금지**
 
 ⚠️ 09-18 판은 2건으로 적었으나 이번 세션이 2건을 더 만들었다. **적용 순서 = 접두사 순**:
 
@@ -254,17 +272,32 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
 | `20260918105900` | QR 퇴근 후보 하한 = 원본 스캔시각 | 0 (CREATE OR REPLACE 1종) |
 | `20260918110000` | 댓글 권한 검사를 핀 불변식보다 먼저 | 0 (트리거 재등록) |
 
-**`list_migrations` 실측**: prod 최신 = **`20260911053907`**(work_schedule_safety_contract). 위 4건 **전부 기록 없음**.
-🔑 **`pg_proc`·트리거 실측 병행**(기록이 없어도 오브젝트는 있을 수 있으므로) — 4건 모두 미적용 확증:
+**적용 경로 = `prod-migrate` 워크플로**(#437) — 파일 바이트를 그대로 싣는 유일한 경로.
+1건씩 4회 dispatch, 전부 성공(트랜잭션 커밋). `schema_migrations` 에 **파일명 그대로** 기록됐다.
 
-| 읽기 전용 확인 | prod 실측 | 기대 | 판정 |
+```bash
+gh workflow run prod-migrate.yml --ref master \
+  -f migration=<파일명> -f confirm=<같은 파일명> -f verify_function=<함수명>
+```
+🔑 **GRANT·트리거 전용 마이그는 `verify_function` 을 비워라** — md5 가 안 바뀌면 워크플로가
+**실패로 접는다**(적용은 됐는데 red 로 보인다). 그래서 `20260915133500`·`20260918110000` 은 비웠고,
+`20260915122335`(`notify_on_work_log_update`)·`20260918105900`(`process_posting_qr_attendance`)
+는 md5 변경을 확인받았다.
+
+**적용 후 prod 독립 검증** (워크플로 보고를 믿지 않고 직접 조회):
+
+| 확인 | 적용 전 | 적용 후 실측 | 판정 |
 |---|---|---|---|
-| anon 실행가능 public 함수 | **26** | 26 | ✅ `20260915133500` 은 prod 에서 **no-op**(레포만 열려 있었다) |
-| authenticated 거부 함수 | **77** | 77 | ✅ 동일 |
-| `notify_on_work_log_update` 에 구 문구(`정산이 완료되었습니다`) | **있음** | 있음 | ✅ `20260915122335` 미적용 |
-| `board_comments` pin 트리거 이름 | **`board_comment_pin_invariants`**(구 이름) | 구 이름 | ✅ `20260918110000` 미적용 |
-| `board_comments` attacl (authenticated UPDATE) | body,image_attachments,is_pinned,mentioned_user_ids,pinned_at,pinned_by,status,updated_at | 동일 8컬럼 | ✅ 새 pgTAP 단언이 prod 에도 유효 |
-| `board_comments` attacl (anon) | **0** | 0 | ✅ |
+| `schema_migrations` 최신 | `20260911053907` | **`20260918110000`** (4건 전부 기록) | ✅ |
+| 정산 알림 문구 | 구 문구 있음 | **신규 적용 · 구 문구 소멸** (`bulk_settle_work_logs` 도 동일) | ✅ |
+| QR 퇴근 후보 하한 | `check_in_ts` | **`COALESCE(wl.check_in_scanned_at, wl.check_in_ts)`** | ✅ |
+| `board_comments` BEFORE UPDATE 발화 순서 | pin 이 먼저 | `parent_integrity → **update_scope** → updated_at → xss_check → **zz_pin_invariants**` | ✅ 권한이 먼저 |
+| anon 실행가능 함수 | 26 | **26** | ✅ 과회수 없음 |
+| authenticated 거부 함수 | 77 | **77** | ✅ 동일 |
+| 파리티 (함수/정책) | 225 / 102 | **225 / 102** | ✅ 불변 |
+
+🔑 `20260915133500` 은 prod 에서 사실상 **no-op** 이었다(레포 체인만 82개 더 열려 있었다).
+그래도 적용해야 레포↔prod 마이그 체인이 정합한다.
 
 ⚠️ **레포↔prod 기록명 어긋남 재확인** — 9월 마이그 7건은 prod 에 **다른 접두사**로 이미 있다. 재적용 금지:
 `20260909135618`→prod `20260910163934` · `20260910002240`→`20260910003856` · `20260910104500`→`20260910103444` ·
@@ -280,7 +313,7 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
   정책 순감 7 + **`DROP TABLE board_votes` 로 함께 사라진 `bv_*` 정책 4** 다.
   (09-18 판이 지목한 `20260809140000` 은 원인이 아니다 — 이미 장부에 반영돼 있었다.)
 
-### 6-3. OTA / 웹 배포 — 사실값
+### 6-3. OTA / 웹 배포 — ✅ **실행 완료** (판정 근거는 그대로 유효)
 
 | 항목 | 값 (근거) |
 |---|---|
@@ -296,7 +329,21 @@ git worktree remove C:/Users/user/Desktop/T-HOLDEM-ia-followup
 - 배포 후 번들 검증 거짓음성 2종: 한글은 `\uXXXX` 이스케이프 · CDN 엣지캐시 → **대조군 동시검사**(`grep -F`)
 - 🚨 긴 배포·OTA 실행 **도중**에도 메인 체크아웃이 바뀐 이력이 있다 → 긴 명령 전후로 `git rev-parse HEAD` 대조
 
-### 6-4. 이번 세션이 남긴 후속 과제 (코드 잔여 아님 — 판단 필요)
+### 6-4. 🔴 남은 사람 게이트 (코드 잔여 0 — 여기부터는 사람이 해야 한다)
+
+1. **프로덕션 스모크** — 실기기에서 세 가지를 눈으로 확인한다:
+   · 정산 알림 문구가 새 문장인지("정산 금액이 …원으로 확정되었습니다. 실제 지급은 사장님과 정한 방법으로…")
+   · **QR 출근 직후 재스캔** → "잠시 후 다시"(`checkout_too_early`)가 뜨는지.
+     **"해당 근무가 없습니다"(`no_eligible_work_log`)가 뜨면 이번 수정이 안 먹은 것**이다.
+   · 댓글 작성자가 자기 댓글 고정 시도 → 권한 사유 메시지가 뜨는지(내부 메타데이터 규칙이 아니라)
+2. **실기기 QA** — `docs/qa/2026-08-11-device-qa-1.0.7.md`. 🚨§0 어기면 무의미:
+   **덮어쓰기 업데이트** · **한글/이모지 이름 계정** · 기기 2대. 🍏**iOS 를 먼저·더 깊게.**
+3. **Supabase 콘솔 2건** — Leaked Password Protection 켜기(Auth→Attack Protection, 코드 0) ·
+   Rate Limits `Token refresh` 1,800/hr 하향 검토
+4. ⚠️ **1.0.6 잔존 기기는 이 OTA 를 못 받는다**(runtimeVersion 다름). 단 정산 문구는 DB 트리거가
+   정본이라 **그 기기들도 새 문구를 본다** → 추가 발행 불필요(§6-3 판정).
+
+### 6-5. 이번 세션이 남긴 후속 과제 (코드 잔여 아님 — 판단 필요)
 
 1. **QR 출근시각 정정과 원본 스캔시각의 관계** (fable DB 리뷰 MEDIUM, 선재 갭)
    `check_in_scanned_at` 은 보호 트리거로 불변인데 `check_in_ts` 는 `update_work_log_slot` 로
@@ -333,7 +380,8 @@ npm run quality > /tmp/q.log 2>&1; echo $?
 
 ## 8. 하지 말 것
 
-- `prod-migrate` 실행 · OTA 발행 · 웹 배포 — **이번 범위 밖**
+- 🔴 **`prod-migrate` 4건 재실행 · 같은 OTA 재발행** — 09-19 에 전부 끝났다(§6-1 · §6-0-a).
+  재적용은 마이그 체인을 더럽힌다. 새 변경이 있을 때만 새 파일로.
 - 기존 마이그레이션 파일 수정(새 파일로만)
 - `parity_baseline_guard` 기대값을 **근거 없이** 실측으로 덮기
 - `posting_qr_attendance` 기대값을 `no_eligible_work_log` 로 바꿔 통과시키기
