@@ -1,16 +1,5 @@
 {
   "mcpServers": {
-    "mcp-installer": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@anaisbetts/mcp-installer"
-      ],
-      "env": {}
-    },
     "context7": {
       "type": "stdio",
       "command": "cmd",
