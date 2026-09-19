@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-08-10
+updated: 2026-09-19
 status: current
 sources:
   - uniqn-mobile/app/_layout.tsx
@@ -9,6 +9,9 @@ sources:
   - PR#441
   - PR#444
   - PR#461
+  - PR#497
+  - PR#502
+  - .claude/skills/deploy/SKILL.md
 tags: [deploy, ota, migration, version-gate, skew, release]
 ---
 
@@ -77,6 +80,34 @@ tags: [deploy, ota, migration, version-gate, skew, release]
 ⚠️ **이 OTA 가 도달하기 전에 `force_update_version` 을 올리면 안 된다** — 아래 규율 3① 참조.
 그리고 이 배선은 **네이티브 바이너리에만 실린다.**
 
+## 함대가 갈린 뒤 — 어떤 변경은 우회로가 있고 어떤 변경은 없다 (2026-09-19)
+
+`runtimeVersion: appVersion` 이라 **1.0.6 기기는 1.0.7 OTA 를 받지 못한다**. 이때 "그 기기들에도
+따로 발행해야 하나"는 변경의 **정본이 어디 있는가**로 갈린다.
+
+| 변경 | 1.0.6 기기가 보는가 | 이유 |
+|---|---|---|
+| 정산 알림 문구(`20260915122335`) | ✅ 본다 | 실질 정본이 **DB 트리거**다. prod 마이그가 적용되면 전 함대가 새 문구를 렌더한다. 클라 사본(`notificationMessageNormalizer`)은 `shouldNormalizeNotification` 이 **영어 레거시 문구**를 감지할 때만 도는 폴백이라 한글 body 는 통과시킨다 |
+| 공고 상세 UI(#501) | ❌ 못 본다 | **순수 클라 UI** 라 우회로가 없다 — 스토어 업데이트가 유일한 경로 |
+
+🔑 **서버가 정본인 변경은 함대 갈림을 스스로 우회한다.** 갈린 함대에 추가 발행할지 판단할 때
+먼저 "이 문장·규칙이 어디서 만들어지는가"를 확인하라. 1.0.6 전용 수정이 꼭 필요하면 태그
+`ota/1.0.6-production` 트리에서 따로 발행한다.
+
+## `eas update` 는 비대화형에서 `--environment` 를 요구한다 (2026-09-19, eas-cli 21.7.0)
+
+```
+The --environment flag must be set when running in --non-interactive mode
+```
+에이전트가 도구로 호출하면 TTY 가 없어 **항상 비대화형**이다 → 사실상 필수 플래그. 09-19 OTA 가
+이걸로 1회 실패했다.
+
+- `--branch`(채널)와 `--environment`(EAS 환경변수 세트)는 **다른 축**이다. 둘 다 준다.
+- **shell export 는 그대로 필요하다** — 플래그가 대신해 주지 않는다(`eas update` 는 `.env` 파일을
+  읽지 않는다).
+- 정본 절차 = `.claude/skills/deploy/SKILL.md` §5 규칙 2. 발행 후 **Commit 해시·runtime 대조 +
+  `eas update:list` 교차 확인**(규칙 2-1).
+
 ## 규율
 
 1. **서버 먼저, 클라 나중.** 마이그가 있는 PR 은 배포 전 `list_migrations` 로 prod 반영을 실측한다.
@@ -90,6 +121,11 @@ tags: [deploy, ota, migration, version-gate, skew, release]
    죽은 안전장치다.
 5. 웹 배포(CF)는 OTA 금지와 **무관한 허용 경로**다 — 클라 수정을 웹 사용자에게는 즉시 낼 수 있다.
    단 워크트리 웹배포 함정(빈 번들 · `--branch=master` 명시)을 지킬 것.
+6. **배포 후 번들 grep 은 거짓음성 3종을 낸다.** ①번들은 **비ASCII 만** `\uXXXX` 로 싼다 —
+   공백·콜론까지 이스케이프하면 신규·구 문구가 **둘 다 0건**이 나와 배포 실패로 오판한다(09-19 실측)
+   ②CDN 엣지캐시(해시 대조로 끝낸다) ③**대조군 오선정** — 구 문구가 다른 용도로 정당히 남아 있으면
+   거짓 FAIL 이다(정산 알림의 진짜 판별자는 `지급액`, `정산이 완료되었습니다` 는 사장용 처리결과
+   문구로 정당히 생존). → [[vacuous-verification]]
 
 ## 연결
 
@@ -99,3 +135,4 @@ tags: [deploy, ota, migration, version-gate, skew, release]
 - OTA 를 건너 살아남는 것(캐시): [[persisted-cache-shape-drift]]
 - 이 사고를 낸 웨이브: [[ops-defect7-wave-2026-08]] · [[full-app-audit-2026-08-09]]
 - 대회 운영 도메인(라우트가 열려 있는 이유): [[ops-engine]]
+- 함대 갈림·`--environment`·번들 검증 3종의 원천: [[db-red-fix-and-release-2026-09]]
