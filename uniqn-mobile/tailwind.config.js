@@ -115,6 +115,18 @@ module.exports = {
           700: '#1E40AF',
           900: '#172554', // blue-950 — 다크 배경 틴트용 (dark:bg-info-900/30)
         },
+        // 배치 슬롯 구분색 (근무표 그리드 전용 — 상태를 뜻하지 않는다)
+        //
+        // 상태 배지가 이미 초록(success)·노랑(warning)·빨강(error)·골드(primary)를 쓰고 있어서
+        // (constants/statusConfig.ts CONFIRMED_STAFF_STATUS), 같은 그리드 안에서 배치색으로
+        // 그 색조를 쓰면 "조 구분"이 "출근 완료"로 오독된다. 그래서 상태가 점유하지 않은
+        // 청록–하늘–보라–자홍 구간만 쓴다. 500=라이트 모드, 400=다크 모드.
+        slot: {
+          teal: { 400: '#2DD4BF', 500: '#14B8A6' },
+          sky: { 400: '#38BDF8', 500: '#0EA5E9' },
+          violet: { 400: '#A78BFA', 500: '#8B5CF6' },
+          pink: { 400: '#F472B6', 500: '#EC4899' },
+        },
       },
       // 폰트 패밀리 (Expo Google Fonts)
       fontFamily: {

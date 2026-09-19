@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text } from 'react-native';
-import type { BoardType } from '@/types/board';
+import type { CommunicationBoardType } from '@/types/board';
 
-export type BoardTabKey = 'home' | BoardType;
+export type BoardTabKey = CommunicationBoardType;
 
 interface TabItem {
   key: BoardTabKey;
@@ -9,12 +9,8 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'home', label: '홈' },
-  { key: 'notice', label: '공지' },
   { key: 'schedule', label: '일정' },
-  { key: 'free', label: '자유' },
-  { key: 'tda', label: 'TDA' },
-  { key: 'substitute', label: '대타' },
+  { key: 'notice', label: '공지' },
 ];
 
 interface BoardTabBarProps {
@@ -22,13 +18,12 @@ interface BoardTabBarProps {
   onTabPress: (tab: BoardTabKey) => void;
 }
 
-/** 게시판 상단 탭 바 컴포넌트 */
+/** 소통 화면의 일정/공지 전환 탭 */
 export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
   return (
     <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerClassName="flex-row items-center gap-1.5 px-4 py-2"
+      horizontal={false}
+      contentContainerClassName="flex-row items-center px-4 py-2"
       className="border-b border-secondary-200 dark:border-surface-overlay"
       style={{ flexGrow: 0, flexShrink: 0 }}
     >
@@ -42,7 +37,7 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
             accessibilityLabel={`${label} 탭`}
             accessibilityState={{ selected: isActive }}
             hitSlop={{ top: 8, bottom: 8 }}
-            className={`self-center rounded-xl px-3 py-2.5 ${
+            className={`flex-1 items-center rounded-xl px-3 py-2.5 ${
               isActive
                 ? 'bg-primary-500 active:bg-primary-600 dark:bg-primary-400 dark:active:bg-primary-600'
                 : 'bg-secondary-100 active:bg-secondary-200 dark:bg-surface-elevated dark:active:bg-surface-overlay'

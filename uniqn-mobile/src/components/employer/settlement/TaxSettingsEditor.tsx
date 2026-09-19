@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
-import { CheckmarkIcon } from '@/components/icons';
+import { CheckIcon } from '@/components/icons';
 import { formatNumber } from '@/utils/formatters';
 import {
   calculateTaxAmount,
@@ -356,7 +356,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                       }
                     `}
                   >
-                    {isChecked && <CheckmarkIcon size={12} color="white" />}
+                    {isChecked && <CheckIcon size={12} color="white" />}
                   </View>
                   <Text
                     className={`text-sm font-sans ${

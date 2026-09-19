@@ -6,7 +6,7 @@ import type { BoardPost } from '@/types/board';
 function createMockPost(overrides: Partial<BoardPost> = {}): BoardPost {
   return {
     id: 'post-1',
-    boardType: 'free',
+    boardType: 'schedule',
     source: 'board',
     title: '테스트 글 제목',
     body: '본문 내용은 더 이상 리스트에 표시되지 않습니다',
@@ -20,8 +20,6 @@ function createMockPost(overrides: Partial<BoardPost> = {}): BoardPost {
     isLocked: false,
     lockedBy: null,
     lockedAt: null,
-    likeCount: 24,
-    dislikeCount: 3,
     commentCount: 12,
     viewCount: 340,
     imageAttachments: [],
@@ -41,28 +39,41 @@ describe('BoardPostCard', () => {
     expect(queryByText('본문 내용은 더 이상 리스트에 표시되지 않습니다')).toBeNull();
   });
 
-  it('renders all four meta counts regardless of board type', () => {
-    const { getByText } = render(<BoardPostCard post={createMockPost()} onPress={jest.fn()} />);
+  it('shows only the useful comment count for schedule communication', () => {
+    const { getByText, queryByText } = render(
+      <BoardPostCard post={createMockPost()} onPress={jest.fn()} />
+    );
     expect(getByText('12')).toBeTruthy();
-    expect(getByText('340')).toBeTruthy();
-    expect(getByText('24')).toBeTruthy();
-    expect(getByText('3')).toBeTruthy();
+    expect(queryByText('340')).toBeNull();
+    expect(queryByText('24')).toBeNull();
+    expect(queryByText('3')).toBeNull();
   });
 
-  it('renders all four meta counts for notice posts as well', () => {
+  it('does not show community metrics for notices', () => {
     const post = createMockPost({ boardType: 'notice', source: 'announcement' });
-    const { getByText } = render(<BoardPostCard post={post} onPress={jest.fn()} />);
-    expect(getByText('12')).toBeTruthy();
-    expect(getByText('340')).toBeTruthy();
-    expect(getByText('24')).toBeTruthy();
-    expect(getByText('3')).toBeTruthy();
+    const { queryByText } = render(<BoardPostCard post={post} onPress={jest.fn()} />);
+    expect(queryByText('12')).toBeNull();
+    expect(queryByText('340')).toBeNull();
   });
 
   it('formats counts over 1000 using compact notation', () => {
-    const post = createMockPost({ viewCount: 1250, commentCount: 2100 });
+    const post = createMockPost({ commentCount: 2100 });
     const { getByText } = render(<BoardPostCard post={post} onPress={jest.fn()} />);
-    expect(getByText('1.3k')).toBeTruthy();
     expect(getByText('2.1k')).toBeTruthy();
+  });
+
+  it('shows schedule dates and location', () => {
+    const post = createMockPost({
+      jobSummary: {
+        jobPostingId: 'job-1',
+        title: '테스트 글 제목',
+        workDate: '2026-04-15',
+        workDates: ['2026-04-15', '2026-04-16'],
+        locationName: '인스파이어',
+      },
+    });
+    const { getByText } = render(<BoardPostCard post={post} onPress={jest.fn()} />);
+    expect(getByText('2026-04-15, 2026-04-16 · 인스파이어')).toBeTruthy();
   });
 
   it('calls onPress with the post when tapped', () => {

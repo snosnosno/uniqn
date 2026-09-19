@@ -67,5 +67,3 @@ export function NicknameSearchField({
     </View>
   );
 }
-
-export default NicknameSearchField;

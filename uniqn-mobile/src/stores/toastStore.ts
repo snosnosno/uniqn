@@ -53,10 +53,22 @@ export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
 
   addToast: (toast) => {
-    // 중복 체크: 동일 message + type이 이미 표시 중이면 무시
-    const isDuplicate = get().toasts.some(
-      (t) => t.message === toast.message && t.type === toast.type
-    );
+    // 중복 체크: 동일 message + type이 이미 표시 중이면 무시.
+    //
+    // ⚠️ `action` 토스트는 dedupe 대상이 아니다.
+    // 되돌리기(Undo) 토스트의 정체성은 message+type 이 아니라 **onPress 클로저**다.
+    // 예: 알림 삭제 토스트 메시지가 `'{제목}' 알림을 삭제했습니다.` 라, 제목이 같은
+    // 그룹 알림 2건을 연속 삭제하면 두 번째가 dedupe 에 걸려 **되돌리기 어포던스가 통째로
+    // 사라진다** — 삭제 커밋 타이머는 이미 돌고 있으므로 그대로 편도 삭제가 된다.
+    // 메시지가 같아도 클로저가 다르면 다른 토스트이므로 둘 다 띄운다.
+    //
+    // 대신 지켜야 할 것: **action 토스트를 루프·재시도 경로에 넣지 말 것.**
+    // dedupe 가 스팸을 접어 주던 경로(QR 연속 스캔 실패, 뮤테이션 에러 이중탭)는 전부
+    // action 이 없는 토스트라 보호가 그대로 유지되지만, action 토스트에는 그 보호가 없다.
+    // 현재 action 토스트 5곳은 전부 상류에 per-id 가드(pendingDeletesRef 등)가 있다.
+    const isDuplicate =
+      !toast.action &&
+      get().toasts.some((t) => t.message === toast.message && t.type === toast.type);
     if (isDuplicate) return;
 
     const id = generateId();

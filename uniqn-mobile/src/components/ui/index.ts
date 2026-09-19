@@ -18,6 +18,8 @@ export { FocusablePressable, type FocusablePressableProps } from './FocusablePre
 export { Badge, type BadgeProps } from './Badge';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Divider } from './Divider';
+export { InfoRow, type InfoRowProps } from './InfoRow';
+export { ActionTileGrid, type ActionTileGridProps, type ActionTileItem } from './ActionTileGrid';
 export {
   Accordion,
   AccordionItem,
@@ -135,26 +137,6 @@ export {
 } from './Skeleton';
 
 export { ScreenSkeleton, type ScreenSkeletonType } from './ScreenSkeleton';
-
-// ============================================================================
-// Image Components
-// ============================================================================
-
-export {
-  OptimizedImage,
-  AvatarImage,
-  BannerImage,
-  ProductImage,
-  DEFAULT_BLURHASH,
-  type OptimizedImageProps,
-  type BlurhashPreset,
-} from './OptimizedImage';
-
-// ============================================================================
-// Layout Components
-// ============================================================================
-
-export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
 
 // ============================================================================
 // Filter Components

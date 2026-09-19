@@ -46,7 +46,9 @@ export const roleRequirementSchema = z.object({
   count: z
     .number()
     .min(1, { message: 'At least one staff member is required' })
-    .max(100, { message: 'At most 100 staff members are allowed' }),
+    // 주문서(orderSheet.schema.ts count.max)와 정합 — 어긋나면 주문서에서 통과한 값이
+    // 이 스키마를 타는 경로에서 거부된다.
+    .max(999, { message: 'At most 999 staff members are allowed' }),
 });
 
 export const salaryInfoSchema = z.object({
@@ -470,11 +472,11 @@ export const jobPostingDocumentSchema = z
     status: z.enum(POSTING_STATUS_VALUES),
     ownerId: z.string(),
     ownerName: z.string().optional(),
-    workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
+    workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
     // 운영처(venue) 컨테이너 FK(근무표). 일반 공고는 미설정. `.strict()` 스키마라
     // 키를 등록하지 않으면 venue_id 를 select 하는 순간 read 가 증발하고(#194 클래스),
     // 직렬화에 venueId 가 실리면 assertCanonical 이 throw 한다 — 양 경계의 필수 등록.
-    venueId: z.string().uuid({ message: '올바른 지점 ID 가 아닙니다' }).optional(),
+    venueId: z.string().uuid({ message: '올바른 지점 ID가 아닙니다' }).optional(),
     postingType: postingTypeSchema.optional().default('regular'),
     workDate: z.string().optional(), // fixed 공고는 work_date가 없음
     workDates: z.array(z.string()).optional(),
@@ -484,6 +486,15 @@ export const jobPostingDocumentSchema = z
     salaryHourlyMax: z.number().int().positive().nullable().optional(),
     salaryDailyMax: z.number().int().positive().nullable().optional(),
     salaryMonthlyMax: z.number().int().positive().nullable().optional(),
+    // 근무지 좌표(B2). venueId·salary*Max 와 같은 클래스의 필수 등록 —
+    // `TABLE_COLUMNS` 에 geo_lat/geo_lng 를 넣은 순간 여기에도 있어야 read 가 살아남는다.
+    //
+    // ⚠️ 범위 제한을 **일부러 걸지 않는다** — 바로 위 region 주석과 같은 이유다. 이 스키마는
+    //    읽기·쓰기 양쪽에 쓰이는데, 읽기에서 범위를 걸면 언젠가 경계를 넓혔을 때(해외 지점 등)
+    //    저장된 공고가 파스 실패로 **목록에서 증발한다**. 범위 검증의 값어치는 쓰기 경계에 있고
+    //    거기서 한다(`isGeoPointInKorea` — geocodingService) + DB `chk_job_postings_geo_bounds` 가 최종 권위.
+    geoLat: z.number().nullable().optional(),
+    geoLng: z.number().nullable().optional(),
     totalPositions: z.number(),
     filledPositions: z.number(),
     viewCount: z.number().optional(),

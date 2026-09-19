@@ -24,6 +24,11 @@ const mockUseDuplicateTournament = jest.fn(() => ({
   mutate: mockDuplicateMutate,
   isPending: false,
 }));
+const mockArchiveMutate = jest.fn();
+const mockUseSetTournamentArchived = jest.fn(() => ({
+  mutate: mockArchiveMutate,
+  isPending: false,
+}));
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
@@ -37,6 +42,9 @@ jest.mock('@/components/headers', () => ({
 jest.mock('@/hooks/ops', () => ({
   useOpsTournaments: () => mockUseOpsTournaments(),
   useDuplicateTournament: () => mockUseDuplicateTournament(),
+  // 결함③ 보관 버튼(ArchiveButton)이 리프에서 호출한다. 빠뜨리면 실제 훅이 돌아
+  // QueryClientProvider 없이 useQueryClient() 가 터진다.
+  useSetTournamentArchived: () => mockUseSetTournamentArchived(),
 }));
 
 jest.mock('@/services/observability/analyticsService', () => ({
@@ -348,5 +356,82 @@ describe('OpsTournamentListScreen — 복제 액션(A4)', () => {
     expect(getByText('어제의 대회')).toBeTruthy();
     // 복제 버튼은 미노출
     expect(queryByTestId('ops-duplicate-t-done')).toBeNull();
+  });
+
+  // ── 결함③ 보관/보관함 ──
+  // 원래 결함: "테스트로 만든 대회가 목록에 영구 잔존" — 그걸 닫는 필터가 여기 고정된다.
+  describe('보관 필터·토글 (결함③)', () => {
+    const ARCHIVED = { ...COMPLETED, id: 't-arch', name: '치운 대회', archivedAt: ISO };
+
+    beforeEach(() => {
+      mockUseLocalSearchParams.mockReturnValue({});
+      mockArchiveMutate.mockReset();
+    });
+
+    it('보관된 대회는 기본 목록에서 숨는다', () => {
+      setState({ tournaments: [COMPLETED, ARCHIVED] });
+      const { getByText, queryByText } = render(<OpsTournamentListScreen />);
+      expect(getByText('어제의 대회')).toBeTruthy();
+      expect(queryByText('치운 대회')).toBeNull();
+    });
+
+    it('보관분이 없으면 보관함 토글도 없다(빈 보관함 버튼은 노이즈)', () => {
+      setState({ tournaments: [COMPLETED] });
+      const { queryByTestId } = render(<OpsTournamentListScreen />);
+      expect(queryByTestId('ops-archive-toggle')).toBeNull();
+    });
+
+    it('토글을 누르면 보관함(보관분만)으로 전환된다 — 활성/보관을 섞지 않는다', () => {
+      setState({ tournaments: [COMPLETED, ARCHIVED] });
+      const { getByTestId, getByText, queryByText } = render(<OpsTournamentListScreen />);
+
+      expect(getByText('보관함 보기 (1)')).toBeTruthy();
+      fireEvent.press(getByTestId('ops-archive-toggle'));
+
+      expect(getByText('치운 대회')).toBeTruthy();
+      expect(queryByText('어제의 대회')).toBeNull();
+      // 이탈 경로가 남아 있어야 데드엔드가 아니다.
+      expect(getByText('활성 대회 보기')).toBeTruthy();
+    });
+
+    it('보관 버튼 → Alert 확인 → archived=true 로 mutate', () => {
+      setState({ tournaments: [COMPLETED] });
+      const { getByTestId } = render(<OpsTournamentListScreen />);
+      fireEvent.press(getByTestId('ops-archive-t-done'));
+
+      // 보관은 목록에서 사라지는 행위라 확인을 거친다(복원은 1탭 — 아래 케이스).
+      const [, message, buttons] = alertSpy.mock.calls[0] as [
+        string,
+        string,
+        { text: string; onPress?: () => void }[],
+      ];
+      expect(message).toContain('보관함에서 언제든 복원할 수 있어요');
+      expect(buttons.map((b) => b.text)).toEqual(['취소', '보관']);
+
+      buttons[1].onPress?.();
+      expect(mockArchiveMutate).toHaveBeenCalledWith(true);
+    });
+
+    it('전 대회가 보관된 상태에서도 보관함 토글이 남는다(데드엔드 방지)', () => {
+      setState({ tournaments: [ARCHIVED] });
+      const { getByTestId } = render(<OpsTournamentListScreen />);
+      expect(getByTestId('ops-archive-toggle')).toBeTruthy();
+    });
+
+    it('보관된 카드의 버튼은 확인 없이 복원(false) — 되돌리는 방향은 1탭', () => {
+      setState({ tournaments: [ARCHIVED] });
+      const { getByTestId } = render(<OpsTournamentListScreen />);
+      fireEvent.press(getByTestId('ops-archive-toggle')); // 보관함으로 전환
+      fireEvent.press(getByTestId('ops-archive-t-arch'));
+      expect(mockArchiveMutate).toHaveBeenCalledWith(false);
+    });
+
+    it('피커(postingId) 모드에서는 보관 버튼·토글을 숨긴다(선택 전용 화면)', () => {
+      mockUseLocalSearchParams.mockReturnValue({ postingId: 'posting-1' });
+      setState({ tournaments: [{ ...COMPLETED, jobPostingId: 'posting-1' }] });
+      const { queryByTestId } = render(<OpsTournamentListScreen />);
+      expect(queryByTestId('ops-archive-t-done')).toBeNull();
+      expect(queryByTestId('ops-archive-toggle')).toBeNull();
+    });
   });
 });

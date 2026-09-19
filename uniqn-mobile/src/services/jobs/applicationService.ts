@@ -26,21 +26,8 @@ import type {
   RequestCancellationInput,
   ReviewCancellationInput,
 } from '@/types';
-import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
-import {
-  archiveSubstitutePostByLinkedPosting,
-  createSubstitutePost,
-} from '@/services/boardService';
 
 export type { ApplicationWithJob } from '@/repositories';
-
-/**
- * requestCancellation 결과 — 대타 구인 글 생성 부수효과 상태 보고.
- * Service는 UI 의존성 금지 규칙 준수. UI 레이어에서 이 값을 보고 toast 표시.
- */
-export type CancellationResult = {
-  substitutePost: 'created' | 'skipped' | 'failed';
-};
 
 function toValidationError(message: string, fieldErrors?: Record<string, string[] | undefined>) {
   const normalizedFieldErrors = fieldErrors
@@ -207,9 +194,8 @@ export async function applyToJobV2(
 
 export async function requestCancellation(
   input: RequestCancellationInput,
-  applicantId: string,
-  applicantContext?: { name: string; role: BoardAuthorRole; jobSummary: BoardJobSummary }
-): Promise<CancellationResult> {
+  applicantId: string
+): Promise<void> {
   const trace = startApiTrace('requestCancellation');
   trace.putAttribute('applicationId', input.applicationId);
 
@@ -235,40 +221,12 @@ export async function requestCancellation(
 
     logger.info('Cancellation request completed', { applicationId: input.applicationId });
 
-    // 대타 글 생성 (best-effort: 실패해도 취소 요청은 유지)
-    let substitutePost: CancellationResult['substitutePost'] = 'skipped';
-    if (validationResult.data.wantsSubstitutePost && applicantContext) {
-      try {
-        await createSubstitutePost({
-          authorId: applicantId,
-          authorName: applicantContext.name,
-          authorRole: applicantContext.role,
-          applicationId: input.applicationId,
-          jobSummary: applicantContext.jobSummary,
-          // 취소 사유는 넘기지 않는다 — 게시판은 실명 전체공개라 사적 사유가 노출된다(W1-10).
-        });
-        substitutePost = 'created';
-        logger.info('Substitute post created', { applicationId: input.applicationId });
-      } catch (substituteError) {
-        substitutePost = 'failed';
-        logger.warn('Substitute post creation failed (non-blocking)', {
-          applicationId: input.applicationId,
-          error: substituteError,
-        });
-      }
-    }
-
     trace.putAttribute('status', 'success');
-    trace.putAttribute('substitute_post', substitutePost);
     trace.stop();
 
     trackEvent('cancellation_request', {
       application_id: input.applicationId,
-      wants_substitute: validationResult.data.wantsSubstitutePost,
-      substitute_post: substitutePost,
     });
-
-    return { substitutePost };
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
@@ -281,24 +239,7 @@ export async function requestCancellation(
   }
 }
 
-/**
- * 취소 요청 심사 (승인 또는 거절).
- *
- * 부수효과:
- *   - 승인/거절 모두 성공 시 관련 대타 구인 게시글을 archived 상태로 전환
- *     (동일 jobPostingId + 동일 applicantId의 active 대타글)
- *
- * 아카이브 조건 설계 근거:
- *   - 거절 시: 원 지원자가 계속 참석 → 대타 불필요
- *   - 승인 시: 슬롯 재오픈 + 정식 지원 루트로 전환 → 대타 임무 완료
- *   - 양쪽 모두: 취소 요청 라이프사이클 종료 = 대타글 종료
- *
- * 동작 변경 시 주의:
- *   - applicationService.substitute.test.ts의 regression lock-in 테스트가
- *     의도 변경을 명시적으로 강제함. 분기 로직 추가 시 해당 테스트 업데이트 필요.
- *
- * 아카이브는 non-blocking: 실패 시 logger.warn, 심사 자체는 성공 처리.
- */
+/** 취소 요청 심사 (승인 또는 거절). */
 export async function reviewCancellationRequest(
   input: ReviewCancellationInput,
   reviewerId: string
@@ -332,27 +273,6 @@ export async function reviewCancellationRequest(
       applicationId: input.applicationId,
       approved: input.approved,
     });
-
-    // 대타글 아카이브 (승인/거절 공통):
-    //   · 거절 → 원 지원자 계속 참석 → 대타 불필요
-    //   · 승인 → 슬롯 재오픈, 정식 지원 루트 전환 → 대타 임무 완료
-    //   · 분기 추가 시 applicationService.substitute.test.ts 의 regression
-    //     lock-in 테스트 업데이트 필수 (현재 양쪽 동일 동작 고정)
-    try {
-      const application = await applicationRepository.getById(input.applicationId);
-      if (application) {
-        await archiveSubstitutePostByLinkedPosting(
-          application.jobPostingId,
-          application.applicantId
-        );
-      }
-    } catch (archiveError) {
-      logger.warn('Substitute post archive failed on review (non-blocking)', {
-        applicationId: input.applicationId,
-        approved: input.approved,
-        error: archiveError,
-      });
-    }
 
     trace.putAttribute('status', 'success');
     trace.stop();

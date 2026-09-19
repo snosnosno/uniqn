@@ -28,7 +28,7 @@ export class JobDetailPage extends BasePage {
     this.shareButton = page.locator('[aria-label="공고 공유하기"]');
     this.backButton = page.locator('button').first();
     this.errorMessage = page
-      .getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/)
+      .getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없/)
       .first();
   }
 
@@ -59,7 +59,7 @@ export class JobDetailPage extends BasePage {
         '내 일정 확인',
         '프로필 보기',
         '지원 완료',
-        '공고를 찾을 수 없습니다',
+        '공고를 찾을 수 없',
         '오류가 발생했습니다',
         '문제가 발생했습니다',
         '다시 시도',

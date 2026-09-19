@@ -6,7 +6,7 @@ import {
   CalendarIcon,
   DocumentTextOutlineIcon,
   FlagOutlineIcon,
-  PeopleOutlineIcon,
+  UsersIcon,
   RefreshIcon,
 } from '@/components/icons';
 import {
@@ -19,8 +19,10 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { getLayoutColor } from '@/constants/colors';
-import { useAdminDashboard } from '@/hooks';
-import { useThemeStore } from '@/stores';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useThemeStore } from '@/stores/themeStore';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 function formatDateTime(date: Date | string | undefined): string {
   if (!date) {
@@ -43,7 +45,13 @@ function formatDateTime(date: Date | string | undefined): string {
 
 export default function AdminStatsScreen() {
   const isDark = useThemeStore((state) => state.isDarkMode);
-  const { stats, metrics, isLoading, isRefreshing, error, refresh } = useAdminDashboard();
+  const { stats, metrics, isLoading, error, refresh } = useAdminDashboard();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   const lastUpdatedAt = useMemo(
     () => formatDateTime(metrics?.fetchedAt ?? stats?.fetchedAt),
@@ -66,7 +74,7 @@ export default function AdminStatsScreen() {
         <ErrorState
           error={error}
           title="서비스 통계"
-          message="통계 데이터를 불러오지 못했습니다."
+          message={loadFailed('통계 데이터')}
           onRetry={refresh}
         />
       </SafeAreaView>
@@ -81,8 +89,8 @@ export default function AdminStatsScreen() {
         contentContainerClassName="p-4"
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }
@@ -127,7 +135,7 @@ export default function AdminStatsScreen() {
               label="총 사용자"
               value={stats?.totalUsers}
               isLoading={isLoading && !stats}
-              icon={PeopleOutlineIcon}
+              icon={UsersIcon}
               iconColor="#2563EB"
               iconBgColor="bg-info-100 dark:bg-info-900/20"
             />

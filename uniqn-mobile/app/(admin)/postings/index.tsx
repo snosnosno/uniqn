@@ -30,6 +30,8 @@ import { useBulkShareSelection } from '@/hooks/share/useBulkShareSelection';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard, PostingType } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 const TYPE_FILTERS: { value: PostingType | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -43,13 +45,24 @@ export default function AdminPostingsScreen() {
   const selection = useBulkShareSelection();
   const { shareJobs, isSharing } = useBulkShare();
 
+  // 관리자 공고 관리는 **과거를 포함한 전수**를 본다 — 구직자 브라우즈의 전향 조회
+  // (종료 공고 숨김 + 임박 순 정렬)가 적용되면 지난 공고가 화면에서 사라진다.
   const filters = useMemo(
-    () => (typeFilter === 'all' ? {} : { postingType: typeFilter }),
+    () =>
+      typeFilter === 'all'
+        ? { includeEnded: true }
+        : { postingType: typeFilter, includeEnded: true },
     [typeFilter]
   );
-  const { jobs, isLoading, error, refresh, isRefreshing, loadMore, hasMore } = useJobPostings({
+  const { jobs, isLoading, error, refresh, loadMore, hasMore } = useJobPostings({
     filters,
   });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   const filledCountIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
   const filledCountsQuery = usePostingFilledCounts(filledCountIds);
@@ -138,7 +151,7 @@ export default function AdminPostingsScreen() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          title="공고 목록을 불러올 수 없습니다"
+          title={loadFailed('공고 목록')}
           error={error}
           onRetry={() => void refresh()}
         />
@@ -201,8 +214,8 @@ export default function AdminPostingsScreen() {
           onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => void refresh()}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               {...PTR_REFRESH_PROPS}
             />
           }

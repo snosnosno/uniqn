@@ -5,7 +5,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ERROR_CODES } from '@/errors';
 import { requireAuth } from '@/errors/guardErrors';
-import { invalidateRelated, queryKeys } from '@/lib';
+import { invalidateRelated } from '@/lib/invalidationStrategy';
+import { queryKeys } from '@/lib/queryClient';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -39,6 +41,7 @@ export function useConfirmApplication() {
 
   return useMutation({
     mutationFn: (input: ConfirmApplicationInput) => {
+      requireOnlineForMutation('지원 확정');
       requireAuth(user?.uid, 'useApplicantMutations');
       return confirmApplication(input, user.uid);
     },
@@ -105,6 +108,7 @@ export function useRejectApplication() {
 
   return useMutation({
     mutationFn: (input: RejectApplicationInput) => {
+      requireOnlineForMutation('지원 거절');
       requireAuth(user?.uid, 'useApplicantMutations');
       return rejectApplication(input, user.uid);
     },
@@ -167,6 +171,7 @@ export function useBulkConfirmApplications() {
 
   return useMutation({
     mutationFn: (applicationIds: string[]) => {
+      requireOnlineForMutation('지원 일괄 확정');
       requireAuth(user?.uid, 'useApplicantMutations');
       return bulkConfirmApplications(applicationIds, user.uid);
     },
@@ -257,6 +262,7 @@ export function useMarkAsRead() {
 
   return useMutation({
     mutationFn: (applicationId: string) => {
+      requireOnlineForMutation('지원서 읽음 처리');
       requireAuth(user?.uid, 'useApplicantMutations');
       return markApplicationAsRead(applicationId, user.uid);
     },

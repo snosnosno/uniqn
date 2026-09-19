@@ -105,13 +105,6 @@ export const updateNotificationSettingsSchema = z.object({
   enabled: z.boolean().optional(),
   pushEnabled: z.boolean().optional(),
   categories: z.record(z.string(), categoryNotificationSettingSchema).optional(),
-  quietHours: z
-    .object({
-      enabled: z.boolean(),
-      start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-      end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-    })
-    .optional(),
 });
 
 export type UpdateNotificationSettingsData = z.infer<typeof updateNotificationSettingsSchema>;
@@ -248,13 +241,6 @@ export const notificationSettingsDocumentSchema = z
     enabled: z.boolean(),
     pushEnabled: z.boolean().optional(),
     categories: categoriesSettingsSchema,
-    quietHours: z
-      .object({
-        enabled: z.boolean(),
-        start: z.string(),
-        end: z.string(),
-      })
-      .optional(),
     grouping: z
       .object({
         enabled: z.boolean(),

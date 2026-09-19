@@ -17,12 +17,21 @@ function shift(overrides: Record<string, unknown> = {}): ScheduleEvent {
 }
 
 describe('planShiftReminders', () => {
-  it('확정 근무에 전날 20시와 출근 2시간 전 두 건을 잡는다', () => {
+  it('확정 근무에 전날 20시 한 건만 잡는다', () => {
     const reminders = planShiftReminders([shift()], NOW);
 
-    expect(reminders.map((r) => r.kind)).toEqual(['day-before', 'hours-before']);
+    expect(reminders.map((r) => r.kind)).toEqual(['day-before']);
     expect(reminders[0].fireAt).toEqual(new Date('2026-07-28T20:00:00'));
-    expect(reminders[1].fireAt).toEqual(new Date('2026-07-29T16:00:00'));
+  });
+
+  // 새벽 근무를 "정확히 24시간 전"으로 바꾸면 전날 새벽에 발사된다. 20시 고정이 그 방어다.
+  it('새벽 근무여도 전날 20시에 울린다', () => {
+    const reminders = planShiftReminders(
+      [shift({ date: '2026-07-29', startTime: new Date('2026-07-29T02:00:00') })],
+      NOW
+    );
+
+    expect(reminders[0].fireAt).toEqual(new Date('2026-07-28T20:00:00'));
   });
 
   it('확정이 아니면 예약하지 않는다', () => {
@@ -43,28 +52,27 @@ describe('planShiftReminders', () => {
   });
 
   // 이미 지난 시각을 예약하면 OS 가 즉시 발사해 버린다.
-  it('오늘 근무는 이미 지난 전날 알림을 건너뛰고 남은 것만 잡는다', () => {
+  //
+  // ⚠️ 전날 20시가 유일한 리마인더이므로 **그 시각을 넘겨 확정된 근무는 전부 0건**이다.
+  //    당일 확정만이 아니다 — 전날 22시에 확정된 다음날 오전 근무도 알림을 못 받는다.
+  //    예전에는 hours-before 가 이 구간을 덮고 있었고 제거하면서 드러났다.
+  //    설계 결정 6(스태프 독촉 금지)을 따른 결과지만, 직전 확정이 잦아지면
+  //    '독촉' 이 아닌 '최초 고지' 성격의 폴백 1회를 재검토할 것.
+  it('전날 20시를 넘겨 확정된 근무는 예약할 것이 없다', () => {
     const reminders = planShiftReminders(
       [shift({ date: '2026-07-27', startTime: new Date('2026-07-27T18:00:00') })],
-      NOW
-    );
-
-    expect(reminders.map((r) => r.kind)).toEqual(['hours-before']);
-  });
-
-  it('출근 2시간 전이 이미 지났으면 당일 알림도 건너뛴다', () => {
-    const reminders = planShiftReminders(
-      [shift({ date: '2026-07-27', startTime: new Date('2026-07-27T10:00:00') })],
       NOW
     );
 
     expect(reminders).toEqual([]);
   });
 
-  it('시작 시각을 모르면 전날 알림만 잡는다', () => {
+  // 출근 시각은 더 이상 계획에 영향을 주지 않는다 — '미정'인 근무도 똑같이 알림을 받는다.
+  it('시작 시각을 몰라도 전날 알림을 잡는다', () => {
     const reminders = planShiftReminders([shift({ startTime: null })], NOW);
 
     expect(reminders.map((r) => r.kind)).toEqual(['day-before']);
+    expect(reminders[0].fireAt).toEqual(new Date('2026-07-28T20:00:00'));
   });
 
   it('30일보다 먼 근무는 아직 예약하지 않는다', () => {
@@ -76,12 +84,13 @@ describe('planShiftReminders', () => {
     ).toEqual([]);
   });
 
-  it('키는 근무·종류마다 안정적이라 재계산해도 같다', () => {
+  // 키가 흔들리면 MMKV 원장이 stale 로 판정해 매번 취소·재예약이 돈다.
+  it('키는 근무마다 안정적이라 재계산해도 같다', () => {
     const first = planShiftReminders([shift()], NOW);
     const second = planShiftReminders([shift()], NOW);
 
     expect(first.map((r) => r.key)).toEqual(second.map((r) => r.key));
-    expect(first.map((r) => r.key)).toEqual(['wl-1:day-before', 'wl-1:hours-before']);
+    expect(first.map((r) => r.key)).toEqual(['wl-1:day-before']);
   });
 
   it('여러 근무를 울릴 시각 순으로 돌려준다', () => {

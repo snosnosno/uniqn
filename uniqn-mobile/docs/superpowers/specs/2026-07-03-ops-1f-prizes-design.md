@@ -2,7 +2,7 @@
 
 - **작성일**: 2026-07-03 · **상태**: DESIGN v1 (브레인스토밍 승인 완료 — 사용자 결정 8개 반영)
 - **브랜치**: `feat/ops-1f-prizes` (master `97a7bcaf6` 기반, 워크트리 `T-HOLDEM-ops-1f`)
-- **선행**: 1a~1d(+STEP A)+배정 2종(#220) 전부 prod 출하. 권위 참조 = 1d 스펙 `2026-06-29-ops-1d-bust-reentry-itm-design.md`, 배정 스펙 `2026-06-30-ops-seat-assignment-design.md`, 원 설계 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md` §8/§10(1f 행)
+- **선행**: 1a~1d(+STEP A)+배정 2종(#220) 전부 prod 출하. 권위 참조 = 1d 스펙 `2026-06-29-ops-1d-bust-reentry-itm-design.md`, 배정 스펙 `2026-06-30-ops-seat-assignment-design.md`, 원 설계 `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md` §8/§10(1f 행)
 - **정찰 근거**: 2026-07-03 정찰 WF 6차원(5 성공) + prod 실측. **prod ops 전 테이블 0행** → 스키마·payload 변경 하위호환 부담 없음. advisor ERROR 0 · anon-executable SECDEF ops = monitor/player 2개(불변 계약)
 
 ---

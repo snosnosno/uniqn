@@ -120,6 +120,15 @@ jest.mock('react-native-keyboard-controller', () =>
   require('react-native-keyboard-controller/jest')
 );
 
+// react-native-webview: 'RNCWebViewModule' TurboModule 을 요구해 jest 에서 직접 로드하면
+// Invariant Violation 으로 **스위트 전체가 뜨지 않는다**(주소 검색 도입 시 order-sheet 계열
+// 10개 스위트 동반 사망). 이 패키지는 공식 jest 목을 제공하지 않으므로 View 로 대체한다.
+// onMessage 브릿지 로직은 컴포넌트 밖(utils/address/postcodeAddress)에서 유닛 테스트한다.
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  return { WebView: View, default: View };
+});
+
 // react-native-safe-area-context: useSafeAreaInsets 훅은 SafeAreaProvider 없으면 throw
 // ('No safe area value available'). 컴포넌트(SafeAreaProvider/SafeAreaView/initialWindowMetrics)는
 // 실제 구현을 유지(requireActual)하고 훅만 0 인셋으로 오버라이드 — provider 미래핑 렌더 전역 안전화.

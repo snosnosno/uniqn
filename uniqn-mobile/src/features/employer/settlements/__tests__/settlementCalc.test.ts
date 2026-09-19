@@ -5,6 +5,8 @@
  * 정산 확인 모달 금액(calculateWorkLogAmount)이 세전으로 계산되고,
  * 저장값(SettlementRepository canonical 재계산)은 세후라
  * 같은 화면에서 행·확인모달·저장값이 서로 다른 숫자를 표시했다.
+ *
+ * 구인자 IA S2 — `selectPendingSettlementCount`(정산 대기 건수)는 지급 워크플로우와 함께 없앴다.
  */
 
 import { calculateWorkLogAmount, deriveSalaryConfig } from '../settlementCalc';

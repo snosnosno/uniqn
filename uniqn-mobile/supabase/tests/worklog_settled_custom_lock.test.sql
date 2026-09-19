@@ -110,22 +110,43 @@ SELECT lives_ok(
   '미정산건 custom_salary_info 변경: employer ALLOW (기존 계약 유지)'
 );
 
--- 완료 건의 payroll_notes 변경은 employer 허용 (settled lock 범위 밖 = 기존 계약)
-SELECT lives_ok(
+-- 🔄 계약 반전 (2026-08-05, 감사 L1 3단계 / 마이그 20260805120000)
+--    아래 두 건은 원래 "employer 는 payroll_* 를 직접 UPDATE 할 수 있다"를 고정했다.
+--    `tr_work_logs_pin_payroll` 이 payroll 4컬럼을 **정산 RPC 전용**으로 바꾸면서
+--    그 계약이 뒤집혔다 — 회귀가 아니라 의도된 전환이므로 새 계약으로 갱신한다.
+--    ⚠️ settled lock(custom_* 동결) 계약 자체는 그대로다. 위 1~4번이 계속 지킨다.
+
+-- 5. 완료 건 payroll_notes 직접 변경: employer 여도 DENY (정산 RPC 전용으로 전환됨)
+SELECT throws_like(
   format(
     $q$UPDATE public.work_logs SET payroll_notes = '정산 메모 수정' WHERE id = %L$q$,
     current_setting('t.wl_settled')
   ),
-  '완료건 payroll_notes 변경: employer ALLOW (settled lock 범위 밖)'
+  'WORK_LOG_PAYROLL_RPC_ONLY%',
+  '완료건 payroll_notes 직접 변경: employer 도 DENY (정산 RPC 전용)'
 );
 
--- 정산 취소(completed→pending)는 employer 허용 — 2단계 수정 경로의 의도적 허용 계약
+-- 6. **2단계 수정 경로는 살아 있어야 한다** — 이 파일의 원래 의도를 채널만 바꿔 보존한다.
+--    되돌리기는 이제 SECDEF RPC(set_work_log_payroll_status)를 통해야 하고, 그 안에서는
+--    current_user 가 definer 로 바뀌어 핀을 통과한다. 여기서는 그 채널을 RESET ROLE 로 재현한다
+--    (JWT 는 employer 그대로 — 기존 protect_work_log_payroll 의 역할 게이트를 통과해야 하므로
+--     jpc_test_clear_user() 로 클레임까지 비우면 안 된다).
+--    되돌린 뒤 custom_* 수정이 열리는지까지 한 단언으로 묶어 "2단계 경로"를 실제로 증명한다.
 SELECT lives_ok(
   format(
-    $q$UPDATE public.work_logs SET payroll_status = 'pending' WHERE id = %L$q$,
+    $q$DO $inner$
+       BEGIN
+         RESET ROLE;
+         UPDATE public.work_logs SET payroll_status = 'pending' WHERE id = %L;
+         UPDATE public.work_logs
+            SET custom_salary_info = '{"salaryType":"hourly","salaryAmount":12000}'::jsonb
+          WHERE id = %L;
+       END
+       $inner$$q$,
+    current_setting('t.wl_settled'),
     current_setting('t.wl_settled')
   ),
-  '정산 취소(completed→pending): employer ALLOW (명시적 되돌림 경로)'
+  '2단계 경로 유지: RPC 채널로 되돌린 뒤 custom_* 수정이 열린다'
 );
 
 SELECT * FROM finish();

@@ -115,7 +115,6 @@ function createMockSettings() {
       system: { enabled: true, pushEnabled: true },
       admin: { enabled: true, pushEnabled: true },
     },
-    quietHours: { enabled: false, start: '22:00', end: '08:00' },
   };
 }
 
@@ -542,10 +541,14 @@ describe('NotificationService', () => {
         'user-1'
       );
 
+      // ⚠️ 이 단언은 정산 알림 문구의 **6번째 정본**이다(DB 3곳 + 클라 2곳 + 여기).
+      //    문구 계약: 앱은 돈을 보내지 않는다 — 확정되는 것은 금액이지 지급이 아니다.
+      //    문구를 고칠 때 여기도 같이 고쳐야 한다. 정본 목록은
+      //    `notifications/internal/__tests__/settlementNotifyCopy.parity.test.ts` 참고.
       expect(notification).toEqual(
         expect.objectContaining({
-          title: '정산 완료',
-          body: "'22222' 정산이 완료되었습니다. 지급액: 12,000원",
+          title: '정산 금액 확정',
+          body: "'22222' 정산 금액이 12,000원으로 확정되었습니다. 실제 지급은 사장님과 정한 방법으로 이루어집니다.",
         })
       );
     });

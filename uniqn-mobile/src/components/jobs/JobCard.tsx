@@ -1,11 +1,9 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
-import { STATUS_COLORS } from '@/constants/colors';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
-import { HeartFilledIcon, HeartOutlineIcon, ShareIcon } from '@/components/icons';
+import { ShareIcon } from '@/components/icons';
 import { Badge, type CardStripeTone } from '@/components/ui';
-import { useBookmarks } from '@/hooks/useBookmarks';
 import { useShare } from '@/hooks/useShare';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard } from '@/types';
@@ -33,9 +31,7 @@ export const JobCard = memo(function JobCard({
   applicationStatus,
   filledCounts,
 }: JobCardProps) {
-  const { isBookmarked, toggleBookmark } = useBookmarks();
   const { shareJobById, isSharing } = useShare();
-  const bookmarked = isBookmarked(job.id);
   const cardFilledCounts = useMemo(
     () => extractPostingFilledSubmap(filledCounts, job.id),
     [filledCounts, job.id]
@@ -44,23 +40,6 @@ export const JobCard = memo(function JobCard({
   const handlePress = useCallback(() => {
     onPress(job.id);
   }, [job.id, onPress]);
-
-  const handleBookmarkPress = useCallback(() => {
-    toggleBookmark({
-      id: job.id,
-      title: job.title,
-      location: job.fullLocation || job.location,
-      workDate: job.workDate,
-    });
-  }, [job.fullLocation, job.id, job.location, job.title, job.workDate, toggleBookmark]);
-
-  const handleBookmarkClick = useCallback(
-    (event?: GestureResponderEvent | React.MouseEvent) => {
-      event?.stopPropagation?.();
-      handleBookmarkPress();
-    },
-    [handleBookmarkPress]
-  );
 
   // 카드는 trim 된 view model 만 갖고 있으므로 id 로 전체 공고를 조회한 뒤 공유한다.
   const handleSharePress = useCallback(
@@ -101,37 +80,6 @@ export const JobCard = memo(function JobCard({
       </Pressable>
     );
 
-  const bookmarkButton =
-    Platform.OS === 'web' ? (
-      <View
-        // @ts-expect-error React Native Web supports onClick on View
-        onClick={handleBookmarkClick}
-        className="-my-1 p-1"
-        style={{ cursor: 'pointer' }}
-        accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
-      >
-        {bookmarked ? (
-          <HeartFilledIcon size={20} color={STATUS_COLORS.error} />
-        ) : (
-          <HeartOutlineIcon size={20} />
-        )}
-      </View>
-    ) : (
-      <Pressable
-        onPress={handleBookmarkClick}
-        hitSlop={HIT_SLOP.medium}
-        className="-my-1 p-1"
-        accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
-        accessibilityRole="button"
-      >
-        {bookmarked ? (
-          <HeartFilledIcon size={20} color={STATUS_COLORS.error} />
-        ) : (
-          <HeartOutlineIcon size={20} />
-        )}
-      </Pressable>
-    );
-
   return (
     <PostingCardSurface
       card={job}
@@ -155,10 +103,7 @@ export const JobCard = memo(function JobCard({
           >
             {job.ownerName ? `구인처 ${job.ownerName}` : ''}
           </Text>
-          <View className="flex-row items-center gap-1">
-            {shareButton}
-            {bookmarkButton}
-          </View>
+          {shareButton}
         </View>
       }
       containerClassName="overflow-hidden"

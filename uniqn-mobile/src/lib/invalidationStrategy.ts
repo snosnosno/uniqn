@@ -116,7 +116,6 @@ type InvalidationTarget =
   | 'reviews.byWorkLog'
   | 'reviews.myGiven'
   | 'reviews.pending'
-  | 'reviews.bubbleScore'
   | 'admin.all'
   // 공고 인원 카운트 — count_posting_confirmed_by_slot(work_logs 기준) 파생
   | 'postingFilledCounts.all'
@@ -401,16 +400,9 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 해당 근무 양방향 리뷰
    * - 내가 작성한 리뷰
    * - 미작성 평가 목록
-   * - 피평가자 버블 점수
    * - 프로필 버블 점수 (비정규화)
    */
-  'review.create': [
-    'reviews.byWorkLog',
-    'reviews.myGiven',
-    'reviews.pending',
-    'reviews.bubbleScore',
-    'user.profile',
-  ],
+  'review.create': ['reviews.byWorkLog', 'reviews.myGiven', 'reviews.pending', 'user.profile'],
 
   // ========================================
   // 프로필 이벤트
@@ -552,10 +544,6 @@ function getQueryKeyForTarget(
       return queryKeys.reviews.myGiven();
     case 'reviews.pending':
       return queryKeys.reviews.pending();
-    case 'reviews.bubbleScore':
-      return context?.revieweeId
-        ? queryKeys.reviews.bubbleScore(context.revieweeId)
-        : queryKeys.reviews.all;
 
     // 관리자
     case 'tournaments.all':

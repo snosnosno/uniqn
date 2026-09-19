@@ -2,26 +2,27 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Loading } from '@/components';
+import { Button } from '@/components';
+import { PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { OrderSheetScreen } from '@/components/employer/order-sheet/OrderSheetScreen';
 import { OrderSheetChainScrim } from '@/components/employer/order-sheet/OrderSheetChainScrim';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { useAuth } from '@/hooks/useAuth';
-import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useOptimisticLockBaseline } from '@/hooks/useOptimisticLockBaseline';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import { toError, isAppError, ERROR_CODES } from '@/errors';
+import { toError, isAppError, extractUserMessage, ERROR_CODES } from '@/errors';
 import { buildJobPostingDraft } from '@/utils/job-posting/submission';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/order-sheet/mappers';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /**
  * 공고 수정(S3) — 전 타입(지원·급구·대회·고정) 주문서 단일 경로.
@@ -35,13 +36,18 @@ export default function EditJobPostingScreen() {
   const { profile } = useAuth();
   const { addToast } = useToastStore();
 
-  const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
-  const { job: contextJob, isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
+  // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다(같은 queryKey 캐시라
+  // 낙관적 잠금 baseline 의 전제 — 아래 useOptimisticLockBaseline 주석 — 는 그대로 유지된다).
+  const {
+    job: existingJob,
+    isLoading: isJobLoading,
+    error: jobError,
+    handleShowQR,
+  } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
-  const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
+  const headerJobTitle = existingJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
-  const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   const [isDirty, setIsDirty] = useState(false);
   // 연쇄 전환 딤 위임(B1) — OrderSheetScreen 내부 딤은 형제인 StackHeader 를 못 덮는다.
@@ -52,6 +58,13 @@ export default function EditJobPostingScreen() {
   const templateManager = useTemplateManager();
 
   const isManageable = existingJob ? isEmployerManageablePosting(existingJob) : true;
+
+  // 채워진 **자리 수** — 좌석 카운터(`filledPositions`, work_logs 축). DB 트리거가 확정/취소마다
+  // 유지하는 값이라 별도 조회 없이 이미 손에 있다. 0 이면 배너 자체를 렌더하지 않는다.
+  //
+  // ⚠️ 이걸 "확정 N명"이라 부르면 안 된다 — 한 사람이 여러 날짜·슬롯에 확정되면 좌석은 여러 개다.
+  // "확정"은 applications 축(지원자 수) 전용 라벨이고, 여기 숫자는 그 값과 다를 수 있다.
+  const filledSeatCount = existingJob?.filledPositions ?? 0;
 
   // 진입 안내 — 저장 후 쿼리 무효화로 existingJob이 갱신돼도 재발행 금지(1회 가드)
   const notifiedRef = useRef(false);
@@ -134,15 +147,16 @@ export default function EditJobPostingScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-content-secondary font-sans">공고 정보를 불러오는 중...</Text>
-        </View>
+        {/* 스켈레톤 통일(S2-9) — 형제 화면과 같은 형상을 쓴다. */}
+        <PostingSurfaceState mode="loading" scope="manage" />
       </SafeAreaView>
     );
   }
 
-  if (jobError || !existingJob || initialValues === null) {
+  // 복원할 공고가 손에 없을 때만 에러 화면으로 간다.
+  // 옛 가드는 jobError 만 서도 편집 폼을 통째로 버렸다 — 캐시로 하이드레이션이 이미
+  // 끝났는데도 사장은 입력하던 화면을 잃었다(공고 상세 index.tsx 와 같은 축).
+  if (!existingJob || initialValues === null) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
@@ -153,10 +167,12 @@ export default function EditJobPostingScreen() {
         />
         <View className="flex-1 items-center justify-center p-4">
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
-            공고를 불러올 수 없습니다
+            {loadFailed('공고')}
           </Text>
+          {/* 원시 error.message 노출 금지 — 개발자 메시지가 그대로 사용자에게 간다.
+              AppError 는 userMessage, 일반 Error 는 중앙 sanitize 를 거친다. */}
           <Text className="mb-4 text-center text-content-secondary font-sans">
-            {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
+            {jobError ? extractUserMessage(jobError) : notFound('공고 정보')}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
             <Text className="font-sans-semibold text-content-onGold">돌아가기</Text>
@@ -174,6 +190,22 @@ export default function EditJobPostingScreen() {
         fallbackHref={headerBackHref}
         rightAction={headerRightAction}
       />
+      {/*
+        확정자 안내 — "공고는 광고, work_log 는 계약"이라는 도메인 사실을 화면에서 말해 준다.
+        공고를 고쳐도 이미 확정된 사람의 근무 시간·날짜는 바뀌지 않는다(서버가 전파하지 않는다).
+        이 문장이 없으면 사장은 여기서 시간을 고치고 "전달됐다"고 믿은 채 화면을 떠난다.
+        헤더 바로 아래 고정 배너로 두는 이유: 토스트는 시간 항목을 열기 전에 사라진다.
+      */}
+      {filledSeatCount > 0 ? (
+        <View className="border-b border-warning-200 bg-warning-50 px-4 py-3 dark:border-warning-700 dark:bg-warning-900/30">
+          <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-200">
+            이미 채워진 {filledSeatCount}자리에는 이 수정이 적용되지 않아요
+          </Text>
+          <Text className="mt-1 text-xs font-sans text-warning-700 dark:text-warning-300">
+            확정된 근무의 날짜·시간은 근무표에서 각각 변경해 주세요.
+          </Text>
+        </View>
+      ) : null}
       <OrderSheetScreen
         mode="edit"
         initialValues={initialValues}

@@ -1,11 +1,10 @@
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
-import { TBA_TIME_MARKER } from '@/domains/application';
 import { formatDateDisplay, formatTimeSlotDisplay } from '@/types/unified';
 import { makeSelectionKey } from '@/utils/assignment';
 import { RoleCheckbox } from './RoleCheckbox';
 import type { DateSelectionProps } from './types';
-import { getEffectiveRoleId, getRoleCheckboxKey } from './utils';
+import { getEffectiveRoleId, getRoleCheckboxKey, getSlotSelectionTime } from './utils';
 
 export const DateSelection = memo(function DateSelection({
   date,
@@ -26,7 +25,7 @@ export const DateSelection = memo(function DateSelection({
 
       <View className="flex-col gap-3">
         {timeSlots.map((slot, slotIndex) => {
-          const slotTime = slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
+          const slotTime = getSlotSelectionTime(slot);
           const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (

@@ -29,6 +29,7 @@ export type {
   JobPostingSubscriptionCallbacks,
   ScheduleBoardSyncAction,
   UpdateVenueContainerInput,
+  GeocodeSnapshot,
 } from './IJobPostingRepository';
 
 // WorkLog Repository
@@ -37,6 +38,7 @@ export type {
   WorkLogStats,
   WorkLogFilterOptions,
   UpdateSlotInput,
+  ManualWorkLogStatus,
 } from './IWorkLogRepository';
 
 // User Repository
@@ -44,6 +46,7 @@ export type {
   IUserRepository,
   DeletionReason,
   DeletionRequest,
+  WithdrawalImpact,
   EmployerRegistrationInput,
   UserNicknameSearchResult,
 } from './IUserRepository';
@@ -59,7 +62,6 @@ export type {
   FetchReportsOptions,
   FetchReportsResult,
   ReportFilters,
-  ReportCounts,
 } from './IReportRepository';
 
 // Settlement Repository
@@ -75,7 +77,6 @@ export type {
 // ConfirmedStaff Repository
 export type {
   IConfirmedStaffRepository,
-  UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   CancelNoShowContext,

@@ -18,11 +18,13 @@ import { ScreenSkeleton } from '@/components/ui';
 import { CheckIcon, FilterIcon } from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
 import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
+import { useApplicantNoShowCounts } from '@/hooks/useApplicantNoShowCounts';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -46,9 +48,40 @@ export interface ApplicantListProps {
   isBulkConfirming?: boolean;
   /** 지원자 0명 상태에서 "공고 공유하기" CTA — 없으면 버튼 미노출 */
   onSharePosting?: () => void;
+  /**
+   * 첫 렌더의 필터. 허브의 통계 숫자("대기중 3")를 눌러 들어온 경우 그 숫자만 담긴
+   * 목록으로 도착해야 한다 — 기본 'all' 로 열면 사용자가 필터를 한 번 더 골라야 한다.
+   *
+   * @remarks 초기값 전용이다. 이후 전환은 사용자가 FilterTabs 로 하며, 이 prop 이 바뀌어도
+   *   화면이 되감기지 않는다(사용자가 고른 필터를 부모가 덮어쓰면 안 된다).
+   */
+  initialFilter?: FilterStatus;
+  /**
+   * 공고 ID — 노쇼 이력 배치 조회(S3-3)에 필요하다.
+   * 미주입 시 조회 자체를 하지 않아 칩이 뜨지 않는다(기존 동작 보존).
+   */
+  jobPostingId?: string;
 }
 
-type FilterStatus = 'all' | ApplicationStatus;
+export type FilterStatus = 'all' | ApplicationStatus;
+
+const APPLICANT_FILTER_VALUES: readonly string[] = ['all', ...Object.values(STATUS.APPLICATION)];
+
+/**
+ * 쿼리 파라미터 → 필터. 모르는 값은 조용히 'all' 로 떨어진다.
+ *
+ * @description 허브의 통계 숫자가 `?filter=applied` 로 넘겨 주는 값을 받는다. 딥링크·수기 URL
+ *   로 아무 문자열이나 들어올 수 있으므로 화이트리스트로 좁힌다 — 검증 없이 넘기면
+ *   어떤 탭에도 해당하지 않는 필터가 걸려 목록이 영구히 비어 보인다.
+ *   expo-router 는 같은 키가 중복되면 배열을 주므로 첫 값만 쓴다.
+ */
+export function toApplicantFilter(raw: string | string[] | undefined): FilterStatus {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) {
+    return 'all';
+  }
+  return APPLICANT_FILTER_VALUES.includes(value) ? (value as FilterStatus) : 'all';
+}
 
 // ============================================================================
 // Constants
@@ -78,8 +111,10 @@ export function ApplicantList({
   onBulkConfirm,
   isBulkConfirming,
   onSharePosting,
+  initialFilter = 'all',
+  jobPostingId,
 }: ApplicantListProps) {
-  const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
+  const [selectedFilter, setSelectedFilter] = useState<FilterStatus>(initialFilter);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
@@ -93,6 +128,12 @@ export function ApplicantList({
 
   // 배치로 사용자 프로필 조회 (Hook 레이어를 통해 Repository 접근)
   useApplicantProfiles({ applicantIds });
+
+  // 노쇼 이력도 배치로 (S3-3) — 카드마다 개별 조회하면 지원자 20명에 20번 왕복한다.
+  const { noShowCounts } = useApplicantNoShowCounts({
+    jobPostingId: jobPostingId ?? '',
+    applicantIds,
+  });
 
   // 필터링된 지원자 목록
   const filteredApplicants = useMemo(() => {
@@ -206,7 +247,13 @@ export function ApplicantList({
               </View>
             </Pressable>
             <View className="flex-1">
-              <ApplicantCard applicant={item} showActions={false} />
+              {/* 선택 모드에서도 노쇼 칩은 남긴다 — 여기가 바로 "누구를 확정할까"를
+                  결정하는 순간이라, 그 판단 근거를 감추면 칩이 있으나 마나다. */}
+              <ApplicantCard
+                applicant={item}
+                showActions={false}
+                noShowCount={noShowCounts?.get(item.applicantId)}
+              />
             </View>
           </View>
         );
@@ -220,6 +267,7 @@ export function ApplicantList({
             onReject={onReject}
             onCancelConfirmation={onCancelConfirmation}
             onViewProfile={onViewProfile}
+            noShowCount={noShowCounts?.get(item.applicantId)}
           />
         </View>
       );
@@ -229,6 +277,7 @@ export function ApplicantList({
       onReject,
       onCancelConfirmation,
       onViewProfile,
+      noShowCounts,
       selectionMode,
       selectedIds,
       toggleSelect,
@@ -237,6 +286,15 @@ export function ApplicantList({
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);
 
+  // 선택 모드의 신규 지원자 행은 좌측에 체크박스가 붙고 `showActions={false}` 로 카드 액션이
+  // 빠져 높이가 다르다. 타입을 나누지 않으면 FlashList 가 한 재활용 풀에서 두 레이아웃을
+  // 섞어 써서, 재활용될 때마다 높이를 다시 잰다.
+  const getItemType = useCallback(
+    (item: ApplicantWithDetails) =>
+      selectionMode && item.status === STATUS.APPLICATION.APPLIED ? 'select' : 'card',
+    [selectionMode]
+  );
+
   // 로딩 상태
   if (isLoading && !isRefreshing) {
     return <ScreenSkeleton type="applicantList" count={5} />;
@@ -244,9 +302,7 @@ export function ApplicantList({
 
   // 에러 상태
   if (error) {
-    return (
-      <ErrorState title="지원자 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />
-    );
+    return <ErrorState title={loadFailed('지원자 목록')} error={error} onRetry={onRefresh} />;
   }
 
   // 빈 상태
@@ -320,6 +376,7 @@ export function ApplicantList({
           data={filteredApplicants}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          getItemType={getItemType}
           estimatedItemSize={180}
           refreshControl={
             onRefresh ? (

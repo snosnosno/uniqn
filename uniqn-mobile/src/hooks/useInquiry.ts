@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { requireAuth } from '@/errors/guardErrors';
 import { ValidationError, ERROR_CODES } from '@/errors/AppError';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import {
@@ -196,6 +197,7 @@ export function useCreateInquiry(options: { silent?: boolean } = {}) {
 
   return useMutation({
     mutationFn: async (input: CreateInquiryInput) => {
+      requireOnlineForMutation('문의 등록');
       requireAuth(user?.uid, 'useInquiry.createInquiry');
       if (!user?.email) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
@@ -243,6 +245,7 @@ export function useAttachInquiryFiles() {
 
   return useMutation({
     mutationFn: async ({ inquiryId, files }: AttachInquiryFilesParams) => {
+      requireOnlineForMutation('문의 첨부파일 업로드');
       requireAuth(user?.uid, 'useInquiry.attachInquiryFiles');
       return attachFilesToInquiry(user.uid, inquiryId, files);
     },
@@ -267,6 +270,7 @@ export function useDeleteMyInquiry() {
 
   return useMutation({
     mutationFn: async (inquiryId: string) => {
+      requireOnlineForMutation('문의 삭제');
       requireAuth(user?.uid, 'useInquiry.deleteMyInquiry');
       return deleteMyInquiry(user.uid, inquiryId);
     },
@@ -310,6 +314,7 @@ export function useRespondInquiry() {
 
   return useMutation({
     mutationFn: async ({ inquiryId, input }: RespondInquiryParams) => {
+      requireOnlineForMutation('문의 답변 등록');
       requireAuth(user?.uid, 'useInquiry.respondToInquiry');
       const identity = buildCurrentUserIdentitySnapshot({
         profile,
@@ -347,6 +352,7 @@ export function useUpdateInquiryStatus() {
 
   return useMutation({
     mutationFn: async ({ inquiryId, status }: UpdateStatusParams) => {
+      requireOnlineForMutation('문의 상태 변경');
       return updateInquiryStatus(inquiryId, status);
     },
     onSuccess: (_, { inquiryId }) => {

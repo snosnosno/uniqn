@@ -7,6 +7,8 @@ import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isAppError } from '@/errors';
 import { opsStaffRepository } from '@/repositories/ops';
+import { updateSlot } from '@/services/workSchedule/gridWriteService';
+import type { OpsStaffWorkLogLink } from '@/types/ops';
 import type { StaffRole } from '@/types/role';
 
 const COMPONENT = 'opsStaffService';
@@ -91,6 +93,66 @@ export async function removeStaff(
       operation: '스태프 로스터 제거',
       component: COMPONENT,
       context: { tournamentId, opsStaffId },
+    });
+  }
+}
+
+/**
+ * 스태프별 근태 대상 work_log 해석 (결함 ⑦-2). 읽기 전용.
+ * 사유 코드(`reason`)와 쓰기 가능 여부(`writeAllowed`)는 **직교**한다 — 화면은 둘 다 봐야 한다.
+ */
+export async function resolveWorkLogs(
+  tournamentId: string,
+  actorId: string
+): Promise<OpsStaffWorkLogLink[]> {
+  try {
+    return await opsStaffRepository.resolveWorkLogs({ tournamentId, actorId });
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: 'ops 근태 대상 해석',
+      component: COMPONENT,
+      context: { tournamentId },
+    });
+  }
+}
+
+/**
+ * ops 콘솔에서 근태(출퇴근)를 기록·정정·취소한다 (결함 ⑦-2).
+ *
+ * 🔴 **여기서 `work_logs` 를 직접 PATCH 하지 않는다.** `work_logs_payroll_direct_write_block`
+ *    (20260805120000)의 판별식은 payroll 4컬럼만 보므로 `check_in_ts`/`check_out_ts` 직접
+ *    PATCH 는 **그냥 통과한다** — 감사·수정이력·알림·정산완료잠금을 전부 우회한 잘못된 쓰기가
+ *    조용히 성공한다. 반드시 `update_work_log_slot`(SECDEF RPC)을 경유한다.
+ *
+ * 🔴 3상 계약을 그대로 넘긴다: `undefined`=미변경 / `null`=기록 삭제 / `Date`=기록.
+ *    `??`·truthy 로 다루면 **되돌리기(삭제)가 조용히 무시된다** — 편도 문이 만들어진다.
+ *
+ * 대상 `workLogId` 는 반드시 `resolveWorkLogs` 가 `reason==='ok'` 로 돌려준 값이어야 한다.
+ * `source_work_log_id` 나 임의로 고른 행을 넣으면 틀린 날짜·취소된 행에 시각이 박힌다.
+ */
+export async function recordAttendance(
+  workLogId: string,
+  actorId: string,
+  patch: { checkIn?: Date | null; checkOut?: Date | null }
+): Promise<void> {
+  try {
+    logger.info('ops 근태 기록', {
+      component: COMPONENT,
+      workLogId,
+      axes: Object.keys(patch),
+    });
+    return await updateSlot(workLogId, {
+      ...patch,
+      reason: 'ops 콘솔 근태 기록',
+      editedBy: actorId,
+    });
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: 'ops 근태 기록',
+      component: COMPONENT,
+      context: { workLogId },
     });
   }
 }

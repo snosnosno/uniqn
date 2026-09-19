@@ -123,7 +123,7 @@ describe('still renders without crashing (sanity regression)', () => {
         <Icons.BookmarkIcon filled />
         <Icons.BookmarkIcon />
         <Icons.CurrencyWonIcon />
-        <Icons.MagnifyingGlassIcon />
+        <Icons.SearchIcon />
         <HeartIcon />
       </>
     );

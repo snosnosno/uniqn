@@ -71,6 +71,7 @@ export type {
   IUserRepository,
   DeletionReason,
   DeletionRequest,
+  WithdrawalImpact,
   UserNicknameSearchResult,
   // Notification
   INotificationRepository,
@@ -82,7 +83,6 @@ export type {
   FetchReportsOptions,
   FetchReportsResult,
   ReportFilters,
-  ReportCounts,
   // Settlement
   ISettlementRepository,
   UpdateWorkTimeContext,
@@ -92,7 +92,6 @@ export type {
   BulkSettlementResultDTO,
   // ConfirmedStaff
   IConfirmedStaffRepository,
-  UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
   UpdateStaffStatusContext,
@@ -418,8 +417,8 @@ export const reviewRepository = new SupabaseReviewRepository();
  * // 저장
  * const templateId = await templateRepository.saveTemplate(input, userId);
  *
- * // 불러오기
- * const template = await templateRepository.loadTemplate(templateId);
+ * // 이름 변경(부분 갱신)
+ * await templateRepository.updateTemplate(templateId, { name: '새 이름' }, userId);
  * ```
  */
 export const templateRepository = new SupabaseTemplateRepository();
@@ -479,8 +478,19 @@ export {
 } from './supabase/JobPostingCollaboratorRepository';
 
 // ============================================================================
+// 공고 일괄 공지 (S3-2)
+// ============================================================================
+
+export type { JobPostingAnnouncement } from './supabase/JobPostingAnnouncementRepository';
+export { jobPostingAnnouncementRepository } from './supabase/JobPostingAnnouncementRepository';
+
+// ============================================================================
 // 근무표 (workSchedule) — 지점 단가 쓰기 입력 타입 재노출
 // ============================================================================
 
-export type { SetVenueRoleSalaryInput } from './interfaces/IWorkScheduleRepository';
+export type {
+  SetVenueRoleSalaryInput,
+  UpdatePostingSlotTimeInput,
+  UpdatePostingSlotTimeResult,
+} from './interfaces/IWorkScheduleRepository';
 export type { UpdateVenueContainerInput } from './interfaces/IJobPostingRepository';

@@ -12,6 +12,7 @@ import { resolveReviewerType } from '@/domains/review';
 import { useWorkLogReviews } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
 import { getReviewTextFallback, type ReviewerType } from '@/types/review';
+import { loadFailed } from '@/constants/messages';
 
 export default function ReviewDetailScreen() {
   const {
@@ -112,7 +113,7 @@ export default function ReviewDetailScreen() {
         <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <View className="flex-1">
           <ErrorState
-            title="리뷰를 불러올 수 없습니다"
+            title={loadFailed('리뷰')}
             error={error}
             onRetry={() => {
               void refetch();

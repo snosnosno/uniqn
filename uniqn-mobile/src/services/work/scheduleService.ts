@@ -14,7 +14,8 @@ import {
   hasPendingPayrollEstimate,
   shouldUseFrozenPayrollAmount,
 } from '@/utils/settlementGrouping';
-import { formatDateWithDay, toDateString } from '@/utils/date';
+import { formatDateWithDay, getTodayString, toDateString } from '@/utils/date';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { TimeNormalizer } from '@/shared/time';
 import type {
   ScheduleEvent,
@@ -36,6 +37,7 @@ import {
 } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, jobPostingRepository, applicationRepository } from '@/repositories';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -355,6 +357,9 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
 
         // 정산 완료분과 아직 처리 전인 추정치를 분리한다. 한 숫자로 합치면
         // 입금 예정액으로 오해돼 급여 문의·분쟁의 출발점이 된다.
+        // 'failed' 는 UI 어휘에선 '정산 대기' 로 접히지만 **금액 집계에서는 접지 않는다** —
+        // 지급이 무산된 건을 "받을 예정" 으로 세면 스태프에게 오지 않을 돈을 약속하게 된다.
+        // (현재 이 값을 쓰는 코드는 없다. 생기더라도 예정액에 섞이지 않게 남겨 두는 가드다.)
         if (schedule.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           settledEarnings += amount;
         } else if (schedule.payrollStatus !== STATUS.PAYROLL.FAILED) {
@@ -494,7 +499,7 @@ export async function getMySchedules(
         staffId,
       });
       throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
-        userMessage: '스케줄을 불러올 수 없습니다. 네트워크 연결을 확인해주세요',
+        userMessage: `${loadFailed('스케줄')}. 네트워크 연결을 확인해주세요`,
       });
     }
 
@@ -506,7 +511,7 @@ export async function getMySchedules(
         error: workLogsResult.reason,
         staffId,
       });
-      partialFailureWarning = '일부 근무 기록을 불러오지 못했습니다';
+      partialFailureWarning = loadFailed('일부 근무 기록');
     }
     if (applicationsResult.status === 'rejected') {
       logger.warn('Applications 조회 실패 (WorkLogs는 성공)', {
@@ -514,8 +519,8 @@ export async function getMySchedules(
         staffId,
       });
       partialFailureWarning = partialFailureWarning
-        ? '일부 데이터를 불러오지 못했습니다'
-        : '일부 지원 기록을 불러오지 못했습니다';
+        ? loadFailed('일부 데이터')
+        : loadFailed('일부 지원 기록');
     }
 
     // ========================================
@@ -695,6 +700,36 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 export async function getTodaySchedules(staffId: string): Promise<ScheduleEvent[]> {
   const today = toDateString(new Date());
   return getSchedulesByDate(staffId, today);
+}
+
+/**
+ * 조회 월과 무관한 실제 미래 전체의 가장 가까운 확정 근무.
+ * 확정 시 work_log가 생성되므로 지원서 LIMIT에 의존하지 않는다.
+ */
+export async function getNextConfirmedSchedule(staffId: string): Promise<ScheduleEvent | null> {
+  try {
+    const today = getTodayString();
+    const now = new Date();
+    const candidates = await workLogRepository.getNextScheduledCandidates(staffId, today);
+    const workLog = candidates.find((candidate) => {
+      if (candidate.status === STATUS.WORK_LOG.CHECKED_IN) return true;
+      if (candidate.date > today) return true;
+      if (!candidate.timeSlot) return true;
+      const scheduledAt = parseTimeSlotToDate(candidate.timeSlot, candidate.date).startTime;
+      return scheduledAt !== null && scheduledAt.getTime() >= now.getTime();
+    });
+    if (!workLog) return null;
+
+    const jobPostingId = IdNormalizer.normalizeJobId(workLog);
+    const context = await fetchJobPostingContextBatch([jobPostingId]);
+    return ScheduleConverter.workLogToScheduleEvent(workLog, context.get(jobPostingId));
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '다음 확정 근무 조회',
+      component: 'scheduleService',
+      context: { staffId },
+    });
+  }
 }
 
 /**

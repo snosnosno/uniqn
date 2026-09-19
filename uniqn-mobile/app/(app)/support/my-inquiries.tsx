@@ -9,22 +9,23 @@ import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, ErrorState } from '@/components/ui';
 import { InquiryCard, INQUIRY_STATUS_STRIPE_TONE } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 export default function MyInquiriesScreen() {
-  const {
-    inquiries,
-    isLoading,
-    isRefreshing,
-    isFetchingNextPage,
-    hasMore,
-    fetchNextPage,
-    refetch,
-  } = useMyInquiries();
+  const { inquiries, isLoading, isFetchingNextPage, hasMore, fetchNextPage, refetch, error } =
+    useMyInquiries();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
     router.push(`/(app)/support/inquiry/${inquiry.id}`);
@@ -84,6 +85,25 @@ export default function MyInquiriesScreen() {
     );
   }
 
+  // 조회가 실패해도 목록은 빈 배열이라 "아직 문의한 내역이 없어요"가 뜬다 —
+  // 답변을 기다리는 사용자에게 문의가 사라진 것처럼 보인다(감사 A4).
+  // 이미 받아둔 항목이 있으면 목록을 유지하고 PTR 로 재시도하게 둔다.
+  if (error && inquiries.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
+        <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
+        <ErrorState
+          error={error}
+          title={loadFailed('문의 내역')}
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
@@ -99,8 +119,8 @@ export default function MyInquiriesScreen() {
         ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refetch}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={PRIMARY_COLORS[300]}
           />
         }

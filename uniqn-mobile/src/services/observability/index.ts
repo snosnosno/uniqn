@@ -6,6 +6,7 @@
 export {
   analyticsService,
   trackEvent,
+  trackShareFunnel,
   trackScreenView,
   setUserProperties,
   setUserId,
@@ -21,6 +22,7 @@ export {
   trackSettlementComplete,
   trackSearch,
   trackError,
+  reportAppSessionStart,
   type AnalyticsEvent,
   type AnalyticsEventParams,
   type UserProperties as AnalyticsUserProperties,

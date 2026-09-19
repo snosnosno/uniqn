@@ -83,12 +83,6 @@ jest.mock('@/services/observability/analyticsService', () => ({
   setUserProperties: (...args: unknown[]) => mockSetUserProperties(...args),
 }));
 
-jest.mock('@/services/observability/sessionService', () => ({
-  checkLoginAttempts: jest.fn(async () => undefined),
-  incrementLoginAttempts: jest.fn(async () => undefined),
-  resetLoginAttempts: jest.fn(async () => undefined),
-}));
-
 const mockClearBiometricCredentials = jest.fn<Promise<void>, []>();
 const mockClearSession = jest.fn<Promise<void>, []>();
 
@@ -113,10 +107,15 @@ jest.mock('../userProfileService', () => ({
 
 const mockUnregisterPushTokensForSignOut = jest.fn<Promise<void>, [string]>();
 
-jest.mock('@/services/notifications', () => ({
+jest.mock('@/services/notifications/pushNotificationService', () => ({
   __esModule: true,
-  unregisterPushTokensForSignOut: (...args: [string]) =>
-    mockUnregisterPushTokensForSignOut(...args),
+  unregisterTokensForSignOut: (...args: [string]) => mockUnregisterPushTokensForSignOut(...args),
+}));
+
+const mockClearShiftReminders = jest.fn<Promise<void>, []>();
+
+jest.mock('@/services/work/shiftReminderScheduler', () => ({
+  clearShiftReminders: () => mockClearShiftReminders(),
 }));
 
 const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfileService') as {
@@ -132,6 +131,7 @@ describe('authCoreService', () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockSignOut.mockResolvedValue({ error: null });
     mockUnregisterPushTokensForSignOut.mockResolvedValue(undefined);
+    mockClearShiftReminders.mockResolvedValue(undefined);
   });
 
   it('logs in with Supabase signInWithPassword', async () => {
@@ -389,6 +389,24 @@ describe('authCoreService', () => {
     expect(mockUnregisterPushTokensForSignOut).toHaveBeenCalledWith('user-1');
   });
 
+  // A3 의 로컬 알림 짝 — 서버 푸시 토큰을 해제해도 **기기에 이미 예약된 로컬 알림**은 남는다.
+  // 근무 리마인더 원장(MMKV)은 사용자 스코프가 아니라, 안 지우면 다음 사용자의 기기에서
+  // 이전 계정의 지점명·근무일이 발화한다.
+  it('로그아웃 시 예약된 근무 리마인더 로컬 알림을 정리한다', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockClearShiftReminders).toHaveBeenCalledTimes(1);
+  });
+
+  it('리마인더 정리가 실패해도 로그아웃은 완료된다 (fail-safe)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    mockClearShiftReminders.mockRejectedValueOnce(new Error('MMKV busy'));
+
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
   it('푸시 토큰 해제는 supabase 세션 종료 이전에 호출된다 (세션 유효 시점)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     const callOrder: string[] = [];
@@ -403,6 +421,18 @@ describe('authCoreService', () => {
     await signOut();
 
     expect(callOrder).toEqual(['unregisterPush', 'supabaseSignOut']);
+  });
+
+  // 감사 auth-F2 — Supabase 의 signOut 기본 scope 는 'global' 이다. 인자 없이 부르면
+  // 폰에서 로그아웃하는 것만으로 태블릿·웹 세션까지 끊긴다. 사용자는 "이 기기에서
+  // 나가기"를 의도했지 전 기기 강제 종료를 의도하지 않았다.
+  // 🚨 이 단언이 깨지면 인자를 지웠다는 뜻이고, 그 순간 조용히 전역 종료로 되돌아간다.
+  it('사용자 로그아웃은 이 기기만 끝낸다 (scope: local)', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    await signOut();
+
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('푸시 토큰 해제가 실패해도 로그아웃은 완료된다 (fail-safe)', async () => {

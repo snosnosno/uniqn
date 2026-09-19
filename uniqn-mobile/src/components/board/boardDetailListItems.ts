@@ -21,6 +21,14 @@ export interface BoardDetailCommentItem {
   depth: number;
 }
 
+export interface BoardDetailReplyToggleItem {
+  type: 'reply-toggle';
+  key: string;
+  parentCommentId: string;
+  replyCount: number;
+  expanded: boolean;
+}
+
 export interface BoardDetailComposerItem {
   type: 'composer';
   key: string;
@@ -38,6 +46,7 @@ export interface BoardDetailEmptyItem {
 export type BoardDetailListItem =
   | BoardDetailSectionItem
   | BoardDetailCommentItem
+  | BoardDetailReplyToggleItem
   | BoardDetailComposerItem
   | BoardDetailEmptyItem;
 
@@ -49,6 +58,7 @@ interface BuildBoardDetailListItemsInput {
   canInteract: boolean;
   composerMode: BoardComposerMode;
   composerTargetCommentId?: string | null;
+  expandedReplyParentIds?: ReadonlySet<string>;
 }
 
 export function getBoardComposerItemKey(
@@ -65,8 +75,9 @@ export function getBoardComposerItemKey(
 function flattenCommentTree(
   comments: BoardCommentNode[],
   depth = 0,
-  items: BoardDetailCommentItem[] = []
-): BoardDetailCommentItem[] {
+  items: (BoardDetailCommentItem | BoardDetailReplyToggleItem)[] = [],
+  expandedReplyParentIds: ReadonlySet<string> = new Set()
+): (BoardDetailCommentItem | BoardDetailReplyToggleItem)[] {
   comments.forEach((comment) => {
     items.push({
       type: 'comment',
@@ -75,8 +86,20 @@ function flattenCommentTree(
       depth: Math.min(depth, MAX_BOARD_COMMENT_VISUAL_DEPTH),
     });
 
-    if (comment.children.length > 0) {
-      flattenCommentTree(comment.children, depth + 1, items);
+    if (comment.children.length > 0 && depth === 0) {
+      const expanded = expandedReplyParentIds.has(comment.id);
+      items.push({
+        type: 'reply-toggle',
+        key: `reply-toggle:${comment.id}`,
+        parentCommentId: comment.id,
+        replyCount: comment.children.length,
+        expanded,
+      });
+      if (expanded) {
+        flattenCommentTree(comment.children, depth + 1, items, expandedReplyParentIds);
+      }
+    } else if (comment.children.length > 0) {
+      flattenCommentTree(comment.children, depth + 1, items, expandedReplyParentIds);
     }
   });
 
@@ -91,6 +114,7 @@ export function buildBoardDetailListItems({
   canInteract,
   composerMode,
   composerTargetCommentId = null,
+  expandedReplyParentIds = new Set(),
 }: BuildBoardDetailListItemsInput): BoardDetailListItem[] {
   const items: BoardDetailListItem[] = [];
 
@@ -101,7 +125,7 @@ export function buildBoardDetailListItems({
       section: 'pinned',
       title: '고정 댓글',
     });
-    items.push(...flattenCommentTree(pinnedComments));
+    items.push(...flattenCommentTree(pinnedComments, 0, [], expandedReplyParentIds));
   }
 
   items.push({
@@ -114,7 +138,7 @@ export function buildBoardDetailListItems({
   });
 
   if (regularComments.length > 0) {
-    items.push(...flattenCommentTree(regularComments));
+    items.push(...flattenCommentTree(regularComments, 0, [], expandedReplyParentIds));
   } else {
     items.push({
       type: 'empty',

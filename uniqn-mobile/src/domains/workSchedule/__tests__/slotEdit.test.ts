@@ -10,7 +10,11 @@
 import { ValidationError } from '@/errors';
 import {
   SLOT_COLOR_TOKENS,
+  LEGACY_SLOT_COLOR_TOKENS,
+  SLOT_COLOR_CHIPS,
   isValidSlotColor,
+  isCurrentSlotColor,
+  slotColorSwatchClassName,
   assertSlotColor,
   isSafeSlotMemo,
   assertSlotMemo,
@@ -48,6 +52,52 @@ describe('slotEdit — 색상 화이트리스트', () => {
     expect(assertSlotColor('primary-700')).toBe('primary-700');
     expect(() => assertSlotColor('#ff0000')).toThrow(ValidationError);
     expect(() => assertSlotColor('javascript:alert(1)')).toThrow(ValidationError);
+  });
+});
+
+/**
+ * 팔레트를 15종 → 4종으로 줄일 때 가장 위험한 건 이미 저장된 색이다.
+ * 퇴역 토큰이 화이트리스트에서 빠지면 카드에서 색이 조용히 사라지고(스와치 null),
+ * 그 슬롯의 메모만 고치려는 저장까지 ValidationError 로 막힌다.
+ */
+describe('slotEdit — 팔레트 재구성 하위호환', () => {
+  it('피커에는 현행 4종만 노출한다', () => {
+    expect(SLOT_COLOR_CHIPS).toHaveLength(4);
+    expect(SLOT_COLOR_CHIPS.map((c) => c.token)).toEqual([...SLOT_COLOR_TOKENS]);
+  });
+
+  it('상태 배지 색조(success/warning/error/primary)를 배치색으로 쓰지 않는다', () => {
+    for (const chip of SLOT_COLOR_CHIPS) {
+      expect(chip.swatchClassName).not.toMatch(/bg-(success|warning|error|primary|info)-/);
+    }
+  });
+
+  it('퇴역 토큰도 여전히 저장을 통과한다 — 옛 색 슬롯의 메모 수정을 막으면 안 된다', () => {
+    for (const token of LEGACY_SLOT_COLOR_TOKENS) {
+      expect(isValidSlotColor(token)).toBe(true);
+      expect(assertSlotColor(token)).toBe(token);
+    }
+  });
+
+  it('퇴역 토큰도 스와치 className 을 돌려준다 — 색이 사라지면 안 된다', () => {
+    for (const token of LEGACY_SLOT_COLOR_TOKENS) {
+      expect(slotColorSwatchClassName(token)).toBeTruthy();
+    }
+    for (const token of SLOT_COLOR_TOKENS) {
+      expect(slotColorSwatchClassName(token)).toBeTruthy();
+    }
+  });
+
+  it('퇴역 토큰은 피커 선택지로는 치지 않는다(시트가 별도 칩으로 보여준다)', () => {
+    expect(isCurrentSlotColor('slot-teal')).toBe(true);
+    expect(isCurrentSlotColor('primary-500')).toBe(false);
+    expect(isCurrentSlotColor('#ff0000')).toBe(false);
+  });
+
+  it('여전히 미등록 값은 거부한다', () => {
+    expect(slotColorSwatchClassName('slot-lime')).toBeNull();
+    expect(slotColorSwatchClassName(null)).toBeNull();
+    expect(() => assertSlotColor('slot-lime')).toThrow(ValidationError);
   });
 });
 
@@ -110,11 +160,24 @@ describe('slotEdit — 시작시간 정렬', () => {
 });
 
 describe('slotEdit — 출근 예정 시각 형식 검증(쓰기 경계)', () => {
-  it("피커가 만드는 0패딩 'HH:mm' 만 통과시킨다", () => {
+  it("정본 'HH:mm' 을 통과시킨다", () => {
     expect(assertSlotStartTime('18:00')).toBe('18:00');
     expect(assertSlotStartTime('09:30')).toBe('09:30');
     // 앞뒤 공백은 정규화해서 통과(피커 경유가 아닌 프리필 문자열 방어)
     expect(assertSlotStartTime(' 18:00 ')).toBe('18:00');
+  });
+
+  /**
+   * 🔴 무패딩 입력을 그대로 돌려주면 두 가지가 깨진다(감사 P5/L2 리뷰 지적):
+   *   · DB CHECK `work_logs_time_slot_format` 이 23514 로 거부한다
+   *   · `_posting_slot_key` 가 **원문 문자열**을 슬롯 키로 쓰므로 '9:00' 과 '09:00' 이
+   *     다른 슬롯으로 쪼개져 정원·중복배정 판정이 조용히 갈린다
+   * 피커는 항상 0패딩을 만들지만 프리필·레거시 문자열 경로가 무패딩으로 들어온다.
+   */
+  it('무패딩 시각을 0패딩 정본으로 정규화해 돌려준다', () => {
+    expect(assertSlotStartTime('9:00')).toBe('09:00');
+    expect(assertSlotStartTime('9:05')).toBe('09:05');
+    expect(assertSlotStartTime(' 0:00 ')).toBe('00:00');
   });
 
   it('자유 텍스트·범위 문자열·범위 밖 시각은 ValidationError 로 거부한다', () => {

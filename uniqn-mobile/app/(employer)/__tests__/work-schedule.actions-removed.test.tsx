@@ -41,7 +41,7 @@ jest.mock('@/components/icons', () => ({
 }));
 
 // 플래그 ON — OFF 면 Redirect 로 화면이 통째로 사라져 단언이 vacuous 해진다.
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useWorkScheduleEnabled', () => ({
   useWorkScheduleEnabled: () => ({ enabled: true, isLoading: false }),
 }));
 
@@ -73,6 +73,8 @@ jest.mock('@/hooks/workSchedule', () => ({
     refetch: jest.fn(),
   }),
   useEnsureDefaultVenue: () => ({ isCreating: false }),
+  // 퇴근 미기록 배너용 — 실물은 useQuery 라 QueryClientProvider 없이는 throw 한다.
+  useVenueMissingCheckouts: () => ({ data: [], isError: false }),
 }));
 
 describe('근무표 화면 — 반복 전제 액션 행 제거', () => {

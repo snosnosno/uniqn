@@ -29,7 +29,18 @@ export function VenueSelectChips({ venues, selectedId, onSelect }: VenueSelectCh
       testID="venue-select-chip"
       className="border-b border-divider bg-surface-page px-4 py-3 dark:bg-surface"
     >
-      <Text className="mb-2 text-xs font-sans-medium text-content-muted">지점 선택</Text>
+      {/* 라벨이 "지점 선택"이면 무엇에 쓰는 선택인지 알 수 없어 건너뛰게 된다 — 건너뛰면 이 공고는
+          근무표 어디에도 안 나타난다(venue_id 미기입 → venue_span 제외). 무슨 일이 걸린 선택인지
+          라벨에 적고, 미선택 상태를 경고로 표면화한다. 발행 차단은 호출부(create.tsx)가 한다. */}
+      <Text className="mb-2 text-xs font-sans-medium text-content-muted">근무표에 반영할 지점</Text>
+      {selectedId === undefined ? (
+        <Text
+          className="mb-2 text-xs font-sans-medium text-warning-700 dark:text-warning-300"
+          testID="venue-select-required-hint"
+        >
+          지점을 골라야 이 공고가 근무표에 표시돼요.
+        </Text>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

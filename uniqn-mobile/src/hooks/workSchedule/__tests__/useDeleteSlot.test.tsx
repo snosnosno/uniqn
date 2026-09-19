@@ -27,6 +27,7 @@ const INPUT = {
   jobPostingId: 'jp-1',
   staffId: 'staff-1',
   date: '2026-07-05',
+  reason: '스태프와 협의한 배치 변경',
 };
 
 function createClient() {

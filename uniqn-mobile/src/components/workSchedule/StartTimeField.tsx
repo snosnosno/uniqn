@@ -16,6 +16,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { CheckIcon, ChevronDownIcon } from '@/components/icons';
+import { josa } from '@/utils/text/josa';
 import { formatTimeDisplay } from './SlotTimeField';
 
 export interface StartTimeFieldProps {
@@ -71,7 +72,7 @@ export function StartTimeField({
         disabled={isUndefined}
         accessibilityRole="button"
         accessibilityLabel={`${label} 선택`}
-        accessibilityHint={`탭하여 ${label}을 선택하세요`}
+        accessibilityHint={`탭하여 ${josa(label, '을/를')} 선택하세요`}
         className={`flex-row items-center rounded-lg border-2 px-4 py-3 ${
           isUndefined
             ? 'border-secondary-200 bg-secondary-100 dark:border-surface-overlay dark:bg-surface-dark'

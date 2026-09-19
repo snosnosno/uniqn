@@ -7,7 +7,7 @@ import { STATUS_COLORS } from '@/constants/colors';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Button, Card, EmptyState, Loading } from '@/components/ui';
 import { ApprovalModal } from '@/components/admin/ApprovalModal';
-import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
+import { CheckCircleIcon, AlertCircleIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys } from '@/lib/queryClient';
 import type { EmployerApplication } from '@/repositories';
@@ -20,6 +20,7 @@ import { confirmAction } from '@/utils/confirmAction';
 import { toDate } from '@/utils/date';
 import { openExternalUrl } from '@/utils/externalLink';
 import { formatE164ToDisplay } from '@/utils/phone';
+import { josa } from '@/utils/text/josa';
 
 // ============================================================================
 // Helpers
@@ -255,7 +256,7 @@ export default function AdminEmployerApplicationDetailPage() {
               {identityVerified ? (
                 <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
               ) : (
-                <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
+                <AlertCircleIcon size={20} color={STATUS_COLORS.error} />
               )}
               <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                 본인인증 정보
@@ -276,7 +277,7 @@ export default function AdminEmployerApplicationDetailPage() {
                   onPress={handleCallPhone}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`${formatE164ToDisplay(applicant.phone)}로 전화`}
+                  accessibilityLabel={`${josa(formatE164ToDisplay(applicant.phone), '으로/로')} 전화`}
                 >
                   <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline">
                     {formatE164ToDisplay(applicant.phone)}
@@ -332,7 +333,7 @@ export default function AdminEmployerApplicationDetailPage() {
                   onPress={handleSendEmail}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`${applicant.email}로 이메일`}
+                  accessibilityLabel={`${josa(applicant.email, '으로/로')} 이메일`}
                 >
                   <Text
                     className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline"

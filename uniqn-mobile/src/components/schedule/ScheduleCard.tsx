@@ -9,7 +9,7 @@ import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
-  MapIcon,
+  MapPinIcon,
   BriefcaseIcon,
   BanknotesIcon,
   UserIcon,
@@ -33,13 +33,14 @@ import {
   SCHEDULE_STATUS_STRIPE_TONE,
   NO_SHOW_NOTICE_TITLE,
   NO_SHOW_NOTICE_DESCRIPTION,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
 } from './helpers';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
-import type { ScheduleEvent, PayrollStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
@@ -68,9 +69,13 @@ export const ScheduleCard = memo(function ScheduleCard({
   );
 
   const salaryDisplay = useMemo(() => {
-    const salary =
-      schedule.settlementBreakdown?.salaryInfo || schedule.customSalaryInfo || projectedSalary;
-    return formatSalaryDisplay(salary);
+    // 🔑 breakdown 을 먼저 믿으면 안 된다(감사 3-1) — 계산 계층 산물이라 급여 근거가
+    //    없어도 폴백 단가(시급 15,000원)가 들어 있다. 근거(override 또는 단가표/공고
+    //    기본급)를 먼저 확인하고, 있을 때만 breakdown 금액을 채택한다.
+    const basis = schedule.customSalaryInfo || projectedSalary;
+    if (!basis) return null;
+
+    return formatSalaryDisplay(schedule.settlementBreakdown?.salaryInfo ?? basis);
   }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, projectedSalary]);
 
   const completedAmount = useMemo(() => {
@@ -125,9 +130,6 @@ export const ScheduleCard = memo(function ScheduleCard({
     schedule.postingProjection,
   ]);
 
-  const payrollStatusConfig =
-    PAYROLL_STATUS[(schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus];
-
   const timeDisplayInfo = useMemo(() => WorkTimeDisplay.getDisplayInfo(schedule), [schedule]);
 
   // 표기는 helpers 한 곳에서만 만든다 — 카드마다 다른 문장이 나오지 않게.
@@ -137,6 +139,16 @@ export const ScheduleCard = memo(function ScheduleCard({
   // 노쇼는 취소와 달리 흐리게 처리하지 않는다 — 이의 제기 기한이 있는 기록이라
   // 눈에 덜 띄게 만들면 이 화면이 고치려는 문제(본인만 모른다)를 그대로 되풀이한다.
   const isNoShow = schedule.type === STATUS.SCHEDULE.NO_SHOW;
+
+  // '출근 시간 미정'만으로는 "언제 알 수 있나"에 답이 없다. 안심 문구를 아래 줄에 덧댄다.
+  // 협의(고정공고)는 정해질 값이 아니므로 붙이지 않는다.
+  // 이미 끝난 일정(취소·노쇼)에도 붙이지 않는다 — '정해지면 알려드려요'는 미래형 약속이라,
+  // 다시 오지 않을 근무에 얹으면 지키지 못할 말이 된다.
+  const showUndecidedTimeHint =
+    timeDisplayInfo.scheduleTimeState === 'undecided' &&
+    timeRangeDisplay === UNDECIDED_TIME_LABEL &&
+    !isCancelled &&
+    !isNoShow;
   // 스크린리더로 카드 하나를 들었을 때 완결 문장이 되도록 금액·취소요청 여부까지 넣는다.
   const accessibilityLabel = [
     status.label,
@@ -144,7 +156,6 @@ export const ScheduleCard = memo(function ScheduleCard({
     formatDate(schedule.date),
     schedule.location,
     typeof completedAmount === 'number' ? formatCurrency(completedAmount) : null,
-    schedule.type === STATUS.SCHEDULE.COMPLETED ? payrollStatusConfig?.label : null,
     hasPendingCancellation ? '취소 요청 검토 중' : null,
     isNoShow ? NO_SHOW_NOTICE_TITLE : null,
     overlapWarning,
@@ -196,16 +207,11 @@ export const ScheduleCard = memo(function ScheduleCard({
                 아니라 숫자 0 을 View 의 직접 자식으로 흘려 RN 렌더를 죽인다. */}
             {schedule.type === STATUS.SCHEDULE.COMPLETED && typeof completedAmount === 'number' && (
               <View className="items-end">
+                {/* 구인자 IA S2b — 금액만 둔다. 지급 상태 배지는 없앴다(앱은 돈을 보내지 않고,
+                    사장이 `지급 완료` 를 누르는 흐름이 없으니 배지는 영원히 "대기" 로 보인다). */}
                 <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
                   {formatCurrency(completedAmount)}
                 </Text>
-                {/* '입금 됐나'는 근무 후 가장 잦은 확인인데, 예전에는 카드를 하나씩 열어
-                      정산 탭까지 들어가야 알 수 있었다. 모달과 같은 SSOT 배지를 카드에 올린다. */}
-                <View className="mt-1">
-                  <Badge variant={payrollStatusConfig.variant} size="sm">
-                    {payrollStatusConfig.label}
-                  </Badge>
-                </View>
               </View>
             )}
           </View>
@@ -223,7 +229,7 @@ export const ScheduleCard = memo(function ScheduleCard({
 
           {schedule.location && (
             <View className="mb-2 flex-row items-center">
-              <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <MapPinIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text
                 className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 dark:leading-sm-dark font-sans"
                 numberOfLines={1}
@@ -246,6 +252,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                   {timeRangeDisplay}
                 </Text>
               </View>
+
+              {showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
 
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">
@@ -289,6 +301,12 @@ export const ScheduleCard = memo(function ScheduleCard({
                     : timeRangeDisplay}
                 </Text>
               </View>
+
+              {schedule.type !== STATUS.SCHEDULE.COMPLETED && showUndecidedTimeHint && (
+                <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                  {UNDECIDED_TIME_HINT}
+                </Text>
+              )}
 
               <View className="mt-2 flex-row flex-wrap items-center">
                 <View className="mr-3 flex-row items-center">

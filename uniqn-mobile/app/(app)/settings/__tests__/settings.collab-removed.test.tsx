@@ -81,12 +81,15 @@ jest.mock('@/stores/toastStore', () => ({
 jest.mock('@/hooks/useClearCache', () => ({
   useClearCache: () => ({ clearCache: jest.fn(), isClearing: false, cacheStats: null }),
 }));
-jest.mock('@/hooks', () => ({
+jest.mock('@/hooks/useAutoLogin', () => ({
   useAutoLogin: () => ({
     autoLoginEnabled: false,
     setAutoLoginEnabled: jest.fn(),
     isLoading: false,
   }),
+  AUTO_LOGIN_HELPER_TEXT: '자동 로그인 안내',
+}));
+jest.mock('@/hooks/useBiometricAuth', () => ({
   useBiometricAuth: () => ({
     isEnabled: false,
     isAvailable: false,
@@ -96,7 +99,6 @@ jest.mock('@/hooks', () => ({
     setEnabled: jest.fn(),
     refresh: jest.fn(),
   }),
-  AUTO_LOGIN_HELPER_TEXT: '자동 로그인 안내',
 }));
 jest.mock('@/services/auth', () => ({
   signOut: jest.fn(),

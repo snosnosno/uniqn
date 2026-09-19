@@ -31,19 +31,26 @@ export function selectPostingWorkflow(posting: JobPosting): PostingWorkflow {
 }
 
 /**
- * 공고 삭제 가능 여부 — 확정된 지원자가 1명이라도 있으면 삭제할 수 없다(EF-crud-4).
+ * 공고 삭제 가능 여부 — 채워진 좌석이 하나라도 있으면 삭제할 수 없다(EF-crud-4).
  *
- * @description 상세 화면의 캡션("확정된 지원자가 있는 공고는 삭제할 수 없습니다")과 삭제 버튼
- * 활성 상태의 단일 근거.
+ * @description 상세 화면의 삭제 버튼 활성 상태와 그 아래 캡션의 단일 근거.
  *
  * ⚠️ 근거 정정(2026-07-27): 예전 주석은 "흔적 없이 삭제될 수 있다"였지만 사실이 아니다 —
  * `deleteWithTransaction` 은 hard delete 가 아니라 status='cancelled' 로 내리는 soft cancel 이고
  * 행은 남는다. 진짜 이유는 **연쇄 처리의 부재**다: 공고가 취소돼도 확정 스태프의 work_logs 를
  * 정리하는 트리거·RPC 가 없어서(마이그레이션 전수 확인), 스태프 근무표와 정산에 취소된 공고의
  * 유령 근무가 그대로 남는다. 이 가드를 풀려면 취소 연쇄 RPC 가 먼저 있어야 한다.
+ *
+ * 🚨 축 정정(2026-08-13): 종전 파라미터는 `confirmedApplicants`(**applications 축**)였는데,
+ * 서버의 실제 게이트(`JobPostingRepository.deleteWithTransaction`)는 `filledPositions`
+ * (**work_logs 축**)로 막는다. 두 축은 갱신 시점이 달라 어긋날 수 있고, 어긋나면 둘 다 나쁘다.
+ *   - confirmed=0 인데 좌석>0 → 버튼은 눌리는데 서버가 거부한다. **근무가 끝나 application 이
+ *     completed 로 전이되면 정확히 이 상태가 되어 가드가 뚫린 것처럼 보인다.**
+ *   - confirmed>0 인데 좌석=0(확정 직후 트리거 반영 전) → 서버는 허용할 일을 버튼이 막는다.
+ * 남길 것은 위험을 지키는 축, 즉 서버와 **같은 축**이다. 인자를 좌석 수로 통일했다.
  */
-export function isPostingDeletable(confirmedApplicants: number): boolean {
-  return confirmedApplicants <= 0;
+export function isPostingDeletable(filledPositions: number): boolean {
+  return filledPositions <= 0;
 }
 
 /**

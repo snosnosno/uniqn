@@ -7,6 +7,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   Pressable,
@@ -661,6 +662,17 @@ export interface ConfirmModalProps {
   confirmTestID?: string;
   cancelTestID?: string;
   isDestructive?: boolean;
+  /**
+   * 확인 처리가 진행 중임을 알린다. true 인 동안 두 버튼이 모두 비활성이고
+   * 확인 버튼은 스피너로 바뀐다(높이는 그대로 유지 — impeccable v1 §4 레이아웃 점프 금지).
+   */
+  isLoading?: boolean;
+  /**
+   * 확인 직후 모달을 자동으로 닫을지. 기본 true(기존 16개 소비처의 동작 그대로).
+   * false 면 닫는 책임이 호출부로 넘어간다 — 비동기 결과를 보고 **성공에서만** 닫고
+   * 실패에서는 모달을 남기려는 화면에서 쓴다(applicants.tsx 의 useSubmitGate 와 같은 축).
+   */
+  closeOnConfirm?: boolean;
 }
 
 export function ConfirmModal({
@@ -674,7 +686,47 @@ export function ConfirmModal({
   confirmText = '확인',
   cancelText = '취소',
   isDestructive = false,
+  isLoading = false,
+  closeOnConfirm = true,
 }: ConfirmModalProps) {
+  // 한 번 열린 동안 확인은 한 번만 통과한다.
+  //
+  // onConfirm() 직후 onClose() 가 동기로 돌지만 `visible=false` 가 화면에서 즉시
+  // 사라지는 것을 뜻하진 않는다 — 웹은 닫힘 페이드아웃이 남아 그 사이 두 번째 클릭이
+  // 그대로 들어왔고, 삭제·확정 같은 뮤테이션이 두 번 발사됐다.
+  const confirmLatchRef = useRef(false);
+  const wasLoadingRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) {
+      confirmLatchRef.current = false;
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    // 처리가 끝났는데 모달이 열린 채 남아 있다면(= closeOnConfirm:false + 실패) 다시
+    // 누를 수 있어야 한다. 래치를 풀지 않으면 사용자는 닫았다 여는 것 말고는 재시도할 길이 없다.
+    if (wasLoadingRef.current && !isLoading) {
+      confirmLatchRef.current = false;
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  const handleConfirm = () => {
+    if (isLoading || confirmLatchRef.current) {
+      return;
+    }
+    confirmLatchRef.current = true;
+
+    // impeccable v2 §17 — 파괴적 확인은 Warning, 일반 확인은 Light.
+    void triggerHaptic(isDestructive ? 'warning' : 'light');
+    onConfirm();
+
+    if (closeOnConfirm) {
+      onClose();
+    }
+  };
+
   return (
     <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
       <Text className="text-content-muted dark:text-secondary-300 text-center mb-6 font-sans">
@@ -683,8 +735,12 @@ export function ConfirmModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
-          className="flex-1 bg-secondary-200 dark:bg-surface-elevated py-3 rounded-md"
+          disabled={isLoading}
+          className={`min-h-[44px] flex-1 items-center justify-center rounded-md bg-secondary-200 py-3 dark:bg-surface-elevated ${
+            isLoading ? 'opacity-40' : ''
+          }`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: isLoading }}
           testID={cancelTestID}
         >
           <Text className="text-content-secondary dark:text-secondary-200 text-center font-sans-medium">
@@ -692,21 +748,24 @@ export function ConfirmModal({
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => {
-            // impeccable v2 §17 — 파괴적 확인은 Warning, 일반 확인은 Light.
-            void triggerHaptic(isDestructive ? 'warning' : 'light');
-            onConfirm();
-            onClose();
-          }}
-          className={`flex-1 py-3 rounded-md ${isDestructive ? 'bg-error-600' : 'bg-primary-600'}`}
+          onPress={handleConfirm}
+          disabled={isLoading}
+          className={`min-h-[44px] flex-1 items-center justify-center rounded-md py-3 ${
+            isDestructive ? 'bg-error-600' : 'bg-primary-600'
+          } ${isLoading ? 'opacity-70' : ''}`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: isLoading, busy: isLoading }}
           testID={confirmTestID}
         >
-          <Text
-            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-content-onGold'}`}
-          >
-            {confirmText}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={isDestructive ? '#FFFFFF' : '#111113'} />
+          ) : (
+            <Text
+              className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-content-onGold'}`}
+            >
+              {confirmText}
+            </Text>
+          )}
         </Pressable>
       </View>
     </Modal>

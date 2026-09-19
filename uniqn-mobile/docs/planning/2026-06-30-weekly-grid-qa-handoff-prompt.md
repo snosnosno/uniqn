@@ -107,4 +107,4 @@ UPDATE app_config SET value = '{"enabled": true}'::jsonb WHERE key = 'weekly_gri
   ```
   전부 멱등. docker `/tmp` 경로엔 `MSYS_NO_PATHCONV=1` 접두. 정션은 PowerShell `New-Item -ItemType Junction`.
 - pgTAP 단건: `-X -t -A` 로 클린 TAP(`^ok`/`^not ok` 집계).
-- 진실의 원천: 설계 `docs/planning/2026-06-28-weekly-batch-grid-design.md`, 배포 핸드오프 `uniqn-mobile/docs/planning/2026-06-30-weekly-grid-deploy-handoff.md`.
+- 진실의 원천: 설계 `docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md`, 배포 핸드오프 `uniqn-mobile/docs/planning/2026-06-30-weekly-grid-deploy-handoff.md`.

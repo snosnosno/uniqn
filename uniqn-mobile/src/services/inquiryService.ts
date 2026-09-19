@@ -21,6 +21,7 @@ import type {
   LocalInquiryAttachment,
 } from '@/types';
 import type { InquiryPaginationCursor } from '@/repositories';
+import { notFound } from '@/constants/messages';
 
 const COMPONENT = 'inquiryService';
 
@@ -240,7 +241,7 @@ export async function attachFilesToInquiry(
   const inquiry = await inquiryRepository.getById(inquiryId);
   if (!inquiry || inquiry.userId !== currentUser.id) {
     throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-      userMessage: '해당 문의를 찾을 수 없습니다.',
+      userMessage: notFound('해당 문의'),
       field: 'inquiryId',
     });
   }

@@ -1,13 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import {
-  ChatbubbleEllipsesOutlineIcon,
-  CloseCircleOutlineIcon,
-  EyeIcon,
-  HeartIcon,
-  LockIcon,
-  PinIcon,
-} from '@/components/icons';
-import { BoardTypeBadge } from './BoardTypeBadge';
+import { ChatbubbleEllipsesOutlineIcon, LockIcon, PinIcon } from '@/components/icons';
 import { BOARD_TYPE_STRIPE_TONE } from './helpers/boardConfig';
 import { CardStripe, NumericText } from '@/components/ui';
 import { formatCompactCount } from '@/utils/formatCompactCount';
@@ -33,17 +25,26 @@ function formatMetaDate(post: BoardPost): string {
 }
 
 export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
+  const scheduleMeta =
+    post.boardType === 'schedule'
+      ? [
+          post.jobSummary?.workDates?.join(', ') || post.jobSummary?.workDate,
+          post.jobSummary?.locationName,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null;
+
   return (
     <Pressable
       onPress={() => onPress(post)}
       accessibilityRole="button"
-      accessibilityLabel={`${post.title} 게시글 상세 보기`}
+      accessibilityLabel={`${post.title} ${post.boardType === 'schedule' ? '일정 소통' : '공지'} 상세 보기`}
       className="border-b border-divider dark:border-surface-overlay active:opacity-70"
     >
       <CardStripe tone={BOARD_TYPE_STRIPE_TONE[post.boardType]}>
         <View className="pl-3 pr-1 py-2.5">
           <View className="flex-row items-center gap-2 mb-1">
-            <BoardTypeBadge boardType={post.boardType} />
             {post.isPinned ? <PinIcon size={14} color="#D4AF37" /> : null}
             {post.isLocked ? <LockIcon size={14} color="#DC2626" /> : null}
             <Text
@@ -54,6 +55,14 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
               {post.title}
             </Text>
           </View>
+          {scheduleMeta ? (
+            <Text
+              numberOfLines={1}
+              className="mb-1 text-sm font-sans text-content-secondary dark:text-secondary-300"
+            >
+              {scheduleMeta}
+            </Text>
+          ) : null}
           <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
             <Text className="text-xs font-sans text-secondary-600 dark:text-secondary-400">
               {post.authorName}
@@ -61,30 +70,14 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             <NumericText className="text-xs font-sans text-secondary-600 dark:text-secondary-400">
               {formatMetaDate(post)}
             </NumericText>
-            <View className="flex-row items-center">
-              <ChatbubbleEllipsesOutlineIcon size={12} color={SECONDARY_PALETTE[500]} />
-              <NumericText className="ml-1 text-xs font-sans text-secondary-600 dark:text-secondary-400">
-                {formatCompactCount(post.commentCount)}
-              </NumericText>
-            </View>
-            <View className="flex-row items-center">
-              <EyeIcon size={12} color={SECONDARY_PALETTE[500]} />
-              <NumericText className="ml-1 text-xs font-sans text-secondary-600 dark:text-secondary-400">
-                {formatCompactCount(post.viewCount)}
-              </NumericText>
-            </View>
-            <View className="flex-row items-center">
-              <HeartIcon size={12} color="#16A34A" />
-              <NumericText className="ml-1 text-xs font-sans text-success-700 dark:text-success-500">
-                {formatCompactCount(post.likeCount)}
-              </NumericText>
-            </View>
-            <View className="flex-row items-center">
-              <CloseCircleOutlineIcon size={12} color="#DC2626" />
-              <NumericText className="ml-1 text-xs font-sans text-error-700 dark:text-error-500">
-                {formatCompactCount(post.dislikeCount)}
-              </NumericText>
-            </View>
+            {post.boardType === 'schedule' ? (
+              <View className="flex-row items-center">
+                <ChatbubbleEllipsesOutlineIcon size={12} color={SECONDARY_PALETTE[500]} />
+                <NumericText className="ml-1 text-xs font-sans text-secondary-600 dark:text-secondary-400">
+                  {formatCompactCount(post.commentCount)}
+                </NumericText>
+              </View>
+            ) : null}
           </View>
         </View>
       </CardStripe>

@@ -85,3 +85,58 @@ describe('WorkTimeDisplay.getDisplayInfo — 출근 예정 단일값(§K 정본)
     expect(info.isEndNextDay).toBe(true);
   });
 });
+
+/**
+ * 2상태 판정 — 확정 / 미정.
+ *
+ * 🔴 [R1/D4] 예전엔 `'NEGOTIABLE'`(고정공고 협의)을 셋째 상태로 두고 "시간 협의"로 표시했다.
+ *    사용자 확정(D4)으로 그 구분을 폐기했다. 근거는 둘이다:
+ *    ① 스태프가 취할 행동이 같다(정해질 때까지 기다린다).
+ *    ② 구분의 유일한 근거가 센티널 문자열 비교뿐이었다 — 이 함수 입력에 공고 종류가 없어
+ *      "공고 유형에서 협의를 유도"할 배선 자체가 존재하지 않았다.
+ *    '협의' 라는 말은 공고(광고) 표면에만 남는다 — 거긴 공고 유형과 플래그를 실제로 안다.
+ */
+describe('WorkTimeDisplay.getDisplayInfo — scheduleTimeState 2상태', () => {
+  it('예정 시각이 있으면 confirmed', () => {
+    expect(
+      WorkTimeDisplay.getDisplayInfo({ timeSlot: '19:00', date: '2026-08-01' }).scheduleTimeState
+    ).toBe('confirmed');
+  });
+
+  it('time_slot 이 없으면 undecided — 명시 미정과 레거시 미기록은 스태프에게 같은 사실이다', () => {
+    expect(WorkTimeDisplay.getDisplayInfo({ date: '2026-08-01' }).scheduleTimeState).toBe(
+      'undecided'
+    );
+    expect(
+      WorkTimeDisplay.getDisplayInfo({ timeSlot: undefined, date: '2026-08-01' }).scheduleTimeState
+    ).toBe('undecided');
+  });
+
+  // 🔴 D4 반전 가드: 이 단언이 'negotiable' 로 되돌아가면 협의/미정 구분이 부활한 것이다.
+  it("센티널 4종은 전부 undecided 로 수렴한다 — 'NEGOTIABLE' 도 예외가 아니다", () => {
+    for (const timeSlot of ['NEGOTIABLE', '미정', '', '   ']) {
+      expect(
+        WorkTimeDisplay.getDisplayInfo({ timeSlot, date: '2026-08-01' }).scheduleTimeState
+      ).toBe('undecided');
+    }
+  });
+
+  it('레거시 startTime 폴백으로 예정이 잡히면 confirmed', () => {
+    expect(
+      WorkTimeDisplay.getDisplayInfo({
+        startTime: new Date(2026, 7, 1, 19, 0, 0),
+        date: '2026-08-01',
+      }).scheduleTimeState
+    ).toBe('confirmed');
+  });
+
+  it('예정이 미정이어도 실제 출근 기록은 상태를 바꾸지 않는다', () => {
+    const info = WorkTimeDisplay.getDisplayInfo({
+      checkInTime: new Date(2026, 7, 1, 19, 4, 0),
+      date: '2026-08-01',
+    });
+
+    expect(info.scheduleTimeState).toBe('undecided');
+    expect(info.isEffectiveStartActual).toBe(true);
+  });
+});

@@ -1,5 +1,11 @@
 /**
  * ops 변이 훅 — mutationFn 은 Service 경유, actor 는 authStore. onSuccess 무효화 + toast.
+ *
+ * 결함⑦-3(오프라인 통합 공백): 모든 쓰기 mutationFn 첫 줄에서 `requireOnlineForMutation` 으로
+ * 오프라인 진입을 차단한다. 큐잉이 아니라 **차단**이다 — queryClient 의 mutations 는
+ * `networkMode: 'offlineFirst'` 라 pause/resume 이 없고, 가드가 없으면 요청이 그대로 발사돼
+ * 원인 불명 토스트만 남는다. 특히 redraw/reseat 는 클라가 계산한 배정 계획을 통째로 보내는
+ * 스냅샷 전제 액션이라 오프라인에서는 반드시 진입 자체를 막아야 한다.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
@@ -14,6 +20,8 @@ import { computeWaitlistFill } from '@/domains/ops';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { trackOpsFunnel } from '@/services/observability/analyticsService';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
@@ -24,7 +32,13 @@ import type {
   OpsTableLockType,
 } from '@/types/ops';
 import type { PrizeCorrectionInput } from '@/schemas/opsPrize.schema';
+import type {
+  ChipCountInput,
+  NoShowInput,
+  ParticipantUpdateInput,
+} from '@/schemas/opsParticipant.schema';
 import type { StaffRole } from '@/types/role';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -44,8 +58,10 @@ export function useCreateOpsTournament() {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: CreateOpsTournamentInput) =>
-      opsTournamentService.createTournament(input, requireActor(actorId)),
+    mutationFn: (input: CreateOpsTournamentInput) => {
+      requireOnlineForMutation('ops.createTournament');
+      return opsTournamentService.createTournament(input, requireActor(actorId));
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       // 리뷰 후속 — 공고연결 상태로 생성 시 공고 상세 ActionCard(useOpsTournamentsForPosting)도 즉시 갱신.
@@ -68,8 +84,10 @@ export function useSetTournamentStatus(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (status: OpsTournamentStatus) =>
-      opsTournamentService.setTournamentStatus(tournamentId, requireActor(actorId), status),
+    mutationFn: (status: OpsTournamentStatus) => {
+      requireOnlineForMutation('ops.setTournamentStatus');
+      return opsTournamentService.setTournamentStatus(tournamentId, requireActor(actorId), status);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
@@ -85,8 +103,10 @@ export function useToggleRegistration(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (open: boolean) =>
-      opsTournamentService.toggleRegistration(tournamentId, requireActor(actorId), open),
+    mutationFn: (open: boolean) => {
+      requireOnlineForMutation('ops.toggleRegistration');
+      return opsTournamentService.toggleRegistration(tournamentId, requireActor(actorId), open);
+    },
     onSuccess: (_data, open) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       toast.success(open ? '등록을 열었습니다' : '등록을 마감했습니다');
@@ -103,11 +123,14 @@ export function useDuplicateTournament() {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: { sourceTournamentId: string; name?: string; eventDate?: string }) =>
-      opsTournamentService.duplicateTournament(input.sourceTournamentId, requireActor(actorId), {
-        name: input.name,
-        eventDate: input.eventDate,
-      }),
+    mutationFn: (input: { sourceTournamentId: string; name?: string; eventDate?: string }) => {
+      requireOnlineForMutation('ops.duplicateTournament');
+      return opsTournamentService.duplicateTournament(
+        input.sourceTournamentId,
+        requireActor(actorId),
+        { name: input.name, eventDate: input.eventDate }
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       trackOpsFunnel('ops_tournament_created', { method: 'duplicate' }); // D1 퍼널
@@ -125,15 +148,17 @@ export function useSetMonitorConfig(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (config: { v: 1; preset: string; slots: (string | null)[] } | null) =>
-      opsTournamentService.setMonitorConfig(tournamentId, requireActor(actorId), config),
+    mutationFn: (config: { v: 1; preset: string; slots: (string | null)[] } | null) => {
+      requireOnlineForMutation('ops.setMonitorConfig');
+      return opsTournamentService.setMonitorConfig(tournamentId, requireActor(actorId), config);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       toast.success('저장했어요. TV에 곧 반영돼요');
     },
     onError: (error) => {
       logger.error('ops TV 모니터 구성 저장 실패', toError(error));
-      toast.error(extractUserMessage(error) || 'TV 모니터 구성 저장에 실패했습니다');
+      toast.error(extractUserMessage(error) || saveFailed('TV 모니터 구성'));
     },
   });
 }
@@ -143,8 +168,14 @@ export function useSetPrizePaid(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: { participantId: string; paid: boolean }) =>
-      opsParticipantService.setPrizePaid(input.participantId, requireActor(actorId), input.paid),
+    mutationFn: (input: { participantId: string; paid: boolean }) => {
+      requireOnlineForMutation('ops.setPrizePaid');
+      return opsParticipantService.setPrizePaid(
+        input.participantId,
+        requireActor(actorId),
+        input.paid
+      );
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success(variables.paid ? '지급 완료로 표시했어요' : '지급 표시를 취소했어요');
@@ -160,8 +191,13 @@ export function useRegisterParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: Omit<RegisterParticipantInput, 'tournamentId'>) =>
-      opsParticipantService.registerParticipant({ ...input, tournamentId }, requireActor(actorId)),
+    mutationFn: (input: Omit<RegisterParticipantInput, 'tournamentId'>) => {
+      requireOnlineForMutation('ops.registerParticipant');
+      return opsParticipantService.registerParticipant(
+        { ...input, tournamentId },
+        requireActor(actorId)
+      );
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
@@ -178,8 +214,10 @@ export function useAddRebuy(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.addRebuy(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.addRebuy');
+      return opsParticipantService.addRebuy(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('리바이 처리됨');
@@ -195,8 +233,10 @@ export function useAddAddon(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.addAddon(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.addAddon');
+      return opsParticipantService.addAddon(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('애드온 처리됨');
@@ -212,12 +252,14 @@ export function useBustParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (vars: { participantId: string; eliminatorId?: string | null }) =>
-      opsParticipantService.bustParticipant(
+    mutationFn: (vars: { participantId: string; eliminatorId?: string | null }) => {
+      requireOnlineForMutation('ops.bustParticipant');
+      return opsParticipantService.bustParticipant(
         vars.participantId,
         requireActor(actorId),
         vars.eliminatorId
-      ),
+      );
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -237,8 +279,10 @@ export function useUndoBust(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.undoBust(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.undoBust');
+      return opsParticipantService.undoBust(participantId, requireActor(actorId));
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -256,8 +300,10 @@ export function useCorrectPrize(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: PrizeCorrectionInput) =>
-      opsParticipantService.correctPrize(input, requireActor(actorId)),
+    mutationFn: (input: PrizeCorrectionInput) => {
+      requireOnlineForMutation('ops.correctPrize');
+      return opsParticipantService.correctPrize(input, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       toast.success('상금 정정됨');
@@ -269,12 +315,180 @@ export function useCorrectPrize(tournamentId: string) {
   });
 }
 
+/**
+ * 결함①: 칩 카운트 수동 입력. 서버가 chips 를 쓰면 DEFERRED 트리거가 live_stats 를 재계산하므로
+ * 전광판·평균스택은 realtime 으로도 따라오지만, 구독이 끊긴 경우를 대비해 liveStats 도 무효화한다.
+ * 이벤트(HistoryTab)는 append 되므로 events 도 함께 무효화.
+ */
+export function useSetParticipantChips(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: ChipCountInput) => {
+      requireOnlineForMutation('ops.setParticipantChips');
+      return opsParticipantService.setParticipantChips(input, requireActor(actorId));
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(동일값)은 이벤트도 남지 않으므로 "변경됨" 이라고 말하지 않는다.
+      toast.success(
+        result.chips === result.chipsBefore
+          ? '칩 수량이 그대로예요'
+          : `칩 ${result.chips.toLocaleString('ko-KR')}으로 수정됨`
+      );
+    },
+    onError: (error) => {
+      logger.error('ops 칩 카운트 실패', toError(error));
+      toast.error(extractUserMessage(error) || '칩 카운트에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함②: 노쇼 표시/취소. 상태만 바꾸므로 좌석·live_stats 는 건드리지 않는다
+ * (checked_in↔no_show 는 active 집계 밖 — pgTAP 이 playing 불변을 고정한다).
+ * 이벤트(HistoryTab)는 append 되므로 events 는 무효화한다.
+ */
+export function useSetParticipantNoShow(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: NoShowInput) => {
+      requireOnlineForMutation('ops.setParticipantNoShow');
+      return opsParticipantService.setParticipantNoShow(input, requireActor(actorId));
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(이미 목표 상태)은 이벤트도 남지 않으므로 "처리됨" 이라고 말하지 않는다.
+      if (result.status === result.statusBefore) {
+        toast.success(result.status === 'no_show' ? '이미 노쇼예요' : '이미 대기 상태예요');
+        return;
+      }
+      toast.success(result.status === 'no_show' ? '노쇼로 표시했어요' : '노쇼를 취소했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 노쇼 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '노쇼 처리에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 참가자 등록 정보 정정. 이름은 좌석·전광판·플레이어뷰에 실려 나가므로 seats·liveStats 도
+ * 무효화한다(구독이 끊긴 경우 대비 — realtime 이 오면 중복이지만 비용은 캐시 재검증 1회다).
+ */
+export function useUpdateParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: ParticipantUpdateInput) => {
+      requireOnlineForMutation('ops.updateParticipant');
+      return opsParticipantService.updateParticipant(input, requireActor(actorId));
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      // 서버 no-op(무변경)은 이벤트도 남지 않으므로 "수정됨" 이라고 말하지 않는다.
+      toast.success(result.changed ? '참가자 정보를 수정했어요' : '변경된 내용이 없어요');
+    },
+    onError: (error) => {
+      logger.error('ops 참가자 정정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '참가자 정보 수정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 오등록 참가자 제거(비가역). 행이 사라지면 entries·prize_pool 이 재계산되므로
+ * liveStats 를 함께 무효화한다 — 이 RPC 의 목적 자체가 부풀려진 상금 풀을 되돌리는 것이다.
+ */
+export function useDeleteParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.deleteParticipant');
+      return opsParticipantService.deleteParticipant(participantId, requireActor(actorId));
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      toast.success(
+        `#${result.entryNumber ?? '-'} ${result.name} 등록을 취소했어요 (상금 풀에서 제외)`
+      );
+    },
+    onError: (error) => {
+      logger.error('ops 등록 취소 실패', toError(error));
+      toast.error(extractUserMessage(error) || '등록 취소에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함③: 대회 보관/복원(undo-first). 목록 쿼리가 보관분을 필터하므로 목록·상세 모두 무효화한다.
+ */
+export function useSetTournamentArchived(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (archived: boolean) => {
+      requireOnlineForMutation('ops.setTournamentArchived');
+      return opsTournamentService.setArchived(tournamentId, requireActor(actorId), archived);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      if (!result.changed) {
+        toast.success(result.archivedAt ? '이미 보관된 대회예요' : '이미 활성 대회예요');
+        return;
+      }
+      toast.success(result.archivedAt ? '대회를 보관했어요' : '대회를 복원했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 대회 보관 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '대회 보관 설정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함⑤: 플레이어 계정 연결 해제. `player_user_id` 만 바꾸므로 참가자 목록만 무효화한다
+ * (이벤트는 서버가 append 하지 않는다 — claim 쪽과 대칭인 기존 상태).
+ */
+export function useUnclaimParticipant(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.unclaimParticipant');
+      return opsParticipantService.unclaimParticipant(participantId, requireActor(actorId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      toast.success('플레이어 연결을 해제했어요');
+    },
+    onError: (error) => {
+      logger.error('ops 플레이어 연결 해제 실패', toError(error));
+      toast.error(extractUserMessage(error) || '플레이어 연결 해제에 실패했습니다');
+    },
+  });
+}
+
 export function useReenterParticipant(tournamentId: string) {
   const queryClient = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (participantId: string) =>
-      opsParticipantService.reenterParticipant(participantId, requireActor(actorId)),
+    mutationFn: (participantId: string) => {
+      requireOnlineForMutation('ops.reenterParticipant');
+      return opsParticipantService.reenterParticipant(participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -297,7 +511,10 @@ export function useAddTable(tournamentId: string) {
       name?: string;
       lockType: OpsTableLockType;
       priority?: number;
-    }) => opsTableService.addTable({ ...input, tournamentId }, requireActor(actorId)),
+    }) => {
+      requireOnlineForMutation('ops.addTable');
+      return opsTableService.addTable({ ...input, tournamentId }, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -314,8 +531,10 @@ export function useSetTableLock(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; lockType: OpsTableLockType }) =>
-      opsTableService.setLock(v.tableId, requireActor(actorId), v.lockType),
+    mutationFn: (v: { tableId: string; lockType: OpsTableLockType }) => {
+      requireOnlineForMutation('ops.setTableLock');
+      return opsTableService.setLock(v.tableId, requireActor(actorId), v.lockType);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       toast.success('테이블 잠금을 변경했습니다');
@@ -331,8 +550,10 @@ export function useSetTablePriority(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; priority: number | null }) =>
-      opsTableService.setPriority(v.tableId, requireActor(actorId), v.priority),
+    mutationFn: (v: { tableId: string; priority: number | null }) => {
+      requireOnlineForMutation('ops.setTablePriority');
+      return opsTableService.setPriority(v.tableId, requireActor(actorId), v.priority);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       toast.success('테이블 우선순위를 변경했습니다');
@@ -348,8 +569,10 @@ export function useCloseTable(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; status: OpsTableStatus }) =>
-      opsTableService.closeTable(v.tableId, requireActor(actorId), v.status),
+    mutationFn: (v: { tableId: string; status: OpsTableStatus }) => {
+      requireOnlineForMutation('ops.closeTable');
+      return opsTableService.closeTable(v.tableId, requireActor(actorId), v.status);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
@@ -366,8 +589,10 @@ export function useAssignSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { seatId: string; participantId: string }) =>
-      opsSeatService.assignSeat(v.seatId, v.participantId, requireActor(actorId)),
+    mutationFn: (v: { seatId: string; participantId: string }) => {
+      requireOnlineForMutation('ops.assignSeat');
+      return opsSeatService.assignSeat(v.seatId, v.participantId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -384,8 +609,10 @@ export function useMoveSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { fromSeatId: string; toSeatId: string }) =>
-      opsSeatService.moveSeat(v.fromSeatId, v.toSeatId, requireActor(actorId)),
+    mutationFn: (v: { fromSeatId: string; toSeatId: string }) => {
+      requireOnlineForMutation('ops.moveSeat');
+      return opsSeatService.moveSeat(v.fromSeatId, v.toSeatId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -402,7 +629,10 @@ export function useFreeSeat(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (seatId: string) => opsSeatService.freeSeat(seatId, requireActor(actorId)),
+    mutationFn: (seatId: string) => {
+      requireOnlineForMutation('ops.freeSeat');
+      return opsSeatService.freeSeat(seatId, requireActor(actorId));
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       toast.success('좌석을 비웠습니다');
@@ -414,12 +644,18 @@ export function useFreeSeat(tournamentId: string) {
   });
 }
 
+/**
+ * 결함⑦-3: 클라가 계산한 배정 계획(computeWaitlistFill 결과)을 통째로 서버에 보내는 스냅샷 전제
+ * 액션이라, 오프라인에서는 계획 자체가 낡았을 수 있다 → 진입을 막는다.
+ */
 export function useRedrawWaitlistFill(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (assignments: ReturnType<typeof computeWaitlistFill>) =>
-      opsSeatService.redrawWaitlistFill(tournamentId, requireActor(actorId), assignments),
+    mutationFn: (assignments: ReturnType<typeof computeWaitlistFill>) => {
+      requireOnlineForMutation('ops.redrawWaitlistFill');
+      return opsSeatService.redrawWaitlistFill(tournamentId, requireActor(actorId), assignments);
+    },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -432,7 +668,10 @@ export function useRedrawWaitlistFill(tournamentId: string) {
   });
 }
 
-/** 배정 2종(랜덤/칩 드래프트) 전원 재배치 훅. onSuccess: seats/participants/liveStats 무효화 + toast. */
+/**
+ * 배정 2종(랜덤/칩 드래프트) 전원 재배치 훅. onSuccess: seats/participants/liveStats 무효화 + toast.
+ * 결함⑦-3: redraw 와 같은 스냅샷 전제(클라 계산 배정 계획 전송)라 오프라인 진입을 막는다.
+ */
 export function useReseatParticipants(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
@@ -440,8 +679,15 @@ export function useReseatParticipants(tournamentId: string) {
     mutationFn: (v: {
       assignments: { participantId: string; seatId: string }[];
       mode: 'random_draw' | 'chip_draft';
-    }) =>
-      opsSeatService.reseatParticipants(tournamentId, requireActor(actorId), v.assignments, v.mode),
+    }) => {
+      requireOnlineForMutation('ops.reseatParticipants');
+      return opsSeatService.reseatParticipants(
+        tournamentId,
+        requireActor(actorId),
+        v.assignments,
+        v.mode
+      );
+    },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
@@ -460,8 +706,14 @@ export function useSetTournamentPosting(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (jobPostingId: string | null) =>
-      opsStaffService.setTournamentPosting(tournamentId, requireActor(actorId), jobPostingId),
+    mutationFn: (jobPostingId: string | null) => {
+      requireOnlineForMutation('ops.setTournamentPosting');
+      return opsStaffService.setTournamentPosting(
+        tournamentId,
+        requireActor(actorId),
+        jobPostingId
+      );
+    },
     onSuccess: (_data, jobPostingId) => {
       // 리뷰 후속 — invalidateQueries 전에 캐시에서 old 공고 id 를 확보(무효화 이후엔 갱신되어 못 얻음).
       // old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 모두 갱신해 화면 간 staleness 제거.
@@ -491,8 +743,10 @@ export function useImportOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (date: string | null) =>
-      opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date),
+    mutationFn: (date: string | null) => {
+      requireOnlineForMutation('ops.importStaff');
+      return opsStaffService.importFromPosting(tournamentId, requireActor(actorId), date);
+    },
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       // 스펙 §4.2 문구 고정 — StaffTab import CTA 확인 다이얼로그와 짝을 이루는 결과 안내.
@@ -510,14 +764,16 @@ export function useAddOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { staffId: string; role: StaffRole; customRole?: string | null }) =>
-      opsStaffService.addStaff(
+    mutationFn: (v: { staffId: string; role: StaffRole; customRole?: string | null }) => {
+      requireOnlineForMutation('ops.addStaff');
+      return opsStaffService.addStaff(
         tournamentId,
         requireActor(actorId),
         v.staffId,
         v.role,
         v.customRole
-      ),
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       toast.success('스태프를 추가했습니다');
@@ -534,8 +790,10 @@ export function useRemoveOpsStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (opsStaffId: string) =>
-      opsStaffService.removeStaff(tournamentId, requireActor(actorId), opsStaffId),
+    mutationFn: (opsStaffId: string) => {
+      requireOnlineForMutation('ops.removeStaff');
+      return opsStaffService.removeStaff(tournamentId, requireActor(actorId), opsStaffId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
@@ -553,8 +811,15 @@ export function useAssignTableStaff(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (v: { tableId: string; staffId: string | null }) =>
-      opsStaffService.assignTableStaff(tournamentId, requireActor(actorId), v.tableId, v.staffId),
+    mutationFn: (v: { tableId: string; staffId: string | null }) => {
+      requireOnlineForMutation('ops.assignTableStaff');
+      return opsStaffService.assignTableStaff(
+        tournamentId,
+        requireActor(actorId),
+        v.tableId,
+        v.staffId
+      );
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.ops.tables(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
@@ -563,6 +828,44 @@ export function useAssignTableStaff(tournamentId: string) {
     onError: (e) => {
       logger.error('ops 딜러 배정 실패', toError(e));
       toast.error(extractUserMessage(e) || '딜러 배정에 실패했습니다');
+    },
+  });
+}
+
+/**
+ * 결함 ⑦-2 — ops 콘솔 근태 기록/정정/취소 훅.
+ *
+ * 🔴 3상 계약을 그대로 통과시킨다: 키 없음=미변경 / `null`=기록 삭제 / `Date`=기록.
+ *    `null` 갈래가 **되돌리기 경로**다 — 이게 없으면 오조작이 곧 정산 확정으로 굳는다
+ *    (write-back → checked_out 파생 → 정산 게이트 통과가 자동으로 이어진다).
+ *
+ * 🔑 대상 workLogId 는 `useOpsStaffWorkLogs` 가 `reason==='ok'` 로 준 값만 쓴다.
+ * 🔑 서버가 던지는 ALREADY_SETTLED·PERMISSION_DENIED 는 그대로 사용자 문구로 노출한다 —
+ *    클라에서 같은 뜻의 문구를 새로 쓰면 서버 문구와 조용히 갈라진다.
+ *
+ * ⚠️ 스태프 1명 = RPC 1회 = 알림 1통이다. work_logs 의 AFTER UPDATE 에는 notify 트리거가
+ *    3개 걸려 있어(tr_notify_work_log_checkinout · work_log_notify_no_show_update ·
+ *    work_log_notify_update) **일괄 처리를 이 훅으로 반복 호출하면 알림이 폭발한다.**
+ *    일괄 경로가 필요해지면 알림 배칭 설계가 먼저다.
+ */
+export function useRecordOpsAttendance(tournamentId: string) {
+  const qc = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (v: { workLogId: string; checkIn?: Date | null; checkOut?: Date | null }) => {
+      requireOnlineForMutation('ops.recordAttendance');
+      const { workLogId, ...patch } = v;
+      return opsStaffService.recordAttendance(workLogId, requireActor(actorId), patch);
+    },
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staffWorkLogs(tournamentId) });
+      const cleared =
+        ('checkIn' in v && v.checkIn === null) || ('checkOut' in v && v.checkOut === null);
+      toast.success(cleared ? '근태 기록을 취소했습니다' : '근태를 기록했습니다');
+    },
+    onError: (e) => {
+      logger.error('ops 근태 기록 실패', toError(e));
+      toast.error(extractUserMessage(e) || '근태 기록에 실패했습니다');
     },
   });
 }

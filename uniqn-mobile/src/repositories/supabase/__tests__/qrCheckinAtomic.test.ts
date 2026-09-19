@@ -5,7 +5,10 @@
  * 각 에러 코드가 적절한 AppError 서브타입으로 매핑되는지 확인.
  */
 
-import { executeProcessQRCheckInOut } from '../WorkLogRepositoryTransactions';
+import {
+  executeProcessPostingQRAttendance,
+  executeProcessQRCheckInOut,
+} from '../WorkLogRepositoryTransactions';
 import {
   AlreadyCheckedInError,
   InvalidQRCodeError,
@@ -64,7 +67,7 @@ describe('executeProcessQRCheckInOut — RPC 위임', () => {
       p_staff_id: STAFF_ID,
       p_job_posting_id: JOB_POSTING_ID,
       p_action: 'checkIn',
-      p_check_time: CHECK_TIME.toISOString(),
+      p_check_time: null,
       p_expected_date: EXPECTED_DATE,
     });
     expect(result.action).toBe('checkIn');
@@ -124,7 +127,7 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
         WORK_LOG_ID,
         STAFF_ID,
         JOB_POSTING_ID,
-        'auto',
+        'checkIn',
         CHECK_TIME,
         EXPECTED_DATE
       )
@@ -194,7 +197,7 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
         WORK_LOG_ID,
         STAFF_ID,
         JOB_POSTING_ID,
-        'auto',
+        'checkIn',
         CHECK_TIME,
         EXPECTED_DATE
       )
@@ -259,5 +262,90 @@ describe('executeProcessQRCheckInOut — Phase C 응답 호환', () => {
 
     expect(result.action).toBe('checkIn');
     expect(result.workDuration).toBe(0);
+  });
+});
+
+describe('executeProcessPostingQRAttendance — 서버 자동 판별', () => {
+  it('첫 스캔은 공고와 스태프만 보내고 서버 결과를 변환한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        success: true,
+        work_log_id: WORK_LOG_ID,
+        action: 'checkIn',
+        date: EXPECTED_DATE,
+        time_slot: '18:00',
+        scanned_at: CHECK_TIME.toISOString(),
+        applied_time: CHECK_TIME.toISOString(),
+      },
+      error: null,
+    });
+
+    const result = await executeProcessPostingQRAttendance(JOB_POSTING_ID, STAFF_ID);
+
+    expect(mockRpc).toHaveBeenCalledWith('process_posting_qr_attendance', {
+      p_job_posting_id: JOB_POSTING_ID,
+      p_staff_id: STAFF_ID,
+    });
+    expect(result).toMatchObject({ success: true, workLogId: WORK_LOG_ID, action: 'checkIn' });
+  });
+
+  it('여러 후보 응답은 선택 목록으로 변환한다', async () => {
+    const candidates = [
+      { workLogId: WORK_LOG_ID, date: EXPECTED_DATE, timeSlot: '18:00', action: 'checkIn' },
+    ];
+    mockRpc.mockResolvedValue({
+      data: {
+        success: false,
+        error: 'selection_required',
+        requires_selection: true,
+        selection_token: 'selection-token',
+        candidates,
+      },
+      error: null,
+    });
+
+    await expect(executeProcessPostingQRAttendance(JOB_POSTING_ID, STAFF_ID)).resolves.toEqual({
+      success: false,
+      requiresSelection: true,
+      selectionToken: 'selection-token',
+      candidates,
+    });
+  });
+
+  it('선택 재호출은 workLogId를 포함한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: {
+        success: true,
+        work_log_id: WORK_LOG_ID,
+        action: 'checkOut',
+        scanned_at: CHECK_TIME.toISOString(),
+        applied_time: CHECK_TIME.toISOString(),
+      },
+      error: null,
+    });
+
+    await executeProcessPostingQRAttendance(
+      JOB_POSTING_ID,
+      STAFF_ID,
+      WORK_LOG_ID,
+      'selection-token'
+    );
+    expect(mockRpc).toHaveBeenCalledWith('process_posting_qr_attendance', {
+      p_job_posting_id: JOB_POSTING_ID,
+      p_staff_id: STAFF_ID,
+      p_selected_work_log_id: WORK_LOG_ID,
+      p_selection_token: 'selection-token',
+    });
+  });
+
+  it('출근과 같은 15분 슬롯의 퇴근은 사용자 오류로 변환한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: { success: false, error: 'checkout_too_early' },
+      error: null,
+    });
+
+    await expect(executeProcessPostingQRAttendance(JOB_POSTING_ID, STAFF_ID)).rejects.toMatchObject(
+      { userMessage: expect.stringContaining('퇴근할 수 없습니다') }
+    );
   });
 });

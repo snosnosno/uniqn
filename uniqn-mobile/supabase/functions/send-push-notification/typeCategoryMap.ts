@@ -29,10 +29,14 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   schedule_change: 'attendance',
   schedule_created: 'attendance',
   schedule_cancelled: 'attendance',
+  // 레거시(2026-04-21~08-07 발송분). 미매핑이면 카테고리 게이트가 fail-open 되어
+  // '출퇴근' 푸시를 끈 사용자에게도 계속 발송된다.
+  work_log_check_in: 'attendance',
+  work_log_check_out: 'attendance',
 
   // 정산 관련
   settlement_completed: 'settlement',
-  settlement_requested: 'settlement',
+  settlement_reverted: 'settlement',
   negative_settlement_alert: 'admin',
 
   // 공고 관련
@@ -41,6 +45,10 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   job_closed: 'job',
   fixed_posting_expired: 'job',
   work_date_expired: 'job',
+  posting_capacity_gap: 'job',
+  posting_announcement: 'job',
+  job_posting_collaborator_added: 'system',
+  job_posting_collaborator_removed: 'system',
 
   // 시스템
   announcement: 'system',
@@ -70,4 +78,8 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
 
   // 워크스페이스 협업
   workspace_invitation: 'system',
+
+  // ops (라이브 운영 대회) — 근무 배정 축이므로 '출퇴근' 카테고리 재사용.
+  // notification_category enum 에 'ops' 를 추가하지 않는다(ALTER TYPE ADD VALUE 는 불가역).
+  ops_staff_assigned: 'attendance',
 };

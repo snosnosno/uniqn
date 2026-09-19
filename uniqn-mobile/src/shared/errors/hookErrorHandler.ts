@@ -16,6 +16,7 @@
 
 import { normalizeError, AuthError, ERROR_CODES } from '@/errors';
 import { logger } from '@/utils/logger';
+import { notFound } from '@/constants/messages';
 /** Auth user type that works with both Supabase User (.id) and AuthUser store (.uid) */
 type AuthUserLike = { uid?: string; id?: string } | null | undefined;
 
@@ -400,7 +401,7 @@ export const errorHandlerPresets = {
       showAlert,
       customMessages: {
         [ERROR_CODES.INFRA_PERMISSION_DENIED]: '공고 수정 권한이 없습니다.',
-        [ERROR_CODES.INFRA_NOT_FOUND]: '공고를 찾을 수 없습니다.',
+        [ERROR_CODES.INFRA_NOT_FOUND]: notFound('공고'),
       },
     }),
 

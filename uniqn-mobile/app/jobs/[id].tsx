@@ -8,11 +8,17 @@ import { JobDetail, PostingSurfaceState } from '@/components/jobs';
 import { StackHeader } from '@/components/headers';
 import { ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
-import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
+import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useJobDetail } from '@/hooks/useJobDetail';
+import { useShare } from '@/hooks/useShare';
+import { SHARE_SOURCES } from '@/constants/shareSource';
 import { trackJobView } from '@/services/observability';
-import { useThemeStore } from '@/stores';
+import { useThemeStore } from '@/stores/themeStore';
 import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { useTrackShareOpen } from '@/hooks/useTrackShareOpen';
+import { notFound } from '@/constants/messages';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
@@ -23,7 +29,16 @@ export default function PublicJobDetailAliasRoute() {
   const [bottomActionHeight, setBottomActionHeight] = useState(116);
 
   const resolvedId = Array.isArray(id) ? id[0] : id;
-  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
+  const { job, isLoading, error, refresh } = useJobDetail(resolvedId ?? '');
+
+  // 공유 링크(?src=)로 들어온 열람을 기록한다 (S3-5) — 공유 발생의 짝.
+  useTrackShareOpen(resolvedId);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refresh()
+  );
 
   useEffect(() => {
     if (job) {
@@ -46,7 +61,7 @@ export default function PublicJobDetailAliasRoute() {
       return;
     }
 
-    void shareJob(job);
+    void shareJob(job, SHARE_SOURCES.publicDetail);
   }, [job, shareJob]);
 
   const handleCallContact = useCallback(() => {
@@ -107,7 +122,7 @@ export default function PublicJobDetailAliasRoute() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          message={error?.message ?? '공고를 찾을 수 없습니다.'}
+          message={error?.message ?? notFound('공고')}
           error={error}
           onRetry={refresh}
         />
@@ -148,8 +163,8 @@ export default function PublicJobDetailAliasRoute() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }

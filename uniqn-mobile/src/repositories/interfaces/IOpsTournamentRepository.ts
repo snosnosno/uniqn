@@ -1,4 +1,4 @@
-import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
+import type { OpsTournament, OpsTournamentStatus, OpsTournamentArchiveResult } from '@/types/ops';
 
 /** 칩·정산 비용 설정 (생성 시 p_config 로 전달). */
 export interface OpsTournamentCostConfig {
@@ -66,4 +66,15 @@ export interface IOpsTournamentRepository {
   ): Promise<{ tournamentId: string }>;
   /** S1 C6: TV 모니터 구성 저장(owner 전용). null = 기본값 복귀. 서버 화이트리스트 검증(P0001). */
   setMonitorConfig(tournamentId: string, actorId: string, config: unknown | null): Promise<void>;
+  /**
+   * 결함③: 대회 보관(true) / 복원(false, undo-first). 멱등.
+   * 🔑 hard DELETE 는 `ops_events` append-only 트리거와 충돌해 **물리적으로 불가능**하므로
+   *    이것이 목록에서 "치우기"의 유일한 경로다. `archived_at` 은 status 와 직교(원래 상태 보존).
+   *    진행 중(active) 대회 보관은 서버가 거부한다. 복원은 상태 무관 허용.
+   */
+  setArchived(
+    tournamentId: string,
+    actorId: string,
+    archived: boolean
+  ): Promise<OpsTournamentArchiveResult>;
 }

@@ -4,6 +4,7 @@ import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { mapOpsRpcError } from './opsRpcError';
 import type { IOpsPlayerRepository } from '../interfaces/IOpsPlayerRepository';
 import type { OpsPlayerView, OpsPlayerCredentials } from '@/types/ops';
+import { loadFailed } from '@/constants/messages';
 
 // ── RPC 응답 경계 검증 (인증 토큰·금전 경로) ────────────────────────────────
 // 생성타입에 1c 테이블 미반영 → unknown 경유하던 자리를, 앱이 실제 소비하는 핵심
@@ -64,7 +65,7 @@ export class SupabaseOpsPlayerRepository implements IOpsPlayerRepository {
       const parsed = opsPlayerViewResponseSchema.safeParse(data);
       if (!parsed.success) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '플레이어 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요',
+          userMessage: loadFailed('플레이어 정보', { retry: true }),
         });
       }
       return parsed.data as unknown as OpsPlayerView;

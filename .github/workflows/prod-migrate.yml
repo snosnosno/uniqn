@@ -1,0 +1,189 @@
+# prod 마이그레이션 수동 적용 — 파일 바이트를 그대로 싣는 유일한 경로
+#
+# ## 왜 이 워크플로우가 필요한가
+#
+# 이 레포의 마이그레이션 규약은 `mcp__supabase__apply_migration` 전용이다(`db push` 금지).
+# 그런데 그 도구는 SQL 을 **인자 문자열로** 받으므로, 사람이나 에이전트가 파일 내용을 다시
+# 옮겨 적어야 한다. 수백 줄짜리 `CREATE OR REPLACE FUNCTION` 에서 그 전사는 실제로 사고를 냈다 —
+# 주석이 축약되거나 공백이 달라지면 **동작은 같은데 정본이 갈린다**(레포 파일 ≠ prod 본문).
+# 동작이 같으니 테스트로도 안 잡힌다. 기록: `memory/pitfall_prod_migration_comment_abridged_md5.md`.
+#
+# 이 워크플로우는 그 전사 단계를 **없앤다**. 러너가 레포를 체크아웃하므로 `.sql` 파일이
+# 바이트 그대로 있고, `psql -f` 가 그 파일을 직접 읽는다. 전사 0회 = 드리프트 0.
+#
+# ## 안전 장치 (이 워크플로우는 prod 에 **쓰기** 권한을 갖는다)
+#
+#   1. `workflow_dispatch` 전용 — schedule·push 트리거 없음. 사람이 눌러야만 돈다.
+#   2. `confirm` 입력이 `migration` 과 **글자 그대로 같아야** 진행한다(오발동 방지).
+#   3. 파일명은 `<14자리>_<snake>.sql` 형식만 허용하고 경로 조작(`/`·`..`)을 거부한다.
+#   4. `supabase_migrations.schema_migrations` 에 **이미 기록된 버전이면 중단**한다 —
+#      이 레포의 "prod 마이그 재적용 금지" 규율을 기계가 강제한다.
+#      (⚠️ 과거에는 레포 파일명과 prod 기록명이 다른 건이 여럿이라 이 검사가 못 잡는다.
+#       그런 건은 애초에 적용된 것이므로 `list_migrations` 를 먼저 눈으로 볼 것.)
+#   5. `--single-transaction` — 중간 실패 시 전량 롤백. 반쯤 적용된 prod 를 만들지 않는다.
+#   6. `concurrency` 로 동시 실행 금지.
+#   7. 적용 전후로 `pg_get_functiondef` md5 를 찍는다(`verify_function` 입력 시).
+#      **같으면 실패로 접는다** — 아무것도 안 바뀐 적용은 "적용했다"고 보고되면 안 된다.
+#
+# ## 남는 한계 (정직하게)
+#
+#   · md5 는 "무엇으로 바뀌었나"를 증명하지 않는다. "바뀌었다"만 증명한다.
+#     내용 정합의 진실원은 CI `db-tests`(신선한 `db reset` + pgTAP)다 — **머지가 먼저이고
+#     이 워크플로우는 그 다음**이라는 순서가 그래서 중요하다.
+#   · `PROD_DB_URL` 이 없으면 skip 이 아니라 **실패**한다. 파리티 스모크(읽기)와 달리
+#     여기서 조용한 skip 은 "적용됐겠거니" 오해를 만든다.
+#
+# 필요 시크릿: PROD_DB_URL — Session pooler URI (Settings→Database→Connect).
+#   ⚠️ 사용자명이 `postgres.<project-ref>` 형태다(memory/project_rls_secdef_audit_20260710.md).
+
+name: prod-migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration:
+        description: '적용할 파일명 (uniqn-mobile/supabase/migrations/ 아래, 예: 20260807180000_work_log_slot_checkout_after_checkin.sql)'
+        required: true
+        type: string
+      confirm:
+        description: '오발동 방지 — 위 파일명을 그대로 한 번 더 입력'
+        required: true
+        type: string
+      verify_function:
+        description: '(선택) 적용 전후 md5 를 대조할 public 함수 이름. 비우면 md5 검사 생략'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-migrate
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: prod 마이그레이션 적용
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+      MIGRATION: ${{ inputs.migration }}
+      CONFIRM: ${{ inputs.confirm }}
+      VERIFY_FUNCTION: ${{ inputs.verify_function }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 입력 검증 — 확인 문자열·파일명 형식·실재
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PROD_DB_URL}" ]; then
+            echo "::error::PROD_DB_URL 시크릿이 없다. 읽기 워크플로우와 달리 여기서는 skip 하지 않는다 — 조용한 skip 은 '적용됐겠거니' 오해를 만든다."
+            exit 1
+          fi
+
+          if [ "${MIGRATION}" != "${CONFIRM}" ]; then
+            echo "::error::confirm 이 migration 과 다르다. (migration='${MIGRATION}' confirm='${CONFIRM}')"
+            exit 1
+          fi
+
+          # 경로 조작 차단 — 파일명만 받는다. 디렉터리 구분자나 상위 참조가 있으면 거부.
+          case "${MIGRATION}" in
+            *'/'* | *'\'* | *'..'*)
+              echo "::error::파일명만 입력해라(경로 금지): '${MIGRATION}'"
+              exit 1 ;;
+          esac
+
+          if ! printf '%s' "${MIGRATION}" | grep -Eq '^[0-9]{14}_[A-Za-z0-9_]+\.sql$'; then
+            echo "::error::파일명 형식이 아니다(<14자리타임스탬프>_<이름>.sql): '${MIGRATION}'"
+            exit 1
+          fi
+
+          FILE="uniqn-mobile/supabase/migrations/${MIGRATION}"
+          if [ ! -f "${FILE}" ]; then
+            echo "::error::파일이 없다: ${FILE} (기본 브랜치에 머지됐는지 확인해라)"
+            exit 1
+          fi
+
+          echo "FILE=${FILE}"                                   >> "$GITHUB_ENV"
+          echo "VERSION=${MIGRATION%%_*}"                        >> "$GITHUB_ENV"
+          echo "NAME=$(printf '%s' "${MIGRATION%.sql}" | cut -d_ -f2-)" >> "$GITHUB_ENV"
+          echo "적용 대상: ${FILE} ($(wc -c < "${FILE}") bytes / $(wc -l < "${FILE}") lines)"
+
+      - name: 재적용 차단 — 이미 기록된 버전인가
+        run: |
+          set -euo pipefail
+          ALREADY=$(psql "${PROD_DB_URL}" -tA -v ON_ERROR_STOP=1 \
+            -c "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version = '${VERSION}';")
+          if [ "${ALREADY}" != "0" ]; then
+            echo "::error::version ${VERSION} 은 이미 기록돼 있다. 재적용 금지 — 정말 다시 돌려야 하면 기록을 먼저 사람이 판단해라."
+            exit 1
+          fi
+          echo "version ${VERSION} 미기록 확인 — 진행한다."
+
+      - name: 적용 전 md5 실측
+        if: ${{ inputs.verify_function != '' }}
+        run: |
+          set -euo pipefail
+          # chr(13) 제거 필수 — 없으면 개행 차이로 전부 가짜 불일치가 난다.
+          BEFORE=$(psql "${PROD_DB_URL}" -tA -v ON_ERROR_STOP=1 -c \
+            "SELECT coalesce(md5(replace(pg_get_functiondef(p.oid), chr(13), '')), '(none)')
+               FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname='public' AND p.proname='${VERIFY_FUNCTION}';")
+          BEFORE="${BEFORE:-(none)}"
+          echo "MD5_BEFORE=${BEFORE}" >> "$GITHUB_ENV"
+          echo "적용 전 ${VERIFY_FUNCTION} md5 = ${BEFORE}"
+
+      - name: psql 로 파일을 그대로 적용 (--single-transaction)
+        run: |
+          set -euo pipefail
+          echo "::notice::${FILE} 적용 시작 — 전사 없이 파일 바이트를 그대로 싣는다."
+          psql "${PROD_DB_URL}" -v ON_ERROR_STOP=1 --single-transaction -f "${FILE}"
+          echo "::notice::적용 완료(트랜잭션 커밋)."
+
+      - name: 적용 후 md5 대조 — 안 바뀌었으면 실패로 접는다
+        if: ${{ inputs.verify_function != '' }}
+        run: |
+          set -euo pipefail
+          AFTER=$(psql "${PROD_DB_URL}" -tA -v ON_ERROR_STOP=1 -c \
+            "SELECT coalesce(md5(replace(pg_get_functiondef(p.oid), chr(13), '')), '(none)')
+               FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname='public' AND p.proname='${VERIFY_FUNCTION}';")
+          AFTER="${AFTER:-(none)}"
+          echo "적용 전 md5 = ${MD5_BEFORE}"
+          echo "적용 후 md5 = ${AFTER}"
+          if [ "${AFTER}" = "${MD5_BEFORE}" ]; then
+            echo "::error::md5 가 그대로다 — 이 마이그레이션은 ${VERIFY_FUNCTION} 을 바꾸지 않았다. 대상 함수명이 맞는지, 파일이 기대한 내용인지 확인해라."
+            exit 1
+          fi
+          echo "::notice::본문이 실제로 바뀌었다(md5 변경 확인)."
+          {
+            echo "### prod-migrate 결과"
+            echo ""
+            echo "| 항목 | 값 |"
+            echo "|---|---|"
+            echo "| 마이그레이션 | \`${MIGRATION}\` |"
+            echo "| version | \`${VERSION}\` |"
+            echo "| 대조 함수 | \`${VERIFY_FUNCTION}\` |"
+            echo "| md5 (전) | \`${MD5_BEFORE}\` |"
+            echo "| md5 (후) | \`${AFTER}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: schema_migrations 에 기록
+        run: |
+          set -euo pipefail
+          # version 만 NOT NULL 이다(prod 실측 2026-08-07: version/statements/name/created_by/
+          # idempotency_key/rollback). statements 는 비워 둔다 — 본문의 진실원은 레포 파일이다.
+          psql "${PROD_DB_URL}" -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO supabase_migrations.schema_migrations (version, name)
+             VALUES ('${VERSION}', '${NAME}')
+             ON CONFLICT (version) DO NOTHING;"
+          RECORDED=$(psql "${PROD_DB_URL}" -tA -v ON_ERROR_STOP=1 \
+            -c "SELECT count(*) FROM supabase_migrations.schema_migrations WHERE version = '${VERSION}';")
+          if [ "${RECORDED}" != "1" ]; then
+            echo "::error::기록 실패 — version ${VERSION} 이 schema_migrations 에 없다."
+            exit 1
+          fi
+          echo "::notice::schema_migrations 기록 완료 (version=${VERSION}, name=${NAME})."

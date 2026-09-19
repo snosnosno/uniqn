@@ -16,6 +16,7 @@ import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protected
 import { RealtimeManager } from '@/shared/realtime';
 import { userSessionStorage } from '@/lib/secureStorage';
 import { clearBiometricCredentials } from './biometricService';
+import { clearShiftReminders } from '@/services/work/shiftReminderScheduler';
 import {
   clearPortOneIdentityBindingToken,
   callVerifyAndSavePortOneProfile,
@@ -32,12 +33,7 @@ import {
   setUserId,
   setUserProperties,
 } from '@/services/observability/analyticsService';
-import {
-  checkLoginAttempts,
-  incrementLoginAttempts,
-  resetLoginAttempts,
-} from './loginAttemptService';
-import { unregisterPushTokensForSignOut } from '@/services/notifications';
+import { unregisterTokensForSignOut as unregisterPushTokensForSignOut } from '@/services/notifications/pushNotificationService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import { type UserProfile, type AuthResult } from './authTypes';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
@@ -74,8 +70,6 @@ function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin')
  */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
-    await checkLoginAttempts(data.email);
-
     logger.info('로그인 시도', { email: maskEmail(data.email), platform: Platform.OS });
 
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -99,7 +93,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       // 세션은 이미 생성됐지만 public.users 프로필이 없는 orphan 계정.
       // 잔존 세션을 정리해 authStore 가 끌려가지 않게 한다 (signUp/Apple 경로와 일관).
       try {
-        await supabase.auth.signOut();
+        // 정리 경로라 global 유지 — 프로필 없는 계정의 세션은 어디에 남아 있어도
+        // 쓸모가 없고, 남겨두면 다른 기기에서 같은 반쪽 상태로 부팅한다.
+        await supabase.auth.signOut({ scope: 'global' });
       } catch {
         // cleanup failure 무시 — 원래 에러가 우선
       }
@@ -117,9 +113,6 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     logger.info('로그인 성공', { uid: user.id });
 
-    // 로그인 성공 시도 횟수 초기화
-    await resetLoginAttempts(data.email);
-
     // Analytics 이벤트
     trackLogin('email');
     setUserId(user.id);
@@ -130,19 +123,6 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     return { user, profile };
   } catch (error) {
-    // 로그인 실패 시 시도 횟수 증가
-    const skipIncrement =
-      error instanceof AuthError &&
-      (error.code === ERROR_CODES.AUTH_RATE_LIMITED ||
-        error.code === ERROR_CODES.AUTH_USER_NOT_FOUND);
-    if (!skipIncrement) {
-      try {
-        await incrementLoginAttempts(data.email);
-      } catch {
-        // Rate limiting 업데이트 실패는 무시 (원래 에러가 우선)
-      }
-    }
-
     throw handleServiceError(error, {
       operation: '로그인',
       component: 'authService',
@@ -360,7 +340,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       // 실패 시 세션 정리: signOut. orphan auth 계정은 다음 시도에서 signUp 422 →
       // signIn 재개로 self-heal 되고, 7일 후 cleanup-orphan-accounts cron 이 정리한다.
       try {
-        await supabase.auth.signOut();
+        // 정리 경로라 global 유지 — 가입이 끝나지 않은 계정의 세션은 남기면 안 된다.
+        await supabase.auth.signOut({ scope: 'global' });
       } catch {
         // cleanup failure 무시
       }
@@ -417,13 +398,23 @@ export async function signOut(): Promise<void> {
     // P0 #3 — 공용 디바이스 다음 사용자에게 자격증명 잔존 방지
     // C4 fix — bindingToken도 함께 정리 (PortOne 본인인증 도중 강제 signOut 대비)
     // 모두 idempotent. 한쪽 실패해도 signOut 계속 진행 (SecureStore 일시적 잠금 등)
+    //
+    // clearShiftReminders — 예약된 **로컬** 근무 알림도 같은 이유로 지운다. 위 푸시 토큰
+    // 해제가 서버발 알림을 막는 동안, 기기에 이미 예약된 로컬 알림은 그대로 남아 다음
+    // 사용자의 화면에 이전 계정의 지점명·근무일을 띄웠다(원장이 사용자 스코프가 아니다).
     await Promise.allSettled([
       clearPortOneIdentityBindingToken(),
       clearBiometricCredentials(),
       userSessionStorage.clearSession(),
+      clearShiftReminders(),
     ]);
 
-    await supabase.auth.signOut();
+    // 🔑 사용자가 누른 로그아웃은 **이 기기만** 끝낸다 (감사 auth-F2).
+    // Supabase 기본값은 `scope: 'global'` 이라, 폰에서 로그아웃하면 태블릿·웹 세션까지
+    // 함께 끊겼다. 사용자는 "이 기기에서 나가기"를 의도했지 전 기기 강제 종료를
+    // 의도하지 않았다. 계정 탈취 대응 같은 전역 종료는 별개 기능이어야 한다.
+    // (아래 정리 경로들은 의도적으로 global 을 유지한다 — 각 지점 주석 참조.)
+    await supabase.auth.signOut({ scope: 'local' });
 
     trackLogout();
     setUserId(null);

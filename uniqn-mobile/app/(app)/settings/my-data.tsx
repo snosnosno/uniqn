@@ -12,13 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';
 import { ShieldCheckIcon } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
-import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
+import { useToastStore } from '@/stores/toastStore';
 import { getMyData } from '@/services';
 import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
 import { toDate, type DateInput } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
 import { formatE164ToDisplay } from '@/utils/phone';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Data Row Component
@@ -60,7 +63,7 @@ export default function MyDataScreen() {
       setUserData(data);
     } catch (error) {
       logger.error('개인정보 로드 실패', error as Error);
-      addToast({ type: 'error', message: '개인정보를 불러오는데 실패했습니다' });
+      addToast({ type: 'error', message: loadFailed('개인정보') });
     } finally {
       setIsLoading(false);
     }

@@ -127,6 +127,25 @@ export async function setMonitorConfig(
   }
 }
 
+/**
+ * 결함③: 대회 보관(true) / 복원(false, undo-first).
+ * hard DELETE 는 `ops_events` append-only 트리거와 충돌해 물리적으로 불가능하므로 이것이
+ * 목록에서 "치우기"의 유일한 경로다. 진행 중(active) 대회 보관 거부는 **서버 단독 판정**이다.
+ */
+export async function setArchived(id: string, actorId: string, archived: boolean) {
+  try {
+    logger.info('ops 대회 보관 설정', { component: COMPONENT, id, archived });
+    return await opsTournamentRepository.setArchived(id, actorId, archived);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: archived ? '대회 보관' : '대회 복원',
+      component: COMPONENT,
+      context: { id },
+    });
+  }
+}
+
 export async function toggleRegistration(
   id: string,
   actorId: string,

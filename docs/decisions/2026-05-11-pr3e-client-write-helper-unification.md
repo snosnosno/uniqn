@@ -3,7 +3,7 @@
 **상태**: Accepted (no-op)
 **날짜**: 2026-05-11
 **작성자**: workspace 협업 Phase 3F 후속
-**관련 audit ADR**: `docs/superpowers/plans/2026-05-10-task6-workspace-audit.md` §5.PR3-E
+**관련 audit ADR**: `docs/archive/plans/2026-05/2026-05-10-task6-workspace-audit.md` §5.PR3-E
 
 ## 컨텍스트
 
@@ -77,8 +77,8 @@ audit ADR §5.PR3-E 가 다음을 제안:
 
 ## 관련 문서
 
-- audit ADR: `docs/superpowers/plans/2026-05-10-task6-workspace-audit.md` §5.PR3-E
+- audit ADR: `docs/archive/plans/2026-05/2026-05-10-task6-workspace-audit.md` §5.PR3-E
 - PR #73 (loadAndVerifyMutateAccess 도입): `feat(workspace): write-side mutation 권한 owner|member|admin 호환`
 - PR #76 (service-layer hotfix): `fix(workspace): service-layer owner-only 가드 workspace member 호환`
-- PR3-A.2 spec: `docs/superpowers/plans/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
+- PR3-A.2 spec: `docs/archive/plans/2026-05/2026-05-11-pr3a2-admin-rls-update-delete-split.md`
 - 선례 ADR (no-op + 진입조건 미충족): `2026-05-09-workspace-settlements-rls-audit.md`, `2026-05-09-workspace-templates-owner-only.md`

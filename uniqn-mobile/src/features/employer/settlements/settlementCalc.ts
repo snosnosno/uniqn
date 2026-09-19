@@ -93,17 +93,8 @@ export function deriveRolesForList(roles: RoleWithSalary[] | undefined): RoleWit
   return roles || [];
 }
 
-/**
- * RoleChangeModal용 역할 키 목록
- */
-export function deriveAvailableRoles(rolesForList: RoleWithSalary[]): string[] {
-  return rolesForList
-    .map((r) => {
-      const roleStr = (r.role || r.name) as string;
-      if (roleStr === 'other' && r.customRole) {
-        return r.customRole;
-      }
-      return roleStr;
-    })
-    .filter(Boolean) as string[];
-}
+// `deriveAvailableRoles`(RoleChangeModal 용 역할 키 목록)는 그 모달과 함께 사라졌다.
+// 통합 편집 시트의 역할 칩은 공고(`JobPosting`)에서 직접 목록을 뽑으므로 중간 변환이 없다.
+
+// `selectPendingSettlementCount`(정산 대기 건수)는 구인자 IA S2 에서 없앴다 — 앱은 돈을 보내지
+// 않으므로 "대기"가 없다. 허브·탭 배지·당일 스트립이 이 숫자를 쓰던 자리도 함께 걷어냈다.

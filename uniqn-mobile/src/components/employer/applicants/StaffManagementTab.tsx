@@ -1,10 +1,20 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { useStaffCancellationReview } from '@/hooks/applicant/useStaffCancellationReview';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import type { WorkLogStatus } from '@/shared/status';
-import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
+import { TimeNormalizer } from '@/shared/time';
+import type { ConfirmedStaff, JobPosting } from '@/types';
+import type { PostingCapacityGap } from '@/domains/job-posting/capacityGap';
+import {
+  countWorkRowsByApplication,
+  type PendingCancellation,
+} from '@/domains/application/pendingCancellationIndex';
+import { isStaffRole } from '@/types/role';
+import { readScheduledStart } from '@/domains/workSchedule';
 import { logger } from '@/utils/logger';
 import {
   CalendarIcon,
@@ -20,16 +30,60 @@ import { ActionSheet, type ActionSheetOption } from '@/components/ui/ActionSheet
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
+import { CancellationRejectModal } from './CancellationRejectModal';
 import { StaffProfileModal } from './StaffProfileModal';
 import { AddStaffModal } from './AddStaffModal';
-import { WorkTimeEditor } from '../settlement/WorkTimeEditor';
+import { useUser } from '@/stores/authStore';
+import { loadFailed } from '@/constants/messages';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
   jobPosting?: JobPosting;
-  onShowRoleChange?: (staff: ConfirmedStaff) => void;
+  /**
+   * 역할별 실확정 인원(`aggregateRoleFilledFromSubmap` 결과) — 시트의 역할 마감 **표기**용.
+   * `jobPosting` 과 **둘 다** 있어야 `(마감)` 이 뜬다. 선택은 막지 않는다(D7).
+   */
+  filledByRole?: Record<string, number>;
+  /**
+   * 근무일별 D-day 정원 미달 (S3-1) — 날짜 섹션 헤더에 경고 줄로 뜬다.
+   * 날짜 차원이 필요해 `filledByRole`(역할별, 날짜 소실)과 별개로 받는다.
+   */
+  capacityGapByDate?: Map<string, PostingCapacityGap>;
   onShowReport?: (staff: ConfirmedStaff) => void;
+}
+
+/** 취소 요청 검토 대상 — 확인창·거절 모달이 이름과 지원서를 함께 쓴다. */
+interface CancellationTarget {
+  staff: ConfirmedStaff;
+  cancellation: PendingCancellation;
+}
+
+/**
+ * 확정 스태프 → 통합 편집 시트 초기값.
+ *
+ * 🔴 `status` 는 실값을 넘긴다(`ConfirmedStaffStatus` 는 `WorkLogStatus` 와 같은 여섯 값이다).
+ *    null 로 얼버무리면 노쇼 행에서 배지가 "저장하면 출근이 됩니다"라고 거짓말한다.
+ * 🔴 `scheduledUnreadable` 은 `readScheduledStart` 가 판정한다 — 세 진입점이 같은 규칙을 쓴다.
+ */
+function toEditInitial(staff: ConfirmedStaff): WorkLogEditInitial {
+  return {
+    ...readScheduledStart(staff.timeSlot),
+    checkIn: TimeNormalizer.parseTime(staff.checkInTime),
+    checkOut: TimeNormalizer.parseTime(staff.checkOutTime),
+    checkInScannedAt: TimeNormalizer.parseTime(staff.workLog?.checkInScannedAt),
+    checkOutScannedAt: TimeNormalizer.parseTime(staff.workLog?.checkOutScannedAt),
+    modificationHistory: staff.workLog?.modificationHistory ?? [],
+    role: isStaffRole(staff.role) ? staff.role : 'staff',
+    customRole: staff.customRole ?? null,
+    color: staff.color ?? null,
+    memo: staff.notes ?? '',
+    date: staff.date,
+    status: staff.status,
+    payrollStatus: staff.payrollStatus ?? null,
+    staffName: staff.staffName,
+  };
 }
 
 /** 상태 전이 값 → 시트 아이콘. 전이 규칙 자체는 getManualStatusTransitions 가 소유한다. */
@@ -87,25 +141,34 @@ function QuickActions({ onRefresh, onAddStaff, isRefreshing }: QuickActionsProps
 
 export function StaffManagementTab({
   jobPostingId,
-  jobPosting: _jobPosting,
-  onShowRoleChange,
+  jobPosting,
+  filledByRole,
+  capacityGapByDate,
   onShowReport,
 }: StaffManagementTabProps) {
+  // 🔑 근무 수정 시트에 `editedBy` 를 넘기지 않으면 패치에 그 키가 빠지고, 서버는 퇴근 시각을
+  //    쓸 때만 `edited_by` 를 세운다(`ConfirmedStaffRepository.ts:382`) — 출근만 고친 저장은
+  //    행위자가 기록되지 않는다. 세 진입점이 같은 값을 넘기게 맞춘다.
+  const user = useUser();
+  const editedBy = user?.uid;
+
   const {
     grouped,
     isLoading,
     isRefreshing,
     error,
     refresh,
-    updateWorkTime,
     removeStaff,
     changeStatus,
     setNoShow,
     cancelNoShow,
     addStaff,
-    isUpdatingTime,
     isAddingStaff,
   } = useConfirmedStaff(jobPostingId, { realtime: true });
+
+  // 취소 요청 검토 (구인자 IA S1b) — 사람 줄에서 바로 승인·거절한다.
+  const { cancellationIndex, reviewingApplicationId, approveAsync, rejectAsync } =
+    useStaffCancellationReview(jobPostingId);
 
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
@@ -118,6 +181,13 @@ export function StaffManagementTab({
   /** 출퇴근 기록이 있는 행을 '출근 예정'으로 되돌리기 전 확인 대상 */
   const [revertTarget, setRevertTarget] = useState<ConfirmedStaff | null>(null);
   const [cancelNoShowTarget, setCancelNoShowTarget] = useState<ConfirmedStaff | null>(null);
+  const [approveCancellationTarget, setApproveCancellationTarget] =
+    useState<CancellationTarget | null>(null);
+  const [rejectCancellationTarget, setRejectCancellationTarget] =
+    useState<CancellationTarget | null>(null);
+
+  // 🔴 승인 RPC 는 지원서 단위다 — 확인창이 취소될 근무 일수를 밝히려고 지원서별 줄 수를 센다.
+  const workRowsByApplication = useMemo(() => countWorkRowsByApplication(grouped), [grouped]);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     logger.debug('Confirmed staff pressed', { workLogId: staff.id });
@@ -133,36 +203,19 @@ export function StaffManagementTab({
     setProfileStaff(null);
   }, []);
 
+  /**
+   * 카드의 '근무 수정' → 통합 편집 시트. 저장은 시트가 직접 한다(RPC 1회) —
+   * 예전에는 이 화면이 시각만 받아 `updateWorkTime` 을 쐈고, 역할은 상위 모달이 따로 저장했다.
+   */
   const handleEditTime = useCallback((staff: ConfirmedStaff) => {
     setSelectedStaff(staff);
     setShowTimeEditor(true);
   }, []);
 
-  const handleSaveTime = useCallback(
-    (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
-      if (!selectedStaff) {
-        return;
-      }
-
-      updateWorkTime({
-        workLogId: selectedStaff.id,
-        checkInTime: data.startTime,
-        checkOutTime: data.endTime,
-        reason: data.reason,
-      });
-
-      setShowTimeEditor(false);
-      setSelectedStaff(null);
-    },
-    [selectedStaff, updateWorkTime]
-  );
-
-  const handleChangeRole = useCallback(
-    (staff: ConfirmedStaff) => {
-      onShowRoleChange?.(staff);
-    },
-    [onShowRoleChange]
-  );
+  const handleCloseTimeEditor = useCallback(() => {
+    setShowTimeEditor(false);
+    setSelectedStaff(null);
+  }, []);
 
   const handleReport = useCallback(
     (staff: ConfirmedStaff) => {
@@ -265,6 +318,56 @@ export function StaffManagementTab({
     setCancelNoShowTarget(null);
   }, [cancelNoShowTarget, cancelNoShow]);
 
+  const handleApproveCancellation = useCallback(
+    (staff: ConfirmedStaff, cancellation: PendingCancellation) => {
+      setApproveCancellationTarget({ staff, cancellation });
+    },
+    []
+  );
+
+  const handleCloseApproveCancellation = useCallback(() => {
+    setApproveCancellationTarget(null);
+  }, []);
+
+  // 승인 — 결과를 보고 **성공에서만** 닫는다(CANCEL-14). 실패하면 확인창이 남아 다시 누를 수 있다.
+  const approveCancellationGate = useSubmitGate({
+    action: () => approveAsync(approveCancellationTarget?.cancellation.applicationId ?? ''),
+    onSuccess: handleCloseApproveCancellation,
+    errorMessage: '취소 요청 승인 실패',
+  });
+
+  const handleConfirmApproveCancellation = useCallback(() => {
+    if (!approveCancellationTarget) {
+      return;
+    }
+    void approveCancellationGate.submit();
+  }, [approveCancellationGate, approveCancellationTarget]);
+
+  const handleRejectCancellation = useCallback(
+    (staff: ConfirmedStaff, cancellation: PendingCancellation) => {
+      setRejectCancellationTarget({ staff, cancellation });
+    },
+    []
+  );
+
+  const handleCloseRejectCancellation = useCallback(() => {
+    setRejectCancellationTarget(null);
+  }, []);
+
+  const handleSubmitRejectCancellation = useCallback(
+    (reason: string) => {
+      if (!rejectCancellationTarget) {
+        return Promise.resolve();
+      }
+      return rejectAsync(rejectCancellationTarget.cancellation.applicationId, reason);
+    },
+    [rejectAsync, rejectCancellationTarget]
+  );
+
+  const approveCancellationDays = approveCancellationTarget
+    ? (workRowsByApplication.get(approveCancellationTarget.cancellation.applicationId) ?? 1)
+    : 0;
+
   const getStatusOptions = useCallback((): ActionSheetOption[] => {
     if (!statusSheetTarget) {
       return [];
@@ -273,9 +376,12 @@ export function StaffManagementTab({
     // 전이 규칙(어떤 선택지를 보일지·무엇이 파괴적인지)은 순수 함수가 소유한다.
     // 여기서는 아이콘만 입힌다. 출근 기록이 없으면 퇴근/완료가 아예 빠지므로
     // '출근 처리' 바로 아래 '퇴근 처리'가 붙어 근무 0분이 박히던 오탭 경로가 사라진다.
+    // 정산 완료 건은 '노쇼 처리'가 빠진다 — 뒤집으면 '지급 완료 + 노쇼' 모순 행이 남고
+    // 스태프 월 수입 합계(completed 만 합산)에서 이미 지급한 급여가 사라진다(감사 3-2).
     return getManualStatusTransitions(
       statusSheetTarget.status,
-      hasAttendanceRecord(statusSheetTarget)
+      hasAttendanceRecord(statusSheetTarget),
+      statusSheetTarget.payrollStatus
     ).map((transition) => ({
       label: transition.label,
       value: transition.value,
@@ -285,16 +391,6 @@ export function StaffManagementTab({
       destructive: transition.destructive,
     }));
   }, [statusSheetTarget]);
-
-  const selectedWorkLog: WorkLog | null = selectedStaff?.workLog
-    ? {
-        ...selectedStaff.workLog,
-        staffName: selectedStaff.staffName,
-        staffNickname: selectedStaff.staffNickname,
-        staffPhotoURL: selectedStaff.staffPhotoURL,
-        staffPhotoURLBlurhash: selectedStaff.staffPhotoURLBlurhash,
-      }
-    : null;
 
   // 직접추가분(지원서 미연동)은 '확정 해제'가 아니라 '제거' 의미라 문구를 분기한다.
   const isDeleteTargetDirect = !deleteTarget?.workLog?.applicationId;
@@ -314,9 +410,7 @@ export function StaffManagementTab({
   // 일시적 구독 실패로 화면 전체를 덮으면 대회 D-day 운영 중에 운영 화면을 잃는다.
   // 데이터가 있으면 아래 목록의 error prop 으로 내려 배너 수준으로 알린다.
   if (error && grouped.length === 0) {
-    return (
-      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
-    );
+    return <ErrorState title={loadFailed('확정된 스태프')} error={error} onRetry={refresh} />;
   }
 
   return (
@@ -337,25 +431,31 @@ export function StaffManagementTab({
           onStaffPress={handleStaffPress}
           onViewProfile={handleViewProfile}
           onEditTime={handleEditTime}
-          onChangeRole={handleChangeRole}
           onReport={handleReport}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           onCancelNoShow={handleCancelNoShow}
+          capacityGapByDate={capacityGapByDate}
+          cancellationIndex={cancellationIndex}
+          onApproveCancellation={handleApproveCancellation}
+          onRejectCancellation={handleRejectCancellation}
+          reviewingApplicationId={reviewingApplicationId}
           showActions
         />
       </View>
 
-      <WorkTimeEditor
-        workLog={selectedWorkLog}
-        visible={showTimeEditor}
-        onClose={() => {
-          setShowTimeEditor(false);
-          setSelectedStaff(null);
-        }}
-        onSave={handleSaveTime}
-        isLoading={isUpdatingTime}
-      />
+      {/* 통합 편집 시트 — 대상이 있을 때만 마운트한다(시트는 `[visible, workLogId]` 로만 초기화). */}
+      {showTimeEditor && selectedStaff ? (
+        <WorkLogEditSheet
+          visible
+          onClose={handleCloseTimeEditor}
+          workLogId={selectedStaff.id}
+          initial={toEditInitial(selectedStaff)}
+          jobPosting={jobPosting}
+          filledByRole={filledByRole}
+          editedBy={editedBy}
+        />
+      ) : null}
 
       <ConfirmModal
         visible={Boolean(deleteTarget)}
@@ -405,6 +505,40 @@ export function StaffManagementTab({
         confirmText="노쇼 취소"
         cancelText="취소"
       />
+
+      {/*
+        취소 요청 승인 — `closeOnConfirm={false}` + `isLoading` 으로 성공에서만 닫는다(CANCEL-14).
+        닫기 버튼 문구가 '취소' 이면 "취소 요청을 취소"로 읽혀 '닫기' 로 둔다.
+      */}
+      <ConfirmModal
+        visible={Boolean(approveCancellationTarget)}
+        onClose={handleCloseApproveCancellation}
+        onConfirm={handleConfirmApproveCancellation}
+        title="취소 요청 승인"
+        message={`${
+          approveCancellationTarget?.staff.staffName || '스태프'
+        }님의 취소 요청을 승인할까요?\n이 지원의 근무 ${approveCancellationDays}일이 모두 취소됩니다.`}
+        confirmText="승인"
+        cancelText="닫기"
+        isDestructive
+        isLoading={approveCancellationGate.isSubmitting}
+        closeOnConfirm={false}
+        confirmTestID="work-cancellation-approve-confirm"
+        cancelTestID="work-cancellation-approve-cancel"
+      />
+
+      {/* 거절 사유 모달 — 대상이 있을 때만 마운트해 이전 입력이 남지 않게 한다. */}
+      {rejectCancellationTarget ? (
+        <CancellationRejectModal
+          visible
+          onClose={handleCloseRejectCancellation}
+          onSubmit={handleSubmitRejectCancellation}
+          isProcessing={
+            reviewingApplicationId === rejectCancellationTarget.cancellation.applicationId
+          }
+          applicationId={rejectCancellationTarget.cancellation.applicationId}
+        />
+      ) : null}
 
       <StaffProfileModal
         visible={isProfileModalVisible}

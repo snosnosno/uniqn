@@ -29,26 +29,28 @@ export interface SupabaseAuthToken {
 // ---------------------------------------------------------------------------
 // QA 계정 상수 (Supabase migration으로 pre-seeded)
 // ---------------------------------------------------------------------------
+// 비밀번호 단일 소스 = E2E_CONFIG.accounts.password (사유는 e2e/config.ts 주석).
+// 원격 Supabase 를 겨냥하면서 시드 기본값을 쓰면 config 가 즉시 throw 한다.
 
 export const SUPABASE_QA_ACCOUNTS = {
   staff: {
     id: 'a1111111-1111-4111-a111-111111111111',
     email: 'review-staff@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     role: 'staff' as const,
     name: '심사용 스태프',
   },
   employer: {
     id: 'b2222222-2222-4222-b222-222222222222',
     email: 'review-employer@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     role: 'employer' as const,
     name: '심사용 구인자',
   },
   admin: {
     id: 'c3333333-3333-4333-c333-333333333333',
     email: 'review-admin@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     role: 'admin' as const,
     name: '심사용 관리자',
   },
@@ -57,7 +59,7 @@ export const SUPABASE_QA_ACCOUNTS = {
   collaborator: {
     id: 'e5555555-5555-4555-a555-555555555555',
     email: 'review-collaborator@uniqn.app',
-    password: 'Review2026!',
+    password: E2E_CONFIG.accounts.password,
     role: 'employer' as const,
     name: '심사용 협업자',
   },

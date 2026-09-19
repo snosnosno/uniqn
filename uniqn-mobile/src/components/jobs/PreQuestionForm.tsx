@@ -24,8 +24,6 @@ interface PreQuestionFormProps {
   onAnswersChange: (answers: PreQuestionAnswer[]) => void;
   /** 비활성화 상태 */
   disabled?: boolean;
-  /** 에러 표시할 질문 ID 목록 */
-  errorQuestionIds?: string[];
 }
 
 interface QuestionItemProps {
@@ -33,7 +31,6 @@ interface QuestionItemProps {
   answer: PreQuestionAnswer;
   onAnswerChange: (questionId: string, answer: string) => void;
   disabled?: boolean;
-  hasError?: boolean;
 }
 
 interface SelectOptionProps {
@@ -100,7 +97,6 @@ const QuestionItem = memo(function QuestionItem({
   answer,
   onAnswerChange,
   disabled,
-  hasError,
 }: QuestionItemProps) {
   const handleTextChange = useCallback(
     (text: string) => {
@@ -116,9 +112,7 @@ const QuestionItem = memo(function QuestionItem({
     [question.id, onAnswerChange]
   );
 
-  const borderColor = hasError
-    ? 'border-error-500 dark:border-error-400'
-    : 'border-secondary-200 dark:border-surface-overlay';
+  const borderColor = 'border-secondary-200 dark:border-surface-overlay';
 
   return (
     <View className="mb-6">
@@ -175,13 +169,6 @@ const QuestionItem = memo(function QuestionItem({
         </View>
       )}
 
-      {/* 에러 메시지 */}
-      {hasError && (
-        <Text className="text-sm text-error-500 dark:text-error-400 mt-1 font-sans">
-          필수 질문입니다. 답변을 입력해주세요.
-        </Text>
-      )}
-
       {/* 글자 수 표시 (textarea) */}
       {question.type === 'textarea' && answer.answer.length > 0 && (
         <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
@@ -214,7 +201,6 @@ export const PreQuestionForm = memo(function PreQuestionForm({
   answers,
   onAnswersChange,
   disabled = false,
-  errorQuestionIds = [],
 }: PreQuestionFormProps) {
   // 답변 변경 핸들러
   const handleAnswerChange = useCallback(
@@ -268,7 +254,6 @@ export const PreQuestionForm = memo(function PreQuestionForm({
             answer={answer}
             onAnswerChange={handleAnswerChange}
             disabled={disabled}
-            hasError={errorQuestionIds.includes(question.id)}
           />
         );
       })}

@@ -194,7 +194,7 @@ BEGIN
   END IF;
 
   -- S8: completed → 거부 (구분된 코드)
-  UPDATE public.work_logs SET status = 'completed', check_in_ts = now(), check_out_ts = now() WHERE id = v_work_log_id;
+  UPDATE public.work_logs SET status = 'completed', check_in_ts = now(), check_out_ts = now() + interval '15 minutes' WHERE id = v_work_log_id;
   v_result := public.process_qr_checkin_atomically(v_work_log_id, v_staff_id, v_job_id, 'checkIn', now(), NULL);
   IF (v_result->>'success')::bool OR v_result->>'error' != 'work_log_completed' THEN
     RAISE EXCEPTION 'S8 fail (completed 가 출근 통과): %', v_result;

@@ -1,29 +1,30 @@
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
-import { toError, BusinessError, ERROR_CODES } from '@/errors';
+import { toError, BusinessError, ValidationError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
 import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
-import { workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats } from '@/domains/staff';
+import {
+  workLogToConfirmedStaff,
+  groupStaffByDate,
+  calculateStaffStats,
+  assertWorkTimeReason,
+} from '@/domains/staff';
 import type {
   ConfirmedStaff,
   ConfirmedStaffGroup,
   ConfirmedStaffStats,
-  UpdateStaffRoleInput,
   UpdateWorkTimeInput,
   DeleteConfirmedStaffInput,
   AddDirectStaffInput,
 } from '@/types/confirmedStaff';
 import type { UserNicknameSearchResult } from '@/repositories';
-import { STAFF_ROLES, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
-
-const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((role) => role.key !== 'other').map(
-  (role) => role.key
-);
+import { notFound } from '@/constants/messages';
 
 export interface GetConfirmedStaffResult {
   staff: ConfirmedStaff[];
@@ -109,23 +110,10 @@ export async function getConfirmedStaffByDate(
   return workLogsToConfirmedStaff(workLogs);
 }
 
-export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void> {
-  logger.info('Updating confirmed staff role', { ...input });
-
-  const actorId = (await requireCurrentUser()).id;
-
-  await confirmedStaffRepository.updateRoleWithTransaction({
-    workLogId: input.workLogId,
-    newRole: input.newRole,
-    isStandardRole: STANDARD_ROLE_KEYS.includes(input.newRole),
-    reason: input.reason,
-    // 감사 필드는 세션에서 강제 스탬프 — 클라이언트가 넘긴 값은 무시(위조 방지)
-    changedBy: actorId,
-    actorId,
-  });
-
-  logger.info('Updated confirmed staff role', { workLogId: input.workLogId });
-}
+// 🗑️ `updateStaffRole` 은 삭제됐다 (감사 finding-04, 2026-08-10).
+//    유일한 호출부이던 `useConfirmedStaff.changeRole` 이 어떤 화면에도 배선돼 있지 않았다.
+//    역할 편집의 정본은 통합 시트(WorkLogEditSheet → useUpdateSlot → update_work_log_slot)다.
+//    되살리지 말 것 — 잠금 없는 `role_change_history` 쓰기 경로가 다시 생긴다.
 
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
@@ -155,13 +143,19 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
 export async function cancelConfirmedStaffConfirmation(
   input: DeleteConfirmedStaffInput
 ): Promise<void> {
+  const releaseReason = assertWorkTimeReason(input.reason).trim();
+  if (releaseReason.length < 2) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '해제 사유를 2자 이상 입력해주세요.',
+    });
+  }
   const currentUser = await requireCurrentUser();
   logger.info('Cancelling confirmed staff confirmation', { ...input });
 
   const workLog = await workLogRepository.getById(input.workLogId);
   if (!workLog) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-      userMessage: '근무 기록을 찾을 수 없습니다.',
+      userMessage: notFound('근무 기록'),
     });
   }
 
@@ -176,13 +170,30 @@ export async function cancelConfirmedStaffConfirmation(
   // (과거 `${jobPostingId}_${staffId}` 합성키를 uuid 파라미터에 넘겨 22P02 로 즉사하던 결함 제거).
   const applicationId = workLog.applicationId;
   if (!applicationId) {
-    await confirmedStaffRepository.removeDirectStaff({ workLogId: input.workLogId });
+    await confirmedStaffRepository.removeDirectStaff({
+      workLogId: input.workLogId,
+      reason: releaseReason,
+    });
+    try {
+      await enqueueScheduleBoardSync(input.jobPostingId, 'update', {
+        jobPostingId: input.jobPostingId,
+        reason: 'direct_staff_release',
+        workLogId: input.workLogId,
+      });
+    } catch (error) {
+      logger.warn('Schedule board enqueue failed after direct staff release', {
+        component: 'confirmedStaffService',
+        jobPostingId: input.jobPostingId,
+        workLogId: input.workLogId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     logger.info('직접 추가 스태프 삭제 완료', { workLogId: input.workLogId });
     return;
   }
 
   // 구인자 확정해제: 실제 applicationId + employer_initiates 로 RPC 호출(인가 판정은 RPC 담당).
-  await cancelConfirmation(applicationId, currentUser.id, input.reason, 'employer_initiates');
+  await cancelConfirmation(applicationId, currentUser.id, releaseReason, 'employer_initiates');
 
   logger.info('Cancelled confirmed staff confirmation', {
     workLogId: input.workLogId,

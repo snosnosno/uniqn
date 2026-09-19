@@ -25,6 +25,8 @@ import { ReportCard } from '@/components/admin/ReportCard';
 import { EmptyState, Loading } from '@/components/ui';
 import { SearchIcon, FilterIcon, AlertTriangleIcon } from '@/components/icons';
 import type { Report, ReportStatus } from '@/types/report';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -64,7 +66,13 @@ export default function AdminReportsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   // 데이터 조회
-  const { data: reports, isLoading, isRefetching, error, refetch } = useAdminReports(filters);
+  const { data: reports, isLoading, error, refetch } = useAdminReports(filters);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   // 검색 필터링 (클라이언트 사이드)
   const filteredReports = useMemo(() => {
@@ -131,7 +139,7 @@ export default function AdminReportsPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
-            description="신고 목록을 불러오는 데 실패했습니다."
+            description={loadFailed('신고 목록')}
             icon="error"
             actionLabel="다시 시도"
             onAction={() => refetch()}
@@ -274,7 +282,7 @@ export default function AdminReportsPage() {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         estimatedItemSize={140}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
             <AlertTriangleIcon size={48} color={SECONDARY_PALETTE[400]} />

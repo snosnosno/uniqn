@@ -13,7 +13,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo } from 'reac
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { QRCodeIcon } from '@/components/icons';
+import { QrCodeIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
@@ -40,6 +40,17 @@ interface JobDetailContextValue {
   /** 고정 스케줄 공고 여부 — true 면 QR 진입점을 렌더링하지 않는다. */
   isFixed: boolean;
   isLoading: boolean;
+  /**
+   * 조회 실패. job=null 만으로는 "없는 공고"와 "못 불러온 공고"를 구분할 수 없어,
+   * 자식 화면이 일시적 오류를 "찾을 수 없음"으로 오안내한다(감사 A4).
+   */
+  error: Error | null;
+  /**
+   * 재조회. 실제 구현(`useJobDetail.refresh`)이 async 이므로 타입도 Promise 를 그대로 노출한다 —
+   * `() => void` 로 좁히면 자식이 `await` 해도 타입상 즉시 끝난 것처럼 보여, 재조회 완료를
+   * 기다려야 하는 소비처(정산 설정 저장 후 재조회 등)가 조용히 경합한다.
+   */
+  refresh: () => Promise<void>;
   handleShowQR: () => void;
 }
 
@@ -47,10 +58,16 @@ const NOOP = () => {
   // No-op fallback for JobDetailContext consumers rendered outside the provider.
 };
 
+const NOOP_ASYNC = async () => {
+  // No-op fallback for JobDetailContext consumers rendered outside the provider.
+};
+
 const JobDetailContext = createContext<JobDetailContextValue>({
   job: null,
   isFixed: false,
   isLoading: false,
+  error: null,
+  refresh: NOOP_ASYNC,
   handleShowQR: NOOP,
 });
 
@@ -84,7 +101,7 @@ export function HeaderQRAction({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="QR 코드 표시"
     >
-      <QRCodeIcon size={22} color={tintColor} />
+      <QrCodeIcon size={22} color={tintColor} />
     </Pressable>
   );
 }
@@ -124,7 +141,7 @@ export default function JobPostingDetailLayout() {
   const router = useRouter();
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
-  const { job, isLoading } = useJobDetail(id || '', { realtime: true });
+  const { job, isLoading, error, refresh } = useJobDetail(id || '', { realtime: true });
 
   const isFixed = job ? isFixedJobPosting(job) : false;
 
@@ -157,9 +174,11 @@ export default function JobPostingDetailLayout() {
       job: job ?? null,
       isFixed,
       isLoading,
+      error: error ?? null,
+      refresh,
       handleShowQR,
     }),
-    [job, isFixed, isLoading, handleShowQR]
+    [job, isFixed, isLoading, error, refresh, handleShowQR]
   );
 
   if (job && !isEmployerManageablePosting(job)) {

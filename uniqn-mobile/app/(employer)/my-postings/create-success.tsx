@@ -57,6 +57,14 @@ export default function CreateSuccessScreen() {
     router.replace(`/(employer)/my-postings/${postingId}`);
   }, [postingId]);
 
+  // 구직자 시선 미리보기 — 공고 상세 헤더의 눈 아이콘을 여기로 옮겼다(구인자 IA S1).
+  // 🔑 replace 가 아니라 push 다. 미리보기에서 뒤로 가면 이 화면으로 돌아와야 한다.
+  //    도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 미리보기가 수치를 부풀리지 않는다.
+  const handlePreview = useCallback(() => {
+    if (!postingId) return;
+    router.push(`/(app)/jobs/${postingId}`);
+  }, [postingId]);
+
   const handleCreateAnother = useCallback(() => {
     router.replace('/(employer)/my-postings/create');
   }, []);
@@ -71,7 +79,7 @@ export default function CreateSuccessScreen() {
       <View className="flex-1 justify-center px-5">
         {/* 확정 헤더 — 성공 아이콘 + 문구 */}
         <View className="items-center mb-8">
-          <View className="w-16 h-16 rounded-full bg-success-100 items-center justify-center mb-4">
+          <View className="w-16 h-16 rounded-lg bg-success-100 items-center justify-center mb-4">
             <CheckIcon size={32} strokeWidth={2} color={STATUS_COLORS.success} />
           </View>
           <Text className="text-xl font-sans-bold text-content-primary">공고가 등록됐어요</Text>
@@ -146,6 +154,17 @@ export default function CreateSuccessScreen() {
           >
             공고 보기
           </Button>
+          {/* 승인 대기 대회는 구직자 상세가 승인 게이트에 막힌다 — 공유 CTA 와 같은 이유로 숨긴다. */}
+          {pending ? null : (
+            <Button
+              variant="outline"
+              onPress={handlePreview}
+              disabled={!hasPostingId}
+              testID="create-success-preview"
+            >
+              구직자 화면 미리보기
+            </Button>
+          )}
           <Button
             variant="ghost"
             onPress={handleCreateAnother}

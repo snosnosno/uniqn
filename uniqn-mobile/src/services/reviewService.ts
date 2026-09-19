@@ -16,6 +16,7 @@ import { REVIEW_DEADLINE_DAYS, getSentimentTagConsistency } from '@/types/review
 import type { WorkLogForReview } from '@/domains/review';
 import type { CreateReviewInput, ReviewerType, Review, ReviewBlindResult } from '@/types/review';
 import type { CreateReviewContext, ReviewPaginationCursor, PaginatedReviews } from '@/repositories';
+import { notFound } from '@/constants/messages';
 
 const validator = new ReviewValidator();
 
@@ -71,7 +72,7 @@ export async function createReview(
     const workLog = await workLogRepository.getById(input.workLogId);
     if (!workLog) {
       throw new ReviewNotFoundError({
-        userMessage: '리뷰 대상을 찾을 수 없습니다.',
+        userMessage: notFound('리뷰 대상'),
         workLogId: input.workLogId,
       });
     }

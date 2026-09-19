@@ -56,7 +56,7 @@ describe('orderedRowTargets', () => {
     const schedule = orderedRowTargets(values).filter((t) =>
       ['dates', 'time', 'roles'].includes(t.key)
     );
-    expect(schedule).toEqual([
+    expect(schedule).toMatchObject([
       { key: 'dates', groupIndex: 0 },
       { key: 'time', groupIndex: 0 },
       { key: 'roles', groupIndex: 0 },
@@ -83,7 +83,7 @@ describe('orderedRowTargets', () => {
 describe('nextUnsetRowAfter', () => {
   it('현재 행 다음의 미설정 행을 반환한다', () => {
     const values: OrderSheetFormValues = { ...filled(), contactPhone: '' };
-    expect(nextUnsetRowAfter(values, { key: 'title', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'title', groupIndex: 0 })).toMatchObject({
       key: 'contact',
       groupIndex: 0,
     });
@@ -92,7 +92,7 @@ describe('nextUnsetRowAfter', () => {
   it('선택 항목(설명·복지·세금·조건·사전질문)은 건너뛴다', () => {
     const values: OrderSheetFormValues = { ...filled(), salary: { type: 'hourly', amount: 0 } };
     // description 은 optional 이라 건너뛰고 salary 로 간다
-    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 })).toMatchObject({
       key: 'salary',
       groupIndex: 0,
     });
@@ -100,7 +100,7 @@ describe('nextUnsetRowAfter', () => {
 
   it('현재 행 뒤에 없으면 앞쪽으로 순환해서 찾는다', () => {
     const values: OrderSheetFormValues = { ...filled(), title: '' };
-    expect(nextUnsetRowAfter(values, { key: 'salary', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'salary', groupIndex: 0 })).toMatchObject({
       key: 'title',
       groupIndex: 0,
     });
@@ -124,7 +124,7 @@ describe('nextUnsetRowAfter', () => {
         { dates: [], timeSlots: [], grouped: false },
       ],
     };
-    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 })).toMatchObject({
       key: 'dates',
       groupIndex: 1,
     });
@@ -133,7 +133,7 @@ describe('nextUnsetRowAfter', () => {
   it('목록에 없는 current 가 들어와도 앞에서부터 훑어 첫 미설정 행을 낸다', () => {
     const values: OrderSheetFormValues = { ...filled(), title: '' };
     // fixed 전용 키를 dated 폼에 넣은 방어 케이스
-    expect(nextUnsetRowAfter(values, { key: 'workConditions', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'workConditions', groupIndex: 0 })).toMatchObject({
       key: 'title',
       groupIndex: 0,
     });
@@ -141,7 +141,7 @@ describe('nextUnsetRowAfter', () => {
 
   it('firstUnsetRow 는 기존 동작(전역 첫 미설정)을 유지한다', () => {
     const values: OrderSheetFormValues = { ...filled(), title: '', contactPhone: '' };
-    expect(firstUnsetRow(values)).toEqual({ key: 'title', groupIndex: 0 });
+    expect(firstUnsetRow(values)).toMatchObject({ key: 'title', groupIndex: 0 });
   });
 
   it('그룹1의 dates 만 미설정이면 current 자신을 "다음 미설정 행"으로 되돌리지 않는다 (findIndex groupIndex 매칭 회귀 — 무한 재오픈 차단)', () => {
@@ -193,7 +193,7 @@ describe('nextUnsetRowAfter — 한 시트가 여러 행을 커버하는 경우'
   it('슬롯 시트가 커버하는 행(time·roles)은 확인 직후 다시 타깃이 되지 않는다', () => {
     const values = slotWithoutTime();
     // 전제 고정 — time 이 실제로 unset 이어야 이 테스트가 공허하지 않다
-    expect(nextUnsetRowAfter(values, { key: 'dates', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'dates', groupIndex: 0 })).toMatchObject({
       key: 'time',
       groupIndex: 0,
     });
@@ -217,14 +217,16 @@ describe('nextUnsetRowAfter — 한 시트가 여러 행을 커버하는 경우'
         },
       ],
     };
-    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])).toEqual({
+    expect(
+      nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])
+    ).toMatchObject({
       key: 'time',
       groupIndex: 1,
     });
   });
 
   it('coveredKeys 를 안 넘기면 기존 동작(current 만 제외)을 유지한다', () => {
-    expect(nextUnsetRowAfter(slotWithoutTime(), { key: 'roles', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(slotWithoutTime(), { key: 'roles', groupIndex: 0 })).toMatchObject({
       key: 'time',
       groupIndex: 0,
     });
@@ -243,7 +245,7 @@ describe('nextUnsetRowAfter — 일정 행도 정상 타깃(확정자 잠금 폐
       scheduleGroups: [{ ...(base.scheduleGroups ?? [])[0]!, dates: [] }],
       salary: { type: 'hourly', amount: 0 },
     };
-    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 })).toEqual({
+    expect(nextUnsetRowAfter(values, { key: 'contact', groupIndex: 0 })).toMatchObject({
       key: 'dates',
       groupIndex: 0,
     });
@@ -262,7 +264,9 @@ describe('nextUnsetRowAfter — 일정 행도 정상 타깃(확정자 잠금 폐
         },
       ],
     };
-    expect(nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])).toEqual({
+    expect(
+      nextUnsetRowAfter(values, { key: 'roles', groupIndex: 0 }, ['time', 'roles'])
+    ).toMatchObject({
       key: 'dates',
       groupIndex: 1,
     });

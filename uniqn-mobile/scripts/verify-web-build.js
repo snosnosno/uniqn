@@ -14,7 +14,27 @@ const fs = require('fs');
 const path = require('path');
 
 const MIN_BUNDLE_BYTES = 5 * 1024 * 1024; // 정상 ~9MB, 깨진 빈 번들 ~1MB
-const ROUTE_MARKERS = ['(app)', '(auth)']; // expo-router require.context가 수집한 라우트 그룹
+
+/**
+ * expo-router require.context 가 수집한 라우트 그룹 — app/ 아래 6종 **전부**.
+ *
+ * 감사 web-03: 종전에는 ['(app)','(auth)'] 2종뿐이라, 21시간 다운 사고의 재발방지 장치가
+ * (admin)/(employer)/(ops)/(public) 4개 그룹에는 장님이었다. 한 그룹만 통째로 빠진
+ * 부분 파손은 게이트를 그냥 통과했다.
+ *
+ * 🔑 마커를 `./(group)/` 형태로 쓴다 — 괄호 없는 동명 폴더(app/admin, app/employer)와
+ *    영어 일반 단어((public))가 우연히 부분 매칭돼 **거짓 통과**하는 것을 막는다.
+ *    실측(2026-08-09, 10MB 정상 번들): (admin) 19 · (app) 48 · (auth) 5 ·
+ *    (employer) 18 · (ops) 4 · (public) 4 회.
+ */
+const ROUTE_MARKERS = [
+  './(admin)/',
+  './(app)/',
+  './(auth)/',
+  './(employer)/',
+  './(ops)/',
+  './(public)/',
+];
 
 const distDir = path.resolve(process.argv[2] || path.join(__dirname, '..', 'dist'));
 

@@ -6,7 +6,7 @@ import type {
   PostingSalaryDisplay,
   PostingScheduleDisplay,
 } from '@/types';
-import { FIXED_TIME_MARKER } from '@/types/assignment';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems, getGuaranteedHoursLabel } from '@/utils/allowanceUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
@@ -88,14 +88,16 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances);
   const guaranteedHoursLabel = getGuaranteedHoursLabel(posting.compensation.allowances);
   // 모집 조건 라벨(S3) — 공백만 있는 값은 미설정으로 취급(쓰기 XSS refine은 zod 완료, 표시는 RN Text)
-  const dressCode = posting.conditions?.dressCode?.trim();
-  const experience = posting.conditions?.experience?.trim();
+  // 카드는 '복장'·'경력' 접두 없이 **구인자가 고른/입력한 값 그대로만** 보여준다(2026-08-24).
+  // 저장 형식이 ', ' 조인 단일 문자열(ConditionsSheet)이라 조각으로 쪼개 칩 하나에 값 하나가 되게 한다.
+  const conditionValues = [posting.conditions?.dressCode, posting.conditions?.experience]
+    .flatMap((value) => (value ? value.split(',') : []))
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
   const conditionLabels = [
     // 보장시간은 금액에 반영되지 않는 근무 조건이라 수당 칩이 아니라 여기로 온다(SETTLE-2).
     ...(guaranteedHoursLabel ? [guaranteedHoursLabel] : []),
-    ...(dressCode ? [`복장 ${dressCode}`] : []),
-    // '경력 1년이상' 같은 칩은 문구가 이미 '경력'으로 시작 — 이중 접두 방지
-    ...(experience ? [experience.startsWith('경력') ? experience : `경력 ${experience}`] : []),
+    ...conditionValues,
   ];
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
@@ -158,10 +160,12 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     requiresRoleSelection: workflow.isFixed,
     requiresAssignmentSelection: !workflow.isFixed,
     requiresPreQuestions: (posting.questions.items ?? []).length > 0,
+    // [R1] 고정공고의 '시각 미정'은 '미정' 하나로 표현한다(옛 'NEGOTIABLE' 폐지).
+    //      이 값은 ApplicationForm 을 거쳐 지원 배정의 timeSlot 이 되므로 쓰기 규약을 따른다.
     fixedAssignmentTimeSlot:
       posting.schedule.kind === 'fixed'
-        ? posting.schedule.startTime || FIXED_TIME_MARKER
-        : FIXED_TIME_MARKER,
+        ? posting.schedule.startTime || TBA_TIME_MARKER
+        : TBA_TIME_MARKER,
     availableRoleOptions: roleAvailability.availableItems,
     reason: applicationReason,
   };

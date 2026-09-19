@@ -16,6 +16,7 @@ import {
   getBoardPostOrThrow,
   sanitizeBoardText,
 } from './boardServiceShared';
+import { notFound } from '@/constants/messages';
 
 async function resolveBoardReporterInfo(
   reporterId: string
@@ -72,7 +73,7 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
   }
 
   try {
-    const post = await getBoardPostOrThrow(input.postId, '신고 대상을 찾을 수 없습니다.');
+    const post = await getBoardPostOrThrow(input.postId, notFound('신고 대상'));
 
     if (input.targetType === 'post') {
       if (post.boardType === 'notice') {
@@ -96,7 +97,7 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
       const targetComment = await boardRepository.getCommentById(input.postId, input.targetId);
       if (!targetComment) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '신고할 댓글을 찾을 수 없습니다.',
+          userMessage: notFound('신고할 댓글'),
         });
       }
 
@@ -159,7 +160,7 @@ export async function getBoardReportDetailForAdmin(
     const report = await boardRepository.getReportById(reportId);
     if (!report) {
       throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시판 신고를 찾을 수 없습니다.',
+        userMessage: notFound('게시판 신고'),
       });
     }
 
@@ -184,7 +185,7 @@ export async function reviewBoardReport(
     const report = await boardRepository.getReportById(reportId);
     if (!report) {
       throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '게시판 신고를 찾을 수 없습니다.',
+        userMessage: notFound('게시판 신고'),
       });
     }
 

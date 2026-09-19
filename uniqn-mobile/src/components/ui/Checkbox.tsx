@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { Platform, Pressable, View, Text } from 'react-native';
-import { CheckmarkIcon } from '@/components/icons';
+import { CheckIcon } from '@/components/icons';
 import { TEXT_COLORS } from '@/constants/colors';
 
 // ============================================================================
@@ -140,7 +140,7 @@ export const Checkbox = memo(function Checkbox({
           ${getBoxStyle()}
         `}
       >
-        {checked && <CheckmarkIcon size={config.icon} color={getCheckColor()} />}
+        {checked && <CheckIcon size={config.icon} color={getCheckColor()} />}
       </View>
 
       {/* Label & Description */}

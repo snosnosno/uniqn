@@ -293,7 +293,7 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
     ]);
   });
 
-  it('isGrouped 연속 run은 동일 시그니처 경계를 보존하며 grouped 그룹으로 복원된다 (2차 Eng-H1)', () => {
+  it('isGrouped 연속 run은 동일 시그니처 경계를 보존하며 grouped 그룹으로 복원된다 — 경계 뒤 싱글턴은 강등(신 정규형 F-1)', () => {
     const draft = draftWith([
       mk('2026-07-20', '19:00', 'dealer', true),
       mk('2026-07-21', '19:00', 'dealer', true),
@@ -307,14 +307,17 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
         grouped: true,
       },
       {
+        // run 길이 1 → grouped=false 강등. 구 정규형은 grouped:true 를 보존했으나, 토글이
+        // run≥2 에만 렌더되는 신 UI 에서는 해제 불가능한 좀비 묶음 카드가 된다.
+        // 지원자 화면 행동은 중립(설계 §3.1 — 길이 1 run 은 어차피 단독 렌더).
         dates: ['2026-07-22'],
         timeSlots: [slotAt('21:00', [{ role: 'dealer', count: 1 }])],
-        grouped: true,
+        grouped: false,
       },
     ]);
   });
 
-  it('isGrouped run은 비연속 날짜에서 끊긴다', () => {
+  it('isGrouped run은 비연속 날짜에서 끊기고, 남은 싱글턴은 강등 후 동일 조건끼리 병합된다 (신 정규형 F-1)', () => {
     const draft = draftWith([
       mk('2026-07-20', '19:00', 'dealer', true),
       mk('2026-07-22', '19:00', 'dealer', true), // 7/21 없음 — run 단절
@@ -322,10 +325,9 @@ describe('draftToValues — 그룹핑 복원 (S1, M8 throw 제거)', () => {
     const values = draftToValues(draft);
     // scheduleGroups 는 z.input 에서 optional(.default([])) — 널 가드 후 접근.
     expect((values.scheduleGroups ?? []).map((g) => g.dates)).toEqual([
-      ['2026-07-20'],
-      ['2026-07-22'],
+      ['2026-07-20', '2026-07-22'],
     ]);
-    expect((values.scheduleGroups ?? []).every((g) => g.grouped)).toBe(true);
+    expect((values.scheduleGroups ?? []).every((g) => g.grouped)).toBe(false);
   });
 
   it('falsy isGrouped는 시그니처 병합 — 비연속 동일 조건 날짜들이 한 그룹으로 (정규형 수용)', () => {
@@ -653,7 +655,7 @@ describe('formValuesToDraft (프리셋 저장 — z.input 폼 값 → draft, 검
 });
 
 describe('templateToValues', () => {
-  it('템플릿 로드 시 그룹 구조·timeSlots는 유지하고 각 그룹 dates만 비운다 (F4)', () => {
+  it('템플릿 로드 시 그룹 구조·timeSlots는 유지하고 dates·grouped를 비운다 (F4 + 좀비 토글 차단)', () => {
     const multiGroupDraft = valuesToDraft({
       ...baseValues,
       scheduleGroups: [
@@ -687,7 +689,9 @@ describe('templateToValues', () => {
     expect(values.scheduleGroups).toHaveLength(2);
     expect(values.scheduleGroups?.every((g) => g.dates.length === 0)).toBe(true);
     expect(values.scheduleGroups?.[0]?.timeSlots?.[0]?.startTime).toBe('19:00');
-    expect(values.scheduleGroups?.[0]?.grouped).toBe(true);
+    // 날짜 없는 묶음지원은 의미가 없다 — 남기면 조건 카드가 빈 라벨의 " 통째로 지원받기"
+    // 토글을 켜진 채 그리고, 묶을 run 이 없어 스위치를 내려도 아무 일도 안 일어난다(좀비).
+    expect(values.scheduleGroups?.every((g) => g.grouped === false)).toBe(true);
     expect(values.scheduleGroups?.[1]?.timeSlots?.[0]?.startTime).toBe('21:00');
   });
 

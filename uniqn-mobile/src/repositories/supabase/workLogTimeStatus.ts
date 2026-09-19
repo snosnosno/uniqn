@@ -1,6 +1,15 @@
 /**
  * 근무 시간 수정 → work_log status 파생 (두 경로 공용 SSOT)
  *
+ * @deprecated 2026-08-06 — 이 규칙은 서버 `update_work_log_slot` 안으로 옮겨졌고
+ *   (`20260806140000_work_log_slot_attendance.sql` §4 상태 파생), 두 리포지토리는 그 RPC 로
+ *   위임했다. **런타임 소비자는 0이다.** 그래도 지우지 않는 이유:
+ *   이 파일의 규칙 서술(생애주기 상태 4종 한정 · no_show/cancelled 불가침 · completed 강등
+ *   금지 · `?? ` 로 병합하면 삭제가 무시된다)이 서버 구현과 **대조 가능한 정본**이고,
+ *   `__tests__/workLogTimeStatus.test.ts` 가 그 값 계약을 실행 가능한 형태로 고정한다.
+ *   서버 로직을 고칠 때 여기와 어긋나면 둘 중 하나가 틀린 것이다.
+ *   실제 제거 판단(knip 래칫 포함)은 통합 시트 회귀 마감에서 함께 본다.
+ *
  * @description work_logs 의 정산 게이트는 **status** 로 판정한다
  *   (SettlementRepository.settleWorkLogWithTransaction — `status !== checked_out && !== completed` 거부).
  *   따라서 출퇴근 시각을 쓰는 모든 경로는 status 도 함께 맞춰야 한다. 정산 화면 경로가 이걸
@@ -10,8 +19,10 @@
  *   - `SettlementRepository.updateWorkTimeWithTransaction` (정산 탭)
  *   - `ConfirmedStaffRepository.updateWorkTimeWithTransaction` (스태프 관리 탭)
  *
- * @remarks 반대 방향(status → 타임스탬프) 파생은 `ConfirmedStaffRepository.buildStatusTimestampPatch`
- *   가 담당한다. 그쪽은 수동 상태 변경 경로용이다.
+ * @remarks 반대 방향(status → 타임스탬프) 파생은 **서버**가 한다 —
+ *   `update_work_log_slot` 의 `status` 패치(마이그 20260810100000). 예전엔 클라
+ *   `ConfirmedStaffRepository.buildStatusTimestampPatch` 였으나, 같은 경로가 이력 jsonb 를
+ *   read-modify-write 하던 Lost Update 를 닫으면서 함께 서버로 옮겼다(감사 data-01).
  */
 
 import { STATUS } from '@/constants';

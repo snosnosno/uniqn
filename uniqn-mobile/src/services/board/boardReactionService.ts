@@ -1,33 +1,13 @@
 import { BusinessError, ERROR_CODES, handleServiceError } from '@/errors';
 import { boardRepository } from '@/repositories';
 import { requireMatchingCurrentUser } from '@/services/auth/authorizationService';
-import { type CommentReactionType, type BoardVoteType } from '@/types/board';
+import { type CommentReactionType } from '@/types/board';
 import {
   COMPONENT,
   type BoardViewer,
   assertCanInteractPost,
   getBoardPostOrThrow,
 } from './boardServiceShared';
-
-export async function toggleBoardPostVote(
-  postId: string,
-  viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>,
-  type: BoardVoteType
-): Promise<BoardVoteType | null> {
-  await requireMatchingCurrentUser(viewer.userId);
-  try {
-    const post = await getBoardPostOrThrow(postId);
-
-    await assertCanInteractPost(post, viewer);
-    return boardRepository.togglePostVote(postId, viewer.userId, type);
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '게시글 반응',
-      component: COMPONENT,
-      context: { postId, viewerId: viewer.userId, type },
-    });
-  }
-}
 
 export async function toggleBoardCommentReaction(
   postId: string,

@@ -3,12 +3,11 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Linking } from 'react-native';
-import { Badge } from '@/components/ui';
+import React, { memo, useMemo } from 'react';
+import { View, Text } from 'react-native';
 import {
   DocumentIcon,
-  MapIcon,
+  MapPinIcon,
   CalendarIcon,
   ClockIcon,
   UserIcon,
@@ -22,16 +21,21 @@ import { SALARY_TYPE_LABELS, type Allowances, type TaxSettings } from '@/utils/s
 import {
   PROVIDED_FLAG,
   DEFAULT_TAX_SETTINGS,
-  getRoleSalaryFromSettlementSource,
+  getDisplayRoleSalaryFromSettlementSource,
 } from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
-import { formatWorkTimeRange, NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
-import { formatPhoneForDisplay } from '@/utils/phone';
-import { openMapSearch, resolveMapQuery } from '@/utils/mapLink';
-import { useToast } from '@/stores/toastStore';
+import {
+  formatWorkTimeRange,
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+  UNDECIDED_TIME_LABEL,
+  UNDECIDED_TIME_HINT,
+} from '../helpers';
+import { composeFullAddress, resolveMapQuery } from '@/utils/mapLink';
+import { DirectionsButton } from '../DirectionsButton';
+import { ContactActions } from '../ContactActions';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS } from '@/constants/statusConfig';
-import type { ScheduleEvent, PayrollStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
 
 export interface InfoTabProps {
@@ -74,24 +78,31 @@ function Section({ icon, title, children }: SectionProps) {
 }
 
 export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
+  const timeDisplay = getTimeDisplay(schedule);
   const ownerName = schedule.postingProjection?.ownerName;
   const description = schedule.postingProjection?.description;
-  const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
-  const toast = useToast();
 
+  /**
+   * 표시할 급여 — 근거가 없으면 null (감사 3-1).
+   *
+   * `settlementBreakdown.salaryInfo` 는 계산 계층 산물이라 근거가 없어도 폴백 단가
+   * (시급 15,000원)가 들어 있다. 먼저 표시 전용 해소기로 근거 유무를 판정한다.
+   */
   const salaryInfo = useMemo(() => {
-    if (schedule.settlementBreakdown?.salaryInfo) {
-      return schedule.settlementBreakdown.salaryInfo;
-    }
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
     }
-    return getRoleSalaryFromSettlementSource(
+
+    const basis = getDisplayRoleSalaryFromSettlementSource(
       schedule.postingProjection?.settlement,
       schedule.role,
       schedule.customRole
     );
+    if (!basis) {
+      return null;
+    }
+
+    return schedule.settlementBreakdown?.salaryInfo ?? basis;
   }, [
     schedule.settlementBreakdown?.salaryInfo,
     schedule.customSalaryInfo,
@@ -148,16 +159,19 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     [schedule.location, schedule.detailedAddress, schedule.locationAddress]
   );
 
-  /** 장소 아래에 덧붙일 주소 한 줄 — 상세주소가 없으면 공고 주소로 대신한다. */
-  const addressLine = schedule.detailedAddress?.trim() || schedule.locationAddress?.trim() || '';
+  /**
+   * 장소 아래에 덧붙일 주소 한 줄 — 지도 검색어와 **같은 합성 규칙**을 쓴다(SSOT).
+   * 상세주소 우선 단일 선택이던 예전 규칙이면, 주소 검색 도입(B1) 이후 데이터에서
+   * '3층 301호' 만 남고 도로명주소가 화면에서 통째로 사라진다.
+   */
+  const addressLine = composeFullAddress(schedule.locationAddress, schedule.detailedAddress);
 
-  const handleOpenMap = useCallback(async () => {
-    if (!mapQuery) return;
-    const opened = await openMapSearch(mapQuery);
-    if (!opened) {
-      toast.error('지도 앱을 열지 못했어요. 주소를 직접 검색해 주세요.');
-    }
-  }, [mapQuery, toast]);
+  /**
+   * 안내 가능 여부 — 좌표가 있으면 주소 텍스트가 없어도 갈 수 있다.
+   * (현행 데이터에선 좌표가 주소에서 파생되므로 둘이 함께 있지만, 게이트가 좌표를 무시하면
+   *  나중에 한쪽만 있는 경로가 생겼을 때 조용히 버튼이 사라진다.)
+   */
+  const canOpenMap = Boolean(mapQuery) || Boolean(schedule.coordinates);
 
   // 노쇼는 취소 분기(opacity-70 로 흐려짐)에 섞지 않는다 — 이의 제기 기한이 있는 기록이라
   // 공고·일정 정보를 흐리지 않고 그대로 읽을 수 있어야 근거를 맞춰볼 수 있다.
@@ -185,9 +199,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           </Text>
           <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+            <Text className="ml-1.5 text-sm text-content-secondary font-sans">{timeDisplay}</Text>
           </View>
         </Section>
       </View>
@@ -215,9 +227,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           </Text>
           <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-placeholder font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+            <Text className="ml-1.5 text-sm text-content-placeholder font-sans">{timeDisplay}</Text>
           </View>
         </Section>
       </View>
@@ -244,7 +254,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
       <View className="mb-4">
         <View className="flex-row items-start">
-          <MapIcon size={18} color={SECONDARY_PALETTE[500]} />
+          <MapPinIcon size={18} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
             장소 :
           </Text>
@@ -264,21 +274,18 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             처음 가는 근무지를 지도 앱에 손으로 다시 쳐야 한다.
             반대로 주소가 없을 땐 버튼을 감춘다 — 장소명('홈' 같은 별칭)으로 검색하면
             엉뚱한 곳으로 안내해, 없는 것보다 나쁘다. */}
-        {mapQuery ? (
-          <Pressable
-            onPress={handleOpenMap}
-            accessibilityRole="button"
-            accessibilityLabel={`${mapQuery} 길찾기`}
-            className="ml-8 mt-2 flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
-          >
-            <MapIcon size={16} color="#B8962E" />
-            <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
-              길찾기
-            </Text>
-          </Pressable>
+        {canOpenMap ? (
+          <DirectionsButton
+            query={mapQuery}
+            coordinates={schedule.coordinates}
+            label={schedule.location || undefined}
+            // 좌표만 있고 주소·장소명이 비면 `?? ` 로는 " 길찾기" 가 읽힌다 — 좌표로 게이트를
+            // 연 순간 그 조합이 새로 가능해졌다. 빈 문자열까지 걷어내려면 `||` 여야 한다.
+            accessibilityName={mapQuery || schedule.location || '근무지'}
+          />
         ) : (
           <Text className="ml-8 mt-2 text-xs text-content-muted dark:text-secondary-400 font-sans">
-            주소가 등록되지 않아 길찾기를 열 수 없어요. 구인자에게 문의해 주세요.
+            주소가 등록되지 않아 지도를 열 수 없어요. 구인자에게 문의해 주세요.
           </Text>
         )}
       </View>
@@ -288,6 +295,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {formatFullDate(schedule.date)}
         </Text>
 
+        {/* 렌더마다 두 번 계산하지 않도록 한 번만 만든다(문구 비교에도 같은 값을 쓴다). */}
         {schedule.type === STATUS.SCHEDULE.COMPLETED ? (
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
@@ -303,11 +311,19 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
           </View>
         ) : (
-          <View className="mt-2 flex-row items-center">
-            <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-              {getTimeDisplay(schedule)}
-            </Text>
+          <View className="mt-2">
+            <View className="flex-row items-center">
+              <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                {timeDisplay}
+              </Text>
+            </View>
+            {/* 취소·노쇼는 위에서 조기 반환되므로 여기 도달하는 건 아직 살아있는 일정뿐이다. */}
+            {timeDisplay === UNDECIDED_TIME_LABEL && (
+              <Text className="mt-1 text-xs text-content-muted dark:text-secondary-500 font-sans">
+                {UNDECIDED_TIME_HINT}
+              </Text>
+            )}
           </View>
         )}
       </Section>
@@ -327,21 +343,29 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           )}
 
           {schedule.ownerPhone && (
-            <Pressable
-              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
-              className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
-            >
-              <Text className="text-base font-sans-medium text-primary-600 dark:text-primary-400">
-                {formatPhoneForDisplay(schedule.ownerPhone)}
-              </Text>
-              <View className="ml-auto flex-row items-center">
-                <PhoneIcon size={16} color="#B8962E" />
-                <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400 font-sans">
-                  전화하기
-                </Text>
-              </View>
-            </Pressable>
+            <ContactActions phone={schedule.ownerPhone} component="InfoTab" />
           )}
+        </Section>
+      )}
+
+      {/*
+        급여 근거가 없으면 섹션을 조용히 감추지 않고 미정임을 밝힌다(감사 3-1).
+        예전에는 폴백 단가(시급 15,000원)가 확정 금액처럼 표기됐다. 그것을 없앤 뒤
+        섹션만 사라지면 사용자는 급여 정보가 빠졌다는 사실조차 알 수 없다.
+      */}
+      {!salaryInfo && (
+        <Section
+          icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
+          title="급여 정보"
+        >
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+            <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
+              급여 미정
+            </Text>
+            <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              구인자가 급여를 확정하면 이 화면에 표시돼요.
+            </Text>
+          </View>
         </Section>
       )}
 
@@ -442,14 +466,11 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {/* 금액은 정산 탭이 단일 소스다. 예전엔 여기가 재계산치(settlementBreakdown)를
               큰 글씨로, 정산 탭은 확정액(payrollAmount)을 큰 글씨로 띄워서 서로 다른 두
               숫자가 나란히 보였다 — "어느 게 받을 돈인지"를 사용자가 판정하게 만든 것이다.
-              여기서는 상태만 말하고 금액은 정산 탭으로 넘긴다. */}
-          <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+              구인자 IA S2b — 지급 상태 배지도 없앴다. 앱은 돈을 보내지 않는다. */}
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
             <Text className="text-sm text-content-secondary font-sans">
               금액은 정산 탭에서 확인할 수 있어요
             </Text>
-            <Badge variant={payrollStatusConfig.variant} size="sm">
-              {payrollStatusConfig.label}
-            </Badge>
           </View>
         </Section>
       )}

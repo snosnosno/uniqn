@@ -1,8 +1,8 @@
 # ops 1e — 스태프 연동 (공고 확정 스태프 → 대회 현장 스태프 + 딜러 테이블 배정) 설계
 
-> 작성 2026-07-06. 권위 명세 `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md`(§1 목표·§4.6·§116)
+> 작성 2026-07-06. 권위 명세 `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md`(§1 목표·§4.6·§116)
 >
-> - UX flows `docs/planning/2026-06-23-tournament-ops-ux-flows.md` + 핸드오프 `docs/planning/2026-06-30-ops-remaining-slices-design-handoff-prompt.md`의
+> - UX flows `docs/archive/planning/2026-06/2026-06-23-tournament-ops-ux-flows.md` + 핸드오프 `docs/archive/planning/2026-06/2026-06-30-ops-remaining-slices-design-handoff-prompt.md`의
 >   1e 슬라이스를, 정찰 실측(prod 마이그·advisor·로컬 마이그 전수·앱 표면) 기반으로 확정한 스펙.
 >   방향 결정: 브레인스토밍에서 사용자 확정 — **"공고로 대회 생성"이 아니라 "대회에 공고를 연결"(N:1)**.
 

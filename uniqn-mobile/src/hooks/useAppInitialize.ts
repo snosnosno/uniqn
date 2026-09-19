@@ -319,5 +319,3 @@ export function useAppInitialize(): UseAppInitializeReturn {
     retry,
   };
 }
-
-export default useAppInitialize;

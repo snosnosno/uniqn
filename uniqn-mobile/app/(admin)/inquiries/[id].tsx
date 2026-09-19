@@ -21,6 +21,7 @@ import type { RespondInquiryInput } from '@/types';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { notFound } from '@/constants/messages';
 
 export default function AdminInquiryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -60,7 +61,7 @@ export default function AdminInquiryDetailScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-content-secondary font-sans">문의를 찾을 수 없습니다</Text>
+          <Text className="text-content-secondary font-sans">{notFound('문의')}</Text>
         </View>
       </SafeAreaView>
     );

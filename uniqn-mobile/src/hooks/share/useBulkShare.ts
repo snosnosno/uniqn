@@ -20,6 +20,7 @@ import { canShareJob } from '@/domains/job-posting';
 import { buildBulkJobShareText, MAX_BULK_SHARE_COUNT } from '@/utils/bulkJobShareMessage';
 import { confirmActionAsync } from '@/utils/confirmAction';
 import { useToast } from '@/stores/toastStore';
+import { loadFailed } from '@/constants/messages';
 
 export type BulkShareSource = 'employer' | 'admin';
 
@@ -139,7 +140,7 @@ export function useBulkShare(): UseBulkShareReturn {
         };
       } catch (error) {
         logger.error('묶음 공유 실패', toError(error), { count: jobIds.length, source });
-        toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        toast.error(loadFailed('공고 정보', { retry: true }));
         return { success: false, error: toError(error) };
       } finally {
         setIsSharing(false);

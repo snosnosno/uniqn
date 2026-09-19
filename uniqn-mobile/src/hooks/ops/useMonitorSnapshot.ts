@@ -12,8 +12,14 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsMonitorRepository } from '@/repositories/ops';
 import { computeClockRemaining, computeNextBreakRemaining } from '@/domains/ops';
+import { ERROR_CODES } from '@/errors';
+import {
+  isTokenInvalidError,
+  publicRefetchInterval,
+  publicShouldRetry,
+} from './publicPollingPolicy';
 
-const POLL_INTERVAL_MS = 4000; // ≥3s 하한(§0.5). 일시정지/레벨변경 최대 4s 지연 허용.
+const TOKEN_INVALID_CODE = ERROR_CODES.OPS_MONITOR_TOKEN_INVALID;
 
 export function useMonitorSnapshot(token: string | undefined) {
   const enabled = !!token && token.length >= 32;
@@ -22,10 +28,12 @@ export function useMonitorSnapshot(token: string | undefined) {
     queryKey: token ? queryKeys.ops.monitor(token) : [...queryKeys.ops.all, 'monitor', 'none'],
     queryFn: () => opsMonitorRepository.getSnapshot(token as string),
     enabled,
-    // 무효 토큰(error)이면 폴링 중단(자원 낭비 방지). 정상이면 폴링 유지.
-    refetchInterval: (q) => (q.state.status === 'error' ? false : POLL_INTERVAL_MS),
+    // 토큰 무효만 영구 정지. 네트워크 장애는 백오프하며 계속 폴링해 자동 복귀한다.
+    // (종전에는 status==='error' 로 끊어 1회 실패가 곧 영구 정지였다 — 감사 monitor-01)
+    refetchInterval: (q) =>
+      publicRefetchInterval(q.state.error, q.state.fetchFailureCount, TOKEN_INVALID_CODE),
     staleTime: 0,
-    retry: false, // 무효 토큰은 재시도 폭주 금지
+    retry: (failureCount, error) => publicShouldRetry(failureCount, error, TOKEN_INVALID_CODE),
   });
 
   const snapshot = query.data ?? null;
@@ -91,6 +99,10 @@ export function useMonitorSnapshot(token: string | undefined) {
     ]
   );
 
+  // 토큰 무효(영구) vs 연결 장애(일시) — 화면이 다른 문구를 띄워야 하므로 갈라서 내보낸다.
+  const isTokenInvalid = isTokenInvalidError(query.error, TOKEN_INVALID_CODE);
+  const isDisconnected = !isTokenInvalid && query.isError;
+
   return {
     snapshot,
     remainingSec: remaining.remainingSec,
@@ -100,5 +112,9 @@ export function useMonitorSnapshot(token: string | undefined) {
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
+    /** 토큰 자체가 무효 — 폴링이 영구 정지됐고 사람이 새 링크를 받아야 한다. */
+    isTokenInvalid,
+    /** 네트워크·서버 일시장애 — 폴링은 백오프하며 계속되고 저절로 복귀할 수 있다. */
+    isDisconnected,
   };
 }

@@ -24,6 +24,3 @@ export * from './employer';
 
 // 구인구직 컴포넌트
 export * from './jobs';
-
-// 지원자 관리 컴포넌트
-export * from './applicant';

@@ -217,22 +217,29 @@ describe('ORDER-11 — 타입 전환이 데이터를 치우면 알린다', () =>
   });
 });
 
-describe('ORDER-8 — 날짜 상한을 다 쓰면 일정 추가를 열지 않는다', () => {
-  it('상한(regular 7개) 도달 시 일정 추가가 비활성이고 이유를 말한다', () => {
-    const { getByTestId, getByText } = render(
+/**
+ * ORDER-8 승계 — 구 결함("상한을 다 썼는데 '＋ 일정 추가'가 열려서, 아무것도 고를 수 없는
+ * 시트로 들어갔다")은 조건 유도 그룹핑에서 **구조적으로 소멸**했다. 날짜 행이 전 일정
+ * 스코프 하나이므로 열면 항상 기존 선택이 보이고 해제할 수 있다 — 들어가서 할 게 없는
+ * 상태 자체가 성립하지 않는다. 그래서 "비활성 + 사유 문구" 대신 "막다른 길이 아니다"를 지킨다.
+ */
+describe('ORDER-8 승계 — 날짜 상한에 도달해도 날짜 행은 막다른 길이 아니다', () => {
+  it('상한(regular 7개)을 다 써도 날짜 행은 그대로 열려 있다', () => {
+    const { getByTestId } = render(
       <OrderSheetScreen {...baseProps} initialValues={valuesWithDates(7)} />
     );
 
-    expect(getByTestId('order-sheet-add-schedule').props.accessibilityState.disabled).toBe(true);
-    expect(getByText('날짜는 7개까지 담을 수 있어요')).toBeTruthy();
+    const row = getByTestId('order-sheet-row-dates');
+    expect(row).toBeTruthy();
+    expect(row.props.accessibilityState?.disabled ?? false).toBe(false);
   });
 
-  it('여유가 있으면 그대로 열린다', () => {
-    const { getByTestId, getByText } = render(
-      <OrderSheetScreen {...baseProps} initialValues={valuesWithDates(3)} />
+  it('상한을 다 썼어도 담긴 날짜가 전부 칩으로 보여 해제 대상을 고를 수 있다', () => {
+    const { getByTestId } = render(
+      <OrderSheetScreen {...baseProps} initialValues={valuesWithDates(7)} />
     );
 
-    expect(getByTestId('order-sheet-add-schedule').props.accessibilityState.disabled).toBe(false);
-    expect(getByText('＋ 일정 추가')).toBeTruthy();
+    expect(getByTestId('order-sheet-date-chip-2026-08-01')).toBeTruthy();
+    expect(getByTestId('order-sheet-date-chip-2026-08-07')).toBeTruthy();
   });
 });

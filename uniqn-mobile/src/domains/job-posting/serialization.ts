@@ -150,6 +150,34 @@ function normalizeOptionalText(value?: string | null): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+/**
+ * 좌표 3상(`undefined` 유지 / 값 설정 / `null` 지움)을 문서 필드 2개로 편다.
+ *
+ * `venueId`·`conditions` 와 같은 클래스의 **직렬화 경계 silent drop 방지**다. 쓰기는 patch 가
+ * 아니라 문서 전체를 보내므로, 여기서 키를 안 내보내면(=undefined) `removeUndefined` 가 지워
+ * UPDATE 페이로드에 아예 안 실리고 컬럼은 **그대로 보존**된다. 그래서 세 상태가 전부 표현된다:
+ *   - 값     → 그 좌표로 덮어쓴다
+ *   - null   → 컬럼을 NULL 로 지운다(주소가 바뀌었는데 지오코딩이 실패한 경우)
+ *   - 미지정 → current 값을 그대로 다시 쓴다. current 도 없으면 키를 생략한다
+ *
+ * 🔴 짝 강제: DB `chk_job_postings_geo_pair` 가 반쪽 좌표를 거부한다. 한쪽만 유효한 입력이
+ *    들어오면 여기서 **둘 다 비운다** — 23514 로 공고 저장 전체를 실패시키느니 좌표를 포기한다.
+ */
+function resolveGeoFields(
+  geo: CreateJobPostingInput['geo'],
+  current?: Partial<JobPosting>
+): { geoLat?: number | null; geoLng?: number | null } {
+  if (geo === undefined) {
+    const lat = current?.geoLat;
+    const lng = current?.geoLng;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return {};
+    return { geoLat: lat, geoLng: lng };
+  }
+  if (geo === null) return { geoLat: null, geoLng: null };
+  if (!Number.isFinite(geo.lat) || !Number.isFinite(geo.lng)) return { geoLat: null, geoLng: null };
+  return { geoLat: geo.lat, geoLng: geo.lng };
+}
+
 function toCanonicalLocation(
   location: Pick<PostingLocation, 'name' | 'address' | 'district' | 'region' | 'detailedAddress'>
 ): JobPostingDocumentV3['location'] {
@@ -367,6 +395,7 @@ export function serializeJobPostingV3(
     ...(totals.workDates ? { workDates: totals.workDates } : {}),
     roleKeys: getRoleKeysFromCatalog(roleCatalog),
     ...getSalaryBounds(compensation, roleCatalog),
+    ...resolveGeoFields(input.geo, current),
     totalPositions: totals.totalPositions,
     filledPositions: authoritativeFilledPositions,
     viewCount: current?.viewCount ?? 0,
@@ -519,6 +548,12 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
     workDate: derivedDates.workDate,
     ...(derivedDates.workDates ? { workDates: derivedDates.workDates } : {}),
     ...(document.roleKeys ? { roleKeys: [...document.roleKeys] } : {}),
+    // 근무지 좌표 하이드레이션. salary*Max 와 달리 **읽기에도 실어야 한다** — 소비처(스케줄
+    // 컨텍스트 → 길찾기)가 이 값을 쓰고, `resolveGeoFields` 의 "미지정 = current 보존" 분기도
+    // 여기서 온 값에 기댄다. 빠지면 편집 저장 한 번에 좌표가 조용히 사라진다(venueId 와 같은 클래스).
+    ...(typeof document.geoLat === 'number' && typeof document.geoLng === 'number'
+      ? { geoLat: document.geoLat, geoLng: document.geoLng }
+      : {}),
     totalPositions: document.totalPositions,
     filledPositions: stats.filledPositions,
     ...(document.viewCount !== undefined ? { viewCount: document.viewCount } : {}),

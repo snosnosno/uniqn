@@ -11,30 +11,21 @@
 
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { SettlementCalculator, resolveEffectiveSalaryWithSource } from '@/domains/settlement';
+import {
+  SettlementCalculator,
+  resolveEffectiveSalaryWithSource,
+  buildVenueContainerContext,
+  type SettlementResolutionContext,
+} from '@/domains/settlement';
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { getEffectiveAllowances, getEffectiveTaxSettings } from '@/utils/settlement';
-import { DEFAULT_SALARY_INFO } from '@/utils/settlement/constants';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
-import type {
-  WorkLog,
-  PostingSettlementContext,
-  JobRoleStats,
-  PostingRoleCatalogEntry,
-} from '@/types';
+import type { WorkLog, PostingSettlementContext } from '@/types';
 import { type WorkLogWithOverrides, type SettlementWorkLog, type SettlementFilters } from './types';
 
-/**
- * toSettlementWorkLog 가 실제로 읽는 정산 컨텍스트 최소 형태. 공고 정산 컨텍스트
- * (PostingSettlementContext, roles=JobRoleStats[])와 컨테이너 단가표(roles=PostingRoleCatalogEntry[])를
- * 함께 수용한다 — resolveEffectiveSalaryWithSource 는 role/customRole/salary 만 읽으므로 count/filled 불요.
- */
-type SettlementResolutionContext = {
-  roles: JobRoleStats[] | PostingRoleCatalogEntry[];
-  defaultSalary?: PostingSettlementContext['defaultSalary'];
-  allowances?: PostingSettlementContext['allowances'];
-  taxSettings?: PostingSettlementContext['taxSettings'];
-};
+// SettlementResolutionContext 와 컨테이너 컨텍스트 생성은 domains/settlement 로 옮겼다 —
+// 쓰기 경로(SettlementRepository 의 canonical 재계산)가 같은 정의를 써야 화면 금액과
+// 저장 금액이 갈라지지 않는다. 여기서만 알고 있으면 반드시 다시 어긋난다.
 
 /**
  * 단일 근무 기록 → SettlementWorkLog(근무시간/예상정산액 부가). SettlementCalculator 재사용.
@@ -103,12 +94,9 @@ export async function getVenueSettlementWorkLogs(
 
     // 컨테이너 직속 배치(jobPostingId=venueId)의 2순위 해소 — 지점 역할별 단가표(설계 §A).
     const container = await jobPostingRepository.getVenueContainerById(venueId);
-    const venueContext: SettlementResolutionContext = {
-      roles: container?.roleSalaries ?? [],
-      defaultSalary: DEFAULT_SALARY_INFO,
-      allowances: undefined,
-      taxSettings: undefined,
-    };
+    const venueContext: SettlementResolutionContext = buildVenueContainerContext(
+      container?.roleSalaries
+    );
 
     // 스팬 내 실재 공고(컨테이너 제외=B4)별 정산 컨텍스트 맵. 컨테이너 직속 배치는 venue 컨텍스트.
     const postingIds = Array.from(

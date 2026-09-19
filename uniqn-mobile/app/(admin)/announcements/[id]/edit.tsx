@@ -8,11 +8,12 @@ import { View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { AlertCircleOutlineIcon } from '@/components/icons';
+import { AlertCircleIcon } from '@/components/icons';
 import { useAnnouncementDetail, useUpdateAnnouncement } from '@/hooks/useAnnouncement';
 import { AnnouncementForm } from '@/components/admin/announcements';
 import { STATUS_COLORS } from '@/constants/colors';
 import type { CreateAnnouncementInput } from '@/types';
+import { notFound } from '@/constants/messages';
 
 export default function EditAnnouncementPage() {
   const router = useRouter();
@@ -54,9 +55,9 @@ export default function EditAnnouncementPage() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
         <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
-          <AlertCircleOutlineIcon size={64} color={STATUS_COLORS.error} />
+          <AlertCircleIcon size={64} color={STATUS_COLORS.error} />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
-            공지사항을 찾을 수 없습니다
+            {notFound('공지사항')}
           </Text>
           <Pressable
             onPress={() => router.back()}

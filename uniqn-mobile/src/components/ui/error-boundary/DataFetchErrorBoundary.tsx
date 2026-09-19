@@ -22,6 +22,7 @@ import type {
   DataFetchErrorFallbackProps,
   ErrorBoundaryState,
 } from './types';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // DataFetchErrorFallback
@@ -44,7 +45,7 @@ function DataFetchErrorFallback({
       </View>
 
       <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white text-center mb-2">
-        {resourceName}를 불러올 수 없습니다
+        {loadFailed(resourceName)}
       </Text>
 
       <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-4 text-sm font-sans">

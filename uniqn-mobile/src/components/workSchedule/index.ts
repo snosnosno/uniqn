@@ -11,7 +11,6 @@ export { VenueDayPanel, type VenueDayPanelProps } from './VenueDayPanel';
 export { buildVenueDayGroup, mapVenueDaySlotToConfirmedStaff } from './venueDayDetailMapping';
 export { AddSlotSheet, type AddSlotSheetProps } from './AddSlotSheet';
 export { buildAddSlotPayload, type BuildAddSlotPayloadParams } from './addSlotPayload';
-export { EditSlotSheet, type EditSlotSheetProps } from './EditSlotSheet';
 export { VenueCreateSheet, type VenueCreateSheetProps } from './VenueCreateSheet';
 export { VenueSettingsSheet, type VenueSettingsSheetProps } from './VenueSettingsSheet';
 export { GridBadgeLegend } from './GridBadgeLegend';

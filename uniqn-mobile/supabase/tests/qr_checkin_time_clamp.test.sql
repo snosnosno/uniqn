@@ -1,13 +1,13 @@
 -- ============================================================
--- P1#7: process_qr_checkin_atomically 클라 시각 클램프 회귀 테스트
+-- process_qr_checkin_atomically 서버시각·15분 올림 회귀 테스트
 -- ============================================================
 -- 목적: 유저플로우 감사(2026-07-10) 클러스터 C — 디바이스 시계 조작으로
 --   근무시간(=정산액)을 부풀리는 것을 서버가 차단하는지 검증.
 --   마이그레이션 20260711030100_qr_checkin_server_time_clamp.sql 적용 후 실행.
 --
 -- 계약:
---   p_check_time 이 NULL 이거나 서버 now() 와 5분(300초) 초과 편차 → 서버 now() 로 대체.
---   5분 이내 편차는 그대로 기록(사용자가 화면에서 본 시각과의 일관성).
+--   p_check_time 은 편차와 무관하게 신뢰하지 않는다. clock_timestamp() 원본을 별도 보존하고
+--   적용 시각은 항상 15분 단위로 올림한다.
 --
 -- 시나리오:
 --   C1. 30분 과거 시각 → 클램프(check_in_ts ≈ now())
@@ -72,19 +72,20 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_staff_id, 'role', 'authenticated')::text, true);
 
   -- ----------------------------------------------------------
-  -- C1: 30분 과거 시각 → 클램프 (check_in_ts ≈ now())
+  -- C1: 30분 과거 시각 → 무시, 서버시각을 15분 올림
   -- ----------------------------------------------------------
   v_result := public.process_qr_checkin_atomically(
     v_work_log_id, v_staff_id, v_job_id, 'checkIn', now() - interval '30 minutes', NULL
   );
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'C1 fail: %', v_result; END IF;
   SELECT check_in_ts INTO v_recorded FROM public.work_logs WHERE id = v_work_log_id;
-  IF abs(EXTRACT(EPOCH FROM (v_recorded - now()))) > 60 THEN
-    RAISE EXCEPTION 'C1 clamp miss: recorded=% (30분 과거가 그대로 기록됨)', v_recorded;
+  IF v_recorded < now() OR v_recorded > now() + interval '15 minutes'
+     OR mod(EXTRACT(EPOCH FROM v_recorded)::bigint, 900) <> 0 THEN
+    RAISE EXCEPTION 'C1 server/quarter miss: recorded=%', v_recorded;
   END IF;
 
   -- ----------------------------------------------------------
-  -- C2: 1분 과거 시각 → 통과 (전달값 그대로)
+  -- C2: 1분 과거 시각도 무시
   -- ----------------------------------------------------------
   UPDATE public.work_logs SET status = 'scheduled', check_in_ts = NULL WHERE id = v_work_log_id;
   v_result := public.process_qr_checkin_atomically(
@@ -92,8 +93,9 @@ BEGIN
   );
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'C2 fail: %', v_result; END IF;
   SELECT check_in_ts INTO v_recorded FROM public.work_logs WHERE id = v_work_log_id;
-  IF abs(EXTRACT(EPOCH FROM (v_recorded - (now() - interval '1 minute')))) > 5 THEN
-    RAISE EXCEPTION 'C2 pass-through miss: recorded=% (1분 편차가 클램프됨)', v_recorded;
+  IF v_recorded < now() OR v_recorded > now() + interval '15 minutes'
+     OR mod(EXTRACT(EPOCH FROM v_recorded)::bigint, 900) <> 0 THEN
+    RAISE EXCEPTION 'C2 client time trusted or not rounded: recorded=%', v_recorded;
   END IF;
 
   -- ----------------------------------------------------------
@@ -105,7 +107,8 @@ BEGIN
   );
   IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'C3 fail: %', v_result; END IF;
   SELECT check_in_ts INTO v_recorded FROM public.work_logs WHERE id = v_work_log_id;
-  IF v_recorded IS NULL OR abs(EXTRACT(EPOCH FROM (v_recorded - now()))) > 60 THEN
+  IF v_recorded IS NULL OR v_recorded < now() OR v_recorded > now() + interval '15 minutes'
+     OR mod(EXTRACT(EPOCH FROM v_recorded)::bigint, 900) <> 0 THEN
     RAISE EXCEPTION 'C3 null fallback miss: recorded=%', v_recorded;
   END IF;
 

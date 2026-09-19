@@ -127,6 +127,29 @@ eas build --platform all          # 둘 다
 
 EAS는 시간(15~30분)과 빌드 크레딧을 소모하므로 사용자가 직접 "EAS 빌드해줘"라고 한 경우에만 실행. "다 배포해줘" 요청에는 포함하지 말 것.
 
+### 🔴 릴리스 순서 — 한 방 스크립트는 없다 (2026-08-13 정정)
+
+`npm run release` 복합 스크립트는 **제거했다**. 세 단계가 전부 실제 절차와 어긋났기 때문이다:
+
+1. `npm version patch -m` 이 **git 태그를 만든다** → squash 저장소라 머지 후 고아 커밋을 가리킨다.
+2. 범프 직후 곧바로 빌드했다 → **미머지 브랜치 빌드는 squash 후 커밋 도달이 불가능**하다.
+3. 빌드 직후 `release:sync` 를 돌렸다 → `sync-app-version.js` 헤더가 명시하듯 이건
+   **스토어 출시(승인·공개) 직후**에 돌려야 한다. 미리 올리면 아직 받을 수 없는 버전으로
+   업데이트하라고 안내하게 된다.
+
+올바른 순서 (각 단계는 사람이 확인하고 넘어간다):
+
+```bash
+cd uniqn-mobile
+npm run release:bump      # npm version patch --no-git-tag-version (태그·커밋 없음)
+npm install               # ⚠️ --package-lock-only 만 하면 node_modules 가 낡은 채 남는다
+# → 범프를 커밋하고 PR 로 master 에 머지 (빌드는 머지 후 master 에서)
+npm run release:check     # 버전 일관성 (package.json ↔ app.config.ts ↔ app_config)
+npm run release:build     # eas build
+# → 스토어 심사 통과·공개 확인
+npm run release:sync      # app_config.latest/recommended_version 갱신
+```
+
 ## 5. EAS Update (OTA) — runtimeVersion `appVersion` 규칙 (2026-07-26 이후)
 
 `app.config.ts` 의 `runtimeVersion.policy` 이력: `sdkVersion` → `fingerprint`(07-25 #335) → **`appVersion`**(07-26).
@@ -147,10 +170,21 @@ version bump 를 **동반해야 하는 변경**:
 깨뜨리지 않지만, fingerprint 로 되돌릴 때 즉시 OTA 를 영구 무력화한다.
 2026-07-26 `extra.buildDate` 가 정확히 이 상태였고 제거했다(연속 2회 해시 불일치 실측).
 
-### 규칙 2 — OTA 발행 시 빌드와 **같은 env** 를 명시 export
+### 규칙 2 — OTA 발행 시 빌드와 **같은 env** 를 명시 export + `--environment` 필수
 `eas update` 는 eas.json 의 `build.<profile>.env` 를 읽지 않는다(shell env 만 평가 — 메모리
 `pitfall_eas_update_shell_env_not_loaded`). runtimeVersion 에는 더 이상 영향이 없지만,
 **번들에 박히는 값**이 빌드와 달라지므로 여전히 맞춰야 한다.
+
+🚨 **`--environment <env>` 를 빼면 비대화형에서 즉시 실패한다** (2026-09-19 실측, eas-cli 21.7.0):
+```
+The `--environment` flag must be set when running in `--non-interactive` mode.
+Default environments: development, preview, production.
+    Error: update command failed.
+```
+에이전트가 도구로 호출하면 TTY 가 없어 **항상 비대화형**이므로 사실상 필수 플래그다.
+`--branch`(업데이트가 실릴 채널)와 `--environment`(EAS 서버측 환경변수 세트)는 **다른 축**이니
+둘 다 `production` 으로 맞춘다. 위 shell export 는 그대로 유지한다 — 플래그는 EAS 환경변수를
+불러올 뿐, shell 로 넘긴 값을 대신해 주지 않는다.
 
 ```bash
 cd uniqn-mobile
@@ -161,7 +195,17 @@ EXPO_PUBLIC_PORTONE_STORE_ID=store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93 \
 EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY=channel-key-2dc155c9-46a1-4710-a687-245f45497b0c \
 EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO=N \
 RCT_NEW_ARCH_ENABLED=1 \
-npx eas update --branch production --message "<한글 요약>"
+npx eas update --branch production --environment production --message "<한글 요약>"
+```
+
+⏱️ 발행은 번들 export + 업로드 + fingerprint 계산까지 **수 분** 걸린다. Bash 도구로는
+`run_in_background: true` 또는 `timeout: 900000` 으로 호출할 것.
+
+### 규칙 2-1 — 발행 후 실제로 실렸는지 확인
+`✔ Published!` 출력의 **Commit 해시가 배포하려던 HEAD 와 같은지**, Runtime version 이
+대상 함대와 같은지 본다. 그 다음 브랜치의 최신 그룹이 방금 것인지 교차 확인한다.
+```bash
+npx eas update:list --branch production --limit 2 --non-interactive
 ```
 
 ### 규칙 3 — 발행 전 runtimeVersion 대조 (필수 검증)

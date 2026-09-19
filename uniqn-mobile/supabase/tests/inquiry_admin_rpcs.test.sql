@@ -6,7 +6,7 @@
 -- ⚠️ JWT 주입은 헬퍼(jpc_test_set_user_with_role) 경유만 — 인라인 set_config 금지
 --    (wiki decisions/wallet-pgtap-caller-binding: singular/plural GUC 동시 갱신 필수).
 BEGIN;
-SELECT plan(11);
+SELECT plan(14);
 
 -- 시드(superuser 컨텍스트, set_user 이전): admin 1 + staff 1 + staff 의 문의 1건
 DO $$
@@ -84,14 +84,70 @@ SELECT is(
     'status', 'closed', 'answered', true)::text,
   'respond: admin 정상 응답 반영(response·responder·status·responded_at)');
 
--- ─── (9) update_inquiry_status: staff 차단 ───
+-- ─── (9) 답변 알림: 문의자에게 inquiry_answered 1건 + 정밀 딥링크(마이그 20260807170000) ───
+-- 감사 A3: 배선은 완비인데 발송자가 없어 문의자가 답변을 영영 몰랐다(prod 실측 0건).
+--
+-- ⚠️ 단언은 반드시 **문의자 세션**에서 한다. notifications 의 notif_select 정책은
+--    recipient_id = auth.uid() 라, admin 세션으로 세면 행이 있어도 0 건으로 보인다
+--    (RLS 가시성 함정 — "행이 없다"와 "안 보인다"는 다르다).
+--    수신자 시점 단언은 덤으로 "문의자가 실제로 이 알림을 볼 수 있다"까지 증명한다.
+SELECT jpc_test_set_user_with_role((current_setting('inq.staff'))::uuid, 'staff');
+SELECT is(
+  (SELECT json_build_object(
+      'cnt', count(*)::int,
+      'link', min(link),
+      'inquiryId', min(data->>'inquiryId'),
+      'body', min(body))::text
+     FROM public.notifications
+    WHERE recipient_id = (current_setting('inq.staff'))::uuid
+      AND type = 'inquiry_answered'),
+  json_build_object(
+    'cnt', 1,
+    'link', '/support/inquiry/' || current_setting('inq.id'),
+    'inquiryId', current_setting('inq.id'),
+    -- 본문은 고정문이어야 한다. 문의 제목을 실으면 그대로 푸시 payload 가 되어
+    -- 잠금화면에 노출된다(문의 카테고리엔 payment·account·report 가 있다).
+    'body', '문의하신 내용에 답변이 등록되었습니다.')::text,
+  'respond: 문의자에게 inquiry_answered 1건 + /support/inquiry/{id} + 고정 본문');
+
+-- ─── (10) 같은 답변 재저장 → 재알림 없음 (관리자 재클릭이 푸시를 반복하지 않는다) ───
+SELECT jpc_test_set_user_with_role((current_setting('inq.admin'))::uuid, 'admin');
+DO $$
+BEGIN
+  PERFORM public.respond_inquiry(
+    (current_setting('inq.id'))::uuid, (current_setting('inq.admin'))::uuid,
+    '운영팀', '안녕하세요, 답변드립니다.', 'closed'::public.inquiry_status);
+END $$;
+SELECT jpc_test_set_user_with_role((current_setting('inq.staff'))::uuid, 'staff');
+SELECT is(
+  (SELECT count(*)::int FROM public.notifications
+    WHERE recipient_id = (current_setting('inq.staff'))::uuid AND type = 'inquiry_answered'),
+  1,
+  'respond: 동일 답변 재저장은 재알림 없음(멱등)');
+
+-- ─── (11) 답변 내용이 바뀌면 재알림 ───
+SELECT jpc_test_set_user_with_role((current_setting('inq.admin'))::uuid, 'admin');
+DO $$
+BEGIN
+  PERFORM public.respond_inquiry(
+    (current_setting('inq.id'))::uuid, (current_setting('inq.admin'))::uuid,
+    '운영팀', '정정합니다. 다시 답변드립니다.', 'closed'::public.inquiry_status);
+END $$;
+SELECT jpc_test_set_user_with_role((current_setting('inq.staff'))::uuid, 'staff');
+SELECT is(
+  (SELECT count(*)::int FROM public.notifications
+    WHERE recipient_id = (current_setting('inq.staff'))::uuid AND type = 'inquiry_answered'),
+  2,
+  'respond: 답변 내용 변경 시 재알림(읽을 내용이 달라졌다)');
+
+-- ─── (12) update_inquiry_status: staff 차단 ───
 SELECT jpc_test_set_user_with_role((current_setting('inq.staff'))::uuid, 'staff');
 SELECT throws_ok(
   format($q$ SELECT public.update_inquiry_status(%L::uuid, 'in_progress'::public.inquiry_status) $q$,
          current_setting('inq.id')),
   'P0001', '관리자 전용', 'updateStatus: non-admin 차단(P0001)');
 
--- ─── (10) update_inquiry_status: admin 정상 변경 ───
+-- ─── (13) update_inquiry_status: admin 정상 변경 ───
 SELECT jpc_test_set_user_with_role((current_setting('inq.admin'))::uuid, 'admin');
 DO $$
 BEGIN
@@ -101,7 +157,7 @@ SELECT is(
   (SELECT status::text FROM public.inquiries WHERE id = (current_setting('inq.id'))::uuid),
   'in_progress', 'updateStatus: admin 상태 변경 반영');
 
--- ─── (11) anon EXECUTE 회수(SECDEF 하드닝 회귀 가드) ───
+-- ─── (14) anon EXECUTE 회수(SECDEF 하드닝 회귀 가드) ───
 SELECT is(
   (SELECT has_function_privilege('anon',
       'public.respond_inquiry(uuid, uuid, text, text, public.inquiry_status)', 'EXECUTE')

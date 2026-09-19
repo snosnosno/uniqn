@@ -12,18 +12,20 @@ jest.mock('@/hooks/ops', () => ({
   useOpsStaff: jest.fn(() => ({ data: [] })),
 }));
 // 셸은 렌더 확인만 — 활성 탭 라벨 스텁(factory 안 JSX 관례)
-jest.mock('@/components/ops', () => ({
+jest.mock('@/components/ops/OpsConsoleShell', () => ({
   OpsConsoleShell: ({ activeTab }: { activeTab: string }) => {
     const { Text } = require('react-native');
     return <Text>{`SHELL:${activeTab}`}</Text>;
   },
-  OpsStatusTab: () => null,
-  PlayersTab: () => null,
-  TablesTab: () => null,
-  BlindLevelsTab: () => null,
-  StaffTab: () => null,
-  HistoryTab: () => null,
-  PayoutsTab: () => null,
+}));
+jest.mock('@/components/ops/OpsStatusTab', () => ({ OpsStatusTab: () => null }));
+jest.mock('@/components/ops/PlayersTab', () => ({ PlayersTab: () => null }));
+jest.mock('@/components/ops/TablesTab', () => ({ TablesTab: () => null }));
+jest.mock('@/components/ops/BlindLevelsTab', () => ({ BlindLevelsTab: () => null }));
+jest.mock('@/components/ops/StaffTab', () => ({ StaffTab: () => null }));
+jest.mock('@/components/ops/HistoryTab', () => ({ HistoryTab: () => null }));
+jest.mock('@/components/ops/PayoutsTab', () => ({ PayoutsTab: () => null }));
+jest.mock('@/components/ops/OpsRegisterParticipantSheet', () => ({
   OpsRegisterParticipantSheet: () => null,
 }));
 

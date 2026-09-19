@@ -20,7 +20,14 @@ type RoleKey = SlotRoles[number]['role'];
 type ToggleRoleKey = Exclude<RoleKey, 'other'>;
 
 const MIN_COUNT = 1;
-const MAX_COUNT = 99;
+/**
+ * 인원 상한 — 대회사 대규모 편성(딜러 100명+)이 실제 타깃이라 3자리까지 받는다.
+ * ⚠️ 세 곳이 **전부** 맞아야 실제로 입력된다: 이 clamp · `orderSheet.schema.ts` 의
+ *    `count.max` · 아래 TextInput 의 `maxLength`/`slice`. 하나만 2자리로 남으면
+ *    "＋ 로는 올라가는데 직접 입력은 두 자리에서 잘리는" 반쪽 상한이 된다.
+ */
+const MAX_COUNT = 999;
+const MAX_COUNT_DIGITS = String(MAX_COUNT).length;
 const clampCount = (n: number) => Math.min(MAX_COUNT, Math.max(MIN_COUNT, n));
 
 /** 토글 대상 = '기타'를 제외한 5종. '기타'는 직접입력 액션으로 분리(§4.1) */
@@ -90,7 +97,7 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
     }
     // 추가는 배열 끝 append — 기존 행의 인덱스·식별자가 그대로이므로 편집을 무효화하지 않는다.
     // 기억한 인원도 clamp 를 태운다 — `??` 는 0 을 통과시키고, 레거시 draft 의
-    // 범위 밖 값(150 등)이 zod min(1).max(99) 를 위반한 채 폼으로 흘러든다.
+    // 범위 밖 값(1500 등)이 zod min(1).max(999) 를 위반한 채 폼으로 흘러든다.
     onChange([...roles, { role: key, count: clampCount(lastCount[key] ?? MIN_COUNT) }]);
   };
 
@@ -225,16 +232,17 @@ export function RoleCountEditor({ roles, onChange }: RoleCountEditorProps) {
                       setEditing({
                         key: rowKey,
                         index: i,
-                        text: t.replace(/[^0-9]/g, '').slice(0, 2),
+                        text: t.replace(/[^0-9]/g, '').slice(0, MAX_COUNT_DIGITS),
                       })
                     }
                     onBlur={() => commitEditing(i, rowKey)}
                     keyboardType="number-pad"
-                    maxLength={2}
+                    maxLength={MAX_COUNT_DIGITS}
                     selectTextOnFocus
                     testID={`order-role-count-input-${i}`}
                     accessibilityLabel={`${roleLabel(r)} 인원, 숫자 직접 입력`}
-                    className="w-10 h-11 text-center text-sm font-sans-bold text-content-primary"
+                    // 3자리(999)가 들어가야 하므로 w-10 → w-14. 좁으면 '120' 이 잘려 보인다.
+                    className="w-14 h-11 text-center text-sm font-sans-bold text-content-primary"
                   />
                   <Text className="text-xs text-content-muted font-sans">명</Text>
                   <Pressable

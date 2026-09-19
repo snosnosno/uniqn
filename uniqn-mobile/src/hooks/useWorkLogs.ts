@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
+import {
+  queryKeys,
+  cachingPolicies,
+  queryCachingOptions,
+  offlineCachePolicies,
+} from '@/lib/queryClient';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -83,7 +88,7 @@ export function useWorkLogs(options: UseWorkLogsOptions = {}) {
     () =>
       (staffId
         ? getCriticalOfflineCache<WorkLog[]>(cacheKey, {
-            ttlMs: queryCachingOptions.workLogs.staleTime,
+            ttlMs: offlineCachePolicies.workLogs,
             userId: staffId,
             schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
           })?.data
@@ -147,7 +152,7 @@ export function useWorkLogsByDate(date: string, enabled = true) {
     () =>
       (staffId
         ? getCriticalOfflineCache<WorkLog[]>(cacheKey, {
-            ttlMs: queryCachingOptions.workLogs.staleTime,
+            ttlMs: offlineCachePolicies.workLogs,
             userId: staffId,
             schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
           })?.data
@@ -266,7 +271,7 @@ export function useCurrentWorkStatus(enabled = true) {
 
   const cachedCurrentStatusEntry = staffId
     ? getCriticalOfflineCache<CurrentWorkStatusValue>(cacheKey, {
-        ttlMs: cachingPolicies.realtime,
+        ttlMs: offlineCachePolicies.currentWorkStatus,
         userId: staffId,
         schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
       })

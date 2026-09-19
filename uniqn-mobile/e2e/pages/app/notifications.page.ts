@@ -57,7 +57,7 @@ export class NotificationsPage extends BasePage {
 
   /** 에러 상태 확인 */
   getErrorState(): Locator {
-    return this.page.getByText('알림을 불러오는데 실패했습니다');
+    return this.page.getByText(/알림을 불러오지 못/);
   }
 
   /** 알림 아이템 클릭 */

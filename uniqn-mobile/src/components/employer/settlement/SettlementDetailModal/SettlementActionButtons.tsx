@@ -1,62 +1,51 @@
 /**
- * UNIQN Mobile - 정산 액션 버튼 컴포넌트
+ * UNIQN Mobile - 계산 근거 액션 버튼 컴포넌트
  *
- * @description 시간 수정, 금액 수정, 지급 완료 표시 버튼
+ * @description 근무 수정, 금액 수정 버튼
+ *   구인자 IA S2 — `지급 완료로 표시` 는 없앴다. 앱은 돈을 보내지 않는다.
+ *
+ * ⚠️ '근무 수정'은 **스태프관리 카드와 같은 라벨**이다(D2 — 같은 시트를 여는 버튼).
+ *    '시간 수정'으로 되돌리지 말 것 — 이 시트는 역할·색·메모도 고친다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ClockIcon, EditIcon, BanknotesIcon } from '@/components/icons';
-import { triggerHaptic } from '@/utils/haptics';
+import { ClockIcon, EditIcon } from '@/components/icons';
 
 export interface SettlementActionButtonsProps {
-  /** 시간 수정 핸들러 */
+  /** 근무 수정 핸들러 */
   onEditTime?: () => void;
   /** 금액 수정 핸들러 */
   onEditAmount?: () => void;
-  /** 정산 핸들러 */
-  onSettle?: () => void;
+  /**
+   * ⚠️ 두 핸들러가 모두 없으면 이 컴포넌트는 **빈 껍데기(px-4 py-4)** 를 그린다.
+   * 그려질 버튼이 하나라도 있는지는 호출부가 판정하고, 이 testID 로 그 판정을 검증한다.
+   */
+  testID?: string;
 }
 
-/**
- * 정산 액션 버튼들
- *
- * @example
- * <SettlementActionButtons
- *   onEditTime={handleEditTime}
- *   onEditAmount={handleEditAmount}
- *   onSettle={handleSettle}
- * />
- */
 export function SettlementActionButtons({
   onEditTime,
   onEditAmount,
-  onSettle,
+  testID,
 }: SettlementActionButtonsProps) {
-  // impeccable v2 §17 — 정산(결제 승인)은 결정적 순간이므로 Medium 햅틱 1회.
-  // 200ms throttle 로 중복 탭 보호됨.
-  const handleSettle = useCallback(async () => {
-    if (!onSettle) return;
-    await triggerHaptic('medium');
-    onSettle();
-  }, [onSettle]);
-
   return (
-    <View className="px-4 py-4">
-      {/* 첫 번째 줄: 시간 수정, 금액 수정 */}
-      <View className="flex-row gap-3 mb-3">
+    <View testID={testID} className="px-4 py-4">
+      <View className="flex-row gap-3">
         {onEditTime && (
           <Pressable
             onPress={onEditTime}
             accessibilityRole="button"
-            accessibilityLabel="근무 시간 수정"
-            accessibilityHint="근무 시간을 수정합니다"
+            accessibilityLabel="근무 수정"
+            accessibilityHint="근무 시간·역할·색·메모를 한 창에서 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
+            {/* 아이콘은 시계 그대로 — 이 모달에서 EditIcon 은 바로 옆 '금액 수정'이 쓴다.
+                라벨만 카드와 맞추고 아이콘까지 겹치면 두 버튼을 구분할 단서가 사라진다. */}
             <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-base font-sans-medium text-content-secondary">
-              시간 수정
+              근무 수정
             </Text>
           </Pressable>
         )}
@@ -65,8 +54,8 @@ export function SettlementActionButtons({
           <Pressable
             onPress={onEditAmount}
             accessibilityRole="button"
-            accessibilityLabel="정산 금액 수정"
-            accessibilityHint="정산 금액을 수정합니다"
+            accessibilityLabel="근무 금액 수정"
+            accessibilityHint="이 근무의 단가·수당·세금을 따로 정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
             <EditIcon size={18} color={SECONDARY_PALETTE[500]} />
@@ -76,22 +65,6 @@ export function SettlementActionButtons({
           </Pressable>
         )}
       </View>
-
-      {/* 두 번째 줄: 지급 완료 표시 버튼 — 실제 이체가 아니라 상태 표시임을 명확히 (QW4) */}
-      {onSettle && (
-        <Pressable
-          onPress={handleSettle}
-          accessibilityRole="button"
-          accessibilityLabel="지급 완료로 표시"
-          accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
-          className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
-        >
-          <BanknotesIcon size={18} color="#fff" />
-          <Text className="ml-2 text-base font-sans-semibold text-content-onGold">
-            지급 완료로 표시
-          </Text>
-        </Pressable>
-      )}
     </View>
   );
 }

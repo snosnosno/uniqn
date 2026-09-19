@@ -5,7 +5,7 @@
  */
 
 // Main Component
-export { AssignmentSelector, default } from './AssignmentSelector';
+export { AssignmentSelector } from './AssignmentSelector';
 
 // Sub-components
 export { RoleCheckbox } from './RoleCheckbox';

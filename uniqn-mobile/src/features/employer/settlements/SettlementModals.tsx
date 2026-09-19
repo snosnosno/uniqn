@@ -1,33 +1,64 @@
 /**
- * UNIQN Mobile - 정산 화면 하단 모달 다발
- * StaffSettlementsScreen에서 추출. 모달 props·렌더 트리·문구 불변.
+ * UNIQN Mobile - [근무] 화면 하단 모달 다발
+ *
+ * 시간 수정(`WorkTimeEditor`)과 역할 변경(`RoleChangeModal`)은 **통합 편집 시트로 수렴**했다.
+ * 두 모달이 각각 다른 축을 저장하던 구조라, 같은 근무를 두 번 열어 두 번 저장해야 했고
+ * 역할 이력이 경로에 따라 남거나 사라졌다(설계 결함 ③). 이제 한 시트가 RPC 한 번으로 쓴다.
+ *
+ * 구인자 IA S2 — 지급 완료 확인 모달과 지급 완료 취소 모달을 없앴다. 앱은 돈을 보내지 않는다.
  */
 
 import React from 'react';
 import {
-  WorkTimeEditor,
-  RoleChangeModal,
   ReportModal,
   SettlementDetailModal,
   SettlementEditModal,
   SettlementSettingsModal,
-  SettlementRevertModal,
   type SettlementEditData,
   type SettlementSettingsData,
 } from '@/components/employer';
-import { ConfirmModal } from '@/components/ui/Modal';
+import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
+import { useUser } from '@/stores/authStore';
 import {
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/domains/settlement';
+import { readScheduledStart } from '@/domains/workSchedule';
+import { TimeNormalizer } from '@/shared/time';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import type { WorkLog, CreateReportInput, JobPosting } from '@/types';
+import { isStaffRole } from '@/types/role';
 import type { RoleWithSalary, SalaryConfig } from '@/features/employer/settlements/settlementCalc';
-import { formatNumber } from '@/utils/formatters';
 
 type SettlementModalsState = ReturnType<typeof useSettlementModals>;
+
+/**
+ * 근무 기록 → 통합 편집 시트 초기값.
+ *
+ * 🔴 `payrollStatus` 를 그대로 넘긴다 — 과거에 확정된 금액이 있는 행은 시트가 **전체 읽기 전용**으로 연다(D4).
+ * 🔑 `timeSlot`·`color`·`notes` 는 전부 `WorkLog` 에 실려 있다(`types/schedule.ts:501-507`) —
+ *    세 진입점이 같은 축을 채운다. 다만 선택 필드라 미기록이면 null/빈 문자열로 떨어진다.
+ */
+function toEditInitial(workLog: WorkLog): WorkLogEditInitial {
+  return {
+    ...readScheduledStart(workLog.timeSlot),
+    checkIn: TimeNormalizer.parseTime(workLog.checkInTime),
+    checkOut: TimeNormalizer.parseTime(workLog.checkOutTime),
+    checkInScannedAt: TimeNormalizer.parseTime(workLog.checkInScannedAt),
+    checkOutScannedAt: TimeNormalizer.parseTime(workLog.checkOutScannedAt),
+    modificationHistory: workLog.modificationHistory ?? [],
+    role: isStaffRole(workLog.role) ? workLog.role : 'staff',
+    customRole: workLog.customRole ?? null,
+    color: workLog.color ?? null,
+    memo: workLog.notes ?? '',
+    date: workLog.date,
+    status: workLog.status,
+    payrollStatus: workLog.payrollStatus ?? null,
+    staffName: workLog.staffName ?? null,
+  };
+}
 
 interface SettlementModalsProps {
   modals: SettlementModalsState;
@@ -36,26 +67,12 @@ interface SettlementModalsProps {
   postingSettlement: PostingSettlementContext | undefined;
   rolesForList: RoleWithSalary[];
   salaryConfig: SalaryConfig;
-  availableRoles: string[];
-  /** 역할별 실확정 인원(aggregateRoleFilledFromSubmap 결과) — RoleChangeModal 마감 표시용. */
+  /**
+   * 역할별 실확정 인원(aggregateRoleFilledFromSubmap 결과) — 시트의 역할 마감 **표기**용.
+   * 표시만 하고 선택은 막지 않는다(D7 — 알고 넣는 것과 모르고 넣는 것은 다르다).
+   */
   filledByRole?: Record<string, number>;
-  isUpdating: boolean;
-  /** 지급 완료 취소 진행 중 (SETTLE-3) */
-  isReverting?: boolean;
-  /** 역할 변경 진행 중 — 성공에서만 닫히므로 모달이 열린 채 기다린다. 없으면 무피드백으로 멈춘 듯 보인다. */
-  isChangingRole?: boolean;
-  /** 지급 완료 취소 실행 — 사유는 서버가 필수로 강제한다. */
-  onRevertSettlement: (reason: string) => void;
-  onRoleChangeSave: (data: {
-    staffId: string;
-    workLogId: string;
-    newRole: string;
-    reason: string;
-  }) => void | Promise<void>;
   onReportSubmit: (input: CreateReportInput) => void | Promise<void>;
-  onSettleFromDetail: (workLog: WorkLog) => void;
-  onConfirmSettle: () => void;
-  onSaveTimeEdit: (data: { startTime: Date | null; endTime: Date | null; reason: string }) => void;
   onSaveAmountEdit: (data: SettlementEditData) => Promise<void>;
   onSaveSettings: (data: SettlementSettingsData) => Promise<void>;
 }
@@ -67,35 +84,20 @@ export function SettlementModals({
   postingSettlement,
   rolesForList,
   salaryConfig,
-  availableRoles,
   filledByRole,
-  isUpdating,
-  isReverting,
-  isChangingRole,
-  onRevertSettlement,
-  onRoleChangeSave,
   onReportSubmit,
-  onSettleFromDetail,
-  onConfirmSettle,
-  onSaveTimeEdit,
   onSaveAmountEdit,
   onSaveSettings,
 }: SettlementModalsProps) {
+  // 🔑 시트에 `editedBy` 를 넘기지 않으면 패치에 그 키가 아예 빠진다. 서버는 값을 `auth.uid()` 로
+  //    덮어쓰지만 **키가 없으면 퇴근 시각을 쓸 때만 `edited_by` 를 세우는 비대칭**이 남아
+  //    (`ConfirmedStaffRepository.ts:382`), 출근만 고친 저장은 행위자가 기록되지 않는다.
+  //    근무표(`VenueDayPanel`)만 넘기고 있던 것을 세 진입점에 맞춘다.
+  const user = useUser();
+  const editedBy = user?.uid;
+
   return (
     <>
-      {/* 역할 변경 모달 */}
-      <RoleChangeModal
-        visible={modals.showRoleChangeModal}
-        onClose={modals.closeRoleChangeModal}
-        staff={modals.selectedStaff}
-        jobPosting={posting}
-        availableRoles={availableRoles}
-        filledByRole={filledByRole}
-        onSave={onRoleChangeSave}
-        isLoading={isChangingRole}
-      />
-
-      {/* 신고 모달 */}
       <ReportModal
         visible={modals.showReportModal}
         onClose={modals.closeReportModal}
@@ -106,7 +108,7 @@ export function SettlementModals({
         isLoading={modals.isSubmittingReport}
       />
 
-      {/* 정산 상세 모달 */}
+      {/* 계산 근거 모달 */}
       <SettlementDetailModal
         visible={modals.isDetailModalVisible}
         onClose={modals.closeDetailModal}
@@ -128,46 +130,24 @@ export function SettlementModals({
         )}
         onEditTime={modals.openEditTimeFromDetail}
         onEditAmount={modals.openEditAmountFromDetail}
-        onSettle={onSettleFromDetail}
-        onRevertSettlement={modals.openRevertFromDetail}
         jobPostingTitle={posting?.title}
       />
 
-      {/* 지급 완료 취소 모달 (SETTLE-3) */}
-      <SettlementRevertModal
-        visible={modals.isRevertModalVisible}
-        onClose={modals.closeRevertModal}
-        staffName={modals.selectedWorkLogForRevert?.staffName}
-        payrollAmount={modals.selectedWorkLogForRevert?.payrollAmount}
-        onConfirm={onRevertSettlement}
-        isSubmitting={isReverting}
-      />
+      {/* 근무 수정 시트 (3개 진입점 공용) — 저장은 시트가 RPC 로 직접 한다.
+          대상이 있을 때만 마운트한다(시트는 `[visible, workLogId]` 로만 초기화). */}
+      {modals.isEditModalVisible && modals.selectedWorkLog ? (
+        <WorkLogEditSheet
+          visible
+          onClose={modals.closeEditModal}
+          workLogId={modals.selectedWorkLog.id}
+          initial={toEditInitial(modals.selectedWorkLog)}
+          jobPosting={posting}
+          filledByRole={filledByRole}
+          editedBy={editedBy}
+        />
+      ) : null}
 
-      {/* 시간 수정 모달 (정산 탭용) */}
-      <WorkTimeEditor
-        workLog={modals.selectedWorkLog}
-        visible={modals.isEditModalVisible}
-        onClose={modals.closeEditModal}
-        onSave={onSaveTimeEdit}
-        isLoading={isUpdating}
-      />
-
-      {/* 정산 확인 모달 */}
-      <ConfirmModal
-        visible={modals.settleConfirm.visible}
-        onClose={modals.closeSettleConfirm}
-        onConfirm={onConfirmSettle}
-        title={modals.settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
-        message={
-          modals.settleConfirm.isBulk
-            ? `${modals.settleConfirm.workLogs.length}건의 근무를 지급 완료로 표시할까요?\n예상 금액: ${formatNumber(modals.settleConfirm.amount)}원\n실제 이체는 앱 밖에서 진행해요.`
-            : `이 스태프의 근무를 지급 완료로 표시할까요?\n정산 금액: ${formatNumber(modals.settleConfirm.amount)}원\n실제 이체는 앱 밖에서 진행해요.`
-        }
-        confirmText="지급 완료로 표시"
-        cancelText="취소"
-      />
-
-      {/* 정산 금액 수정 모달 */}
+      {/* 근무 금액 수정 모달 */}
       <SettlementEditModal
         visible={modals.isEditAmountModalVisible}
         onClose={modals.closeEditAmountModal}
@@ -188,7 +168,7 @@ export function SettlementModals({
         onSave={onSaveAmountEdit}
       />
 
-      {/* 정산 설정 모달 */}
+      {/* 급여 설정 모달 */}
       <SettlementSettingsModal
         visible={modals.isSettingsModalVisible}
         onClose={modals.closeSettingsModal}

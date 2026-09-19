@@ -11,6 +11,7 @@ import { logger } from '@/utils/logger';
 import { timestampSchema, optionalTimestampSchema } from './common';
 import { durationSchema as assignmentDurationSchema } from './assignment.schema';
 import type { Application } from '@/types';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { VALID_STAFF_ROLES } from '@/types/role';
 import { Constants } from '@/types/supabase';
 
@@ -115,10 +116,6 @@ export const cancellationRequestSchema = z.object({
     .min(5, { message: '취소 사유는 최소 5자 이상 입력해주세요' })
     .max(500, { message: '취소 사유는 500자를 초과할 수 없습니다' })
     .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
-  // 기본 OFF — 대타 구인 글은 실명으로 전체 공개되는 게시물이다. 사용자가 명시적으로
-  // 켰을 때만 올린다(W1-10 / CANCEL-12). UI 기본값을 고쳐도 필드 생략 경로가 남으므로
-  // 최종 결정자인 이 default 가 진실원이다.
-  wantsSubstitutePost: z.boolean().optional().default(false),
 });
 
 export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
@@ -174,7 +171,16 @@ const assignmentInnerSchema = z
           message: '위험한 문자가 포함되어 있습니다',
         })
     ),
-    timeSlot: z.string(),
+    // 🔴 읽기 관용: DB 의 timeSlot 이 null 이어도 **지원서 레코드를 통째로 버리지 않는다**.
+    //    `z.string()` 단독이었을 때 널 하나가 파싱 실패 → 레코드 증발로 이어졌고, 그것이
+    //    "미정을 null 이 아니라 '미정' 문자열로 쓰게 된" 근본 원인이다(재설계 §2 원칙 2).
+    //    널을 받으면 메모리상 표현은 쓰기 규약과 같은 '미정' 으로 접는다 — 소비처 40여 곳이
+    //    `Assignment.timeSlot: string` 을 전제하므로 여기서 흡수하는 편이 표면적이 가장 작다.
+    //    (클라가 null 을 **쓰는** 전환은 R3 의 일이다. 이 스키마는 읽기 전용 경로에만 쓰인다.)
+    timeSlot: z
+      .string()
+      .nullable()
+      .transform((value) => value ?? TBA_TIME_MARKER),
     dates: z.array(z.string()),
     isGrouped: z.boolean(),
     groupId: z.string().optional(),

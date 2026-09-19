@@ -49,6 +49,20 @@ export const ICON_COLORS = {
     light: SECONDARY_PALETTE[200],
     dark: SECONDARY_PALETTE[800],
   },
+  /**
+   * 강조(골드) 아이콘 색상 — 주 액션에 붙는 아이콘 전용.
+   *
+   * ⚠️ 60-30-10 규칙(impeccable §3): 한 화면에 골드가 3곳 이상 보이면 위반이다.
+   *    보조 아이콘은 `primary`/`secondary` 를 쓴다.
+   *
+   * 값은 `PRIMARY_COLORS[700]`/`[500]` 과 같지만 리터럴로 적는다 — `PRIMARY_COLORS` 는
+   * 이 상수보다 **아래에서** 선언돼 참조하면 TDZ 로 `undefined` 가 된다. `LOADING_COLORS.primary`
+   * 가 이미 같은 이유로 같은 방식을 쓴다.
+   */
+  accent: {
+    light: '#8A7228', // primary-700
+    dark: '#D4AF37', // primary-500
+  },
 } as const;
 
 export function getIconColor(

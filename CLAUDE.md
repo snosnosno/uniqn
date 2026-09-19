@@ -5,7 +5,7 @@
 > 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.6 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.10 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 타깃: 홀덤펍 사장(상시 단발 알바) + 대회사 운영팀(대회 D-7~D-day 집중 인력). 포커룸은 비타깃.
 
 ## 핵심 규칙
@@ -30,7 +30,7 @@
 Presentation → Hooks → Service → Repository → Supabase
 ```
 - DB 접근: Service → Repository → Supabase 경유 필수
-- Supabase Auth: authService + 인증 hook + authStore(세션·프로필 갱신 액션 한정: refreshSession/getUser/signOut/refreshProfile)만 직접 호출 허용
+- Supabase Auth: authService + 인증 hook + authStore(세션·프로필 갱신 액션 한정: refreshSession/getUser/signOut/refreshProfile/**reset**)만 직접 호출 허용 — `reset` 은 `signOut()` **직후** 화면이 스토어 잔여 세션을 비우는 용도로만 허용(선례: `app/(app)/(tabs)/profile.tsx` 로그아웃, `app/(app)/profile-setup.tsx` 이탈). 서버 세션 종료 없이 단독 호출 금지
 - TanStack Query 읽기 전용 조회: Repository 직접 호출 허용
 - 읽기 전용 realtime 구독: 훅에서 `createRealtimeSubscription`(@/utils/supabase) 직접 사용 허용 — 단, 콜백은 캐시 무효화(invalidateQueries)만, 쓰기 금지
 - Presentation/Hooks에서 Supabase 직접 호출 금지
@@ -70,11 +70,14 @@ PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고�
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
 리팩토링→`/refactor` | 성능→`/performance` | 국제화→`/i18n` | 접근성→`/a11y` | 마이그레이션→`/migration`
 애니메이션·모션→`/improve-animations`(감사·계획) · `/review-animations`(diff 리뷰, **명시 호출 전용** — `disable-model-invocation`) | 모션 용어→`/animation-vocabulary`
+UI 마감·디테일 판단→`/emil-design-eng`(컴포넌트 폴리시·애니메이션 결정) · 제스처/스프링/재질·타이포 기초→`/apple-design`
 OSS·MCP·패키지 도입 **전**→`/oss-vet` | 옵시디언 마크다운→`/obsidian-markdown`
 RLS/권한/위험 변경 전→`/guard` 먼저
 세션 종료·마무리→`/session-end`(착지·최신화·정리·인계 **실행**) · 회고형 탐지는 `/session-wrap`
 
 ⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있다 → **상수·enum·사용자 문구를 단일 소스로 바꿔도 `e2e/` 는 `npm run quality` 가 못 잡는다**(PR#353 실사고: 제목 상한 25→40 상향 때 E2E 단언만 25 로 남아 CI red). 상수/enum/문구 변경 시 `e2e/` 별도 Grep 필수.
+
+⚠️ **영향권 테스트를 파일명 패턴으로 고르면 뚫린다**: `jest <파일명패턴>` 은 **같은 문구를 단언하는 다른 이름의 테스트**를 매칭하지 못해 CI 에서야 빨개진다(2026-09-15 실사고: `jest notificationMessageNormalizer` 초록 → `notificationService.test.ts` red). **디렉터리로 돌려라**(`jest src/services/notifications`). 문구·상수 변경은 특히.
 
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**

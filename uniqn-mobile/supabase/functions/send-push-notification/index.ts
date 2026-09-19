@@ -176,29 +176,107 @@ function buildMessage(
   };
 }
 
-async function sendPushes(expo: Expo, messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
+// push-02: 발송 재시도 정책. Expo API 는 일시적 5xx·네트워크 단절을 낸다.
+// 종전에는 chunk 예외를 콘솔에만 남기고 통째로 버렸다 — 그 chunk 의 사용자는 조용히 누락됐다.
+const SEND_MAX_ATTEMPTS = 3;
+const SEND_BASE_DELAY_MS = 500;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 🔑 반환 배열은 messages 와 **같은 길이·같은 순서**다(실패한 자리는 null).
+ *
+ * 종전 구현은 성공한 chunk 의 ticket 만 push 해서, chunk 하나가 실패하면 그 뒤 인덱스가
+ * 통째로 밀렸다. handleTickets 가 tickets[i] 를 messages[i] 와 짝지으므로
+ * **DeviceNotRegistered 일 때 엉뚱한 사용자의 토큰을 지우는** 상태였다.
+ */
+async function sendPushes(
+  expo: Expo,
+  messages: ExpoPushMessage[]
+): Promise<(ExpoPushTicket | null)[]> {
   const chunks = expo.chunkPushNotifications(messages);
-  const tickets: ExpoPushTicket[] = [];
+  const tickets: (ExpoPushTicket | null)[] = [];
 
   for (const chunk of chunks) {
-    try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      tickets.push(...ticketChunk);
-    } catch (err) {
-      console.error('sendPushNotificationsAsync chunk failed', err);
-      // chunk 단위 실패 시 해당 chunk만 스킵, 나머지 계속
+    let sent: ExpoPushTicket[] | null = null;
+
+    for (let attempt = 1; attempt <= SEND_MAX_ATTEMPTS; attempt++) {
+      try {
+        sent = await expo.sendPushNotificationsAsync(chunk);
+        break;
+      } catch (err) {
+        const isLast = attempt === SEND_MAX_ATTEMPTS;
+        console.error(
+          `sendPushNotificationsAsync chunk failed (attempt ${attempt}/${SEND_MAX_ATTEMPTS})`,
+          err
+        );
+        if (isLast) break;
+        // 지수 백오프. Expo 는 과부하 시 429/503 을 내므로 즉시 재시도는 상황을 악화시킨다.
+        await sleep(SEND_BASE_DELAY_MS * 2 ** (attempt - 1));
+      }
+    }
+
+    if (sent && sent.length === chunk.length) {
+      tickets.push(...sent);
+    } else {
+      // 실패했거나 길이가 어긋난 응답 — 정렬을 보존하기 위해 자리만 채운다.
+      if (sent && sent.length !== chunk.length) {
+        console.error(`ticket length mismatch: expected ${chunk.length}, got ${sent.length}`);
+      }
+      tickets.push(...new Array(chunk.length).fill(null));
     }
   }
 
   return tickets;
 }
 
+/**
+ * push-02: ticket 을 DB 에 적재한다. ticket ok 는 "Expo 가 접수했다"일 뿐 전달 보증이 아니라서,
+ * receipt 를 나중에 회수하려면 ticket id 를 어딘가 남겨야 한다(종전에는 어디에도 없었다).
+ *
+ * ⚠️ 실패해도 발송은 성공으로 본다 — 관측이 발송을 막으면 안 된다.
+ *    (마이그 20260809150000 이 prod 에 적용되기 전 배포되는 창에서도 안전해야 한다.)
+ */
+async function persistTickets(
+  client: SupabaseClient,
+  messages: ExpoPushMessage[],
+  tickets: (ExpoPushTicket | null)[]
+): Promise<void> {
+  const rows = messages.flatMap((message, i) => {
+    const ticket = tickets[i];
+    if (!ticket) return [];
+    const token = Array.isArray(message.to) ? message.to[0] : message.to;
+    if (typeof token !== 'string') return [];
+    const data = (message.data ?? {}) as Record<string, unknown>;
+    const notificationId = typeof data.notificationId === 'string' ? data.notificationId : null;
+    if (!notificationId) return [];
+
+    return [
+      {
+        notification_id: notificationId,
+        token,
+        expo_ticket_id: ticket.status === 'ok' ? ticket.id : null,
+        status: ticket.status,
+        error_code: ticket.status === 'error' ? (ticket.details?.error ?? null) : null,
+        error_message: ticket.status === 'error' ? (ticket.message ?? null) : null,
+      },
+    ];
+  });
+
+  if (rows.length === 0) return;
+
+  const { error } = await client.from('push_tickets').insert(rows);
+  if (error) {
+    console.error('push_tickets insert failed (발송에는 영향 없음)', error.message);
+  }
+}
+
 async function handleTickets(
   client: SupabaseClient,
   messages: ExpoPushMessage[],
-  tickets: ExpoPushTicket[]
+  tickets: (ExpoPushTicket | null)[]
 ): Promise<void> {
-  for (let i = 0; i < tickets.length; i++) {
+  for (let i = 0; i < messages.length; i++) {
     const ticket = tickets[i];
     const message = messages[i];
     if (!ticket || !message) continue;
@@ -306,16 +384,20 @@ Deno.serve(async (req: Request) => {
     }
 
     const tickets = await sendPushes(expo, messages);
+    await persistTickets(client, messages, tickets);
     await handleTickets(client, messages, tickets);
 
-    const successCount = tickets.filter((t) => t.status === 'ok').length;
-    const errorCount = tickets.filter((t) => t.status === 'error').length;
+    const successCount = tickets.filter((t) => t?.status === 'ok').length;
+    const errorCount = tickets.filter((t) => t?.status === 'error').length;
+    // 재시도까지 실패해 ticket 자체를 못 받은 건 — 종전에는 성공/실패 어디에도 안 잡혔다.
+    const undeliveredCount = tickets.filter((t) => t === null).length;
 
     return new Response(
       JSON.stringify({
         sent: messages.length,
         success: successCount,
         errors: errorCount,
+        undelivered: undeliveredCount,
         notifications: notifications.length,
         recipients: recipientIds.length,
         skippedByPreference,

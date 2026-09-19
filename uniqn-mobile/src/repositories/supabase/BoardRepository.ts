@@ -22,16 +22,10 @@ import type {
   BoardPost,
   BoardPostStatus,
   BoardReport,
-  BoardVote,
-  BoardVoteType,
   CommentReactionType,
   CreateBoardCommentInput,
-  CreateBoardPostInput,
   CreateBoardReportInput,
-  ScheduleBoardSyncInput,
-  ScheduleMembershipSyncItem,
   UpdateBoardCommentInput,
-  UpdateBoardPostInput,
 } from '@/types/board';
 import type {
   FetchBoardRepositoryPostsOptions,
@@ -42,10 +36,7 @@ import type {
 import {
   TABLES,
   POST_COLUMNS,
-  VOTE_COLUMNS,
   toBoardPost,
-  togglePostVoteFallback,
-  toggleCommentReactionFallback,
   rethrowRepositoryError,
 } from './BoardRepositoryHelpers';
 import {
@@ -60,8 +51,6 @@ import {
   executeGetMembershipsByUser,
   executeGetMembershipsByPost,
   executeGetMembership,
-  executeReplaceScheduleMemberships,
-  executeUpsertSchedulePost,
   executeCreateReport,
   executeGetReportById,
   executeGetReports,
@@ -178,74 +167,6 @@ export class SupabaseBoardRepository implements IBoardRepository {
         '게시글 배치 조회',
         TABLES.BOARD_POSTS
       );
-    }
-  }
-
-  async createPost(input: CreateBoardPostInput): Promise<string> {
-    try {
-      const now = new Date().toISOString();
-
-      const { data, error } = await supabase
-        .from(TABLES.BOARD_POSTS)
-        .insert({
-          board_type: input.boardType,
-          source: 'board',
-          title: input.title,
-          body: input.body,
-          author_id: input.authorId,
-          author_name: input.authorName,
-          author_role: input.authorRole,
-          visibility: 'public',
-          status: 'active',
-          linked_job_posting_id: input.linkedJobPostingId ?? null,
-          job_summary: input.jobSummary ? JSON.parse(JSON.stringify(input.jobSummary)) : null,
-          is_auto_created: false,
-          is_locked: false,
-          like_count: 0,
-          dislike_count: 0,
-          comment_count: 0,
-          view_count: 0,
-          image_attachments: input.imageAttachments ?? [],
-          last_activity_at: now,
-          created_at: now,
-          updated_at: now,
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        handleSupabaseError(error, { operation: '게시글 생성', table: TABLES.BOARD_POSTS });
-      }
-
-      const postId = (data as Record<string, unknown>).id as string;
-      logger.info('Board post created', { component: 'BoardRepository', postId });
-      return postId;
-    } catch (error) {
-      rethrowRepositoryError(error, '게시글 생성 실패', '게시글 생성', TABLES.BOARD_POSTS);
-    }
-  }
-
-  async updatePost(postId: string, input: UpdateBoardPostInput): Promise<void> {
-    try {
-      const now = new Date().toISOString();
-      const updates: Record<string, unknown> = {
-        updated_at: now,
-        last_activity_at: now,
-      };
-
-      if (input.title !== undefined) updates.title = input.title;
-      if (input.body !== undefined) updates.body = input.body;
-      if (input.imageAttachments !== undefined) updates.image_attachments = input.imageAttachments;
-
-      const { error } = await supabase.from(TABLES.BOARD_POSTS).update(updates).eq('id', postId);
-
-      if (error) {
-        handleSupabaseError(error, { operation: '게시글 수정', table: TABLES.BOARD_POSTS });
-      }
-    } catch (error) {
-      rethrowRepositoryError(error, '게시글 수정 실패', '게시글 수정', TABLES.BOARD_POSTS, {
-        postId,
-      });
     }
   }
 
@@ -375,64 +296,6 @@ export class SupabaseBoardRepository implements IBoardRepository {
   }
 
   // ==========================================================================
-  // Vote (Post)
-  // ==========================================================================
-
-  async togglePostVote(
-    postId: string,
-    userId: string,
-    type: BoardVoteType
-  ): Promise<BoardVoteType | null> {
-    try {
-      // RPC로 원자적 토글 시도
-      const result = await runRpc<{ result_type: string | null }>('toggle_board_post_vote', {
-        p_post_id: postId,
-        p_user_id: userId,
-        p_vote_type: type,
-      });
-
-      return result.result_type as BoardVoteType | null;
-    } catch {
-      // RPC 미존재 시 폴백: 수동 처리
-      logger.warn('toggle_board_post_vote RPC 실패, 폴백 처리', { postId, userId });
-
-      return togglePostVoteFallback(postId, userId, type);
-    }
-  }
-
-  async getPostVote(postId: string, userId: string): Promise<BoardVote | null> {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.BOARD_VOTES)
-        .select(VOTE_COLUMNS)
-        .eq('post_id', postId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        handleSupabaseError(error, { operation: '투표 조회', table: TABLES.BOARD_VOTES });
-      }
-
-      if (!data) return null;
-
-      const row = data as Record<string, unknown>;
-      return {
-        id: row.id as string,
-        postId,
-        userId,
-        type: row.type as BoardVoteType,
-        createdAt: row.created_at ? new Date(row.created_at as string) : undefined,
-        updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
-      };
-    } catch (error) {
-      rethrowRepositoryError(error, '투표 조회 실패', '투표 조회', TABLES.BOARD_VOTES, {
-        postId,
-        userId,
-      });
-    }
-  }
-
-  // ==========================================================================
   // Comment Reaction
   // ==========================================================================
 
@@ -442,19 +305,14 @@ export class SupabaseBoardRepository implements IBoardRepository {
     userId: string,
     type: CommentReactionType
   ): Promise<CommentReactionType | null> {
-    try {
-      const result = await runRpc<{ result_type: string | null }>('toggle_comment_reaction', {
-        p_post_id: postId,
-        p_comment_id: commentId,
-        p_user_id: userId,
-        p_reaction_type: type,
-      });
+    const result = await runRpc<{ result_type: string | null }>('toggle_comment_reaction', {
+      p_post_id: postId,
+      p_comment_id: commentId,
+      p_user_id: userId,
+      p_reaction_type: type,
+    });
 
-      return result.result_type as CommentReactionType | null;
-    } catch {
-      logger.warn('toggle_comment_reaction RPC 실패, 폴백 처리', { postId, commentId, userId });
-      return toggleCommentReactionFallback(postId, commentId, userId, type);
-    }
+    return result.result_type as CommentReactionType | null;
   }
 
   async getCommentReactionsByUser(
@@ -513,18 +371,6 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
   async getMembership(postId: string, userId: string): Promise<BoardMembership | null> {
     return executeGetMembership(postId, userId);
-  }
-
-  async replaceScheduleMemberships(
-    postId: string,
-    jobPostingId: string,
-    members: ScheduleMembershipSyncItem[]
-  ): Promise<void> {
-    return executeReplaceScheduleMemberships(postId, jobPostingId, members);
-  }
-
-  async upsertSchedulePost(input: ScheduleBoardSyncInput): Promise<string> {
-    return executeUpsertSchedulePost(input);
   }
 
   // ==========================================================================

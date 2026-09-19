@@ -62,6 +62,50 @@ describe('getManualStatusTransitions', () => {
     expect(noShow?.requiresConfirm).toBe(true);
   });
 
+  // 감사 3-2: 정산 완료 근무를 노쇼로 뒤집으면 '지급 완료 + 노쇼' 모순 행이 남고
+  // 스태프 월 수입 합계(completed 만 합산)에서 이미 지급한 급여가 사라진다.
+  // Repository 가 BUSINESS_ALREADY_SETTLED 로 막지만, 애초에 시트에 뜨지 않아야 한다.
+  describe('정산 완료 반영', () => {
+    it('정산이 완료된 근무는 노쇼 처리를 선택지에서 뺀다', () => {
+      const values = getManualStatusTransitions(
+        STATUS.WORK_LOG.COMPLETED,
+        true,
+        STATUS.PAYROLL.COMPLETED
+      ).map((o) => o.value);
+
+      expect(values).not.toContain(STATUS.WORK_LOG.NO_SHOW);
+    });
+
+    it('정산 완료여도 나머지 운영 전이는 그대로 노출한다', () => {
+      const values = getManualStatusTransitions(
+        STATUS.WORK_LOG.COMPLETED,
+        true,
+        STATUS.PAYROLL.COMPLETED
+      ).map((o) => o.value);
+
+      expect(values).toContain(STATUS.WORK_LOG.CHECKED_IN);
+      expect(values).toContain(STATUS.WORK_LOG.CHECKED_OUT);
+    });
+
+    it('정산 대기(pending)는 노쇼 처리를 막지 않는다', () => {
+      const values = getManualStatusTransitions(
+        STATUS.WORK_LOG.COMPLETED,
+        true,
+        STATUS.PAYROLL.PENDING
+      ).map((o) => o.value);
+
+      expect(values).toContain(STATUS.WORK_LOG.NO_SHOW);
+    });
+
+    it('정산 상태를 모르면(미지정) 기존 동작을 유지한다', () => {
+      const values = getManualStatusTransitions(STATUS.WORK_LOG.COMPLETED, true).map(
+        (o) => o.value
+      );
+
+      expect(values).toContain(STATUS.WORK_LOG.NO_SHOW);
+    });
+  });
+
   it('선택지 순서는 운영 흐름(예정→출근→퇴근→완료→노쇼)을 따른다', () => {
     const values = getManualStatusTransitions(STATUS.WORK_LOG.CHECKED_IN, true).map((o) => o.value);
 

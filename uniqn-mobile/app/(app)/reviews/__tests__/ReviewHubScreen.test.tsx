@@ -73,6 +73,8 @@ function emptyPaginatedData() {
   return {
     data: undefined,
     isLoading: false,
+    error: null,
+    refetch: jest.fn(),
     fetchNextPage: jest.fn(),
     hasNextPage: false,
     isFetchingNextPage: false,
@@ -118,6 +120,8 @@ describe('평점관리 허브', () => {
       ],
       pendingCount: 2,
       isLoading: false,
+      error: null,
+      refetch: jest.fn(),
     });
     useReceivedReviews.mockReturnValue(emptyPaginatedData());
     useGivenReviews.mockReturnValue(emptyPaginatedData());
@@ -148,6 +152,8 @@ describe('평점관리 허브', () => {
       pendingReviews: [],
       pendingCount: 0,
       isLoading: false,
+      error: null,
+      refetch: jest.fn(),
     });
     const { getByText } = render(<ReviewHistoryScreen />);
     fireEvent.press(getByText('미작성'));
@@ -195,10 +201,14 @@ describe('받은/작성한 탭 카드 탭 → 블라인드 상세 진입', () =>
       pendingReviews: [],
       pendingCount: 0,
       isLoading: false,
+      error: null,
+      refetch: jest.fn(),
     });
     useReceivedReviews.mockReturnValue({
       data: { pages: [{ items: [receivedReview] }] },
       isLoading: false,
+      error: null,
+      refetch: jest.fn(),
       fetchNextPage: jest.fn(),
       hasNextPage: false,
       isFetchingNextPage: false,
@@ -206,6 +216,8 @@ describe('받은/작성한 탭 카드 탭 → 블라인드 상세 진입', () =>
     useGivenReviews.mockReturnValue({
       data: { pages: [{ items: [givenReview] }] },
       isLoading: false,
+      error: null,
+      refetch: jest.fn(),
       fetchNextPage: jest.fn(),
       hasNextPage: false,
       isFetchingNextPage: false,
@@ -252,5 +264,148 @@ describe('받은/작성한 탭 카드 탭 → 블라인드 상세 진입', () =>
     expect(callArg.params.revieweeId).toBe(givenReview.revieweeId);
     expect(callArg.params.reviewerType).toBe(givenReview.reviewerType);
     expect(callArg.params.jobPostingId).toBe(givenReview.jobPostingId);
+  });
+});
+
+// ============================================================================
+// 신규 테스트: 조회 실패를 빈 상태로 위장하지 않는다 (감사 A4)
+// ============================================================================
+
+describe('조회 실패와 빈 상태 분리', () => {
+  const failure = new Error('조회 실패');
+
+  beforeEach(() => {
+    const { usePendingReviews, useReceivedReviews, useGivenReviews, useBubbleScore } =
+      getHookMocks();
+
+    usePendingReviews.mockReturnValue({
+      pendingReviews: [],
+      pendingCount: 0,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+    useReceivedReviews.mockReturnValue(emptyPaginatedData());
+    useGivenReviews.mockReturnValue(emptyPaginatedData());
+    useBubbleScore.mockReturnValue(null);
+  });
+
+  it('미작성 조회가 실패하면 "모든 평가를 완료했어요" 대신 실패를 알린다', () => {
+    // 7일 마감 기능이라 이 오안내를 믿으면 평가 기회가 실제로 소멸한다.
+    getHookMocks().usePendingReviews.mockReturnValue({
+      pendingReviews: [],
+      pendingCount: 0,
+      isLoading: false,
+      error: failure,
+      refetch: jest.fn(),
+    });
+
+    const { getByText, queryByText } = render(<ReviewHistoryScreen />);
+    fireEvent.press(getByText('미작성'));
+
+    expect(queryByText(/모든 평가를 완료했어요/)).toBeNull();
+    expect(getByText('미작성 평가를 불러오지 못했어요')).toBeTruthy();
+  });
+
+  it('미작성 실패 화면의 재시도를 누르면 미작성 조회를 다시 태운다', () => {
+    const refetch = jest.fn();
+    getHookMocks().usePendingReviews.mockReturnValue({
+      pendingReviews: [],
+      pendingCount: 0,
+      isLoading: false,
+      error: failure,
+      refetch,
+    });
+
+    const { getByText } = render(<ReviewHistoryScreen />);
+    fireEvent.press(getByText('미작성'));
+    fireEvent.press(getByText('다시 시도'));
+
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('받은 평가 조회가 실패하면 "받은 평가가 없습니다" 대신 실패를 알린다', () => {
+    const refetch = jest.fn();
+    getHookMocks().useReceivedReviews.mockReturnValue({
+      ...emptyPaginatedData(),
+      error: failure,
+      refetch,
+    });
+
+    const { getByText, queryByText } = render(<ReviewHistoryScreen />);
+
+    expect(queryByText('받은 평가가 없습니다')).toBeNull();
+    expect(getByText('받은 평가를 불러오지 못했어요')).toBeTruthy();
+
+    fireEvent.press(getByText('다시 시도'));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('작성한 평가 조회가 실패하면 "작성한 평가가 없습니다" 대신 실패를 알린다', () => {
+    getHookMocks().useGivenReviews.mockReturnValue({
+      ...emptyPaginatedData(),
+      error: failure,
+    });
+
+    const { getByText, queryByText } = render(<ReviewHistoryScreen />);
+    fireEvent.press(getByText('작성한 평가'));
+
+    expect(queryByText('작성한 평가가 없습니다')).toBeNull();
+    expect(getByText('작성한 평가를 불러오지 못했어요')).toBeTruthy();
+  });
+
+  it('이미 받아둔 미작성 목록이 있으면 배경 재조회 실패로 목록을 가리지 않는다', () => {
+    // 배경 재조회 1회 실패로 7일 마감 목록이 사라지면, A4 가 막으려던 기회 소멸을 되레 만든다.
+    getHookMocks().usePendingReviews.mockReturnValue({
+      pendingReviews: [
+        {
+          workLogId: 'wl-cached',
+          revieweeId: 'r1',
+          revieweeName: '스태프A',
+          reviewerType: 'employer',
+          jobPostingId: 'jp1',
+          jobPostingTitle: '공고A',
+          workDate: '2026-06-01',
+          location: '',
+        },
+      ],
+      pendingCount: 1,
+      isLoading: false,
+      error: failure,
+      refetch: jest.fn(),
+    });
+
+    // pendingCount>0 이면 기본 탭이 이미 '미작성'이다(라벨도 "미작성 1"로 바뀐다).
+    const { getByText, queryByText } = render(<ReviewHistoryScreen />);
+
+    expect(queryByText('미작성 평가를 불러오지 못했어요')).toBeNull();
+    expect(getByText(/7일까지만 작성할 수 있어요/)).toBeTruthy();
+  });
+
+  it('이미 받아둔 받은 평가가 있으면 배경 재조회 실패로 목록을 가리지 않는다', () => {
+    getHookMocks().useReceivedReviews.mockReturnValue({
+      ...emptyPaginatedData(),
+      data: { pages: [{ items: [makeReview({ workLogId: 'wl-cached' })] }] },
+      error: failure,
+    });
+
+    const { getByTestId, queryByText } = render(<ReviewHistoryScreen />);
+
+    expect(queryByText('받은 평가를 불러오지 못했어요')).toBeNull();
+    expect(getByTestId('review-item-wl-cached_employer')).toBeTruthy();
+  });
+
+  it('한 탭의 실패가 다른 탭까지 실패로 만들지 않는다', () => {
+    // 탭마다 조회가 독립이므로 실패도 독립이어야 한다.
+    getHookMocks().useReceivedReviews.mockReturnValue({
+      ...emptyPaginatedData(),
+      error: failure,
+    });
+
+    const { getByText, queryByText } = render(<ReviewHistoryScreen />);
+    fireEvent.press(getByText('작성한 평가'));
+
+    expect(queryByText('받은 평가를 불러오지 못했어요')).toBeNull();
+    expect(getByText('작성한 평가가 없습니다')).toBeTruthy();
   });
 });

@@ -126,6 +126,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '✅',
   },
 
+  // ⚠️ 레거시 2종 — 현재 트리거는 이 타입을 보내지 않는다(20260807160000 에서 분리 복원).
+  //    이력 6건의 렌더링용이며, link 는 각 행의 DB link 가 정본이다.
+  [NotificationType.WORK_LOG_CHECK_IN]: {
+    title: '출근 기록',
+    body: (d) => `"${d.jobPostingTitle ?? '근무'}" 출근이 기록되었습니다.`,
+    link: (d) => (d.workLogId ? `/schedule/${d.workLogId}` : '/schedule'),
+  },
+
+  [NotificationType.WORK_LOG_CHECK_OUT]: {
+    title: '퇴근 기록',
+    body: (d) => `"${d.jobPostingTitle ?? '근무'}" 퇴근이 기록되었습니다.`,
+    link: (d) => (d.workLogId ? `/schedule/${d.workLogId}` : '/schedule'),
+  },
+
   [NotificationType.CHECKIN_REMINDER]: {
     title: (d) => `⏰ 출근 ${d.remainingTime || '30분'} 전`,
     body: (d) => `"${d.jobTitle}" 출근 시간이 다가왔습니다.`,
@@ -167,18 +181,24 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   // 정산 관련
   // =========================================================================
 
+  // ⚠️ 정본은 DB 트리거다 — 이 두 항목은 `notify_on_work_log_update`(Case 3 · 3-B)와
+  //    `bulk_settle_work_logs` 가 쓰는 문구의 사본이다. 한쪽만 고치면 조용히 갈라진다.
+  //    문구 계약: **앱은 돈을 보내지 않는다**. 확정한 것은 금액이지 지급이 아니다.
+  //    (마이그레이션 20260915122335_settlement_notify_copy_no_payment_claim.sql)
   [NotificationType.SETTLEMENT_COMPLETED]: {
-    title: '💰 정산 완료',
-    body: (d) => `"${d.jobTitle}" 정산이 완료되었습니다. 지급액: ${d.amount}원`,
+    title: '💰 정산 금액 확정',
+    body: (d) =>
+      `"${d.jobTitle}" 정산 금액이 ${d.amount}원으로 확정되었습니다. 실제 지급은 사장님과 정한 방법으로 이루어집니다.`,
     link: () => '/schedule',
     icon: '💰',
   },
 
-  [NotificationType.SETTLEMENT_REQUESTED]: {
-    title: '정산 요청',
-    body: (d) => `${d.staffName}님이 정산을 요청했습니다.`,
-    link: (d) => `/employer/settlement/${d.jobPostingId}`,
-    icon: '📋',
+  [NotificationType.SETTLEMENT_REVERTED]: {
+    title: '정산 금액 확정 취소',
+    body: (d) =>
+      `"${d.jobTitle}" 정산 금액 확정(${d.amount}원)이 취소되어 정산 대기로 되돌아갔습니다.`,
+    link: () => '/schedule',
+    icon: '↩️',
   },
 
   // =========================================================================
@@ -218,6 +238,43 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (d) => `"${d.jobTitle}" 공고가 근무일 경과로 자동 마감되었습니다.`,
     link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
     icon: '⏰',
+  },
+
+  // 실제 발신은 크론(`fn_notify_posting_capacity_gap`)이 하고 문구도 거기서 만든다.
+  // 여기 정의는 exhaustive Record 를 만족시키는 2차 진실원이자, 서버 문구가 없을 때의 폴백이다.
+  // 🔑 목적지는 **관리 화면**이다 — 구직자 뷰(/jobs)로 보내면 사장이 자리를 채울 수 없다.
+  [NotificationType.POSTING_CAPACITY_GAP]: {
+    title: '⚠️ 아직 자리가 비었어요',
+    body: (d) => `"${d.jobTitle}" ${d.workDate} 근무에 아직 ${d.missingCount}자리가 비어 있습니다.`,
+    link: (d) => (d.jobPostingId ? `/my-postings/${d.jobPostingId}` : '/my-postings'),
+    icon: '⚠️',
+  },
+
+  // 🔑 제목·본문은 **사장이 직접 쓴 문장**이 정본이다(RPC 가 그대로 심는다).
+  //    여기 정의는 exhaustive Record 를 만족시키는 폴백일 뿐이라 일부러 일반적인 문구를 쓴다.
+  //    목적지는 스태프가 보는 공고 상세(/jobs)다 — 관리 화면이 아니다.
+  [NotificationType.POSTING_ANNOUNCEMENT]: {
+    title: '공고 공지',
+    body: (d) => `"${d.jobTitle}" 공고에 새 공지가 있습니다.`,
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
+    icon: '📢',
+  },
+
+  // ⚠️ 아래 4종은 DB 트리거가 직접 INSERT 한다(클라 발신 경로 없음).
+  //    여기 정의는 exhaustive Record 를 만족시키기 위한 2차 진실원이며,
+  //    사용자에게 실제로 보이는 문구는 마이그레이션의 트리거 정의가 정본이다.
+  //    문구를 고쳐야 한다면 트리거 쪽을 먼저 고칠 것.
+  [NotificationType.JOB_POSTING_COLLABORATOR_ADDED]: {
+    title: '🤝 공고 관리 초대',
+    body: (d) => `"${d.jobTitle ?? '해당 공고'}" 공고 관리에 초대되었습니다.`,
+    link: (d) => (d.jobPostingId ? `/my-postings/${d.jobPostingId}` : '/my-postings'),
+    icon: '🤝',
+  },
+
+  [NotificationType.JOB_POSTING_COLLABORATOR_REMOVED]: {
+    title: '공고 관리 제외',
+    body: (d) => `"${d.jobTitle ?? '해당 공고'}" 공고 관리에서 제외되었습니다.`,
+    link: () => '/my-postings',
   },
 
   // =========================================================================
@@ -391,6 +448,19 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (d) => `${d.workspaceName ?? '팀'} · 편집자 권한`,
     link: () => `/workspace/invitations`,
     icon: '🤝',
+  },
+
+  // ops (라이브 운영 대회)
+  // 🔴 딥링크 없음. 배정된 스태프는 is_ops_member 밖이라 ops 화면을 한 줄도 못 읽는다 —
+  //    보내면 RLS 가 막는 빈 화면이다. 그래서 본문이 전달 매체 전부이고(대회명·담당·날짜·장소는
+  //    DB 트리거가 채운다) 링크는 알림함에 머문다. NotificationRouteMap 의 매핑과 짝이다.
+  //    실제 발송 본문의 정본은 마이그 20260809100000 의 notify_on_ops_staff_insert 다.
+  [NotificationType.OPS_STAFF_ASSIGNED]: {
+    title: '대회 스태프 배정',
+    body: (d) =>
+      `${d.tournamentName ? `'${d.tournamentName}'` : '해당'} 대회에 스태프로 배정되었습니다.`,
+    link: () => `/notifications`,
+    icon: '🃏',
   },
 };
 

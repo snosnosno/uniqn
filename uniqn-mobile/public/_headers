@@ -11,7 +11,11 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.googleapis.com https://*.googleusercontent.com https://www.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.sentry.io https://*.ingest.sentry.io https://u.expo.dev https://www.google-analytics.com https://www.googletagmanager.com https://cloudflareinsights.com https://www.google.com; frame-src 'self' https://accounts.google.com https://www.google.com; object-src 'none'; base-uri 'self'
+  # 주소 검색(다음 우편번호): script-src 에 t1.daumcdn.net(위젯 스크립트),
+  # frame-src 에 postcode.map.kakao.com(위젯이 만드는 iframe 오리진 — 공식 문서의
+  # daum.net 이 아니라 kakao.com 이다, postcode.v2.js 실물 확인). 둘 중 하나만 빠져도
+  # 에러 없이 빈 화면이 된다.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://static.cloudflareinsights.com https://t1.daumcdn.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.googleapis.com https://*.googleusercontent.com https://www.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.sentry.io https://*.ingest.sentry.io https://u.expo.dev https://www.google-analytics.com https://www.googletagmanager.com https://cloudflareinsights.com https://www.google.com; frame-src 'self' https://accounts.google.com https://www.google.com https://postcode.map.kakao.com; object-src 'none'; base-uri 'self'
 
 # ============================================================================
 # 정적 에셋 캐싱 (JS, CSS, 이미지 등)

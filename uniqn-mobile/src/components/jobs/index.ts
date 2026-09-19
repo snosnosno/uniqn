@@ -57,6 +57,8 @@ export {
   PostingScheduleContent,
   PostingStatusBadge,
   PostingSurfaceState,
+  SeatFillSummary,
+  SEAT_FILL_LABEL,
   buildPostingCompensationModel,
   buildPostingScheduleModel,
   getPostingStatusMeta,

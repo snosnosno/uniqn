@@ -29,8 +29,59 @@ export type ApplicationStatus =
 // 정작 본인만 모르고 이의 제기 기회를 놓쳤다.
 export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 
-// DB enum payroll_status = ['pending','completed','failed']. 'processing'는 UI 표시 전용 값.
-export type PayrollStatus = 'pending' | 'processing' | 'completed' | 'failed';
+// DB enum payroll_status = ['pending','completed','failed'] 와 **정확히 일치**한다.
+// 예전엔 여기에 'processing' 이 하나 더 있었다. DB enum 에 없는 값이라 어떤 경로로도 저장될 수
+// 없었고, 실제로 쓰기 코드가 0곳이었다 — 라벨·색상만 4곳에 정의된 채 영원히 안 그려지는
+// 분기를 만들고 있었다(GroupedSettlementCard 의 hasProcessing 분기가 그 산물). 그래서 제거했다.
+// 반대로 'failed' 는 **지우지 않는다**: DB enum 에 실재하므로 타입에서 빼면 그런 행이 하나라도
+// 생겼을 때 zod 파싱이 터져 목록이 통째로 사라진다(#194 클래스). 쓰는 코드가 없다는 것과
+// 저장될 수 없다는 것은 다른 말이다.
+export type PayrollStatus = 'pending' | 'completed' | 'failed';
+
+// 화면 어휘는 2단이다 — 사장이 실제로 하는 판단은 "지급했나 / 아직인가" 뿐이고,
+// 그룹핑·집계·정산 게이트는 이미 전부 `=== 'completed'` 이분법으로만 동작하고 있었다.
+// 'failed' 는 스태프 입장에서 "아직 못 받았다" 이므로 pending 과 같은 칸에 든다.
+export type SettlementDisplayStatus = 'pending' | 'completed';
+
+// `toSettlementDisplayStatus`(데이터 3값 → 화면 2값)는 구인자 IA S2 에서 없앴다 — 지급 상태를
+// 화면에 그리는 경로(배지·필터)가 전부 사라져 소비처가 0이 됐다. 앱은 돈을 보내지 않는다.
+
+/**
+ * 근무 기록이 **서버 정산 게이트를 통과할 수 있는 status** 인가.
+ *
+ * 서버(`SettlementRepository.settleWorkLogWithTransaction`)가 `status ∈ {checked_out, completed}`
+ * 를 검사한다. UI 가 이 축을 안 보고 시각(checkInTime/checkOutTime)만 보면, 시각은 있는데
+ * status 가 승격되지 않은 레거시 행에서 "누를 수 있는데 항상 실패하는" 정산 버튼이 남는다
+ * ("출퇴근이 완료된 근무 기록만 정산할 수 있습니다").
+ *
+ * 정산 버튼·일괄 집계를 그리는 모든 경로는 이 술어 하나를 거친다 — 화면마다 조건을 복제하면
+ * 한쪽만 고쳐진 채 갈라진다(개별 카드와 그룹 카드가 실제로 그렇게 갈라져 있었다).
+ */
+export function isSettlableWorkLogStatus(status: string | null | undefined): boolean {
+  return status === 'checked_out' || status === 'completed';
+}
+
+const VALID_WORK_LOG_STATUSES: readonly WorkLogStatus[] = [
+  'scheduled',
+  'checked_in',
+  'checked_out',
+  'completed',
+  'cancelled',
+  'no_show',
+];
+
+/**
+ * 서버가 내려준 문자열이 정말 `WorkLogStatus` 인가.
+ *
+ * 🔑 낯선 값을 `'scheduled'` 로 흡수하지 **않는** 것이 요점이다. 흡수하면 통합 편집 시트의
+ *    "저장 후 상태" 배지가 모르는 상태를 '출근 예정'이라고 단언하게 된다. 모를 때는
+ *    아무것도 약속하지 않아야 해서(시트는 `null` 을 그렇게 다룬다) 판정만 돌려준다.
+ */
+export function isWorkLogStatus(value: unknown): value is WorkLogStatus {
+  return (
+    typeof value === 'string' && (VALID_WORK_LOG_STATUSES as readonly string[]).includes(value)
+  );
+}
 
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   not_started: '출근 전',
@@ -77,9 +128,7 @@ export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
 
 // 스케줄 상세 모달(ScheduleDetailModal)의 헤더가 SCHEDULE_TYPE_LABELS.completed('완료')를 동시에
 // 노출하므로, 정산 배지는 접두어를 붙여 근무 "완료"와 정산 "완료"가 같은 화면에서 겹치지 않게 한다.
-export const PAYROLL_STATUS_LABELS: Record<PayrollStatus, string> = {
+export const PAYROLL_STATUS_LABELS: Record<SettlementDisplayStatus, string> = {
   pending: '정산 대기',
-  processing: '정산 중',
   completed: '정산 완료',
-  failed: '정산 실패',
 };

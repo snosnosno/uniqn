@@ -409,6 +409,18 @@ export interface IApplicationRepository {
   ): Promise<ApplicantListWithStats>;
 
   /**
+   * 지원자들의 최근 180일 노쇼 횟수 배치 조회 (S3-3, 구인자용)
+   *
+   * @description RLS 상 클라가 남의 공고 work_logs 를 못 보므로 SECDEF RPC 경유.
+   *   횟수만 반환하며 업장·날짜·사유는 노출하지 않는다(낙인 방지).
+   * @returns applicantId → 노쇼 횟수. 실패 시 빈 Map (fail-open — 칩은 보조 정보다)
+   */
+  getApplicantNoShowCounts(
+    jobPostingId: string,
+    applicantIds: string[]
+  ): Promise<Map<string, number>>;
+
+  /**
    * 공고별 지원자 목록 실시간 구독 (구인자용)
    *
    * @description onSnapshot을 사용하여 지원자 목록을 실시간으로 구독합니다.

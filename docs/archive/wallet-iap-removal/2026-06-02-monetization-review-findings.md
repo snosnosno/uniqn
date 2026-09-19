@@ -1,7 +1,7 @@
 # 결제/수익모델 적대적 리뷰 결과 — 유료화 롤아웃 前 게이트
 
 > 작성: 2026-06-02 / 기준: master `ac2a06402` / 방식: 9차원 멀티에이전트 fan-out + critical 4차원 적대적 2차 검증(31 에이전트) + 메인 세션 prod ACL 재확인
-> 입력 프롬프트: `docs/planning/2026-06-02-monetization-full-review-prompt.md`
+> 입력 프롬프트: `docs/archive/planning/2026-06/2026-06-02-monetization-full-review-prompt.md`
 
 ## 한 줄 결론
 

@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
-  AddIcon,
+  PlusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ImagesOutlineIcon,
@@ -212,7 +212,7 @@ export function AnnouncementImagePicker({
           className="rounded-md border-2 border-dashed border-secondary-300 dark:border-surface-overlay items-center justify-center bg-surface-page dark:bg-surface/50 active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="이미지 추가"
         >
-          <AddIcon size={32} color={SECONDARY_PALETTE[400]} />
+          <PlusIcon size={32} color={SECONDARY_PALETTE[400]} />
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
             이미지 추가
           </Text>

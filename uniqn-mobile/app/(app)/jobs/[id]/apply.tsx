@@ -14,15 +14,16 @@ import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@/components/icons';
 import { PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
-import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
+import { useApplications, useHasAppliedToJob } from '@/hooks/useApplications';
+import { useJobDetail, getJobDetailQueryOptions } from '@/hooks/useJobDetail';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
-import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
-import { useAuthStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
+import { notFound } from '@/constants/messages';
 
 function LoadingState() {
   return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
@@ -31,7 +32,7 @@ function LoadingState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
-      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-error-50 dark:bg-error-900/30">
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-lg bg-error-50 dark:bg-error-900/30">
         <AlertTriangleIcon size={40} color={STATUS_COLORS.error} />
       </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
@@ -48,7 +49,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
-      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
         <InformationCircleIcon size={40} color={PRIMARY_COLORS[600]} />
       </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
@@ -92,7 +93,7 @@ function FixedPostingState({
 
   return (
     <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface p-6">
-      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
         <InformationCircleIcon size={40} color={PRIMARY_COLORS[600]} />
       </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
@@ -195,7 +196,7 @@ export default function ApplyScreen() {
           });
 
           if (!latestJob) {
-            showAlert('오류', '공고를 찾을 수 없습니다');
+            showAlert('오류', notFound('공고'));
             return;
           }
 
@@ -279,7 +280,7 @@ export default function ApplyScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
-        <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
+        <ErrorState message={jobError?.message ?? notFound('공고')} onRetry={refreshJob} />
       </SafeAreaView>
     );
   }
@@ -307,7 +308,7 @@ export default function ApplyScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원 완료" fallbackHref={fallbackHref} />
         <View className="flex-1 items-center justify-center p-6">
-          <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-success-50 dark:bg-success-900/30">
+          <View className="mb-4 h-24 w-24 items-center justify-center rounded-lg bg-success-50 dark:bg-success-900/30">
             <CheckCircleIcon size={56} color={STATUS_COLORS.success} />
           </View>
           <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">

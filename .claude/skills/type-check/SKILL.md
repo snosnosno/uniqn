@@ -11,9 +11,8 @@ TypeScript 타입 에러를 검사하고 수정합니다.
 ## 타입 검사 실행
 
 ```bash
-# 프로젝트별 타입 체크
+# 타입 체크 (레포에 TS 프로젝트는 uniqn-mobile 하나뿐)
 cd uniqn-mobile && npm run type-check
-cd app2 && npm run type-check
 
 # 직접 실행
 npx tsc --noEmit

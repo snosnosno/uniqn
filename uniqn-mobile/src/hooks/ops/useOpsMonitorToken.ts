@@ -6,6 +6,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { opsMonitorService } from '@/services/ops';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -25,8 +27,10 @@ export function useRotateMonitorToken(tournamentId: string) {
   const actorId = useAuthStore((s) => s.user?.uid);
   // 제네릭 명시: 기본파라미터(force=false)는 변수타입을 void 로 추론시키므로 boolean 으로 고정.
   return useMutation<string, Error, boolean>({
-    mutationFn: (force: boolean) =>
-      opsMonitorService.rotateToken(tournamentId, requireActor(actorId), force),
+    mutationFn: (force: boolean) => {
+      requireOnlineForMutation('ops.rotateMonitorToken');
+      return opsMonitorService.rotateToken(tournamentId, requireActor(actorId), force);
+    },
     onSuccess: () => {
       // 성공 사용자 피드백(복사/공유 토스트)은 호출 컴포넌트가 담당 → 여기선 캐시 무효화만(중복 토스트 방지).
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });

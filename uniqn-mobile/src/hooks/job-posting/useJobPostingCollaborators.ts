@@ -10,11 +10,13 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { collaboratorService } from '@/services/jobs/collaboratorService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { createRealtimeSubscription } from '@/utils/supabase';
 import { logger } from '@/utils/logger';
 import { useToastStore } from '@/stores/toastStore';
 import { extractUserMessage } from '@/errors';
 import type {
+  JobPostingCollaboratorRole,
   JobPostingCollaboratorWithUser,
   CollaboratorSearchCandidate,
 } from '@/types/jobPostingCollaborator';
@@ -27,7 +29,8 @@ const toast = {
 export interface UseJobPostingCollaboratorsResult {
   collaborators: JobPostingCollaboratorWithUser[];
   isLoading: boolean;
-  error: unknown;
+  /** query.error 그대로 — 화면이 ErrorState 에 넘길 수 있게 unknown 이 아닌 Error 로 좁힌다. */
+  error: Error | null;
   refetch: () => void;
   /** 협업자 추가 (workspace owner 만 — RLS 가 강제) */
   add: (userId: string) => Promise<void>;
@@ -35,6 +38,9 @@ export interface UseJobPostingCollaboratorsResult {
   /** 협업자 제거 (workspace owner OR 본인 — RLS 가 강제) */
   remove: (userId: string) => Promise<void>;
   isRemoving: boolean;
+  /** 협업자 권한 변경 (S3-4 — workspace owner 만, RLS 가 강제) */
+  changeRole: (userId: string, role: JobPostingCollaboratorRole) => Promise<void>;
+  isChangingRole: boolean;
   /** 본인 나가기 */
   leaveSelf: () => Promise<void>;
 }
@@ -68,8 +74,10 @@ export function useJobPostingCollaborators(
   }, [jobPostingId, queryClient]);
 
   const addMutation = useMutation({
-    mutationFn: (userId: string) =>
-      collaboratorService.add({ jobPostingId: jobPostingId!, userId }),
+    mutationFn: (userId: string) => {
+      requireOnlineForMutation('협업자 추가');
+      return collaboratorService.add({ jobPostingId: jobPostingId!, userId });
+    },
     onSuccess: () => {
       if (jobPostingId) {
         queryClient.invalidateQueries({
@@ -85,8 +93,10 @@ export function useJobPostingCollaborators(
   });
 
   const removeMutation = useMutation({
-    mutationFn: (userId: string) =>
-      collaboratorService.remove({ jobPostingId: jobPostingId!, userId }),
+    mutationFn: (userId: string) => {
+      requireOnlineForMutation('협업자 제거');
+      return collaboratorService.remove({ jobPostingId: jobPostingId!, userId });
+    },
     onSuccess: () => {
       if (jobPostingId) {
         queryClient.invalidateQueries({
@@ -101,8 +111,32 @@ export function useJobPostingCollaborators(
     },
   });
 
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: JobPostingCollaboratorRole }) => {
+      requireOnlineForMutation('협업자 권한 변경');
+      return collaboratorService.changeRole({ jobPostingId: jobPostingId!, userId, role });
+    },
+    onSuccess: (_data, variables) => {
+      if (jobPostingId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.jobPostingCollaborators.list(jobPostingId),
+        });
+      }
+      toast.success(
+        variables.role === 'viewer' ? '보기 전용으로 바꿨습니다' : '관리 권한을 부여했습니다'
+      );
+    },
+    onError: (error) => {
+      logger.error('협업자 권한 변경 실패', error);
+      toast.error(extractUserMessage(error) || '권한 변경에 실패했습니다');
+    },
+  });
+
   const leaveMutation = useMutation({
-    mutationFn: () => collaboratorService.leaveSelf(jobPostingId!),
+    mutationFn: () => {
+      requireOnlineForMutation('공고 관리 나가기');
+      return collaboratorService.leaveSelf(jobPostingId!);
+    },
     onSuccess: () => {
       // 본인 나가기 후 cleanup — Codex outside-voice 5 단계
       queryClient.invalidateQueries({
@@ -134,6 +168,10 @@ export function useJobPostingCollaborators(
       await removeMutation.mutateAsync(userId);
     },
     isRemoving: removeMutation.isPending,
+    changeRole: async (userId: string, role: JobPostingCollaboratorRole) => {
+      await changeRoleMutation.mutateAsync({ userId, role });
+    },
+    isChangingRole: changeRoleMutation.isPending,
     leaveSelf: async () => {
       await leaveMutation.mutateAsync();
     },

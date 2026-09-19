@@ -1,6 +1,9 @@
 /**
- * VenueSettlementsScreen 렌더 스모크 — 로딩/빈 상태/폴백 배지 조건부.
+ * VenueSettlementsScreen(지점 근무 금액) 렌더 스모크 — 로딩/빈 상태/폴백 배지/합계.
  * (expo 웹 그라운딩은 메인 세션이 별도 수행. 여기서는 상태별 분기 렌더만 관찰한다.)
+ *
+ * 구인자 IA S2 — 지급 완료·일괄 정산·지급 완료 취소를 걷어낸 **읽기 전용** 화면이다.
+ * 공고 없이 근무표에 직접 배치한 사람의 금액을 볼 곳은 여기뿐이라 화면은 남겼다.
  */
 import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
@@ -22,6 +25,16 @@ jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({ addToast: mockAddToast }),
 }));
 
+// SettlementDetailModal 이 실제로 렌더되면 프로필 훅이 react-query 를 탄다 — Provider 가 없는
+// 이 스모크에서는 표시 이름만 고정해 둔다.
+jest.mock('@/hooks/useUserProfile', () => ({
+  useUserProfile: ({ fallbackName }: { fallbackName?: string }) => ({
+    displayName: fallbackName ?? '스태프',
+    profilePhotoURL: undefined,
+    profilePhotoURLBlurhash: undefined,
+  }),
+}));
+
 jest.mock('@/components/headers', () => {
   const RN = jest.requireActual('react-native') as typeof import('react-native');
   return {
@@ -33,9 +46,22 @@ jest.mock('@/components/headers', () => {
   };
 });
 
-jest.mock('@/components/employer/settlement/SettlementCard', () => ({
-  SettlementCard: 'SettlementCard',
-}));
+// 카드 자체는 별도 테스트 대상이지만, 상세 모달을 여는 유일한 경로가 카드 탭이라
+// onPress 를 실제로 발화시킬 수 있는 최소 목으로 둔다(문자열 목이면 press 를 못 건다).
+jest.mock('@/components/employer/settlement/SettlementCard', () => {
+  const RN = jest.requireActual('react-native') as typeof import('react-native');
+  return {
+    SettlementCard: ({ workLog, onPress }: { workLog: { id?: string }; onPress?: () => void }) => (
+      <RN.Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`카드-${workLog.id}`}
+        onPress={onPress}
+      >
+        <RN.Text>{`카드-${workLog.id}`}</RN.Text>
+      </RN.Pressable>
+    ),
+  };
+});
 
 jest.mock('@/components/workSchedule/RoleSalaryField', () => ({
   RoleSalaryField: 'RoleSalaryField',
@@ -87,19 +113,14 @@ describe('VenueSettlementsScreen 렌더 스모크', () => {
       refetch: jest.fn(),
     });
     const { getByText, queryByText } = render(<VenueSettlementsScreen />);
-    expect(getByText('지점 정산')).toBeTruthy();
-    expect(queryByText('이 달 정산할 근무가 없어요')).toBeNull();
+    expect(getByText('지점 근무 금액')).toBeTruthy();
+    expect(queryByText('이 달 근무 기록이 없어요')).toBeNull();
     expect(queryByText(FALLBACK_BADGE)).toBeNull();
   });
 
   it('데이터가 없으면 빈 상태 안내를 렌더한다', () => {
-    getMocks().useVenueSettlement.mockReturnValue({
-      data: [],
-      isLoading: false,
-      refetch: jest.fn(),
-    });
     const { getByText } = render(<VenueSettlementsScreen />);
-    expect(getByText('이 달 정산할 근무가 없어요')).toBeTruthy();
+    expect(getByText('이 달 근무 기록이 없어요')).toBeTruthy();
   });
 
   it('컨테이너 직속(jobPostingId===venueId) 폴백 건에만 배지 + 건수 요약을 렌더한다', () => {
@@ -159,12 +180,6 @@ describe('VenueSettlementsScreen 렌더 스모크', () => {
 
   it('월 라벨은 leading zero 없이 표시한다 ("07" → "7월")', () => {
     // 'YYYY-MM' 의 월 부분 선행 0 을 제거해 자연스러운 한글 라벨로 보인다.
-    getParams().mockReturnValue({ venueId: 'v1', month: '2026-07' });
-    getMocks().useVenueSettlement.mockReturnValue({
-      data: [],
-      isLoading: false,
-      refetch: jest.fn(),
-    });
     const { getByText } = render(<VenueSettlementsScreen />);
     expect(getByText('2026년 7월')).toBeTruthy();
   });
@@ -190,8 +205,82 @@ describe('VenueSettlementsScreen 렌더 스모크', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(mockAddToast).toHaveBeenCalledWith({
       type: 'success',
-      message: '단가를 저장했어요. 정산을 다시 계산합니다.',
+      message: '단가를 저장했어요. 금액을 다시 계산합니다.',
     });
     expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+  });
+});
+
+// ============================================================================
+// 구인자 IA S2 — 읽기 전용
+// ============================================================================
+
+describe('VenueSettlementsScreen — 지급 워크플로우 없음', () => {
+  function checkedOut(id: string, amount: number): SettlementWorkLog {
+    return makeWorkLog({
+      id,
+      jobPostingId: 'v1',
+      checkInTime: '2026-07-10T10:00:00.000Z',
+      checkOutTime: '2026-07-10T14:00:00.000Z',
+      calculatedAmount: amount,
+    } as Partial<SettlementWorkLog>);
+  }
+
+  it('지급 예정 합계는 퇴근이 기록된 근무만 더한다', () => {
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [
+        checkedOut('wl-a', 60000),
+        checkedOut('wl-b', 40000),
+        // 🚨 과거에 지급 완료로 처리된 근무 — "지급 예정" 에 더하면 사장이 한 번 더 보낸다.
+        makeWorkLog({
+          id: 'wl-paid',
+          jobPostingId: 'v1',
+          checkInTime: '2026-07-09T10:00:00.000Z',
+          checkOutTime: '2026-07-09T14:00:00.000Z',
+          calculatedAmount: 70000,
+          payrollStatus: 'completed',
+          payrollAmount: 50000,
+        } as Partial<SettlementWorkLog>),
+        // 퇴근 전 — 금액을 만들지 않는다.
+        makeWorkLog({
+          id: 'wl-open',
+          jobPostingId: 'v1',
+          checkInTime: '2026-07-11T10:00:00.000Z',
+          calculatedAmount: 99999,
+        } as Partial<SettlementWorkLog>),
+      ],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const { getByTestId } = render(<VenueSettlementsScreen />);
+
+    expect(getByTestId('venue-payable-total').props.children).toBe('₩100,000');
+    // 확정 금액(50,000 — 재계산값 70,000 이 아니다)은 따로 밝힌다.
+    expect(getByTestId('venue-settled-note').props.children).toContain('₩50,000');
+  });
+
+  it('일괄 정산 · 지급 완료 · 지급 완료 취소 진입점이 없다', () => {
+    getMocks().useVenueSettlement.mockReturnValue({
+      data: [
+        checkedOut('wl-a', 60000),
+        makeWorkLog({
+          id: 'wl-done',
+          jobPostingId: 'v1',
+          payrollStatus: 'completed',
+          payrollAmount: 80000,
+          checkInTime: '2026-07-10T10:00:00.000Z',
+          checkOutTime: '2026-07-10T14:00:00.000Z',
+        } as Partial<SettlementWorkLog>),
+      ],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    const { queryByText, getByLabelText, queryByLabelText } = render(<VenueSettlementsScreen />);
+
+    expect(queryByText(/전체 정산|일괄 정산/)).toBeNull();
+    // 과거 지급 완료 행의 상세에서도 취소 진입점이 없다.
+    fireEvent.press(getByLabelText('카드-wl-done'));
+    expect(queryByLabelText('지급 완료 취소')).toBeNull();
+    expect(queryByText('지급 완료로 표시')).toBeNull();
   });
 });

@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Stack, Redirect } from 'expo-router';
 import { useAuthStore, useHasRole, selectProfile } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { Loading } from '@/components/ui';
+import { Loading, ScreenErrorBoundary } from '@/components/ui';
 import { WorkspaceRevocationModal } from '@/components/workspace';
 import {
   useActiveWorkspace,
@@ -91,5 +91,11 @@ export default function EmployerLayout() {
     return <Redirect href="/(app)/(tabs)/home-jobs" />;
   }
 
-  return <EmployerStack />;
+  // 섹션 단위 에러 경계(감사 err-03). 공고·정산 화면의 렌더 예외를 여기서 끊어
+  // 앱 전체가 루트 에러 화면으로 넘어가지 않게 한다.
+  return (
+    <ScreenErrorBoundary name="EmployerLayout">
+      <EmployerStack />
+    </ScreenErrorBoundary>
+  );
 }

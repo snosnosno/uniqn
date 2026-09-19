@@ -12,7 +12,7 @@ import type {
 } from '@/types';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 import type { RoleWithCount } from '@/types/postingConfig';
-import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
+import { TBA_TIME_MARKER } from '@/types/assignment';
 import { getRegionLabel } from '@/constants/regions';
 import { getRoleDisplayName } from '@/types/unified';
 import { groupRequirementsToDateRanges } from '@/utils/date';
@@ -32,6 +32,13 @@ export function getPostingLocationLabels(posting: JobPosting): {
   regionLabel?: string;
 } {
   const name = posting.location?.name || '';
+  // 주소 검색 도입(B1) 이후 detailedAddress 는 층/호 조각이라 fullLabel 은 '라운더스 홀덤펍 3층'
+  // 꼴이 된다. 도로명주소(district)는 **여기에 들어가지 않는다** — B1 이전에도 마찬가지였으므로
+  // 회귀는 아니다.
+  // ⚠️ 다만 "전체 주소는 다른 데서 보여준다"고 오해하지 말 것: 도로명주소를 실제로 그리는 곳은
+  // 확정 스태프의 근무 상세(`InfoTab`)뿐이고, **지원 검토 중인 구직자와 공고 소유 구인자 화면
+  // (`JobDetail` · `my-postings/[id]`)에는 주소 줄도 지도 링크도 없다.** 공개 범위를 넓힐지는
+  // 제품 결정이라 B1 범위 밖으로 남겨 둔다.
   const detailed = posting.location?.detailedAddress || '';
   // 구조화 지역(region slug) → 표시 라벨(예: '서울 강남구' → '강남구'). 미설정/미지정 slug 는 undefined.
   const regionLabel = getRegionLabel(posting.location?.region);
@@ -261,7 +268,10 @@ export function getPostingDateGroups(posting: JobPosting): PostingDateGroup[] {
 
 export function getPostingLegacyTimeSlot(posting: JobPosting): string {
   if (posting.schedule.kind === 'fixed') {
-    return posting.schedule.startTime ? `${posting.schedule.startTime}~` : FIXED_TIME_MARKER;
+    // [R1] 시각이 없으면(=협의) 미정 센티널 하나로 통일한다. 예전 폴백 'NEGOTIABLE' 은
+    //      이 값이 표시 경로(지원자 카드·레거시 라벨·**외부 공유 텍스트**)로 흘러가 그대로
+    //      렌더되던 영문 토큰 누출의 발원지였다.
+    return posting.schedule.startTime ? `${posting.schedule.startTime}~` : TBA_TIME_MARKER;
   }
 
   const firstSlot = posting.schedule.requirements[0]?.timeSlots[0];

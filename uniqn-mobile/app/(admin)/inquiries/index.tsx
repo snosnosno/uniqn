@@ -10,10 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { StackHeader } from '@/components/headers';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, ErrorState } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
 import { useAllInquiries, useUnansweredCount } from '@/hooks/useInquiry';
 import type { Inquiry, InquiryStatus, InquiryFilters } from '@/types';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 type StatusFilter = InquiryStatus | 'all';
 
@@ -28,9 +30,15 @@ export default function AdminInquiriesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const filters: InquiryFilters = statusFilter === 'all' ? {} : { status: statusFilter };
 
-  const { inquiries, isLoading, isRefreshing, hasMore, fetchNextPage, refetch } = useAllInquiries({
+  const { inquiries, isLoading, hasMore, fetchNextPage, refetch, error } = useAllInquiries({
     filters,
   });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
   const { data: unansweredCount } = useUnansweredCount();
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
@@ -127,11 +135,20 @@ export default function AdminInquiriesScreen() {
         </ScrollView>
       </View>
 
-      {/* 문의 목록 */}
+      {/* 문의 목록 — 조회 실패를 "문의가 없습니다"로 그리면 미응답 문의를 통째로 놓친다(감사 A4) */}
       {isLoading && inquiries.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
         </View>
+      ) : error && inquiries.length === 0 ? (
+        <ErrorState
+          error={error}
+          title={loadFailed('문의 목록')}
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
       ) : (
         <AppFlashList
           data={inquiries}
@@ -145,8 +162,8 @@ export default function AdminInquiriesScreen() {
           ListFooterComponent={renderFooter}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refetch}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               tintColor={PRIMARY_COLORS[300]}
             />
           }

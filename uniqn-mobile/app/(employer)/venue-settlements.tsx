@@ -1,9 +1,13 @@
 /**
- * 지점 정산 — 근무표 직접 배치분 월 단위 정산 (JIT 급여 설계 §D)
+ * 지점 근무 금액 — 근무표 직접 배치분 월 단위 금액 (JIT 급여 설계 §D)
+ *
+ * 구인자 IA S2 — 지급 완료·일괄 정산·지급 완료 취소를 걷어낸 **읽기 전용** 화면이다.
+ * 앱은 돈을 보내지 않는다. 공고 없이 근무표에 직접 배치한 사람의 금액을 볼 곳은 여기뿐이라
+ * 화면은 남겼다(라우트 이름 `venue-settlements` 는 딥링크 호환을 위해 그대로 둔다).
  *
  * 폴백(₩15,000) 계산 건은 "기본 단가 적용" 배지로 가시화(조용한 오답 금지 — 정책 2026-07-22),
  * 배지 탭 → RoleSalaryField 시트로 그 역할 단가를 즉시 설정 → 쿼리 invalidate 재계산
- * (정산은 read-time 계산이라 refetch 로 충분). 건별 예외는 기존 공고 정산의 customSalaryInfo 경로.
+ * (금액은 read-time 계산이라 refetch 로 충분). 건별 예외는 공고 [근무] 의 금액 수정 경로.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
@@ -21,12 +25,16 @@ import { useVenueSettlement, useSetVenueRoleSalary } from '@/hooks/workSchedule'
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
+import { formatCurrency } from '@/utils/settlement';
+import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
+import { STATUS } from '@/constants';
 import {
   RoleSalaryField,
   defaultVenueSalaryDraft,
   type VenueSalaryDraft,
 } from '@/components/workSchedule/RoleSalaryField';
 import type { SettlementWorkLog } from '@/services/work/settlement/types';
+import { loadFailed, saveFailed } from '@/constants/messages';
 
 /** 배지 탭으로 여는 단가 설정 대상(역할 단위) */
 interface FixTarget {
@@ -47,6 +55,37 @@ function formatMonthLabel(month: string): string {
   return `${y}년 ${m}월`;
 }
 
+/**
+ * 퇴근이 기록된 근무를 둘로 가른다 — 아직 보낼 금액 / 과거에 지급 완료로 처리된 금액.
+ *
+ * 🚨 과거 지급 완료 행을 "지급 예정" 에 더하면 사장이 합계를 그대로 보내 이미 준 돈을 한 번 더 보낸다.
+ * 🔑 동결값 판정은 `shouldUseFrozenPayrollAmount` SSOT 를 쓴다(카드·목록과 같은 규칙).
+ *    동결값이 없는 레거시 완료 행은 재계산값으로 밝히되, 여전히 "지급 예정" 에는 넣지 않는다.
+ */
+function splitPayable(workLogs: readonly SettlementWorkLog[]) {
+  let payableCount = 0;
+  let payableAmount = 0;
+  let settledCount = 0;
+  let settledAmount = 0;
+
+  for (const wl of workLogs) {
+    if (!wl.checkInTime || !wl.checkOutTime) continue;
+
+    const isCompleted = wl.payrollStatus === STATUS.PAYROLL.COMPLETED;
+    if (isCompleted) {
+      settledCount += 1;
+      settledAmount += shouldUseFrozenPayrollAmount(isCompleted, wl.payrollAmount)
+        ? wl.payrollAmount
+        : (wl.calculatedAmount ?? 0);
+    } else {
+      payableCount += 1;
+      payableAmount += wl.calculatedAmount ?? 0;
+    }
+  }
+
+  return { payableCount, payableAmount, settledCount, settledAmount };
+}
+
 export default function VenueSettlementsScreen() {
   const params = useLocalSearchParams<{ venueId?: string; month?: string }>();
   const venueId = typeof params.venueId === 'string' ? params.venueId : null;
@@ -63,8 +102,7 @@ export default function VenueSettlementsScreen() {
   const [fixTarget, setFixTarget] = useState<FixTarget | null>(null);
   const [fixDraft, setFixDraft] = useState<VenueSalaryDraft | null>(null);
 
-  // 상세보기(#2) — 스태프 카드 탭 시 정산 상세 모달. 읽기 전용(정산 확정/시간 수정은
-  // 컨테이너 정산 mutation 미배선이라 노출하지 않는다 — half-wired 파괴 액션 회피).
+  // 계산 근거(#2) — 스태프 카드 탭 시 모달.
   // visible 과 workLog 를 분리한다: 닫을 때 workLog 를 즉시 null 로 만들면 모달이 바로 언마운트돼
   // 닫힘 애니메이션이 생략되므로, visible=false 로만 닫고 workLog 는 유지한다.
   const [detailVisible, setDetailVisible] = useState(false);
@@ -80,6 +118,10 @@ export default function VenueSettlementsScreen() {
     [workLogs, venueId]
   );
 
+  // 🔑 지급 예정 합계는 **퇴근이 기록된 근무만** 더한다. 퇴근 전 근무로 추정 금액을 만들면
+  //    사장이 그 숫자를 보고 보낸 뒤 실제 금액과 달라진다.
+  const payable = useMemo(() => splitPayable(workLogs ?? []), [workLogs]);
+
   const openFix = useCallback((wl: SettlementWorkLog) => {
     const role = wl.role ?? '';
     if (!role) return;
@@ -92,15 +134,17 @@ export default function VenueSettlementsScreen() {
     try {
       await mutation.mutateAsync({ venueId, ...fixTarget, salary: fixDraft });
     } catch {
-      addToast({ type: 'error', message: '단가 저장에 실패했어요. 잠시 후 다시 시도해주세요.' });
+      addToast({ type: 'error', message: saveFailed('단가', { retry: true }) });
       return;
     }
     // 저장 성공 후에만 성공 토스트. refetch 실패는 저장 자체의 실패가 아니므로
     // 사용자에게 실패로 알리지 않는다(모순 토스트 방지).
-    addToast({ type: 'success', message: '단가를 저장했어요. 정산을 다시 계산합니다.' });
+    addToast({ type: 'success', message: '단가를 저장했어요. 금액을 다시 계산합니다.' });
     setFixTarget(null);
     refetch().catch((error) => {
-      logger.warn('지점 정산 재조회 실패 — 단가 저장은 완료됨', { cause: toError(error).message });
+      logger.warn('지점 근무 금액 재조회 실패 — 단가 저장은 완료됨', {
+        cause: toError(error).message,
+      });
     });
   }, [venueId, fixTarget, fixDraft, mutation, addToast, refetch]);
 
@@ -144,8 +188,8 @@ export default function VenueSettlementsScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-page dark:bg-surface">
-      <StackHeader title="지점 정산" fallbackHref="/(employer)/work-schedule" />
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
+      <StackHeader title="지점 근무 금액" fallbackHref="/(employer)/work-schedule" />
 
       {/* 월 네비게이션 */}
       <View className="flex-row items-center justify-center gap-4 py-3">
@@ -183,15 +227,15 @@ export default function VenueSettlementsScreen() {
           <Loading size="small" />
         </View>
       ) : isError ? (
-        // 금전 화면에서 조회 실패를 "정산할 근무가 없어요"로 흘리면 사장이 그 달 지급액을
+        // 금액 화면에서 조회 실패를 "근무가 없어요"로 흘리면 사장이 그 달 금액을
         // 0 으로 오판한다. "없다"와 "못 읽었다"는 반드시 구분한다.
         <View className="px-4 py-8">
           {/* error 를 넘기지 않는 이유: ErrorState 는 error 가 AppError 면 isRetryable 로 재시도
               버튼을 감춘다. 여기 재시도는 부작용 없는 읽기(refetch)라 항상 열려 있어야 하고,
               표시 문구도 message 가 error 보다 우선하므로 error 는 기여하는 바가 없다. */}
           <ErrorState
-            title="정산 내역을 불러오지 못했어요"
-            message="네트워크 상태를 확인하고 다시 시도해주세요. 정산할 근무가 없는 게 아니라 목록을 읽지 못한 상태예요."
+            title={loadFailed('근무 금액')}
+            message="네트워크 상태를 확인하고 다시 시도해주세요. 근무가 없는 게 아니라 목록을 읽지 못한 상태예요."
             onRetry={refetch}
           />
         </View>
@@ -199,17 +243,42 @@ export default function VenueSettlementsScreen() {
         <View className="px-4 py-8">
           <EmptyState
             icon={<BanknotesIcon size={40} color={SECONDARY_PALETTE[400]} />}
-            title="이 달 정산할 근무가 없어요"
-            description="근무표에서 인원을 배치하면 여기서 월별 정산을 확인할 수 있어요."
+            title="이 달 근무 기록이 없어요"
+            description="근무표에서 인원을 배치하면 여기서 월별 금액을 확인할 수 있어요."
           />
         </View>
       ) : (
-        <FlatList
-          data={workLogs}
-          keyExtractor={(item) => item.id ?? `${item.staffId}-${item.date}`}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        />
+        <>
+          <FlatList
+            data={workLogs}
+            keyExtractor={(item) => item.id ?? `${item.staffId}-${item.date}`}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+          />
+
+          <View className="border-t border-secondary-200 px-4 py-3 dark:border-surface-overlay">
+            <Text className="text-sm text-content-secondary font-sans">
+              지급 예정 합계 · 퇴근이 기록된 근무 {payable.payableCount}건
+            </Text>
+            <Text
+              testID="venue-payable-total"
+              className="mt-0.5 text-lg font-display text-primary-600 dark:text-primary-400"
+            >
+              {formatCurrency(payable.payableAmount)}
+            </Text>
+            {payable.settledCount > 0 ? (
+              <Text
+                testID="venue-settled-note"
+                className="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+              >
+                {`이미 지급 처리된 근무 ${payable.settledCount}건(${formatCurrency(payable.settledAmount)})은 빠져요`}
+              </Text>
+            ) : null}
+            <Text className="mt-0.5 text-micro text-content-placeholder font-sans">
+              입금은 앱이 아니라 사장님이 직접 보내요.
+            </Text>
+          </View>
+        </>
       )}
 
       {/* 배지 탭 → 단가 설정 시트 (RoleSalaryField 재사용 — 접점 1과 동일 컴포넌트) */}
@@ -228,7 +297,7 @@ export default function VenueSettlementsScreen() {
           {fixTarget && fixDraft ? (
             <RoleSalaryField
               roleLabel={getRoleDisplayName(fixTarget.role, fixTarget.customRole)}
-              caption={`${getRoleDisplayName(fixTarget.role, fixTarget.customRole)} 단가를 설정하면 이 지점의 같은 역할 정산에 모두 적용돼요.`}
+              caption={`${getRoleDisplayName(fixTarget.role, fixTarget.customRole)} 단가를 설정하면 이 지점의 같은 역할 금액에 모두 적용돼요.`}
               value={fixDraft}
               onChange={setFixDraft}
             />
@@ -236,7 +305,7 @@ export default function VenueSettlementsScreen() {
         </View>
       </SheetModal>
 
-      {/* 상세보기(#2) — 카드 탭으로 여는 정산 상세(읽기 전용). */}
+      {/* 계산 근거(#2) — 카드 탭으로 여는 읽기 전용 상세. */}
       <SettlementDetailModal
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}

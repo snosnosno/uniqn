@@ -2,19 +2,23 @@
  * UNIQN Mobile - Supabase Template Repository
  *
  * @description Supabase PostgREST 기반 Template Repository 구현
- * @version 1.1.0
+ * @version 2.0.0
  *
  * 책임:
  * 1. 템플릿 CRUD 작업
  * 2. 권한 검증 (사용자 스코프)
- * 3. 사용 통계 업데이트
  *
  * 권한 모델: owner-only.
  *   RLS 정책 `templates_{select|insert|update|delete}_own` — user_id = auth.uid().
  *   관리자 글로벌 접근 불가 (20260414015707 마이그레이션에서 의도적 제거).
+ *
+ * ⚠️ 2026-08-02: 단건 조회 `loadTemplate` 을 제거했다(소비 UI 가 S4 에서 사라져 07-17 부터 死경로).
+ *   목록 조회가 template_data 전체를 이미 싣고 오므로 선택 시점 재조회가 잉여였다.
+ *   부수 효과: RPC `increment_template_usage` 의 **유일한 클라 호출자**가 사라져
+ *   `job_posting_templates.usage_count` 는 더 이상 증가하지 않는다. 컬럼·함수는 그대로 두고
+ *   (DB 무변경) 사용 통계가 필요해지면 목록 조회 축에서 새로 설계한다.
  */
 
-import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
@@ -114,45 +118,6 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '템플릿 저장', table: TABLES.TEMPLATES });
-    }
-  }
-
-  async loadTemplate(templateId: string): Promise<JobPostingTemplate> {
-    try {
-      logger.info('템플릿 불러오기', { templateId });
-
-      const { data, error } = await supabase
-        .from(TABLES.TEMPLATES)
-        .select(TABLE_COLUMNS)
-        .eq('id', templateId)
-        .single();
-
-      if (error) {
-        handleSupabaseError(error, { operation: '템플릿 불러오기', table: TABLES.TEMPLATES });
-      }
-
-      // 사용 통계 업데이트 (비동기, 에러 무시)
-      supabase
-        .rpc('increment_template_usage', { p_template_id: templateId })
-        .then(({ error: rpcError }) => {
-          if (rpcError) {
-            logger.warn('템플릿 사용 통계 업데이트 실패', { templateId, error: rpcError });
-            Sentry.addBreadcrumb({
-              category: 'swallow',
-              level: 'warning',
-              message: '템플릿 사용 통계 업데이트 실패 — 무시됨',
-              data: { templateId, error: String(rpcError) },
-            });
-          }
-        });
-
-      const template = rowToTemplate(data as Record<string, unknown>);
-      logger.info('템플릿 불러오기 완료', { templateId, name: template.name });
-
-      return template;
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      handleSupabaseError(error, { operation: '템플릿 불러오기', table: TABLES.TEMPLATES });
     }
   }
 

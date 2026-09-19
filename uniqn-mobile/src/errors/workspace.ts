@@ -14,6 +14,7 @@ import {
   ERROR_CODES,
   AppError,
 } from './AppError';
+import { notFound } from '@/constants/messages';
 
 /**
  * 워크스페이스 도메인 에러 코드 (E6 비즈니스)
@@ -38,8 +39,8 @@ export const WORKSPACE_ERROR_CODES = {
 } as const;
 
 const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
-  [WORKSPACE_ERROR_CODES.WORKSPACE_NOT_FOUND]: '팀을 찾을 수 없습니다.',
-  [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_NOT_FOUND]: '초대를 찾을 수 없습니다.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_NOT_FOUND]: notFound('팀'),
+  [WORKSPACE_ERROR_CODES.WORKSPACE_INVITATION_NOT_FOUND]: notFound('초대'),
   [WORKSPACE_ERROR_CODES.WORKSPACE_ALREADY_MEMBER]: '이미 팀 멤버입니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_ALREADY_INVITED]:
     '이미 초대 보류 중입니다. 상대방의 응답을 기다려주세요.',

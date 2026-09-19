@@ -33,6 +33,21 @@ import { confirmAction } from '@/utils/confirmAction';
 import { triggerHaptic } from '@/utils/haptics';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { NotificationData, NotificationCategory } from '@/types/notification';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+
+/**
+ * 그룹핑 설정 — 값이 고정이므로 모듈 스코프에 둔다 (감사 perf-01).
+ *
+ * 컴포넌트 본문에 객체 리터럴로 두면 렌더마다 새 참조가 만들어지고,
+ * 그 참조가 `useGroupedNotifications` 안의 useMemo 3단 체인
+ * (effectiveGroupingOptions → groupedNotifications → unreadCount)의 의존성이라
+ * **내용이 같아도** 매 렌더 전부 재계산된다. 즉 메모가 통째로 무력화된다.
+ */
+const NOTIFICATION_GROUPING_OPTIONS = {
+  enabled: true,
+  minGroupSize: 2,
+  timeWindowMs: 24 * 60 * 60 * 1000, // 24시간
+} as const;
 
 export default function NotificationsScreen() {
   // 카테고리 필터 상태
@@ -44,7 +59,6 @@ export default function NotificationsScreen() {
     rawNotifications,
     unreadCount,
     isLoading,
-    isRefreshing,
     error,
     hasMore,
     fetchNextPage,
@@ -53,12 +67,14 @@ export default function NotificationsScreen() {
     markGroupAsRead,
   } = useGroupedNotifications({
     categoryFilter: selectedCategory === 'all' ? 'all' : selectedCategory,
-    groupingOptions: {
-      enabled: true,
-      minGroupSize: 2,
-      timeWindowMs: 24 * 60 * 60 * 1000, // 24시간
-    },
+    groupingOptions: NOTIFICATION_GROUPING_OPTIONS,
   });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const { markAllAsRead } = useMarkAllAsRead();
   const { handleNotificationPress: navigateNotification } = useNotificationNavigation();
@@ -73,10 +89,6 @@ export default function NotificationsScreen() {
   const unreadByCategory = useNotificationStore((state) => state.unreadByCategory);
 
   // 리프레시 핸들러
-  const handleRefresh = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
-
   // 무한 스크롤 핸들러
   const handleLoadMore = useCallback(async () => {
     await fetchNextPage();
@@ -201,11 +213,11 @@ export default function NotificationsScreen() {
       <NotificationList
         notifications={groupedNotifications}
         isLoading={isLoading}
-        isRefreshing={isRefreshing}
+        isRefreshing={pullRefreshing}
         error={error}
         hasMore={hasMore}
         isFetchingNextPage={isFetchingNextPage}
-        onRefresh={handleRefresh}
+        onRefresh={onPullRefresh}
         onLoadMore={handleLoadMore}
         onNotificationPress={handleNotificationPress}
         onMarkGroupAsRead={markGroupAsRead}

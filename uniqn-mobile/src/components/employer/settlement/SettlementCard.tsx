@@ -1,18 +1,17 @@
 /**
- * UNIQN Mobile - 정산 카드 컴포넌트 (간소화 버전)
+ * UNIQN Mobile - 근무 금액 카드 컴포넌트 (간소화 버전)
  *
- * @description 스태프 프로필 + 정산 상태 + 총 금액 표시
- * @version 3.1.0
+ * @description 스태프 프로필 + 금액 표시 (지점 근무 금액 화면)
+ * @version 4.0.0 - 구인자 IA S2: 지급 상태 배지·지급 완료 버튼·정산 가능 게이트 제거
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { CardStripe } from '@/components/ui/CardStripe';
-import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { NumericText } from '@/components/ui/NumericText';
-import { BanknotesIcon, ChevronRightIcon } from '@/components/icons';
+import { ChevronRightIcon } from '@/components/icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   type SalaryType,
@@ -24,10 +23,9 @@ import {
   formatCurrency,
 } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
 import { shouldUseFrozenPayrollAmount } from '@/utils/settlementGrouping';
-import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -44,12 +42,11 @@ export interface SettlementCardProps {
   taxSettings?: TaxSettings;
   /**
    * 서비스가 이미 계산한 canonical 금액(afterTaxPay).
-   * 지점 정산처럼 유효 급여·수당·세금 해소를 서비스가 끝낸 경로에서 넘긴다 —
+   * 지점 금액처럼 유효 급여·수당·세금 해소를 서비스가 끝낸 경로에서 넘긴다 —
    * 안 넘기면 카드가 불완전한 컨텍스트로 다시 계산해 서비스 값과 어긋난다(SETTLE-8).
    */
   calculatedAmount?: number;
   onPress?: (workLog: WorkLog) => void;
-  onSettle?: (workLog: WorkLog) => void;
 }
 
 // ============================================================================
@@ -63,9 +60,7 @@ export const SettlementCard = React.memo(function SettlementCard({
   taxSettings,
   calculatedAmount,
   onPress,
-  onSettle,
 }: SettlementCardProps) {
-  // 사용자 프로필 조회 (프로필 사진, 닉네임)
   const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog.staffId,
     fallbackName: workLog.staffName,
@@ -74,53 +69,40 @@ export const SettlementCard = React.memo(function SettlementCard({
     fallbackPhotoURLBlurhash: workLog.staffPhotoURLBlurhash,
   });
 
-  // 정산 계산 (수당 + 세금 포함)
   const settlement = useMemo(
     () => calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings),
     [workLog, salaryInfo, allowances, taxSettings]
   );
 
-  const payrollStatus = (workLog.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
-  const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
-
   // 표시 금액 우선순위 (SETTLE-5·SETTLE-8):
-  //   1) 정산 완료 → 동결값. 완료 시점에 확정·지급된 금액은 이후 공고 급여가 바뀌어도 불변이다.
-  //   2) 서비스가 계산한 canonical → 그대로 존중. 카드가 다시 계산하면 서비스가 해소한
-  //      유효 급여·수당·세금 컨텍스트를 잃는다.
-  //   3) 그 외 → 카드 자체 재계산(기존 동작).
+  //   1) 과거에 확정된 금액이 있으면 그 동결값. 이후 공고 급여가 바뀌어도 불변이다.
+  //   2) 서비스가 계산한 canonical → 그대로 존중.
+  //   3) 그 외 → 카드 자체 재계산.
   const displayAmount = shouldUseFrozenPayrollAmount(
-    payrollStatus === STATUS.PAYROLL.COMPLETED,
+    workLog.payrollStatus === STATUS.PAYROLL.COMPLETED,
     workLog.payrollAmount
   )
     ? workLog.payrollAmount
     : (calculatedAmount ??
       (settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay));
 
-  // 출퇴근 시간 유효 여부
-  const startTime = parseTimestamp(workLog.checkInTime);
-  const endTime = parseTimestamp(workLog.checkOutTime);
-  const hasValidTimes = startTime && endTime;
+  // 🔑 퇴근이 안 찍힌 줄로 추정 금액을 만들지 않는다 — 사장이 그 숫자를 보고 보낸다.
+  const hasValidTimes = Boolean(
+    parseTimestamp(workLog.checkInTime) && parseTimestamp(workLog.checkOutTime)
+  );
 
-  // 핸들러
   const handlePress = useCallback(() => {
     onPress?.(workLog);
   }, [workLog, onPress]);
 
-  const handleSettle = useCallback(() => {
-    onSettle?.(workLog);
-  }, [workLog, onSettle]);
-
-  const stripeTone = statusConfig.stripeTone;
-
   return (
-    <CardStripe tone={stripeTone}>
+    <CardStripe tone={hasValidTimes ? 'muted' : 'gold'}>
       <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
-        {/* 상단: 프로필 + 금액/상태 */}
         <Pressable
           onPress={handlePress}
           accessibilityRole="button"
-          accessibilityLabel={`${displayName} 정산 상세 보기`}
-          accessibilityHint="정산 상세 정보를 확인합니다"
+          accessibilityLabel={`${displayName} 근무 금액 상세 보기`}
+          accessibilityHint="계산 근거를 확인합니다"
           className="active:opacity-80"
         >
           <View className="flex-row items-center justify-between">
@@ -143,63 +125,40 @@ export const SettlementCard = React.memo(function SettlementCard({
                 </Text>
               </View>
             </View>
-            <View className="items-end">
-              <Badge variant={statusConfig.variant} size="sm" dot>
-                {statusConfig.label}
-              </Badge>
-              {hasValidTimes && (
-                <NumericText
-                  className="text-base font-sans-bold text-primary-600 dark:text-primary-400 mt-1"
-                  style={{
-                    letterSpacing: -0.3,
-                    textAlign: 'right',
-                  }}
-                >
-                  {formatCurrency(displayAmount)}
-                </NumericText>
-              )}
-            </View>
+            {hasValidTimes ? (
+              <NumericText
+                className="text-base font-sans-bold text-primary-600 dark:text-primary-400"
+                style={{
+                  letterSpacing: -0.3,
+                  textAlign: 'right',
+                }}
+              >
+                {formatCurrency(displayAmount)}
+              </NumericText>
+            ) : null}
           </View>
         </Pressable>
 
-        {/* 출퇴근 미완료 표시 */}
         {!hasValidTimes && (
-          <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-            <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
-              출퇴근 기록 미완료
+          <View className="mt-3 p-2 bg-surface-page dark:bg-surface rounded-lg">
+            <Text className="text-xs text-content-muted dark:text-secondary-400 text-center font-sans">
+              퇴근을 찍어야 금액이 정해져요
             </Text>
           </View>
         )}
 
-        {/* 하단: 상세보기 + 지급 완료 표시 버튼 */}
-        <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay gap-2">
-          {/* 상세보기 */}
+        <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
           <Pressable
             onPress={handlePress}
             accessibilityRole="button"
-            accessibilityLabel="정산 상세보기"
-            accessibilityHint="정산 내역을 자세히 확인합니다"
+            accessibilityLabel="계산 근거 보기"
             className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
             <ChevronRightIcon size={16} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-1 text-sm font-sans-medium text-content-muted dark:text-secondary-400">
-              상세보기
+              계산 근거
             </Text>
           </Pressable>
-
-          {/* 지급 완료 표시 (미정산 + 출퇴근 완료일 때만) — 실이체 아님 명시 (QW4) */}
-          {payrollStatus === STATUS.PAYROLL.PENDING && hasValidTimes && onSettle && (
-            <Pressable
-              onPress={handleSettle}
-              accessibilityRole="button"
-              accessibilityLabel={`${displayName} 지급 완료로 표시`}
-              accessibilityHint="급여를 지급 완료 상태로 표시합니다. 실제 이체는 앱 밖에서 진행해요"
-              className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
-            >
-              <BanknotesIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-content-onGold">지급 완료</Text>
-            </Pressable>
-          )}
         </View>
       </View>
     </CardStripe>

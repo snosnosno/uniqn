@@ -27,6 +27,7 @@ import type {
   FetchAnnouncementsResult,
   AnnouncementCountByStatus,
 } from '../interfaces/IAnnouncementRepository';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -321,7 +322,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 
       if (!current) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '공지사항을 찾을 수 없습니다',
+          userMessage: notFound('공지사항'),
           metadata: { announcementId },
         });
       }
@@ -381,7 +382,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 
       if (!current) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '공지사항을 찾을 수 없습니다',
+          userMessage: notFound('공지사항'),
           metadata: { announcementId },
         });
       }
@@ -436,7 +437,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 
       if (!current) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '공지사항을 찾을 수 없습니다',
+          userMessage: notFound('공지사항'),
           metadata: { announcementId },
         });
       }
@@ -522,7 +523,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 
       if (!existing) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '공지사항을 찾을 수 없습니다',
+          userMessage: notFound('공지사항'),
           metadata: { announcementId },
         });
       }

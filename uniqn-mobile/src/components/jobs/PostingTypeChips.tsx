@@ -80,7 +80,7 @@ const ChipItem = memo(function ChipItem({
       </Text>
       {showCount ? (
         <View
-          className={`ml-1.5 min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${
+          className={`ml-1.5 min-w-[20px] items-center rounded-sm px-1.5 py-0.5 ${
             isSelected
               ? 'bg-white/20 dark:bg-white/20'
               : 'bg-secondary-100 dark:bg-surface-elevated'

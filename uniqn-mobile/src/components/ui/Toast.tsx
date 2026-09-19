@@ -16,7 +16,7 @@ import Animated, {
 import {
   CheckCircleIcon,
   XCircleIcon,
-  ExclamationTriangleIcon,
+  AlertTriangleIcon,
   InformationCircleIcon,
   XMarkIcon,
 } from '@/components/icons';
@@ -56,7 +56,7 @@ const TOAST_STYLES = {
   },
   warning: {
     container: 'bg-warning-500 dark:bg-warning-600',
-    IconComponent: ExclamationTriangleIcon,
+    IconComponent: AlertTriangleIcon,
   },
   info: {
     container: 'bg-primary-600 dark:bg-primary-700',

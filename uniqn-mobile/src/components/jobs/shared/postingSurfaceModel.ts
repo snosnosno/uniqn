@@ -8,8 +8,8 @@ import type {
   SalaryInfo,
   PostingSalaryDisplay,
 } from '@/types';
-import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
-import { roleHydrateKey, slotHydrateKey } from '@/domains/schedule';
+import { FIXED_DATE_MARKER } from '@/types/assignment';
+import { roleHydrateKey, slotHydrateKey, timeSlotKey } from '@/domains/schedule';
 import { getRoleDisplayName } from '@/types/unified';
 import {
   formatDateRangeWithCount,
@@ -193,10 +193,12 @@ function buildFixedScheduleModel(
   const daysValue = fixed?.daysPerWeek ?? source.daysPerWeek;
   const timeValue = fixed?.startTime ?? source.startTime;
   const isNegotiable = fixed?.isStartTimeNegotiable ?? source.isStartTimeNegotiable ?? !timeValue;
-  // 고정공고 work_logs 키: date='FIXED_SCHEDULE', slotKey=startTime 우선(없을 때만 'NEGOTIABLE').
-  // 확정 경로(facts.ts fixedAssignmentTimeSlot)·DB 정규화(_posting_slot_key)와 동일 규칙으로 통일 —
-  // isNegotiable 플래그가 켜져 있어도 startTime 값이 있으면 그 값으로 hydrate 조회해야 미스매치(0 폴백)가 없다.
-  const fixedSlotKey = timeValue || FIXED_TIME_MARKER;
+  // 고정공고 work_logs 키: date='FIXED_SCHEDULE', slotKey=startTime 우선(없으면 '미정').
+  // 🔴 예전 폴백은 'NEGOTIABLE' 이었다. R0 이후 서버 `_posting_slot_key` 는 센티널을 전부 '미정' 으로
+  //    접으므로, 'NEGOTIABLE' 키로 조회하면 `count_posting_confirmed_by_slot` 결과와 영영 만나지 못해
+  //    **에러 없이 확정 인원이 0/N 으로 보인다** — 스태프 카드뿐 아니라 사장의 공고 관리 화면도 포함이다.
+  //    isNegotiable 플래그가 켜져 있어도 startTime 값이 있으면 그 값으로 조회해야 미스매치가 없다.
+  const fixedSlotKey = timeSlotKey(timeValue);
   const roles = toRoleModels(fixed?.roles ?? source.requiredRolesWithCount ?? [], {
     date: FIXED_DATE_MARKER,
     slotKey: fixedSlotKey,

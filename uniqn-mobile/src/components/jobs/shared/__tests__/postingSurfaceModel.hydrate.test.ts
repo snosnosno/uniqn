@@ -4,11 +4,17 @@ import { buildPostingScheduleModel } from '@/components/jobs/shared/postingSurfa
  * SP3 Task 4 — fixed/grouped 역할별 표시를 work_logs hydrate 맵 단일 소스로 정합.
  * 키 형식: `${date}__${slotKey}__${roleKey}`
  *  - date: dated/grouped 는 실제 YYYY-MM-DD, fixed 는 'FIXED_SCHEDULE'
- *  - slotKey: 타임 슬롯 startTime(HH:MM) / TBA='미정' / fixed 협의='NEGOTIABLE'
+ *  - slotKey: 타임 슬롯 startTime(HH:MM) / TBA='미정' / fixed 협의='미정'
+ *
+ * 🔴 [R1] fixed 협의 키는 예전에 'NEGOTIABLE' 이었다. 서버 R0(_posting_slot_key 재정의) 이후
+ *    `count_posting_confirmed_by_slot` 은 센티널 4종을 전부 '미정' 으로 접어 돌려주므로
+ *    **'NEGOTIABLE' 키는 이제 서버에서 나올 수 없다**. 아래 filledCounts 픽스처는 서버 반환값을
+ *    흉내내는 것이므로 새 계약을 그대로 반영해야 한다 — 옛 키를 남기면 실제로는 정합인데
+ *    테스트만 red 가 되거나(지금), 반대로 미정합인데 green 이 된다.
  *  - roleKey: role (other 는 `other:${customRole}`; customRole 없는 bare-other 도 `other:`)
  */
 describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소스 (SP3 T4)', () => {
-  // --- fixed: 합성 슬롯 startTime 없음 + TBA 아님 → slotKey='NEGOTIABLE' ---
+  // --- fixed: 합성 슬롯 startTime 없음 + TBA 아님 → slotKey='미정' ---
   it('fixed: hydrate 맵으로 역할별 filled 를 표시한다 (dead counter 아님)', () => {
     const fixedSource = {
       workflow: { isFixed: true, usesGroupedDateRanges: false },
@@ -26,7 +32,7 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
       },
     } as any;
 
-    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__NEGOTIABLE__dealer', 1]]);
+    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__미정__dealer', 1]]);
     const model = buildPostingScheduleModel(fixedSource, filledCounts);
 
     expect(model.variant).toBe('fixed');
@@ -55,7 +61,7 @@ describe('buildPostingScheduleModel hydrate — fixed/grouped/dated 단일 소�
     } as any;
 
     // 서버 _posting_role_key('other', NULL) = 'other:' (콜론 포함). 옛 코드는 'other'(콜론 없음)로 miss → 0/N.
-    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__NEGOTIABLE__other:', 1]]);
+    const filledCounts = new Map<string, number>([['FIXED_SCHEDULE__미정__other:', 1]]);
     const model = buildPostingScheduleModel(fixedSource, filledCounts);
 
     const role = (model as any).fixed.roles[0];

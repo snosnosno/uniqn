@@ -8,6 +8,28 @@
  */
 
 import type { FirebaseDocument } from './common';
+import { INQUIRY_ATTACHMENT_LIMITS } from './inquiry';
+import type { LocalInquiryAttachment } from './inquiry';
+
+// ============================================================================
+// 증빙 첨부 (Storage)
+// ============================================================================
+
+/**
+ * 신고 증빙 첨부 제약 (최대 장수 / 장당 용량 / 허용 MIME)
+ *
+ * 값을 새로 정의하지 않고 1:1 문의 첨부 제약(`INQUIRY_ATTACHMENT_LIMITS`)을 **그대로 공유**한다.
+ * 신고 입력 화면이 `InquiryAttachmentPicker`(문의 제약을 강제하는 컴포넌트)를 재사용하므로,
+ * 별도 상수를 만들면 UI 가 강제하는 값과 서버 검증값이 조용히 어긋난다.
+ */
+export const REPORT_EVIDENCE_LIMITS = INQUIRY_ATTACHMENT_LIMITS;
+
+/**
+ * 업로드 전 로컬 증빙 이미지 (picker 선택 결과)
+ *
+ * 문의 첨부와 동일한 형태 — 업로드 파이프라인을 공유하므로 타입도 공유한다.
+ */
+export type LocalReportEvidence = LocalInquiryAttachment;
 
 // ============================================================================
 // 신고 유형
@@ -278,7 +300,13 @@ export interface Report extends FirebaseDocument {
   /** 신고 상세 설명 */
   description: string;
 
-  /** 증거 자료 URL 목록 */
+  /**
+   * 증빙 자료 참조 목록
+   *
+   * 비공개 버킷 `report-evidence` 의 Storage **경로**(`{업로더uid}/{제출id}/{파일명}`)를 담는다.
+   * 서명 URL 은 만료되므로 DB 에 넣지 않고 열람 시점에 발급한다.
+   * 과거 데이터 호환을 위해 http(s) 절대 URL 도 읽기 쪽에서 허용한다.
+   */
   evidenceUrls?: string[];
 
   /** 처리 상태 */
@@ -316,6 +344,10 @@ export interface CreateReportInput {
   /** 구인자→스태프 신고만 */
   workDate?: string;
   description: string;
+  /**
+   * 증빙 Storage 경로 목록 — 신고 생성 **전에** 업로드를 끝내고 그 결과를 싣는다.
+   * `create_report` RPC 의 `p_evidence_urls` 로 그대로 전달된다.
+   */
   evidenceUrls?: string[];
 }
 

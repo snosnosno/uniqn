@@ -211,10 +211,10 @@ export const queryKeys = {
   // 사용자
   user: {
     all: ['user'] as const,
-    current: () => [...queryKeys.user.all, 'current'] as const,
     profile: (uid: string) => [...queryKeys.user.all, 'profile', uid] as const,
     profileBatch: (userIds: string[]) =>
       [...queryKeys.user.all, 'profileBatch', [...userIds].sort().join(',')] as const,
+    withdrawalImpact: (uid: string) => [...queryKeys.user.all, 'withdrawalImpact', uid] as const,
   },
 
   // 구인공고
@@ -232,9 +232,6 @@ export const queryKeys = {
   // 지원서
   applications: {
     all: ['applications'] as const,
-    lists: () => [...queryKeys.applications.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.applications.all, 'list', filters] as const,
     detail: (id: string) => [...queryKeys.applications.all, 'detail', id] as const,
     mine: () => [...queryKeys.applications.all, 'mine'] as const,
     byJobPosting: (jobPostingId: string) =>
@@ -250,6 +247,8 @@ export const queryKeys = {
     byDate: (date: string) => [...queryKeys.schedules.all, 'byDate', date] as const,
     byMonth: (year: number, month: number) =>
       [...queryKeys.schedules.all, 'byMonth', year, month] as const,
+    nextConfirmed: (staffId: string) =>
+      [...queryKeys.schedules.all, 'nextConfirmed', staffId] as const,
   },
 
   // 근무 기록
@@ -264,7 +263,6 @@ export const queryKeys = {
   // 알림
   notifications: {
     all: ['notifications'] as const,
-    lists: () => [...queryKeys.notifications.all, 'list'] as const,
     // P2 아키텍처: 제네릭 타입으로 NotificationFilter 등 다양한 필터 지원
     list: <T extends object>(filters: T) =>
       [...queryKeys.notifications.all, 'list', filters] as const,
@@ -272,13 +270,6 @@ export const queryKeys = {
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
     // P2 아키텍처: Query Keys 중앙 관리 확장
     settings: () => [...queryKeys.notifications.all, 'settings'] as const,
-  },
-
-  // 설정
-  settings: {
-    all: ['settings'] as const,
-    user: () => [...queryKeys.settings.all, 'user'] as const,
-    notification: () => [...queryKeys.settings.all, 'notification'] as const,
   },
 
   // ============================================================================
@@ -331,7 +322,6 @@ export const queryKeys = {
       userId === undefined
         ? ([...queryKeys.templates.all, 'list'] as const)
         : ([...queryKeys.templates.all, 'list', userId] as const),
-    detail: (id: string) => [...queryKeys.templates.all, 'detail', id] as const,
   },
 
   // 지원자 관리 (구인자)
@@ -389,22 +379,10 @@ export const queryKeys = {
       [...queryKeys.confirmedStaff.all, 'grouped', jobPostingId] as const,
   },
 
-  // 이벤트 QR (구인자 - 현장 출퇴근)
-  eventQR: {
-    all: ['eventQR'] as const,
-    current: (jobPostingId: string, date: string, action: 'checkIn' | 'checkOut') =>
-      [...queryKeys.eventQR.all, 'current', jobPostingId, date, action] as const,
-    history: (jobPostingId: string) => [...queryKeys.eventQR.all, 'history', jobPostingId] as const,
-  },
-
-  // 신고 관리 (구인자)
+  // 신고 관리 (관리자 콘솔)
   reports: {
     all: ['reports'] as const,
-    byJobPosting: (jobPostingId: string) =>
-      [...queryKeys.reports.all, 'byJobPosting', jobPostingId] as const,
-    byStaff: (staffId: string) => [...queryKeys.reports.all, 'byStaff', staffId] as const,
     detail: (reportId: string) => [...queryKeys.reports.all, 'detail', reportId] as const,
-    myReports: () => [...queryKeys.reports.all, 'myReports'] as const,
   },
 
   // ============================================================================
@@ -453,14 +431,6 @@ export const queryKeys = {
 
   boards: {
     all: ['boards'] as const,
-    home: (userId?: string, role?: string, isAdmin?: boolean) =>
-      [
-        ...queryKeys.boards.all,
-        'home',
-        userId ?? 'anonymous',
-        role ?? 'unknown',
-        isAdmin ?? false,
-      ] as const,
     list: (
       boardType: string,
       userId?: string,
@@ -528,9 +498,6 @@ export const queryKeys = {
     byWorkLog: (workLogId: string) => [...queryKeys.reviews.all, 'byWorkLog', workLogId] as const,
     myGiven: () => [...queryKeys.reviews.all, 'myGiven'] as const,
     myReceived: () => [...queryKeys.reviews.all, 'myReceived'] as const,
-    bubbleScore: (userId: string) => [...queryKeys.reviews.all, 'bubbleScore', userId] as const,
-    eligibility: (workLogId: string) =>
-      [...queryKeys.reviews.all, 'eligibility', workLogId] as const,
     pending: () => [...queryKeys.reviews.all, 'pending'] as const,
   },
 
@@ -571,6 +538,10 @@ export const queryKeys = {
     prizes: (tournamentId: string) => [...queryKeys.ops.all, 'prizes', tournamentId] as const,
     // 1e — 스태프 로스터(공고연결 스냅샷 import + 수동 추가)
     staff: (tournamentId: string) => [...queryKeys.ops.all, 'staff', tournamentId] as const,
+    // 결함 ⑦-2 — 스태프별 근태 대상 work_log 해석(운영일 기준). 로스터와 별도 키:
+    // work_logs 쪽 변경(정산 확정·취소)만으로도 무효화돼야 하는데 ops_staff 는 그대로다.
+    staffWorkLogs: (tournamentId: string) =>
+      [...queryKeys.ops.all, 'staffWorkLogs', tournamentId] as const,
     // 블라인드 프리셋(계획 B) — per-user 데이터. userId 스코프 필수(기기 계정 전환 시 캐시 격리).
     blindPresets: (userId: string) => [...queryKeys.ops.all, 'blindPresets', userId] as const,
   },
@@ -635,13 +606,48 @@ export const cachingPolicies = {
  *
  * 대신 오래된 데이터를 최신처럼 보여주지 않도록, 화면은 오프라인일 때
  * "지금 보이는 내용은 이전에 받아둔 정보"임을 함께 밝힌다.
+ *
+ * 🔴 이 주석만으로는 재발을 못 막았다 — 위 규칙이 이미 적혀 있는데도 `ttlMs` 에 온라인
+ *    상수를 꽂은 호출부가 **6곳**까지 늘었다(감사 M6). 그래서 값의 정체를 타입으로 못박는다:
+ *    `OfflineTtlMs` 는 이 객체를 통해서만 만들어지므로, `cachingPolicies.*` 나
+ *    `queryCachingOptions.*.staleTime`(둘 다 맨 `number`)을 `ttlMs` 에 넘기면 컴파일이 깨진다.
  */
+
+/**
+ * 오프라인 캐시 보존기간 전용 단위.
+ *
+ * 맨 `number` 와 구조적으로 구분되게 브랜드를 달아, 온라인 `staleTime` 상수가
+ * `getCriticalOfflineCache({ ttlMs })` 로 흘러드는 것을 **컴파일 타임에** 막는다.
+ * (런타임 표현은 그냥 밀리초 숫자다 — 비교·산술 전부 그대로 동작한다.)
+ */
+export type OfflineTtlMs = number & { readonly __brand: 'offlineTtlMs' };
+
+/** 시간 단위로 오프라인 보존기간을 만든다. 이 헬퍼가 브랜드를 붙이는 유일한 지점이다. */
+const offlineTtlHours = (hours: number): OfflineTtlMs => (hours * 60 * 60 * 1000) as OfflineTtlMs;
+
 export const offlineCachePolicies = {
   /** 스케줄 — 24시간. 하루 한 번은 온라인이 된다는 가정. */
-  schedules: 24 * 60 * 60 * 1000,
+  schedules: offlineTtlHours(24),
   /** 오늘 근무(히어로) — 스케줄과 같은 창을 쓴다. 두 소스가 다른 시점에 만료되면
    *  카드가 깜빡이듯 나타났다 사라진다. */
-  today: 24 * 60 * 60 * 1000,
+  today: offlineTtlHours(24),
+  /** 공고 목록 — 24시간. 지하에서 목록이 통째로 비면 "공고가 없는 앱"으로 보인다.
+   *  마감·정원이 어제 값인 것은 온라인 복귀 즉시 갱신되고, 지원은 어차피 네트워크가 필요하다. */
+  jobPostings: offlineTtlHours(24),
+  /** 공고 상세 — 목록과 같은 창. 목록에서 열었는데 상세만 비면 이동이 막힌 것처럼 보인다. */
+  jobDetail: offlineTtlHours(24),
+  /** 내 지원 현황 — 24시간. 내가 어디에 지원했는지는 오프라인에서 가장 자주 확인하는 정보다. */
+  applications: offlineTtlHours(24),
+  /** 내 근무기록 — 24시간. 스케줄과 같은 안전망 축이다(같은 화면에서 함께 읽힌다). */
+  workLogs: offlineTtlHours(24),
+  /**
+   * 지금 근무 중인가 — **여기만 24시간이 아니다(12시간).**
+   * 이 값은 "어제"까지 살아 있으면 안 된다. 다음 근무일 아침에 어제의 '출근 중' 을 보여주면
+   * 스태프가 이미 출근한 줄 알고 QR 을 안 찍는다. 그렇다고 온라인 staleTime(30초)을 쓰면
+   * 근무 한 번도 못 버티고 삭제돼 '출근 안 함' 으로 뒤집힌다 — 야간 근무(18시~02시)를
+   * 덮으면서 날을 넘기지 않는 12시간이 그 사이다.
+   */
+  currentWorkStatus: offlineTtlHours(12),
 } as const;
 
 /**
@@ -723,15 +729,7 @@ export const queryCachingOptions = {
  */
 export const invalidateQueries = {
   jobPostings: () => queryClient.invalidateQueries({ queryKey: queryKeys.jobPostings.all }),
-  applications: () => queryClient.invalidateQueries({ queryKey: queryKeys.applications.all }),
-  schedules: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all }),
-  workLogs: () => queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all }),
-  notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
-  confirmedStaff: () => queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all }),
-  eventQR: () => queryClient.invalidateQueries({ queryKey: queryKeys.eventQR.all }),
-  reports: () => queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
-  settlement: () => queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
   /**
    * 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록 + 파생 집계)
    *
@@ -751,8 +749,6 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: [POSTING_FILLED_COUNTS_QUERY_KEY] });
     queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all });
   },
-  /** 대회공고 승인 관련 모든 쿼리 무효화 */
-  tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),
   /** 대회공고 승인 후 관련 데이터 무효화 (대회공고 + 구인공고 목록) */
   tournamentApproval: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all });
@@ -761,10 +757,7 @@ export const invalidateQueries = {
   /** 공지사항 관련 모든 쿼리 무효화 */
   announcements: () => queryClient.invalidateQueries({ queryKey: queryKeys.announcements.all }),
   boards: () => queryClient.invalidateQueries({ queryKey: queryKeys.boards.all }),
-  /** 리뷰/평가 관련 모든 쿼리 무효화 */
-  reviews: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all }),
   /** 구인자 신청 관련 모든 쿼리 무효화 (유저 상태 + admin 목록/상세) */
   employerApplications: () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.employerApplications.all }),
-  all: () => queryClient.invalidateQueries(),
 };

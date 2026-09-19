@@ -13,6 +13,8 @@ import {
   type BoardReportFilterStatus,
 } from '@/types/board';
 import { toDate, type DateInput } from '@/utils/date';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 const STATUS_OPTIONS: { value: BoardReportFilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -146,7 +148,13 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
 export default function AdminBoardReportsPage() {
   const [status, setStatus] = useState<BoardReportFilterStatus>('pending');
   const [query, setQuery] = useState('');
-  const { data, isLoading, isRefetching, error, refetch } = useAdminBoardReports(status);
+  const { data, isLoading, error, refetch } = useAdminBoardReports(status);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const filteredReports = useMemo(() => {
     if (!data) {
@@ -188,7 +196,7 @@ export default function AdminBoardReportsPage() {
         <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
-            title="게시판 신고를 불러오지 못했습니다"
+            title={loadFailed('게시판 신고')}
             description="잠시 후 다시 시도해 주세요."
             icon="error"
             actionLabel="다시 시도"
@@ -253,7 +261,7 @@ export default function AdminBoardReportsPage() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />}
       >
         <Text className="mb-3 text-sm text-content-secondary font-sans">
           총 {filteredReports.length}건

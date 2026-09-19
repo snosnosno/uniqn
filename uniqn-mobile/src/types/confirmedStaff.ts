@@ -39,6 +39,14 @@ export interface ConfirmedStaffGroup {
   isPast: boolean;
   stats: {
     total: number;
+    /**
+     * 아직 출근하지 않은 인원(`status === 'scheduled'`).
+     *
+     * 🚨 `total - checkedIn` 으로 대신 재지 말 것. `checkedIn` 은 정확일치라 퇴근하면 빠지고,
+     *    그 뺄셈은 퇴근·취소·노쇼를 전부 '미출근' 으로 접는다 — 전원이 정상 퇴근한 저녁에
+     *    미출근이 최대가 된다. 상태가 하나 늘 때마다 조용히 틀려지므로 열거로 센다.
+     */
+    scheduled: number;
     checkedIn: number;
     completed: number;
     noShow: number;
@@ -54,20 +62,12 @@ export interface UpdateWorkTimeInput {
   modifiedBy?: string;
 }
 
-export interface UpdateStaffRoleInput {
-  workLogId: string;
-  newRole: string;
-  reason: string;
-  /** @deprecated 무시됨 — confirmedStaffService가 세션 actorId로 강제 스탬프한다(위조 차단). 호출자가 넘겨도 반영되지 않는다. */
-  changedBy?: string;
-}
-
 export interface DeleteConfirmedStaffInput {
   workLogId: string;
   jobPostingId: string;
   staffId: string;
   date: string;
-  reason?: string;
+  reason: string;
 }
 
 /**

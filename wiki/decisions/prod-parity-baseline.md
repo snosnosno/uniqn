@@ -1,11 +1,14 @@
 ---
 area: decisions
-updated: 2026-07-24
+updated: 2026-09-19
 status: current
 sources:
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
   - .github/workflows/parity-smoke.yml
+  - .github/workflows/prod-migrate.yml
   - PR#241
+  - PR#455
+  - PR#497
   - memory/pitfall_prod_repo_schema_drift_massive
 tags: [database, migration, parity, adr]
 ---
@@ -36,7 +39,63 @@ prod DB와 레포 마이그레이션이 대규모 발산: 함수 prod 163 vs 레
 - **비밀번호의 `@ # / : %`는 퍼센트 인코딩 필수** — 안 하면 URI 파싱이 깨진다. 손으로 바꾸지 말고 `[uri]::EscapeDataString()`(PowerShell)로 변환할 것.
 - 부수 사실: **Supabase DB 비밀번호는 프로젝트 생성 시 1회만 노출**되고 이후 조회할 수 없다. 분실 시 재설정 외에 방법이 없다.
 
+## 기대값 리터럴은 3곳을 동시에 고쳐야 한다 (2026-08-08 실증)
+
+ops ⑦-1 과 ⑦-2 가 각각 함수를 1개씩 추가하며 **둘 다 207 을 적어** rebase 충돌이 났다.
+해소는 **마커(`PARITY_EXPECT_FUNCS`) + 단언 리터럴 + 설명 문구 3곳 동시** 갱신으로 208
+([[ops-defect7-wave-2026-08]]).
+
+> 🚨 **이번엔 충돌이 나 줘서 잡혔다.** 두 레인이 각각 +1 을 해서 **둘 다 같은 숫자**를 적으면
+> git 이 리터럴을 자동 병합해 조용히 통과한다(정답은 +2) — [[ops-followups-2026-08]] 1회차.
+> **숫자만 올리지 말 것**: 과거 `201 == 201` green 은 **반대 방향 드리프트 2개의 상쇄**였다.
+> 파리티 red 는 총계를 세기 전에 **어느 함수인지**부터 본다.
+
+## 개수 대조와 기록 대조를 섞지 마라 (2026-08-08)
+
+"기록(`list_migrations`)만 없고 객체는 원래 있었다"는 중간 판정이 나왔다가 **틀린 것으로 반증**됐다 —
+`prod-migrate` 워크플로우 로그의 `미기록 확인` + **적용 전 md5=`(none)`** 둘 다가 함수 부재의
+직접 증거였고, 그 판정이 본 208/111 은 **적용 이후 값**(적용 전 206)이었다.
+
+> 🔑 `pg_proc` 카운트 대조 병행은 유효하나 **관측 시각을 함께 남겨라.** 병렬 세션이 상시
+> 활성이라, 남의 적용 결과를 "원래 있었다"로 읽는 사고가 실제로 났다.
+
+## 새 기준선 225 / 102 — 그리고 정책 −11 의 정체 (2026-09-19 규명)
+
+장부 기대값 216/113 과 실측 225/102 가 어긋나 `parity_baseline_guard` 가 red 였다. 숫자를
+덮지 않고 **출처를 세어** 닫았다. 차이의 전부는 **장부에 누락된 9월 마이그 7건**이다.
+
+정책 −11 의 내역:
+
+| 출처 | 정책 증감 |
+|---|---|
+| `20260910002240_harden_communication_board` — free/tda/substitute 게시판·투표 폐지 | 순감 **7** |
+| 같은 마이그의 **`DROP TABLE board_votes`** — `bv_*` 정책이 테이블과 함께 소멸 | **−4** |
+
+> 🔑 **테이블을 지우면 그 위의 정책도 함께 사라진다.** `CREATE POLICY` / `DROP POLICY` 문장만
+> 세면 계산이 맞지 않는다. `DROP TABLE` · `DROP SCHEMA` 는 정책 회계의 **보이지 않는 항목**이다.
+
+- 새 기준선 = **함수 225 / 정책 102**, 기계 마커 `PARITY_EXPECT_FUNCS` / `_POLICIES` 동시 갱신
+  (위 "3곳 동시" 규율 준수).
+- **prod 실측도 225 / 102** — 정확히 일치. 같은 날 적용한 마이그 4건은 전부 증감 0이라 적용
+  후에도 불변이었다.
+- ⚠️ 09-18 판이 `20260809140000` 을 원인으로 지목했으나 **오답**이다 — 그건 이미 장부에
+  반영돼 있었다. 상세 = [[db-red-fix-and-release-2026-09]]
+
+## 기록명 어긋남 — 재적용 금지 목록 (2026-09-19 재확인)
+
+9월 마이그 7건은 MCP apply 경로로 들어가 **prod 기록명이 레포 파일명과 다르다**. 접두사만 보고
+"미적용"으로 판단하면 재적용해 체인을 더럽힌다.
+
+`20260909135618`→`20260910163934` · `20260910002240`→`20260910003856` ·
+`20260910104500`→`20260910103444` · `20260910110000`→`20260910103943` ·
+`20260910123553`→`20260910163945` · `20260910123555`→`20260910163957` ·
+`20260910153217`→`20260910164009`
+
+🔑 `prod-migrate` 워크플로(#437) 경유분은 **파일명 그대로** 기록된다. 어긋남은 MCP 경로의 흔적이다.
+⚠️ **GRANT·트리거 전용 마이그는 `verify_function` 을 비워라** — md5 가 안 바뀌면 워크플로가
+실패로 접어서 **적용은 됐는데 red 로 보인다**.
+
 ## 판정이 뒤집힌 사례 (재발견 금지)
 "공고 INSERT RLS 느슨 계약"은 로컬 gen-1 잔상이었고 prod 진실은 `jp_insert` 역할게이트([[rls-model]]). baseline 직후 e2e red 2건은 테스트 버그가 아니라 **master가 숨겨온 prod 실결함**(board_reports UPDATE 갭)과 시드 공백이었다.
 
-관련: [[parity-baseline-squash]] · [[rls-model]] · [[test-db-grants]] · [[userflow-audit-2026-07]]
+관련: [[parity-baseline-squash]] · [[rls-model]] · [[test-db-grants]] · [[userflow-audit-2026-07]] · [[vacuous-verification]] · [[db-red-fix-and-release-2026-09]]

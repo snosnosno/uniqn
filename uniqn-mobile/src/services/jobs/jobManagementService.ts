@@ -15,8 +15,10 @@ import type {
   CreateJobPostingInput,
   JobPosting,
   JobPostingStatus,
+  PostingLocation,
   UpdateJobPostingInput,
 } from '@/types';
+import { geocodeAddress } from './geocodingService';
 
 export type { CreateJobPostingResult, JobPostingStats, ScheduleBoardSyncAction };
 
@@ -157,6 +159,84 @@ async function createSinglePosting(
   }
 }
 
+// =============================================================================
+// 지오코딩 (주소 검색 2단계 — B2)
+// =============================================================================
+// 좌표는 **저장 시점에 한 번** 계산한다. 읽기 경로에는 카카오 키도, 네트워크 호출도 붙지 않는다.
+// 실패는 전부 "좌표 없음"으로 접히고 길찾기는 주소 텍스트 검색으로 폴백한다 — 부가 기능이
+// 공고 저장을 막아선 안 된다(geocodingService 는 throw 하지 않는다).
+
+/**
+ * 지오코딩에 넣을 주소.
+ *
+ * 🔴 우선순위는 **`toCanonicalLocation` 과 반드시 같아야 한다**(`district ?? address`).
+ *    거기서 폼의 '주소'가 저장 직전 `district` 로 접히기 때문이다. 여기서 `address` 를 먼저
+ *    보면, 둘 다 실린 입력에서 **핀은 `address` 자리인데 화면에 보이는 주소는 `district`** 인
+ *    상태가 만들어진다 — 좌표와 주소 텍스트가 서로 다른 곳을 가리키는, 아무 에러도 안 나는 결함이다.
+ *    (B1 이 물려준 `district ?? address` 붕괴가 4곳 전부 district 우선인 것과 같은 이유.)
+ *
+ * 🔑 `detailedAddress`(층/호)는 **넣지 않는다**. '3층 301호'가 붙으면 매칭률만 떨어진다.
+ */
+function pickGeocodeAddress(location?: Partial<PostingLocation>): string | undefined {
+  const district = location?.district?.trim();
+  if (district) return district;
+  const address = location?.address?.trim();
+  return address || undefined;
+}
+
+/**
+ * 수정 시 좌표를 어떻게 할지 판정한다 — `undefined`(유지) / 좌표 / `null`(지움).
+ *
+ * 🔴 옛 좌표를 새 주소에 남기지 않는 것이 이 함수의 존재 이유다. 주소가 바뀌었는데 지오코딩이
+ *    실패하면 **지운다** — 좌표가 없으면 주소 텍스트로 폴백하지만, 틀린 좌표는 길찾기가
+ *    엉뚱한 곳으로 자신 있게 안내한다. 후자가 더 나쁘다.
+ */
+async function resolveGeoForUpdate(
+  jobPostingId: string,
+  input: UpdateJobPostingInput
+): Promise<CreateJobPostingInput['geo']> {
+  // 주소를 제출하지 않은 갱신(상태 변경·정산 설정 등)은 좌표에 의견이 없다.
+  if (input.location === undefined) return undefined;
+
+  // 🔴 **판정 기준을 저장 기준과 같게 맞춘다.** `mergeJobPostingInput` 은
+  //    `{...base.location, ...patch.location}` 이라 patch 에 주소 키가 **아예 없으면** 옛 주소가
+  //    그대로 저장된다. 그런데 여기서 값만 보고 "주소를 지웠다"로 읽으면
+  //    **주소는 남았는데 좌표만 증발**한다 — 두 기준이 갈라진 자리다.
+  //    키가 하나라도 있으면 그게 의견이고(값이 비었으면 진짜 지움), 둘 다 없으면 의견이 없다.
+  const location = input.location;
+  const statesAddress =
+    Object.prototype.hasOwnProperty.call(location, 'district') ||
+    Object.prototype.hasOwnProperty.call(location, 'address');
+  if (!statesAddress) return undefined;
+
+  const nextAddress = pickGeocodeAddress(location);
+
+  // 주소를 지웠다 → 좌표도 지운다. 근거 없는 핀을 남기지 않는다.
+  // 🔑 스냅샷 조회보다 **먼저** 판정한다 — 이 분기는 스냅샷을 한 번도 안 보므로,
+  //    뒤에 두면 결과를 쓰지도 않을 왕복을 매번 한다(그 뒤 `updateWithTransaction` 의
+  //    `loadAndVerifyMutateAccess` 가 같은 행을 또 읽어 동일 행 2회 조회가 된다).
+  if (!nextAddress) return null;
+
+  let snapshot: Awaited<ReturnType<typeof jobPostingRepository.getGeocodeSnapshot>> = null;
+  try {
+    snapshot = await jobPostingRepository.getGeocodeSnapshot(jobPostingId);
+  } catch (error) {
+    // 스냅샷은 최적화·정확도 보조일 뿐이다. 못 읽었다고 저장을 막지 않는다.
+    // 못 읽으면 "주소가 바뀐 것으로 간주"한다 — 재계산이 실패하면 좌표를 지우게 되지만,
+    // 그게 안전한 방향이다. 좌표가 없으면 주소 텍스트로 폴백하고, 틀린 좌표는 폴백이 없다.
+    logger.warn('지오코딩 스냅샷 조회 실패 — 주소가 바뀐 것으로 간주하고 재계산', {
+      jobPostingId,
+      error: String(error),
+    });
+  }
+
+  // 주소가 그대로이고 좌표도 이미 있으면 건드리지 않는다(호출 0회).
+  if (snapshot?.hasGeo && snapshot.address === nextAddress) return undefined;
+
+  // 여기까지 왔으면 주소가 바뀌었거나 좌표가 없다 — 실패해도 null 이 정답이다.
+  return await geocodeAddress(nextAddress);
+}
+
 export async function createJobPosting(
   input: CreateJobPostingInput,
   ownerId: string,
@@ -164,7 +244,8 @@ export async function createJobPosting(
   workspaceId?: string
 ): Promise<CreateJobPostingResult> {
   try {
-    const result = await createSinglePosting(input, ownerId, ownerName, workspaceId);
+    const geo = await geocodeAddress(pickGeocodeAddress(input.location));
+    const result = await createSinglePosting({ ...input, geo }, ownerId, ownerName, workspaceId);
     await enqueueScheduleBoardSync(result.id, 'create', {
       jobPostingId: result.id,
       ownerId,
@@ -188,9 +269,12 @@ export async function updateJobPosting(
   try {
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
+    const geo = await resolveGeoForUpdate(jobPostingId, input);
     const result = await jobPostingRepository.updateWithTransaction(
       jobPostingId,
-      input,
+      // `geo` 가 undefined 면 키를 아예 넣지 않는다 — mergeJobPostingInput 의 스프레드가
+      // 명시적 undefined 도 그대로 실어 나르므로, 키 유무로 "의견 없음"을 표현한다.
+      geo === undefined ? input : { ...input, geo },
       ownerId,
       expectedUpdatedAt
     );

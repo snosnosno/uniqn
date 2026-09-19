@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { StaffManagementTab } from '../StaffManagementTab';
+import { loadFailed } from '@/constants/messages';
 
 const mockUseThemeStore = jest.fn();
 
@@ -12,13 +13,24 @@ jest.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: jest.fn(),
 }));
 
+// 취소 요청 검토(S1b)는 이 스위트의 관심 밖 — 요청 0건으로 둔다.
+jest.mock('@/hooks/applicant/useStaffCancellationReview', () => ({
+  useStaffCancellationReview: () => ({
+    cancellationIndex: new Map(),
+    reviewingApplicationId: null,
+    approveAsync: jest.fn(),
+    rejectAsync: jest.fn(),
+  }),
+}));
+
 jest.mock('@/stores/themeStore', () => ({
   useThemeStore: (selector?: (state: { isDarkMode: boolean }) => unknown) =>
     mockUseThemeStore(selector),
 }));
 
-jest.mock('../../settlement/WorkTimeEditor', () => ({
-  WorkTimeEditor: () => null,
+// 통합 편집 시트는 이 스위트의 관심 밖(문구 검증) — 열지 않으므로 렌더되지도 않는다.
+jest.mock('@/components/workLogEdit', () => ({
+  WorkLogEditSheet: () => null,
 }));
 
 jest.mock('@/utils/date', () => ({
@@ -94,13 +106,7 @@ describe('StaffManagementTab localization', () => {
   it('renders staff management labels in Korean', () => {
     useConfirmedStaff.mockReturnValue(createHookState());
 
-    render(
-      <StaffManagementTab
-        jobPostingId="job-1"
-        onShowRoleChange={jest.fn()}
-        onShowReport={jest.fn()}
-      />
-    );
+    render(<StaffManagementTab jobPostingId="job-1" onShowReport={jest.fn()} />);
 
     expect(screen.getByText('새로고침')).toBeTruthy();
     // QR 진입점은 헤더 QR 버튼 하나로 통일 — 정산 화면의 중복 진입점은 없어야 한다.
@@ -114,8 +120,11 @@ describe('StaffManagementTab localization', () => {
     expect(screen.getByText('출근 예정')).toBeTruthy();
     expect(screen.getByText('시작')).toBeTruthy();
     expect(screen.getByText('종료')).toBeTruthy();
-    expect(screen.getByText('시간 수정')).toBeTruthy();
-    expect(screen.getByText('역할 변경')).toBeTruthy();
+    // 카드 액션은 '근무 수정' 하나로 수렴했다 — 역할·색·메모까지 같은 시트가 고치므로
+    // '시간 수정' 이라는 좁은 라벨도, 별도 '역할 변경' 버튼도 남아 있으면 안 된다.
+    expect(screen.getByText('근무 수정')).toBeTruthy();
+    expect(screen.queryByText('시간 수정')).toBeNull();
+    expect(screen.queryByText('역할 변경')).toBeNull();
     expect(screen.getByText('신고')).toBeTruthy();
   });
 
@@ -142,7 +151,7 @@ describe('StaffManagementTab localization', () => {
 
     render(<StaffManagementTab jobPostingId="job-1" />);
 
-    expect(screen.getByText('확정된 스태프를 불러오지 못했습니다')).toBeTruthy();
+    expect(screen.getByText(loadFailed('확정된 스태프'))).toBeTruthy();
     // 디자인 루프 Z: ErrorState가 일반 Error의 원시 메시지('네트워크 오류')를
     // 노출하지 않고 사용자 친화 문구로 sanitize(extractUserMessage) — 회귀 가드
     expect(screen.getByText('알 수 없는 오류가 발생했습니다')).toBeTruthy();

@@ -58,7 +58,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅', () => {
         initialValues={withSlots([{ startTime: '19:00', roles: [] }])}
       />
     );
-    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     expect(getByText('시간 · 역할')).toBeTruthy();
     // 주문서 본화면의 '시간' 행도 같은 문자열("출근 19:00")을 렌더하므로 전역 getByText 는 중복 매치된다.
     // 펼친 SlotCard 안(order-time-start-0)으로 스코프를 좁혀 통합 시트가 시간을 보여주는지만 단언한다.
@@ -73,7 +73,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅', () => {
         initialValues={withSlots([{ startTime: '19:00', roles: [] }])}
       />
     );
-    fireEvent.press(getByTestId('order-sheet-row-time'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     expect(getByText('시간 · 역할')).toBeTruthy();
     expect(getByTestId('order-role-chip-dealer')).toBeTruthy();
   });
@@ -88,7 +88,7 @@ describe('OrderSheetScreen — 일정·모집 라우팅', () => {
         ])}
       />
     );
-    fireEvent.press(getByTestId('order-sheet-row-roles'));
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
     expect(getByText('출근 21:00')).toBeTruthy(); // 미완성 = 펼침
     expect(getByText('19:00 · 딜러 1명')).toBeTruthy(); // 완성 = 접힘 요약
   });

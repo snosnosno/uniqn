@@ -99,12 +99,15 @@ describe('JobPosting BusinessError userMessage 한글화 (P1#12)', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('삭제: 확정 인원이 있으면 한글 userMessage', async () => {
+  // 문구는 막는 **축**을 그대로 말해야 한다. 이 가드는 좌석(work_logs 파생 filled_positions)으로
+  // 막는데 "확정된 지원자"라고 하면, 근무가 끝나 application 이 completed 로 전이된 공고에서
+  // 사장은 지원자 화면의 확정 0명을 보고도 거부 이유를 알 수 없다(상세 화면 캡션과 동일 문구).
+  it('삭제: 채워진 자리가 있으면 좌석 축 한글 userMessage', async () => {
     mockLoadDelete.mockResolvedValue({ ownerId: OWNER, filledPositions: 2 });
 
     await expect(repo.deleteWithTransaction(POSTING, OWNER)).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_INVALID_STATE,
-      userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.',
+      userMessage: '채워진 자리가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.',
     });
     expect(mockUpdate).not.toHaveBeenCalled();
   });

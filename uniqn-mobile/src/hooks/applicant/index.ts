@@ -256,5 +256,3 @@ export function useApplicantManagement(
     cancellationPendingCount: countByStatus(STATUS.APPLICATION.CANCELLATION_PENDING),
   };
 }
-
-export default useApplicantManagement;

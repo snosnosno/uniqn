@@ -18,7 +18,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import {
   UserIcon,
-  EnvelopeIcon,
+  MailIcon,
   PhoneIcon,
   CalendarIcon,
   ShieldCheckIcon,
@@ -34,6 +34,8 @@ import { useModal } from '@/stores/modalStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserRole } from '@/types/role';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { notFound } from '@/constants/messages';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
   { role: 'staff', label: '스태프', description: '지원 및 스케줄 확인만 가능' },
@@ -72,13 +74,13 @@ export default function AdminUserDetailPage() {
   const { isDarkMode } = useThemeStore();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-  const {
-    data: user,
-    isLoading,
-    isRefetching,
-    error,
-    refetch,
-  } = useAdminUserDetail(id ?? '', !!id);
+  const { data: user, isLoading, error, refetch } = useAdminUserDetail(id ?? '', !!id);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const updateRoleMutation = useUpdateUserRole();
   const setActiveMutation = useSetUserActive();
@@ -180,7 +182,7 @@ export default function AdminUserDetailPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="사용자를 찾을 수 없음"
-            description="요청하신 사용자 정보를 찾을 수 없습니다."
+            description={notFound('요청하신 사용자 정보')}
             actionLabel="목록으로"
             onAction={() => router.back()}
           />
@@ -196,8 +198,8 @@ export default function AdminUserDetailPage() {
         className="flex-1 bg-surface-page dark:bg-surface"
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }
@@ -245,7 +247,7 @@ export default function AdminUserDetailPage() {
             기본 정보
           </Text>
           <InfoRow
-            icon={<EnvelopeIcon size={20} color={SECONDARY_PALETTE[500]} />}
+            icon={<MailIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="이메일"
             value={user.email}
           />

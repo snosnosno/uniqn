@@ -6,22 +6,33 @@
  *
  * 상태 매트릭스(설계 §9.1): LOADING / EMPTY / ERROR / SUCCESS / PARTIAL.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
-import { TrophyOutlineIcon, AlertCircleIcon, CopyIcon } from '@/components/icons';
+import {
+  TrophyOutlineIcon,
+  AlertCircleIcon,
+  CopyIcon,
+  ArchiveOutlineIcon,
+} from '@/components/icons';
 import { confirmAction } from '@/utils/confirmAction';
 import { SECONDARY_PALETTE, getLayoutColor } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
-import { useOpsTournaments, useDuplicateTournament } from '@/hooks/ops';
+// ⚠️ 형제 훅과 **같은 배럴**(`@/hooks/ops`)에서 가져온다. 직접 경로(`@/hooks/ops/useOpsMutations`)로
+//    가져오면 이 화면의 기존 테스트가 걸어 둔 `jest.mock('@/hooks/ops')` 를 우회해 실제 훅이 돌고,
+//    QueryClientProvider 없이 `useQueryClient()` 가 터진다(실제로 10항목이 빨갛게 됐다).
+import { useOpsTournaments, useDuplicateTournament, useSetTournamentArchived } from '@/hooks/ops';
 import { useOpsHubEnteredOnce } from '@/hooks/ops/useOpsHubEnteredOnce';
 import { selectResumeTournament, kstDateString } from '@/domains/ops';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // 상태 배지 (디자인 토큰 — raw gray 금지)
@@ -48,7 +59,7 @@ const STATUS_BADGE: Record<OpsTournamentStatus, { label: string; bg: string; tex
 function StatusBadge({ status }: { status: OpsTournamentStatus }) {
   const badge = STATUS_BADGE[status];
   return (
-    <View className={`ml-2 rounded-full px-2 py-0.5 ${badge.bg}`}>
+    <View className={`ml-2 rounded-sm px-2 py-0.5 ${badge.bg}`}>
       <Text className={`text-xs font-sans-semibold ${badge.text}`}>{badge.label}</Text>
     </View>
   );
@@ -103,16 +114,65 @@ function DuplicateButton({
   );
 }
 
+/**
+ * 보관/복원 액션(결함③) — 카드 전용 보조 액션.
+ * 훅을 리프에서 호출한다: `useSetTournamentArchived` 는 무효화를 위해 대회 id 를 클로저로 잡으므로
+ * 목록 상위에서 한 번 만들 수 없다(행마다 id 가 다르다).
+ * 🔑 hard DELETE 는 `ops_events` append-only 트리거와 충돌해 불가능하다 — 보관이 "치우기"의
+ *    유일한 경로이므로 라벨도 '삭제'가 아니라 '보관'이다(되돌릴 수 있음을 문구로 알린다).
+ */
+function ArchiveButton({ tournament }: { tournament: OpsTournament }) {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+  const archiveMut = useSetTournamentArchived(tournament.id);
+  const isArchived = !!tournament.archivedAt;
+
+  const onPress = () => {
+    if (archiveMut.isPending) return;
+    if (isArchived) {
+      // 복원은 되돌리는 방향이라 확인 없이 1탭.
+      archiveMut.mutate(false);
+      return;
+    }
+    confirmAction({
+      title: '대회 보관',
+      message: `'${tournament.name}' 을 보관할까요?\n목록에서 숨겨지고, 보관함에서 언제든 복원할 수 있어요.`,
+      confirmText: '보관',
+      onConfirm: () => archiveMut.mutate(true),
+    });
+  };
+
+  return (
+    <Pressable
+      testID={`ops-archive-${tournament.id}`}
+      onPress={onPress}
+      disabled={archiveMut.isPending}
+      accessibilityRole="button"
+      accessibilityLabel={isArchived ? '대회 보관 해제(복원)' : '대회 보관'}
+      accessibilityState={{ disabled: archiveMut.isPending }}
+      className={`-my-1.5 ml-1 h-11 w-11 items-center justify-center rounded-lg active:bg-secondary-100 dark:active:bg-surface-hover ${
+        archiveMut.isPending ? 'opacity-40' : ''
+      }`}
+    >
+      <ArchiveOutlineIcon
+        size={18}
+        color={isArchived ? '#D4AF37' : isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+      />
+    </Pressable>
+  );
+}
+
 function TournamentCard({
   tournament,
   onPress,
   onDuplicate,
   isDuplicating = false,
+  showArchiveAction = false,
 }: {
   tournament: OpsTournament;
   onPress: () => void;
   onDuplicate?: () => void;
   isDuplicating?: boolean;
+  showArchiveAction?: boolean;
 }) {
   return (
     <Pressable
@@ -136,6 +196,7 @@ function TournamentCard({
             disabled={isDuplicating}
           />
         ) : null}
+        {showArchiveAction ? <ArchiveButton tournament={tournament} /> : null}
       </View>
       <TournamentMeta tournament={tournament} />
     </Pressable>
@@ -259,7 +320,7 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
         <AlertCircleIcon size={30} color="#DC2626" />
       </View>
       <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-off-white">
-        대회를 불러오지 못했어요
+        {loadFailed('대회')}
       </Text>
       <Text className="mb-6 text-center text-sm leading-5 text-content-secondary dark:text-secondary-400 dark:leading-sm-dark">
         네트워크 상태를 확인한 뒤 다시 시도해 주세요.
@@ -301,15 +362,36 @@ function ErrorBanner({ onRetry }: { onRetry: () => void }) {
 export default function OpsTournamentListScreen() {
   const { postingId: postingIdParam } = useLocalSearchParams<{ postingId?: string }>();
   const postingId = Array.isArray(postingIdParam) ? postingIdParam[0] : postingIdParam;
-  const { tournaments, isLoading, isRefetching, error, refetch } = useOpsTournaments();
+  const { tournaments, isLoading, error, refetch } = useOpsTournaments();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
   const duplicate = useDuplicateTournament();
   const isDark = useThemeStore((s) => s.isDarkMode);
 
   // ⑤ 진입 계측: 메인 허브 진입만 1회. 피커(postingId)는 퍼널 분모(impression) 밖 진입이라 제외.
   useOpsHubEnteredOnce(!postingId);
 
-  const filteredTournaments = useMemo(
-    () => (postingId ? tournaments.filter((t) => t.jobPostingId === postingId) : tournaments),
+  // 결함③ 보관함 토글. 기본은 활성만 — 테스트 대회가 목록에 영구 잔존하던 것을 닫는다.
+  const [showArchived, setShowArchived] = useState(false);
+
+  const filteredTournaments = useMemo(() => {
+    const byPosting = postingId
+      ? tournaments.filter((t) => t.jobPostingId === postingId)
+      : tournaments;
+    // 보관함 모드는 보관분만, 기본 모드는 활성분만 — 섞으면 "치웠는데 그대로 보인다"가 된다.
+    return byPosting.filter((t) => (showArchived ? !!t.archivedAt : !t.archivedAt));
+  }, [tournaments, postingId, showArchived]);
+
+  // 토글 자체는 보관분이 존재할 때만 노출한다(빈 보관함으로 가는 버튼은 노이즈다).
+  const archivedCount = useMemo(
+    () =>
+      (postingId ? tournaments.filter((t) => t.jobPostingId === postingId) : tournaments).filter(
+        (t) => !!t.archivedAt
+      ).length,
     [tournaments, postingId]
   );
 
@@ -348,11 +430,32 @@ export default function OpsTournamentListScreen() {
 
   const hasData = filteredTournaments.length > 0;
 
+  // 보관함 진입/이탈 토글. 운영 허브 + 보관분이 있을 때만(빈 보관함 버튼은 노이즈).
+  const archiveToggle =
+    !postingId && (archivedCount > 0 || showArchived) ? (
+      <Pressable
+        onPress={() => setShowArchived((v) => !v)}
+        accessibilityRole="button"
+        testID="ops-archive-toggle"
+        className="mb-3 min-h-[44px] flex-row items-center justify-center gap-2 rounded-lg border border-divider active:bg-secondary-100 dark:active:bg-surface-hover"
+      >
+        <ArchiveOutlineIcon
+          size={16}
+          color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+        />
+        <Text className="text-sm text-content-secondary dark:text-secondary-400">
+          {showArchived ? '활성 대회 보기' : `보관함 보기 (${archivedCount})`}
+        </Text>
+      </Pressable>
+    ) : null;
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader
         title="라이브 운영"
-        fallbackHref="/(app)/(tabs)/home-jobs"
+        // 공고에서 넘어온 진입(`?postingId=`)이면 그 공고로 돌려보낸다 — 히스토리가 없는
+        // 콜드/딥링크 진입에서 홈으로 떨구면 사장은 관리하던 공고를 다시 찾아야 한다.
+        fallbackHref={opsFallbackHref(postingId, '/(app)/(tabs)/home-jobs')}
         rightAction={
           <Pressable
             onPress={goCreate}
@@ -368,11 +471,26 @@ export default function OpsTournamentListScreen() {
         <LoadingState postingId={postingId} />
       ) : error && !hasData ? (
         <ErrorRetry onRetry={handleRetry} />
+      ) : !hasData && showArchived ? (
+        // 보관함이 비었을 때 생성 온보딩을 띄우면 안 된다 — 사용자는 "치운 것"을 보러 왔다.
+        // 이탈 경로(토글)가 반드시 남아 있어야 데드엔드가 아니다.
+        <View className="flex-1 items-center gap-3 px-4 py-12">
+          <ArchiveOutlineIcon size={28} color={SECONDARY_PALETTE[500]} />
+          <Text className="text-center text-content-secondary dark:text-secondary-400">
+            보관한 대회가 없어요.
+          </Text>
+          {archiveToggle}
+        </View>
       ) : !hasData ? (
         postingId ? (
           <PostingEmpty onCreate={goCreate} />
         ) : (
-          <EmptyOnboarding onCreate={goCreate} />
+          // ⚠️ 전 대회가 보관된 상태에서 온보딩만 띄우면 **보관함으로 갈 길이 사라진다**(데드엔드).
+          //    빈 상태에서도 토글을 함께 남긴다(archiveToggle 은 보관분 0건이면 null 이라 무해).
+          <View className="flex-1">
+            <EmptyOnboarding onCreate={goCreate} />
+            {archiveToggle ? <View className="px-4 pb-4">{archiveToggle}</View> : null}
+          </View>
         )
       ) : (
         <AppFlashList
@@ -382,19 +500,20 @@ export default function OpsTournamentListScreen() {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={handleRetry}
+              refreshing={pullRefreshing}
+              onRefresh={onPullRefresh}
               tintColor={getLayoutColor(isDark, 'refreshTint')}
               colors={[getLayoutColor(isDark, 'refreshTint')]}
             />
           }
           ListHeaderComponent={
-            error || resume ? (
+            error || resume || archiveToggle ? (
               <View>
                 {error ? <ErrorBanner onRetry={handleRetry} /> : null}
                 {resume ? (
                   <ResumeCard tournament={resume} onPress={() => goDetail(resume.id)} />
                 ) : null}
+                {archiveToggle}
               </View>
             ) : null
           }
@@ -407,6 +526,8 @@ export default function OpsTournamentListScreen() {
                 !postingId && item.status === 'completed' ? () => handleDuplicate(item) : undefined
               }
               isDuplicating={duplicate.isPending}
+              // 보관은 운영 허브에서만(피커는 선택 전용 화면이라 정리 액션이 어울리지 않는다).
+              showArchiveAction={!postingId}
             />
           )}
         />

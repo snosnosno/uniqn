@@ -7,19 +7,23 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Linking } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Button, Badge } from '@/components/ui';
 import { BriefcaseIcon, ClockIcon, QrCodeIcon, PhoneIcon } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
-import { NO_SHOW_NOTICE_TITLE, NO_SHOW_NOTICE_DESCRIPTION } from '../helpers';
+import {
+  NO_SHOW_NOTICE_TITLE,
+  NO_SHOW_NOTICE_DESCRIPTION,
+  unsetScheduledTimeLabel,
+} from '../helpers';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
-import { useThemeStore } from '@/stores/themeStore';
 import { formatPhoneForDisplay } from '@/utils/phone';
+import { openExternalUrl } from '@/utils/externalLink';
+import { ContactActions } from '../ContactActions';
 
 // ============================================================================
 // Types
@@ -72,14 +76,30 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
 // ============================================================================
 
 export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProps) {
-  const { isWorking } = useCurrentWorkStatus();
-  const { isDarkMode } = useThemeStore();
+  // 버튼 문구는 오늘의 다른 근무가 아니라 지금 보고 있는 근무의 상태만 따라야 한다.
+  const isWorking = schedule.status === STATUS.ATTENDANCE.CHECKED_IN;
   const attendance = ATTENDANCE_STATUS[schedule.status];
   const hasPendingCancellation = Boolean(schedule.isCancellationPending);
 
   const handleQRScan = useCallback(() => {
     onQRScan?.();
   }, [onQRScan]);
+
+  /**
+   * 노쇼·취소검토 안내 블록의 단일 CTA. 여기는 "이의 제기" 라는 한 가지 목적만 있어 액션을
+   * 하나로 유지한다(연락 수단을 고르는 곳은 아래 '구인자 연락처' 섹션이다).
+   * `Linking.openURL` 직접 호출은 핸들러 앱이 없으면 unhandled rejection 으로 조용히 죽는다.
+   */
+  const ownerPhone = schedule.ownerPhone;
+  const handleOwnerCall = useCallback(() => {
+    if (!ownerPhone) return;
+    void openExternalUrl(`tel:${ownerPhone}`, {
+      fallbackTitle: '전화 앱을 열 수 없어요',
+      fallbackHint: '아래 번호로 직접 걸어주세요.',
+      fallbackValue: formatPhoneForDisplay(ownerPhone),
+      component: 'WorkTab',
+    });
+  }, [ownerPhone]);
 
   // 통합 시간 표시 (실제 > timeSlot 파싱 > '미정')
   const timeInfo = useMemo(() => {
@@ -141,7 +161,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           )}
           {schedule.ownerPhone && (
             <Pressable
-              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
+              onPress={handleOwnerCall}
               accessibilityRole="button"
               accessibilityLabel="구인자에게 전화하기"
               className="mt-3 flex-row items-center justify-center rounded-lg bg-error-100 py-2 active:bg-error-200 dark:bg-error-900/40 dark:active:bg-error-900/60"
@@ -171,7 +191,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
               경로를 남긴다 — 확정 상태에서 이미 쓰고 있는 것과 같은 CTA. */}
           {schedule.ownerPhone && (
             <Pressable
-              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
+              onPress={handleOwnerCall}
               accessibilityRole="button"
               accessibilityLabel="구인자에게 전화하기"
               className="mt-3 flex-row items-center justify-center rounded-lg bg-warning-100 py-2 active:bg-warning-200 dark:bg-warning-900/40 dark:active:bg-warning-900/60"
@@ -206,20 +226,9 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
               구인자 연락처
             </Text>
           </View>
-          <Pressable
-            onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
-            className="ml-6 flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
-          >
-            <Text className="text-base text-primary-600 dark:text-primary-400 font-sans-medium">
-              {formatPhoneForDisplay(schedule.ownerPhone)}
-            </Text>
-            <View className="ml-auto flex-row items-center">
-              <PhoneIcon size={16} color="#B8962E" />
-              <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400 font-sans">
-                전화하기
-              </Text>
-            </View>
-          </Pressable>
+          <View className="ml-6">
+            <ContactActions phone={schedule.ownerPhone} component="WorkTab" />
+          </View>
         </View>
       )}
 
@@ -238,11 +247,12 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         </View>
 
         <View className="flex-row gap-2">
+          {/* 라벨이 이미 '예정'이라 맥락이 붙으므로 축약 표기('미정')를 쓴다. */}
           <TimeBox
             label={timeInfo.isEffectiveStartActual ? '출근' : '예정'}
             value={
               !timeInfo.isEffectiveStartActual && timeInfo.effectiveStart === '미정'
-                ? '시간 협의'
+                ? unsetScheduledTimeLabel(true)
                 : timeInfo.effectiveStart
             }
           />
@@ -250,7 +260,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             label={timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
             value={
               !timeInfo.isEffectiveEndActual && timeInfo.effectiveEnd === '미정'
-                ? '시간 협의'
+                ? unsetScheduledTimeLabel(true)
                 : timeInfo.effectiveEnd
             }
           />
@@ -271,12 +281,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           onPress={handleQRScan}
           className="flex-row items-center justify-center mt-2"
         >
-          <QrCodeIcon
-            size={20}
-            color={
-              isWorking ? (isDarkMode ? SECONDARY_PALETTE[200] : SECONDARY_PALETTE[700]) : '#FFFFFF'
-            }
-          />
+          <QrCodeIcon size={20} color={isWorking ? SECONDARY_PALETTE[500] : '#FFFFFF'} />
           <Text
             className={`ml-2 font-sans-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-content-onGold'}`}
           >

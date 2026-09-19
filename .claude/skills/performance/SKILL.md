@@ -10,8 +10,11 @@ allowed-tools: Read, Grep, Glob, Bash, Task
 
 ## 성능 지표 (목표)
 
-| 지표 | 웹 (app2) | 모바일 (uniqn-mobile) |
-|------|-----------|----------------------|
+> 웹과 모바일은 **같은 소스(`uniqn-mobile/`)** 다 — 웹은 `expo export -p web` 산출물이다.
+> 아래 표의 "웹"은 그 웹 번들을, "모바일"은 네이티브 빌드를 가리킨다.
+
+| 지표 | 웹 번들 | 모바일 (네이티브) |
+|------|---------|------------------|
 | 번들 크기 | < 300KB (gzip) | < 500KB |
 | LCP | < 2.5s | - |
 | FID | < 100ms | - |
@@ -24,15 +27,13 @@ allowed-tools: Read, Grep, Glob, Bash, Task
 ### 1. 번들 크기 분석
 
 ```bash
-# 웹앱 번들 분석
-cd app2
-npm run build
-npm run analyze:bundle  # webpack-bundle-analyzer
-
-# 모바일 번들 분석
 cd uniqn-mobile
-npx expo export --platform web
-# dist 폴더 크기 확인
+
+# 웹 번들 시각화 (source-map-explorer → bundle-report.html)
+npm run analyze:bundle
+
+# CI 게이트용 크기 검사 (scripts/check-bundle-size.js)
+npm run analyze:bundle:ci
 ```
 
 #### 번들 최적화 체크리스트

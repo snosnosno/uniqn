@@ -12,12 +12,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { createVenueContainer } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import type { VenueContainer } from '@/domains/workSchedule';
 
 export function useCreateVenueContainer(workspaceId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (name: string) => {
+      requireOnlineForMutation('운영처 생성');
       if (!workspaceId) {
         return Promise.reject(new Error('WORKSPACE_REQUIRED'));
       }

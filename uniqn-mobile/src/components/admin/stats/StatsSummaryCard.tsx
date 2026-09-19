@@ -9,7 +9,7 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import {
   type IconComponent,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
+  AlertTriangleIcon,
   XCircleIcon,
 } from '@/components/icons';
 import { CardStripe } from '@/components/ui/CardStripe';
@@ -112,7 +112,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
     status === 'healthy'
       ? CheckCircleIcon
       : status === 'degraded'
-        ? ExclamationTriangleIcon
+        ? AlertTriangleIcon
         : XCircleIcon;
 
   return (

@@ -30,6 +30,15 @@ export {
   getPostingDefaultSalary,
   getPostingSettlementContext,
 } from './selectors';
+export type { PostingPrimaryActionKey, PostingActionSignals } from './primaryAction';
+export { selectPrimaryAction } from './primaryAction';
+export type { PostingStatusActionValue } from './statusActions';
+export {
+  POSTING_STATUS_ACTION_TEXT,
+  selectPostingStatusActions,
+  getPostingStatusActionHint,
+  isPostingRepostable,
+} from './statusActions';
 export {
   createInitialPostingStats,
   normalizePostingAggregateStats,
@@ -37,3 +46,12 @@ export {
 } from './stats';
 export { isTournamentApprovalBlocked, canShareJob } from './approvalGate';
 export { BROWSABLE_POSTING_STATUSES } from './constants';
+export type { PostingCapacityGap } from './capacityGap';
+export {
+  CAPACITY_GAP_WARNING_OFFSETS,
+  aggregateDateFilledFromSubmap,
+  aggregatePostingDateRequired,
+  formatCapacityGapLabel,
+  selectPostingCapacityGaps,
+  toCapacityGapByDate,
+} from './capacityGap';

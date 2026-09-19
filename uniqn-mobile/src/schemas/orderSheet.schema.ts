@@ -39,7 +39,9 @@ export const orderSheetSalarySchema = z
 export const orderSheetRoleSchema = z.object({
   role: z.enum(['dealer', 'floor', 'serving', 'manager', 'staff', 'other']),
   customRole: safeText(20).optional(),
-  count: z.number().int().min(1).max(99),
+  // 대회사 대규모 편성(딜러 100명+)이 실제 타깃 — 3자리까지 받는다.
+  // ⚠️ RoleCountEditor 의 MAX_COUNT·maxLength 와 반드시 같이 움직인다(반쪽 상한 금지).
+  count: z.number().int().min(1).max(999),
 });
 
 // useSameSalary=false일 때 역할별 급여(2026-07-14 결정) — roleCatalog[].salary의 캐리어
@@ -119,7 +121,10 @@ export const orderSheetLocationSchema = z
   .object({
     name: safeText(50).min(1, '장소를 선택해주세요'),
     address: safeText(200).optional(),
-    district: safeText(50).optional(),
+    // district 는 시군구가 아니라 **주소**를 담는다(canonical 이 address 를 district 로 접는다 —
+    // serialization.ts:157). 읽기 복원이 둘을 같은 값으로 되살리므로 상한도 같아야 한다.
+    // 50 이던 시절엔 50자 초과 주소가 저장은 되고 재편집 제출에서만 영문 zod 메시지로 거부됐다.
+    district: safeText(200).optional(),
     // 지역 필수(2026-07-15) — location nullable 관례와 동형: z.input 은 관용(optional),
     // 제출(z.output)에서 미선택을 거부한다(타입 파급 0 — z.output region 은 string|undefined 유지).
     // 레거시 region-less draft 는 로드·편집 관용, 제출 시 아래 게이트가 거부해 지역 추가를 유도.

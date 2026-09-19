@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useAuthStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
 import { JobDetail } from '../JobDetail';
 
@@ -18,7 +18,7 @@ jest.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: jest.fn(),
 }));
 
-jest.mock('@/stores', () => ({
+jest.mock('@/stores/authStore', () => ({
   useAuthStore: jest.fn(),
 }));
 

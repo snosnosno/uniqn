@@ -112,3 +112,30 @@ describe('formatGroupSalaryDisplay', () => {
     expect(formatGroupSalaryDisplay(createProjection(), [])).toBeNull();
   });
 });
+
+/**
+ * 감사 3-1 후속 — 폴백 단가 제거로 `getRoleSalaryFromProjection` 이 undefined 를
+ * 반환할 수 있게 되면서, 그룹 카드가 근거 없는 역할을 조용히 버리고 남은 한 역할의
+ * 단가를 그룹 전체 단가처럼 내세우는 경로가 열렸다.
+ */
+describe('formatGroupSalaryDisplay — 근거 없는 역할 처리', () => {
+  const projection = createProjection({
+    settlement: {
+      roles: [{ role: 'dealer', count: 1, filled: 0, salary: { type: 'hourly', amount: 22000 } }],
+    },
+  } as Partial<SchedulePostingProjection>);
+
+  it('모든 역할에 근거가 있고 단가가 같으면 그 금액을 낸다', () => {
+    expect(formatGroupSalaryDisplay(projection, ['dealer'])).toBe('시급 ₩22,000');
+  });
+
+  it('🔴 일부 역할만 근거가 있으면 그 단가를 그룹 대표로 내세우지 않는다', () => {
+    // floor 는 단가표에 없고 공고 기본급도 없다 → 근거 없음.
+    // 예전에는 null 을 걸러내 '시급 ₩22,000' 이 그룹 전체 금액처럼 표시됐다.
+    expect(formatGroupSalaryDisplay(projection, ['dealer', 'floor'])).toBe('역할별 상이');
+  });
+
+  it('모든 역할에 근거가 없으면 null 을 낸다', () => {
+    expect(formatGroupSalaryDisplay(projection, ['floor', 'serving'])).toBeNull();
+  });
+});

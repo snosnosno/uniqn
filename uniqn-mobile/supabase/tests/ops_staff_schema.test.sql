@@ -28,8 +28,19 @@ SELECT enum_has_labels('public', 'ops_event_type', ARRAY[
   'posting_linked', 'posting_unlinked', 'staff_imported', 'staff_added',
   'staff_removed', 'table_staff_assigned', 'table_staff_unassigned',
   -- S1(20260717090000): C6 모니터 구성 + C4 상금 지급 마킹
-  'monitor_config_set', 'prize_paid', 'prize_paid_undone'
-], 'ops_event_type 31값(기존 28 + S1 신규 3)');
+  'monitor_config_set', 'prize_paid', 'prize_paid_undone',
+  'player_chips_set',
+  -- 결함② 노쇼: 표시/취소를 **쌍으로** 넣는다(선례 player_busted/player_bust_undone).
+  -- 쌍이 아니면 감사 로그에서 "표시했다"와 "취소했다"가 구분되지 않는다.
+  'player_no_show',
+  'player_no_show_undone',
+  -- 결함③ 정정·제거·아카이브. 정정/제거는 "무엇이 어떻게 바뀌었나"가 분쟁의 근거라 각각 별도
+  -- 타입이고, 아카이브는 왕복이라 쌍이다.
+  'player_updated',
+  'player_deleted',
+  'tournament_archived',
+  'tournament_archive_undone'
+], 'ops_event_type 38값(기존 28 + S1 3 + 결함① 1 + 결함② 2 + 결함③ 4)');
 
 -- ─── (3) RLS enabled+forced (ops_1c_tables_rls.test.sql 관례 — pg_class 직접 조회) ───
 SELECT ok(

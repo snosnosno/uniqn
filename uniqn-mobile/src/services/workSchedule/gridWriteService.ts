@@ -13,12 +13,15 @@ import {
   type UpdateSlotInput,
   type SetVenueRoleSalaryInput,
   type UpdateVenueContainerInput,
+  type UpdatePostingSlotTimeInput,
+  type UpdatePostingSlotTimeResult,
 } from '@/repositories';
 import { cancelConfirmedStaffConfirmation } from '@/services/work/confirmedStaffService';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { xssValidation } from '@/utils/security';
 import type { VenueContainer } from '@/domains/workSchedule';
 import type { DeleteConfirmedStaffInput } from '@/types';
+import { josa } from '@/utils/text/josa';
 
 /**
  * 지점 단가표 customRole 자유입력 길이 상한 — RPC set_venue_role_salary 의 서버 규약(≤50자)과 동일.
@@ -63,7 +66,33 @@ export function updateSlot(workLogId: string, input: UpdateSlotInput): Promise<v
 }
 
 /**
- * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=remove_direct_staff, 지원확정분=확정해제 RPC —
+ * 공고 슬롯 시간 일괄 변경(3-C). 근무 시각과 공고 원문 정원을 함께 옮긴다.
+ *
+ * 대상 축 검증·권한·정원 이동은 전부 RPC(레포 경계)가 담당한다. 여기서는 **서버에 도달하기 전에
+ * 걸러도 되는 것만** 막는다 — 빈 선택은 사용자가 아무것도 고르지 않았다는 뜻이라 왕복이 무의미하고,
+ * 시간 축 미지정은 이 기능의 목적 자체가 없는 요청이다(fail-closed).
+ */
+export function updatePostingSlotTime(
+  input: UpdatePostingSlotTimeInput
+): Promise<UpdatePostingSlotTimeResult> {
+  if (input.workLogIds.length === 0) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      field: 'workLogIds',
+      userMessage: '시간을 변경할 인원을 선택해주세요.',
+    });
+  }
+  if (!input.timeUndecided && !input.startTime) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      field: 'startTime',
+      userMessage: '변경할 시간을 선택하거나 ‘미정’을 골라주세요.',
+    });
+  }
+  return workScheduleRepository.updatePostingSlotTime(input);
+}
+
+/**
+ * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=사유 포함 release_scheduled_assignment,
+ * 지원확정분=확정해제 RPC —
  * 이 분기는 confirmedStaffService.cancelConfirmedStaffConfirmation 이 담당(removeDirectStaff
  * 직접 호출 금지: 공고 스팬 슬롯에서 NOT_DIRECT_STAFF). 권한 게이트는 RPC 경계.
  */
@@ -90,7 +119,7 @@ function assertVenueText(value: string, field: string, max: number, label: strin
   if (value.length > max) {
     throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
       field,
-      userMessage: `${label}은(는) ${max}자를 초과할 수 없습니다.`,
+      userMessage: `${josa(label, '은/는')} ${max}자를 넘을 수 없어요`,
     });
   }
   if (value.length > 0 && !xssValidation(value)) {

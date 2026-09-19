@@ -14,6 +14,7 @@ import {
   setUserActive,
   getSystemMetrics,
 } from '@/services/admin';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
@@ -91,7 +92,10 @@ export function useUpdateUserRole() {
       userId: string;
       newRole: UserRole;
       reason?: string;
-    }) => updateUserRole(userId, newRole, reason),
+    }) => {
+      requireOnlineForMutation('사용자 역할 변경');
+      return updateUserRole(userId, newRole, reason);
+    },
     onSuccess: (_data, variables) => {
       logger.info('사용자 역할 변경 성공', { userId: variables.userId });
       // 캐시 무효화 (세분화: 해당 사용자 + 목록 + 대시보드)
@@ -119,7 +123,10 @@ export function useSetUserActive() {
       userId: string;
       isActive: boolean;
       reason?: string;
-    }) => setUserActive(userId, isActive, reason),
+    }) => {
+      requireOnlineForMutation('사용자 상태 변경');
+      return setUserActive(userId, isActive, reason);
+    },
     onSuccess: (_data, variables) => {
       logger.info('사용자 상태 변경 성공', {
         userId: variables.userId,

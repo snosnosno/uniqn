@@ -16,6 +16,7 @@ import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { loadFailed } from '@/constants/messages';
 
 export default function InquiryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,7 +47,7 @@ export default function InquiryDetailScreen() {
         <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
         <View className="flex-1 items-center justify-center px-6 py-12">
           <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-secondary-100">
-            문의를 불러오지 못했어요
+            {loadFailed('문의')}
           </Text>
           <Text className="mb-6 text-center text-sm text-content-secondary font-sans">
             일시적인 네트워크 문제일 수 있어요. 잠시 후 다시 시도해주세요.

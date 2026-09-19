@@ -2,6 +2,22 @@ import { TimeNormalizer } from './TimeNormalizer';
 import type { TimeInput } from './types';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 
+/**
+ * 출근 예정 시각이 어떤 상태인가 — 스태프에게 남는 사실은 둘뿐이다.
+ *
+ * - `confirmed` : 예정 시각이 정해져 있다
+ * - `undecided` : 아직 안 정해졌다. 구인자가 '미정'을 명시 선택했든, 고정공고의 협의 근무든,
+ *                 아직 손대지 않은 레거시 배치든 — 스태프 입장에선 전부 "아직 모른다"이다
+ *
+ * ⚠️ 예전엔 `negotiable`(고정공고 `'NEGOTIABLE'`)을 셋째 상태로 두고 "시간 협의"로 표시했다.
+ *    D4(2026-08-03 사용자 확정)로 **구분 표시를 포기**했다 — 근거는 두 가지다:
+ *    ① 스태프가 취할 행동이 같다(기다린다). ② 구분의 유일한 근거가 센티널 문자열 비교뿐이라
+ *      공고 종류가 이 함수 입력에 없었다 — "공고 유형에서 유도"할 배선 자체가 없었다.
+ *    "협의"라는 말은 **공고(광고) 표면**에 남는다(`postingSurfaceModel`) — 거긴 공고 유형과
+ *    `isStartTimeNegotiable` 플래그를 실제로 알고 있다.
+ */
+export type ScheduleTimeState = 'confirmed' | 'undecided';
+
 export interface WorkTimeSource {
   checkInTime?: TimeInput;
   checkOutTime?: TimeInput;
@@ -30,6 +46,8 @@ export interface WorkTimeDisplayResult {
    * "익일" 정보가 소실되던 갭(P2-3-lite)을 SSOT 결과로 노출한다.
    */
   isEndNextDay: boolean;
+  /** 예정 시각이 확정인지 미정인지. 표시 문장을 가르는 단일 근거(D4 로 '협의' 상태는 폐기). */
+  scheduleTimeState: ScheduleTimeState;
 }
 
 const DEFAULT_TIME_STR = '미정';
@@ -71,6 +89,9 @@ export class WorkTimeDisplay {
       isActualTime: hasActualTime,
       rawTimeSlot: timeSlotStr ?? null,
       isEndNextDay,
+      // 레거시 startTime 폴백까지 반영된 scheduledStart 로 본다 — 센티널('미정'·'NEGOTIABLE')은
+      // 애초에 시각으로 파싱되지 않아 여기서 자연히 undecided 로 떨어진다.
+      scheduleTimeState: scheduledStart !== null ? 'confirmed' : 'undecided',
     };
   }
 

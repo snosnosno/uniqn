@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Button, Card, Loading } from '@/components';
 import { STATUS_COLORS } from '@/constants/colors';
-import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
+import { CheckCircleIcon, AlertCircleIcon } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { registerAsEmployer } from '@/services/auth';
@@ -225,7 +225,7 @@ export default function EmployerRegisterScreen() {
             {isVerified ? (
               <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
             ) : (
-              <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
+              <AlertCircleIcon size={20} color={STATUS_COLORS.error} />
             )}
             <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               본인인증 정보

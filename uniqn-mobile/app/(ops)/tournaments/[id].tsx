@@ -3,25 +3,26 @@ import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
+import { opsFallbackHref } from '@/utils/opsNavigation';
 import { StackHeader } from '@/components/headers';
 import { UserPlusIcon } from '@/components/icons';
-import {
-  OpsConsoleShell,
-  type OpsTabKey,
-  OpsStatusTab,
-  PlayersTab,
-  TablesTab,
-  BlindLevelsTab,
-  StaffTab,
-  HistoryTab,
-  PayoutsTab,
-  OpsRegisterParticipantSheet,
-} from '@/components/ops';
+import { ErrorState } from '@/components/ui';
+import { BlindLevelsTab } from '@/components/ops/BlindLevelsTab';
+import { HistoryTab } from '@/components/ops/HistoryTab';
+import { OpsConsoleShell } from '@/components/ops/OpsConsoleShell';
+import type { OpsTabKey } from '@/components/ops/OpsConsoleShell';
+import { OpsRegisterParticipantSheet } from '@/components/ops/OpsRegisterParticipantSheet';
+import { OpsStatusTab } from '@/components/ops/OpsStatusTab';
+import { PayoutsTab } from '@/components/ops/PayoutsTab';
+import { PlayersTab } from '@/components/ops/PlayersTab';
+import { StaffTab } from '@/components/ops/StaffTab';
+import { TablesTab } from '@/components/ops/TablesTab';
 import { useOpsTournament, useOpsParticipants, useOpsStaff } from '@/hooks/ops';
+import { loadFailed } from '@/constants/messages';
 
 /**
  * 참가 등록 확장 FAB(L7) — 참가 탭에서만 셸 fab 슬롯에 주입.
- * 포지셔닝은 셸이 아닌 FAB 자체(absolute) — BoardWriteFab 선례. 56px(≥44px 터치 타깃).
+ * 포지셔닝은 셸이 아닌 FAB 자체(absolute). 56px(≥44px 터치 타깃).
  */
 function OpsRegisterFab({ onPress }: { onPress: () => void }) {
   const insets = useSafeAreaInsets();
@@ -46,7 +47,7 @@ function OpsRegisterFab({ onPress }: { onPress: () => void }) {
 export default function OpsTournamentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = id ?? '';
-  const { tournament, isLoading } = useOpsTournament(tournamentId);
+  const { tournament, isLoading, error, refetch } = useOpsTournament(tournamentId);
   const { participants, isLoading: participantsLoading } = useOpsParticipants(tournamentId);
   const { data: staffRoster } = useOpsStaff(tournamentId);
   const [tab, setTab] = useState<OpsTabKey>('status');
@@ -57,6 +58,24 @@ export default function OpsTournamentDetailScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface">
         <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
+  // 조회 실패도 tournament 가 null 이라, 이 분기를 먼저 두지 않으면 일시적 네트워크 오류가
+  // "접근 권한이 없습니다"로 표시된다 — 운영자가 대회를 잃은 줄 안다(감사 A4).
+  if (error && !tournament) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
+        <StackHeader title="대회" fallbackHref="/(ops)/tournaments" />
+        <ErrorState
+          error={error}
+          title={loadFailed('대회 정보')}
+          onRetry={() => {
+            void refetch();
+          }}
+          alwaysAllowRetry
+        />
       </SafeAreaView>
     );
   }
@@ -102,7 +121,11 @@ export default function OpsTournamentDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <StackHeader title={tournament.name} fallbackHref="/(ops)/tournaments" />
+      {/* 연결된 공고가 있으면 그리로 돌려보낸다(S3-7) — 대회는 공고에서 파생된 운영 단위다. */}
+      <StackHeader
+        title={tournament.name}
+        fallbackHref={opsFallbackHref(tournament.jobPostingId, '/(ops)/tournaments')}
+      />
       <OpsConsoleShell
         tournamentId={tournamentId}
         isCompleted={tournament.status === 'completed'}

@@ -39,5 +39,3 @@ export function SearchErrorNotice({ error }: SearchErrorNoticeProps) {
     </View>
   );
 }
-
-export default SearchErrorNotice;

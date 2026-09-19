@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { MagnifyingGlassIcon, UserIcon, ChevronRightIcon } from '@/components/icons';
+import { SearchIcon, UserIcon, ChevronRightIcon } from '@/components/icons';
 import { useAdminUsers } from '@/hooks/useAdminDashboard';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -30,6 +30,8 @@ import { AppFlashList } from '@/components/ui/AppFlashList';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 interface RoleChipProps {
   role: UserRole | 'all';
@@ -189,20 +191,18 @@ export default function AdminUsersPage() {
     [searchQuery, selectedRole]
   );
 
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    isRefetching,
-    error,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-  } = useAdminUsers({
-    filters,
-    pageSize: 20,
-    enabled: true,
-  });
+  const { data, isLoading, isFetchingNextPage, error, refetch, fetchNextPage, hasNextPage } =
+    useAdminUsers({
+      filters,
+      pageSize: 20,
+      enabled: true,
+    });
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const handleUserPress = useCallback((userId: string) => {
     router.push('/(admin)/users/' + userId);
@@ -252,7 +252,7 @@ export default function AdminUsersPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
-            description="사용자 목록을 불러오는 데 실패했습니다."
+            description={loadFailed('사용자 목록')}
             actionLabel="다시 시도"
             onAction={() => refetch()}
           />
@@ -269,7 +269,7 @@ export default function AdminUsersPage() {
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
       <View className="px-4 py-3 bg-surface-card border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
-          <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
+          <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}
@@ -309,8 +309,8 @@ export default function AdminUsersPage() {
         estimatedItemSize={96}
         refreshControl={
           <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
             tintColor={getLayoutColor(isDarkMode, 'refreshTint')}
           />
         }

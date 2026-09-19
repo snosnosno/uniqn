@@ -148,7 +148,9 @@ export function DeletionScheduledModal({
             </Text>
             <Text className="text-sm leading-5 dark:leading-[1.4rem] text-content-muted dark:text-secondary-300 font-sans">
               {daysLeft > 0
-                ? `${daysLeft}일 후(${dateLabel})에 계정과 모든 데이터가 영구 삭제됩니다. 계속 이용하시려면 탈퇴를 철회해주세요.`
+                ? // 2026-08-07: "모든 데이터가 영구 삭제"는 사실이 아니다 — 영구삭제 RPC 는
+                  // 근무·정산 기록을 익명화만 하고 남긴다. delete-account 안내와 표현을 맞춘다.
+                  `${daysLeft}일 후(${dateLabel})에 계정과 개인정보가 삭제됩니다. 계속 이용하시려면 탈퇴를 철회해주세요.`
                 : `예정일(${dateLabel})이 지났습니다. 계속 이용하시려면 즉시 탈퇴를 철회해주세요.`}
             </Text>
           </>

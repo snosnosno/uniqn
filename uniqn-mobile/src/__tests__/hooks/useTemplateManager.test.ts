@@ -9,8 +9,8 @@ const mockAuthState: { user: { uid: string } | null } = { user: mockUser };
 jest.mock('@/services/jobs/templateService', () => ({
   getTemplates: (...args: unknown[]) => mockGetTemplates(...args),
   saveTemplate: jest.fn(),
-  loadTemplate: jest.fn(),
   deleteTemplate: jest.fn(),
+  updateTemplate: jest.fn(),
 }));
 
 jest.mock('@/stores/authStore', () => ({

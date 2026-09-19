@@ -292,38 +292,6 @@ describe('updateNotificationSettingsSchema', () => {
     });
     expect(result.success).toBe(true);
   });
-
-  it('should accept valid quietHours', () => {
-    const result = updateNotificationSettingsSchema.safeParse({
-      quietHours: {
-        enabled: true,
-        start: '22:00',
-        end: '08:00',
-      },
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject invalid quietHours time format', () => {
-    const result = updateNotificationSettingsSchema.safeParse({
-      quietHours: {
-        enabled: true,
-        start: '10pm',
-        end: '8am',
-      },
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject quietHours without enabled field', () => {
-    const result = updateNotificationSettingsSchema.safeParse({
-      quietHours: {
-        start: '22:00',
-        end: '08:00',
-      },
-    });
-    expect(result.success).toBe(false);
-  });
 });
 
 // ============================================================================
@@ -635,14 +603,6 @@ describe('notificationSettingsDocumentSchema', () => {
     const result = notificationSettingsDocumentSchema.safeParse({
       ...validSettings,
       pushEnabled: true,
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should accept with quietHours', () => {
-    const result = notificationSettingsDocumentSchema.safeParse({
-      ...validSettings,
-      quietHours: { enabled: true, start: '22:00', end: '07:00' },
     });
     expect(result.success).toBe(true);
   });

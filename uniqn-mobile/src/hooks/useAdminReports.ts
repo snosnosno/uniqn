@@ -12,6 +12,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllReports, getReportById, reviewReport, type ReportFilters } from '@/services/admin';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { toError } from '@/errors';
@@ -89,7 +90,10 @@ export function useReviewReport() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: ReviewReportInput) => reviewReport(input),
+    mutationFn: (input: ReviewReportInput) => {
+      requireOnlineForMutation('신고 처리');
+      return reviewReport(input);
+    },
     onSuccess: (_, variables) => {
       // 관련 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });

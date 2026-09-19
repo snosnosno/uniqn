@@ -8,7 +8,17 @@ type PostingSurfaceStateMode = 'loading' | 'empty' | 'error' | 'partial';
 
 interface PostingSurfaceStateProps {
   mode: PostingSurfaceStateMode;
-  scope: 'list' | 'detail';
+  /**
+   * 스켈레톤 형상을 고른다.
+   *  - `list`   구직자 목록 (카드 3장)
+   *  - `detail` 구직자 상세 (히어로 + 급여 + 본문 섹션)
+   *  - `manage` 구인자 관리 화면 (통계 블록 + 액션 행)
+   *
+   * `manage` 를 따로 둔 이유: 관리 화면에 `detail` 형상을 쓰면 히어로·급여 자리가 크게
+   * 비어 있다가 실제로는 통계와 액션 목록이 나타난다 — 로딩 중에 본 형태와 도착한 화면이
+   * 달라서 스켈레톤이 기대를 잘못 만든다.
+   */
+  scope: 'list' | 'detail' | 'manage';
   title?: string;
   message?: string;
   error?: Error | string | null;
@@ -43,6 +53,44 @@ function PostingDetailSkeleton() {
   );
 }
 
+/**
+ * 구인자 관리 화면용 스켈레톤 — 통계 한 줄 + 액션 행 넷.
+ *
+ * 형상이 도착할 화면(공고 정보 카드 → 통계 3숫자 → 관리 행 목록)을 따라간다.
+ */
+function PostingManageSkeleton() {
+  return (
+    <View
+      className="flex-1 p-4"
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel="로딩 중"
+    >
+      {/* 공고 제목 + 상태 뱃지 자리 */}
+      <Skeleton width="60%" height={22} accessible={false} className="mb-3" />
+      {/* 통계 3숫자 블록 */}
+      <View className="mb-6 flex-row justify-around rounded-lg bg-surface-page px-3 py-4 dark:bg-surface">
+        {[1, 2, 3].map((i) => (
+          <View key={i} className="flex-1 items-center">
+            <Skeleton width={32} height={22} accessible={false} className="mb-1" />
+            <Skeleton width={40} height={12} accessible={false} />
+          </View>
+        ))}
+      </View>
+      {/* 관리 행 목록 */}
+      {[1, 2, 3, 4].map((i) => (
+        <View key={i} className="mb-3 flex-row items-center">
+          <Skeleton width={36} height={36} accessible={false} className="mr-3 rounded-sm" />
+          <View className="flex-1">
+            <Skeleton width="45%" height={16} accessible={false} className="mb-1.5" />
+            <Skeleton width="70%" height={12} accessible={false} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function PostingSurfaceState({
   mode,
   scope,
@@ -63,6 +111,10 @@ export function PostingSurfaceState({
           ))}
         </View>
       );
+    }
+
+    if (scope === 'manage') {
+      return <PostingManageSkeleton />;
     }
 
     return <PostingDetailSkeleton />;

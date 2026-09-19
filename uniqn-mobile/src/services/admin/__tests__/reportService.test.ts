@@ -5,16 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  createReport,
-  getReportsByJobPosting,
-  getReportsByStaff,
-  getMyReports,
-  getReportById,
-  reviewReport,
-  getReportCountByStaff,
-  getAllReports,
-} from '../reportService';
+import { createReport, getReportById, reviewReport, getAllReports } from '../reportService';
 
 // ============================================================================
 // Import mocked modules
@@ -48,12 +39,8 @@ jest.mock('@/lib/supabase', () => ({
 jest.mock('@/repositories', () => ({
   reportRepository: {
     createWithTransaction: jest.fn(),
-    getByJobPostingId: jest.fn(),
-    getByTargetId: jest.fn(),
-    getByReporterId: jest.fn(),
     getById: jest.fn(),
     reviewWithTransaction: jest.fn(),
-    getCountsByTargetId: jest.fn(),
     getAll: jest.fn(),
   },
   userRepository: {
@@ -251,71 +238,6 @@ describe('reportService', () => {
   });
 
   // --------------------------------------------------------------------------
-  // getReportsByJobPosting
-  // --------------------------------------------------------------------------
-
-  describe('getReportsByJobPosting', () => {
-    it('공고별 신고 목록을 조회해야 한다', async () => {
-      const mockReports = [
-        { id: 'report-1', jobPostingId: 'job-1' },
-        { id: 'report-2', jobPostingId: 'job-1' },
-      ];
-      mockReportRepo.getByJobPostingId.mockResolvedValue(mockReports as never);
-
-      const result = await getReportsByJobPosting('job-1');
-
-      expect(mockReportRepo.getByJobPostingId).toHaveBeenCalledWith('job-1');
-      expect(result).toEqual(mockReports);
-    });
-
-    it('신고가 없으면 빈 배열을 반환해야 한다', async () => {
-      mockReportRepo.getByJobPostingId.mockResolvedValue([]);
-
-      const result = await getReportsByJobPosting('job-1');
-
-      expect(result).toEqual([]);
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // getReportsByStaff
-  // --------------------------------------------------------------------------
-
-  describe('getReportsByStaff', () => {
-    it('스태프별 신고 목록을 조회해야 한다', async () => {
-      const mockReports = [{ id: 'report-1', targetId: 'staff-1' }];
-      mockReportRepo.getByTargetId.mockResolvedValue(mockReports as never);
-
-      const result = await getReportsByStaff('staff-1');
-
-      expect(mockReportRepo.getByTargetId).toHaveBeenCalledWith('staff-1');
-      expect(result).toEqual(mockReports);
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // getMyReports
-  // --------------------------------------------------------------------------
-
-  describe('getMyReports', () => {
-    it('내가 신고한 목록을 조회해야 한다', async () => {
-      const mockReports = [{ id: 'report-1', reporterId: 'user-1' }];
-      mockReportRepo.getByReporterId.mockResolvedValue(mockReports as never);
-
-      const result = await getMyReports();
-
-      expect(mockReportRepo.getByReporterId).toHaveBeenCalledWith('user-1');
-      expect(result).toEqual(mockReports);
-    });
-
-    it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {
-      (mockAuth as unknown as Record<string, unknown>).currentUser = null;
-
-      await expect(getMyReports()).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
   // getReportById
   // --------------------------------------------------------------------------
 
@@ -392,43 +314,6 @@ describe('reportService', () => {
       mockReportRepo.reviewWithTransaction.mockRejectedValue(new Error('처리 실패'));
 
       await expect(reviewReport(mockInput as never)).rejects.toThrow('처리 실패');
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // getReportCountByStaff
-  // --------------------------------------------------------------------------
-
-  describe('getReportCountByStaff', () => {
-    it('스태프별 신고 횟수를 반환해야 한다', async () => {
-      const mockCounts = {
-        total: 5,
-        critical: 1,
-        high: 2,
-        medium: 1,
-        low: 1,
-      };
-      mockReportRepo.getCountsByTargetId.mockResolvedValue(mockCounts);
-
-      const result = await getReportCountByStaff('staff-1');
-
-      expect(mockReportRepo.getCountsByTargetId).toHaveBeenCalledWith('staff-1');
-      expect(result).toEqual(mockCounts);
-    });
-
-    it('신고가 없으면 모두 0을 반환해야 한다', async () => {
-      const mockCounts = {
-        total: 0,
-        critical: 0,
-        high: 0,
-        medium: 0,
-        low: 0,
-      };
-      mockReportRepo.getCountsByTargetId.mockResolvedValue(mockCounts);
-
-      const result = await getReportCountByStaff('staff-1');
-
-      expect(result.total).toBe(0);
     });
   });
 

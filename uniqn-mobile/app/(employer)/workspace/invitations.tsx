@@ -23,6 +23,8 @@ import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import type { ReceivedWorkspaceInvitation } from '@/types/workspace';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 function formatExpiresAt(expiresAtIso: string): string {
   const d = new Date(expiresAtIso);
@@ -34,8 +36,13 @@ function formatExpiresAt(expiresAtIso: string): string {
 
 export default function WorkspaceInvitationsScreen() {
   const { addToast } = useToastStore();
-  const { invitations, isLoading, isRefetching, error, refetch } =
-    useReceivedWorkspaceInvitations();
+  const { invitations, isLoading, error, refetch } = useReceivedWorkspaceInvitations();
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
   const acceptMutation = useAcceptWorkspaceInvitation();
   const rejectMutation = useRejectWorkspaceInvitation();
 
@@ -145,7 +152,7 @@ export default function WorkspaceInvitationsScreen() {
         <StackHeader title="받은 초대" />
         <View className="flex-1 items-center justify-center px-6">
           <ErrorState
-            title="초대를 불러올 수 없어요"
+            title={loadFailed('초대')}
             message="네트워크 상태를 확인하고 다시 시도해주세요."
           />
         </View>
@@ -162,7 +169,11 @@ export default function WorkspaceInvitationsScreen() {
         renderItem={renderItem}
         estimatedItemSize={140}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+          <RefreshControl
+            refreshing={pullRefreshing}
+            onRefresh={onPullRefresh}
+            {...PTR_REFRESH_PROPS}
+          />
         }
         contentContainerClassName="pt-3 pb-8"
         ListEmptyComponent={

@@ -3,7 +3,7 @@
 **상태**: Accepted (no-op)
 **날짜**: 2026-05-09
 **작성자**: workspace 협업 Phase 3F
-**관련 plan**: `docs/superpowers/plans/2026-05-08-workspace-collaboration-completion.md`
+**관련 plan**: `docs/archive/plans/2026-05/2026-05-08-workspace-collaboration-completion.md`
 
 ## 컨텍스트
 
@@ -99,7 +99,7 @@ $ grep -rn "from('settlements')\|FROM settlements" --include="*.ts" --include="*
 
 ## 관련 문서
 
-- plan: `docs/superpowers/plans/2026-05-08-workspace-collaboration-completion.md` — Phase 3F
+- plan: `docs/archive/plans/2026-05/2026-05-08-workspace-collaboration-completion.md` — Phase 3F
 - 선행 결정: PR #63 (Phase 3B work_logs RLS workspace 분기) — 정산 흐름 editor 권한 활성화
 - 관련 ADR: `2026-05-09-workspace-templates-owner-only.md` (Phase 3E)
 - 관련 PR: 본 ADR 단독 (코드 변경 없음)

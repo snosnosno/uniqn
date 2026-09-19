@@ -9,6 +9,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { setVenueSoftTarget } from '@/services/workSchedule/gridWriteService';
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 
 /** soft-target 변이 변수. date 는 레포에서 YYYY-MM-DD 로 정규화된다. */
 export interface SetVenueSoftTargetVars {
@@ -20,8 +21,10 @@ export interface SetVenueSoftTargetVars {
 export function useSetVenueSoftTarget() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ venueId, date, count }: SetVenueSoftTargetVars) =>
-      setVenueSoftTarget(venueId, date, count),
+    mutationFn: ({ venueId, date, count }: SetVenueSoftTargetVars) => {
+      requireOnlineForMutation('목표 인원 저장');
+      return setVenueSoftTarget(venueId, date, count);
+    },
     onSuccess: () => {
       // summary/containers/daySlots 공통 prefix 무효화(queryKey 일관) → 부족셀·컨테이너 재조회.
       qc.invalidateQueries({ queryKey: queryKeys.workSchedule.all });

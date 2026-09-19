@@ -29,6 +29,7 @@ import {
   loadApplication,
   loadAndVerifyJobPostingAccess,
 } from './ApplicationRepositoryHelpers';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // confirmWithHistoryTransaction
@@ -287,9 +288,9 @@ export async function executeCancelConfirmation(
 function mapCancelErrorToMessage(errorCode: string): string {
   switch (errorCode) {
     case 'application_not_found':
-      return '지원서를 찾을 수 없습니다.';
+      return notFound('지원서');
     case 'job_posting_not_found':
-      return '공고를 찾을 수 없습니다.';
+      return notFound('공고');
     case 'invalid_status_for_cancellation':
       return '확정된 지원만 취소할 수 있습니다.';
     case 'invalid_status_for_approval':
@@ -383,7 +384,7 @@ async function executeRejectCancellation(
   if (!cancellationRequest) {
     throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
       message: 'executeRejectCancellation: cancellationRequest 누락',
-      userMessage: '취소 요청 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.',
+      userMessage: `${notFound('취소 요청 정보')}. 새로고침 후 다시 시도해 주세요`,
       metadata: { applicationId: input.applicationId },
     });
   }

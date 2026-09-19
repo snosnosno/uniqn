@@ -66,7 +66,7 @@ export function PlayersTab({
                 </Text>
                 {/* KO 배지 — 바운티 대회 & 처치 수 > 0 인 참가자만 */}
                 {isBountyTournament && item.knockouts > 0 && (
-                  <View className="rounded-full bg-red-100 px-2 py-0.5 dark:bg-red-900/40">
+                  <View className="rounded-sm bg-red-100 px-2 py-0.5 dark:bg-red-900/40">
                     <Text className="text-[10px] font-bold text-red-600 dark:text-red-300">
                       KO {item.knockouts}
                     </Text>
@@ -78,6 +78,13 @@ export function PlayersTab({
                 {item.rebuys > 0 ? ` · R${item.rebuys}` : ''}
                 {item.addOns > 0 ? ` · A${item.addOns}` : ''}
               </Text>
+              {/* 노쇼 배지(결함②) — 배지가 없으면 노쇼 처리해도 행이 그대로 보여 "아무 일도 안 난"
+                  것처럼 읽힌다. 취소는 행 탭 → 액션시트에서 한다. */}
+              {item.status === 'no_show' && (
+                <Text className="text-xs font-sans-semibold text-error-600 dark:text-error-400">
+                  노쇼 · 좌석 배정 제외
+                </Text>
+              )}
               {/* 탈락 배지 — busted 시 순위+상금 표시 */}
               {item.status === 'busted' && (
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400">

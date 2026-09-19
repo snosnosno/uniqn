@@ -119,5 +119,3 @@ export function PrizeCorrectSheet({ visible, onClose, participant, tournamentId 
     </SheetModal>
   );
 }
-
-export default PrizeCorrectSheet;

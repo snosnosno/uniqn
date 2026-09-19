@@ -4,6 +4,7 @@ import CreateSuccessScreen from '../create-success';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 const mockShareJobById = jest.fn();
 const mockOpenTemplateModal = jest.fn();
 const mockHandleSaveTemplate = jest.fn();
@@ -13,6 +14,7 @@ const mockClearLastSubmittedDraft = jest.fn();
 jest.mock('expo-router', () => ({
   router: {
     replace: (...args: unknown[]) => mockReplace(...args),
+    push: (...args: unknown[]) => mockPush(...args),
   },
   useLocalSearchParams: jest.fn(),
 }));
@@ -84,6 +86,22 @@ describe('CreateSuccessScreen', () => {
     expect(mockReplace).toHaveBeenCalledWith('/(employer)/my-postings/job-123');
   });
 
+  // 공고 상세 헤더의 눈 아이콘을 없애고 미리보기를 "작성 마지막 단계" 로 옮겼다(구인자 IA S1).
+  // push 여야 한다 — replace 면 미리보기에서 뒤로 갔을 때 이 화면이 사라진다.
+  it('구직자 화면 미리보기 탭 시 구직자 상세를 push 한다', () => {
+    const { getByTestId } = render(<CreateSuccessScreen />);
+    fireEvent.press(getByTestId('create-success-preview'));
+    expect(mockPush).toHaveBeenCalledWith('/(app)/jobs/job-123');
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  // 승인 대기 대회는 구직자 상세가 승인 게이트에 막힌다 — 공유 CTA 와 같은 이유로 숨긴다.
+  it('승인 대기(pending) 공고는 미리보기를 노출하지 않는다', () => {
+    useLocalSearchParams.mockReturnValue({ id: 'job-123', title: '대회', pending: '1' });
+    const { queryByTestId } = render(<CreateSuccessScreen />);
+    expect(queryByTestId('create-success-preview')).toBeNull();
+  });
+
   it('하나 더 등록 탭 시 작성 화면으로 replace 한다', () => {
     const { getByTestId } = render(<CreateSuccessScreen />);
     fireEvent.press(getByTestId('create-success-again'));
@@ -120,12 +138,14 @@ describe('CreateSuccessScreen', () => {
     expect(queryByTestId('create-success-save-preset')).toBeNull();
   });
 
-  it('id 파라미터가 없으면 공유·공고보기 액션이 no-op 이다', () => {
+  it('id 파라미터가 없으면 공유·공고보기·미리보기 액션이 no-op 이다', () => {
     useLocalSearchParams.mockReturnValue({ title: '딜러 모집', suggestPreset: '0' });
     const { getByTestId } = render(<CreateSuccessScreen />);
     fireEvent.press(getByTestId('create-success-share'));
     fireEvent.press(getByTestId('create-success-view'));
+    fireEvent.press(getByTestId('create-success-preview'));
     expect(mockShareJobById).not.toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

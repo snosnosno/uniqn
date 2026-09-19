@@ -6,6 +6,7 @@ export {
 } from './useOpsTournaments';
 export { useOpsParticipants } from './useOpsParticipants';
 export { useOpsStaff } from './useOpsStaff';
+export { useOpsStaffWorkLogs } from './useOpsStaffWorkLogs';
 export * from './useOpsTables';
 export * from './useOpsSeats';
 export { useOpsBlindLevels } from './useOpsBlindLevels';
@@ -40,11 +41,18 @@ export {
   useRedrawWaitlistFill,
   useReseatParticipants,
   useCorrectPrize,
+  useSetParticipantChips,
+  useSetParticipantNoShow,
+  useUnclaimParticipant,
+  useUpdateParticipant,
+  useDeleteParticipant,
+  useSetTournamentArchived,
   useSetTournamentPosting,
   useImportOpsStaff,
   useAddOpsStaff,
   useRemoveOpsStaff,
   useAssignTableStaff,
+  useRecordOpsAttendance,
 } from './useOpsMutations';
 export { useOpsPrizes, useSetPrizeStructure } from './useOpsPrizes';
 export {

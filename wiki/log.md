@@ -32,7 +32,7 @@
 ## [2026-06-29] note | T-HOLDEM ops STEP A — claim 읽기/쓰기 토큰 분리 (1d BLOCKING 해소)
 - claim 토큰 분리 (PR#216, master `ab4ec00ee`): `claim_token`(읽기+쓰기 겸용)→`view_token`(읽기 anon, 유출 무해)+`claim_pin_hash`(쓰기 비밀, 8자 Crockford base32 PIN·bcrypt) 분리. 읽기 URL 유출→계정 하이재킹 차단. RPC 4종(`ops_get_player_view(p_view_token)`·`ops_issue_player_credentials`→{viewToken,claimPin}·`ops_claim_participant(view_token,pin,user_id)`·unclaim 불변), 구 2-인자 claim·issue_claim_token·player_view(text) **명시 DROP**(오버로딩 우회 차단).
 - 적대검증 WF **6렌즈 26에이전트**(확정10/기각10)가 HIGH 2건 적출→해소: ①**NULL PIN fail-open**(`NOT(NULL~regex)=NULL`+`crypt(NULL,hash)=NULL`→`NULL<>hash=NULL` 둘 다 IF-false 통과→PIN없이 바인딩)→`IS NULL` 명시+`IS DISTINCT FROM`. ②**잠금 DoS**(잠금 카운터가 유출 view_token 단위→정당 플레이어 봉쇄)→**8자 PIN으로 잠금 자체 제거**(설계 단순화). +42P13(player_view rename DROP후CREATE)·오라클(미발급=PIN_INVALID 통합).
-- 방법론=브레인스토밍→설계doc→적대검증 WF→writing-plans(10태스크)→SDD(implementer+태스크리뷰+최종 opus 리뷰 Ready). prod 3마이그 MCP apply·advisor 173WARN/ERROR0(anon-executable SECDEF=monitor/player 2개 유지)·CI 9/9 GREEN·검증 pgTAP 35/319·jest 4524. → memory `project_tholdem_ops_revival_20260623`·pitfall `pitfall_plpgsql_null_through_regex_fail_open`. 다음=STEP B 1d 핸드오프=`docs/planning/2026-06-29-ops-1d-handoff-prompt.md`.
+- 방법론=브레인스토밍→설계doc→적대검증 WF→writing-plans(10태스크)→SDD(implementer+태스크리뷰+최종 opus 리뷰 Ready). prod 3마이그 MCP apply·advisor 173WARN/ERROR0(anon-executable SECDEF=monitor/player 2개 유지)·CI 9/9 GREEN·검증 pgTAP 35/319·jest 4524. → memory `project_tholdem_ops_revival_20260623`·pitfall `pitfall_plpgsql_null_through_regex_fail_open`. 다음=STEP B 1d 핸드오프=`docs/archive/planning/2026-06/2026-06-29-ops-1d-handoff-prompt.md`.
 
 ## [2026-07-02] note | T-HOLDEM ops 배정 2종 — 랜덤·칩드래프트 전원 재배치 (설계 1d 배정분)
 - 배정 2종 (PR#220, master `685e4e1f8`): 적격(open·unlocked) 테이블 active+checked_in을 **랜덤**(균일) 또는 **칩 드래프트**(칩 내림차순 스네이크 버킷+테이블내 랜덤 좌석)로 전원 재배치. 1b redraw 패턴(클라 순수함수 미리보기→서버 확정 RPC TOCTOU) 재사용. 순수 알고리즘 3종(randomDraw/chipDraft/seatWithinTable·RNG 주입)+확정 RPC `ops_reseat_participants`+Zod/repo/hook/UI+에러 E6129~E6131. 신규 테이블/트리거 0(live_stats 트리거 자동).
@@ -367,3 +367,55 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - **죽은 코드보다 위험한 건 "배선돼 있다"고 말하는 주석이다.** "미설정 시 silent skip — 시스템은 정상 동작"이 알림이 있다는 착각을 만들었다. 지우는 대신 정직하게 만들었다(미설정+실패 시 `console.warn`, 실제 안전망은 prod-health 임을 명시).
 
 검증: CI 10종 양쪽 SUCCESS · prod-health 첫 실행 success(실환경) · Red-Green(수정 전 22P02 → 후 17건 정상 렌더) · 게이트 4케이스 red-green. 잔여 = 실기기 QA(뒤늦게 생성된 closed 공고 16개 보드 노출) · Auth "Prevent use of leaked passwords" 대시보드 토글.
+
+## [2026-08-08] ingest | 08-01~08-07 웨이브 선별 졸업 7편 — 게이트 착지·검증 완결성·실패/빈 구분
+- 신규 4: `decisions/error-vs-empty-state`(PR#434 · 실패를 빈 배열로 그리면 화면이 성공을 가장한다 — 근본 원인은 error·refetch 를 반환조차 않던 훅) · `decisions/server-validation-completeness`(PR#433 · 필드는 다 보면서 관계만 안 본 검증 → 하류 `GREATEST(0,…)` 가 오류를 정상값으로 세탁해 ₩0 정산까지) · `decisions/local-only-seed-reached-prod`(PR#427·#428 · 결함은 "평문이 레포에 있다"가 아니라 로컬 전용 시드가 prod 에 적용된 것 · 계정 수는 prod 에서 센다) · `sources/settlement-history-lost-update`(PR#436 · 방어의 본체는 잠금이 아니라 시그니처에서 이력 배열 인자를 없앤 것)
+- 신규 1: `sources/logger-sentry-web-recursion`(PR#413 · E2E 만성 flake 의 진짜 원인 · 🚨이 레포 Jest 는 동적 import 가 항상 reject 라 "호출 0회" 단언이 빈 통과)
+- 갱신 2: `decisions/e2e-gate-absence` — **결정의 1단계가 실행됨**(PR#432 branch protection 활성화). 기존 본문의 "master 에 protection 자체가 없다"가 stale 이 돼 상단 배너로 명시 + 착지 절 신설(`paths` required = 영구 pending 데드락 · 애그리게이터에 걸 것) · `decisions/migration-timestamp-collision` — 08-07 하루 2회 재발 기록, 확인 시점을 **머지 직전**으로 이동(브랜치 딸 땐 빈 슬롯이었다) + prod 양방향 드리프트 실측 보강
+- 계기: 지식계층 점검 세션. wiki 가 07-31 이후 정지한 사이 44건 PR 이 머지됐고, MEMORY.md 는 예산 14,000자 대비 16,831자(120%)로 초과 상태였다.
+
+## [2026-08-08] ingest | 08-01~08-07 웨이브 잔여 전량 졸업 9편 — 시간·정산·알림·정리·주소·UI·탈퇴·ops·롤아웃
+- 선별 7편(직전 엔트리)에 이어 **나머지 미졸업분을 주제 묶음으로 전량 흡수**. 08-01 이후 머지 52건 중 원장 갱신 성격 13건을 제외한 코드 PR 전량이 이제 wiki 에 대응 페이지를 갖는다.
+- 신규 8(sources): `time-model-wave-2026-08`(#409·#410·#412·#417·#424 · 센티넬 분열이 정원 우회를 열었다 · 정원0=거부 · B 원인은 의도적으로 열림) · `settlement-rpc-wave-2026-08`(#387·#388·#393·#400·#402·#420 · 편도 문 금지 · 쓰기 채널 좁히면 pgTAP 이 깨진다) · `notification-offline-contract-2026-08`(#396·#397·#398·#404·#429 · 관측 창 없이 "없으면 지운다" 금지 · 값의 출생을 먼저 물어라) · `dead-circuit-cleanup-2026-08`(#406·#408 · 제거14/완성9 · 거짓 Undo) · `address-geocoding-2026-08`(#391·#411·#419 · WebView origin 무음 실패 · 카카오 x=경도) · `ui-device-report-2026-08`(#422·#423·#425·#426 · 유령 스피너·Fragment 인덱스·vacuous SafeArea 가드·canOpenURL) · `account-withdrawal-pipeline`(#427 · "0건"이 수요 없음이 아니라 기능 불능) · `ops-followups-2026-08`(#435·#438 · DNS 미해석 도메인 · 복제한 effect 의 전제 · 숫자 카운트 가드는 충돌 감지가 안 된다)
+- 신규 1(decisions): `rollout-instrumentation-gap`(#437·#407 · 게이트를 걸 때 열 열쇠도 같이 만들어라 — 측정 수단 없는 "롤아웃 확인 후"는 조건이 아니라 무기한 보류 · prod 트래픽 27명이라 대기로는 안 채워진다)
+- 계기: 사용자 요청으로 잔여 부채 일괄 처리. 이 졸업에 맞춰 MEMORY.md 인덱스를 예산(14,000자) 이하로 가지치기.
+
+## [2026-08-09] ingest | ops 결함 ⑦ 웨이브 · 감사 60건 · 배포 스큐 · 트리거함수 GRANT 규약
+- 신규 2(sources): `ops-defect7-wave-2026-08`(#451~#456 · ops 가 offline/notification/payroll 어느 것과도 배선돼 있지 않았다 — 가드 44곳 · **딥링크를 일부러 안 걸었다**(도착 화면이 RLS 빈 화면) · **새 근태 저장소를 안 만들었다**(work_logs SSOT 유지, 해석기 1개+기존 RPC 위임) · 일괄 버튼 금지를 테스트로 고정) · `full-app-audit-2026-08-09`(41 에이전트 2라운드 · 확정 60/반증 3 · 🔑규약이 웨이브 단위로만 소급돼 신규 코드에 자동 전파되지 않는다=HIGH 7 중 5 · 부재증명 신뢰 3등급 · 스키마 키 ASCII 강제)
+- 신규 1(decisions): `deploy-channel-skew`(#441·#444 · 채널 3속도 → **서버 먼저** · 기능 플래그는 라우트 게이트가 아니다 · 머지≠서버 반영이라 배포 직전 `list_migrations` 실측 · **버전 게이트 3계층이 전부 죽어 있다** — 구현이 아니라 배선 문제 · 순서 강제 2건)
+- 갱신 2: `secdef-hardening` — **규칙 4 신설**(트리거 전용 함수는 PUBLIC/anon/authenticated 전부 회수, PR#455 이탈 실증. 권한상승은 아니고 규약 이탈+advisor WARN+PostgREST 노출. 🚨게이트를 못 넘은 이유=회귀 테스트가 anon 만 단언 → `[24]` 단언 추가) · `prod-parity-baseline` — 기대값 리터럴 **3곳 동시 갱신** 규율(⑦-1·⑦-2 가 둘 다 207 을 적어 충돌, 208 해소) + 개수 대조와 기록 대조 혼동 반증(적용 전 md5=`(none)` 이 함수 부재의 직접 증거, 208 은 적용 **이후** 값) + 관측 시각 병기
+- 계기: 사용자 `/ingest` 인자 없이 호출 → 후보 4건 전부 선택. 08-08~08-09 머지 6건(#451·#452·#453·#455·#456 + 감사 원장)이 wiki 미대응 상태였다.
+
+## [2026-08-10] lint | 전 영역 건강 진단 + 확정 모순 2건 교정 + MEMORY 예산 복귀
+- **진단**: stale 38페이지(엔트리 95) · UNVERIFIABLE 4 · 고아(백링크≤2) **25/70** · 미흡수 docs 154 · **확정 모순 2건**.
+- 🚨 **최상위 발견 — 어제(08-09) 만든 신규 2페이지가 하루 만에 뒤집혔다.** #458~#461 이 감사 항목을 실제로 고쳐서, `deploy-channel-skew` 의 "버전 게이트 3계층 사망"과 `full-app-audit-2026-08-09` 의 발견 서술이 현재 상태와 어긋났다. 둘 다 정정: 전자는 **#461 배선 완료 + 설계 교훈 3종**(우선순위를 순수함수로 뽑은 이유 · 강제 업데이트엔 재시도 버튼 없음 · 점검모드에서 `versionCheckResult=null`), 후자는 **착지 현황표**(세션1~4 / PR 대조) + 🔴미착수 목록 + 🚨원장 공백(세션4 가 전제하는 data-01 서버 절반이 세션1 대상에 없다).
+- **추가 졸업 2건**: `full-app-audit-2026-08-09` §착지가 가르쳐준 것 — **감사의 처방 자체가 틀린 3건**(`storage.objects` 는 CREATE POLICY 만 되고 로컬 psql 통과≠prod 통과 · web `lang` 은 `+html.tsx` 가 아니라 `app.config.ts` 의 `web.lang` — SPA 는 `+html.tsx` 를 통째로 무시 · `document?.x` 는 미선언 식별자를 못 막는다). `ops-defect7-wave-2026-08` §곁가지 — `/tournaments` 라우트 충돌(#449, metro 사전순 정렬이 원인이라 "정렬 뒤집기" 해법은 금지 · alias **키**를 바꾸면 발송된 알림 링크가 샌다).
+- **stale 실측 교정**: `architecture/layers` — 예외2 에 **`reset` 누락**(+단독 호출 금지 조건) · 기술스택 RN **0.83.4→0.83.6**(`package.json:96` 실측) · `createRealtimeSubscription` 줄번호 461→**474**.
+- **파리티 3중 불일치 해소**: MEMORY 가 206/111 과 208/111 을 동시에 주장하고 레포 가드는 208/110 이었다 → **prod 실측 208/110**(관측 `2026-08-09 18:39 UTC`)으로 확정. 레포 `parity_baseline_guard.test.sql:172` 의 "🔴 prod 미적용" 주석이 stale 임도 함께 확인.
+- **MEMORY.md 19,172 → 13,951자**(예산 14,000 복귀). 냉이력 6건은 `MEMORY-archive.md` 로 이관, 졸업 카탈로그 복제는 `wiki/index.md` 포인터로 대체.
+- ⚠️ **미조치로 남긴 것**: stale 37페이지(오탐 다수 — `check-staleness.sh` 가 mtime 기반이라 `package.json`·`CLAUDE.md` 터치가 무관한 페이지를 깨운다) · 고아 25 · UNVERIFIABLE 4 · 미흡수 docs 154. 근본 개선안 = 광역 파일을 `sources` 에서 제외.
+
+## [2026-08-25] ingest | 라이브 함정 25항목 졸업 — 실패할 수 없는 검증 + 지식계층 예산
+- 신규 `decisions/vacuous-verification.md` — 08월 웨이브 함정들의 공통 뼈대를 5유형으로 정제(단언 미도달·구조적 0·미실행 성공·판정축 오류·도구 사각지대). 핵심=**오탐이 아니라 무음**이라 신호 대기 전략이 원리적으로 무효.
+- 신규 `decisions/knowledge-layer-budget.md` — MEMORY.md 예산 초과 7회의 원인 규명(완료분 `✅` 적체 15건=3,212자)과 결정 4건(완료 즉시 이동·섹션 분리·경고의 원인지목·색인은 범위를 좁힌다).
+- 신규 `sources/memory-live-traps-2026-08.md` — 졸업/잔류 대조표.
+- 실측: MEMORY.md 18,288자(131%) → 12,568자(90%) · 옵시디언 색인 11,548자(237중 126 노출) → 10,457자(124 전량) · graphify 재색인 12,440노드.
+
+## [2026-09-15] ingest | 구인자 IA 재설계 웨이브(S1~S5) 졸업 — 진입점 불변 규칙
+- 신규 `sources/employer-ia-redesign-2026-09.md` — PR#490·#492·#493·#494·#495 착지표 · 설계 요점(지원자↔근무 비합병 · 정산 워크플로우만 제거 · 출처 제목 RPC 무변경 · viewer 노쇼 안내 경로) · 접근성 3종 · 운영 교훈(괄호 경로 jest 무음 0 suites · 정션 해제 후 워크트리 제거 · 자동 삭제된 원격 브랜치 422) · 잔여 게이트.
+- 신규 `decisions/entry-point-stability.md` — 사장은 메뉴를 위치로 기억한다(실사고 `my-postings/[id]/index.tsx:778`). 숨김은 0개일 때만, 입구가 필요하면 같은 자리에서 바꾼다 · 배지 비합병 · 역할에 따른 의미 예외(`팀 보기` 소유자 전용).
+- 갱신 `decisions/semantic-merge-conflicts.md` — §스택 PR 착지(squash 저장소: 위 PR 베이스=아래 브랜치 → 아래 머지 → merge 재통합 → diff 파일 수 대조 → 베이스 master 변경).
+- 갱신 `architecture/rls-model.md` — 협업자 manager/viewer 2단 + `get_applicant_no_show_counts` 의도적 완화와 그 조건(지정 안내), 되돌리는 방법.
+- 🚨 **모순 플래그 2건**: ① 기획 문서 `docs/planning/2026-09-13-employer-ia-session-prompts.md` §2 의 "N명/N개 이상일 때만" 3항목 + `GridBadgeLegend` 제거 검토 + §5 `cmd mklink` 가 실제 코드·결정과 다르다(raw 라 수정 안 함, sources 페이지에 표기) ② `semantic-merge-conflicts` 의 "branch protection 없음"(07-28)이 `e2e-gate-absence`(PR#432 활성화)와 모순 → 정정 절 추가.
+- 계기: S5 착지 직후 사용자 요청(웨이브 마지막 항목 "S5 가 끝나면 /ingest").
+
+## [2026-09-19] ingest | DB red 4건 종결 + prod 배포 전량 졸업 — 검증기법 2종·함대 갈림·파리티 −11 규명
+- 신규 `sources/db-red-fix-and-release-2026-09.md` — PR#497·#498·#501·#502 착지표 · red 4건의 정체(파리티 장부 / QR 퇴근 후보 하한 / 같은 뿌리인 컨테이너 테스트 / 댓글 트리거 발화 순서) · prod 마이그 4건 적용·독립검증 · **라이브 값 정본**(master `12f5af375` · OTA `cf441657-…`(runtime 1.0.7, commit `2b4367da0`) · 웹 CF `38945720` · prod 최신 마이그 `20260918110000`) · 남은 사람 게이트.
+- 🚨 **모순 플래그 1건**: 원천 `docs/planning/2026-09-18-red-fix-review-merge-session-prompt.md` §6-0-a 의 라이브 값(OTA `b1dee268` · 웹 `74de3161` · master `2f6de5ba2`)은 **#501·#502 직전 1차 배포 값**이다. raw 라 수정하지 않고 sources 페이지를 정본으로 표기.
+- 갱신 `decisions/vacuous-verification` — **5유형 → 7유형**. ⑥ 하네스가 계약을 덮어쓴다(픽스처 블랭킷 GRANT 가 `pg_class.relacl` 을 덮어 `has_column_privilege` 가 항상 참 → **`pg_attribute.attacl` 로 단언**. 막힌 두 길=REVOKE 는 컬럼 GRANT 까지 회수 / 테스트가 마이그 문장을 재현하면 tautology). ⑦ 경계가 느슨해 "성공하기만 하면 통과"(`> '2026-01-01'` 고정 상수 하한 → 호출 직전 `clock_timestamp()` 캡처 + **하한이 조여 있다는 것 자체를 단언**). 🔑⑥까지는 단언이 **도달 못 하는** 문제였고 ⑦은 **도달했는데 아무것도 거르지 않는** 문제다.
+- 갱신 `decisions/prod-parity-baseline` — 새 기준선 **225/102**(prod 실측 일치). 09-12 숙제였던 정책 −11 규명: `20260910002240` 의 정책 순감 7 + **`DROP TABLE board_votes` 로 함께 사라진 `bv_*` 4**. 🔑**테이블을 지우면 그 위 정책도 사라진다 — CREATE/DROP POLICY 문장만 세면 설명이 안 된다**(09-18 판의 `20260809140000` 지목은 오답). 기록명 어긋난 9월 마이그 7건 재적용 금지 목록 + `verify_function` 비우기 규칙(GRANT·트리거 전용) 수록.
+- 갱신 `decisions/test-db-grants` — 이 결정의 대가를 명시(블랭킷 GRANT ↔ 컬럼 ACL 단언 무력화)와 `attacl` 질의 실물. 컬럼 목록 정본은 **마이그 원문에서 베낄 것**.
+- 갱신 `decisions/worktime-ssot` — 서버 축 확장: **15분 올림 정규화된 `check_in_ts` 와 원본 `check_in_scanned_at` 은 다른 축**. 퇴근 후보 하한을 원본 스캔시각으로(`20260918105900`, prod 적용). ⚠️미해결 선재 갭(`update_work_log_slot` 이 원본을 클램프하지 않아 16시간 이상 앞당기면 구간 역전 — 제품 판단 대기).
+- 갱신 `decisions/deploy-channel-skew` — **함대 갈림의 판단 기준**(서버가 정본인 변경만 우회로가 있다: DB 트리거 정산 문구 ○ / 순수 클라 UI #501 ×) · `eas update --environment` 비대화형 필수(eas-cli 21.7.0, 09-19 OTA 1회 실패) · 규율 6 신설: 번들 grep 거짓음성 **3종**(비ASCII만 `\uXXXX`·엣지캐시·대조군 오선정 — 정산 알림 진짜 판별자는 `지급액`).
+- 갱신 `decisions/entry-point-stability` — 규칙 6·7 신설(항목 1개짜리 `⋯` 메뉴는 진입점이 아니다 → 관리 타일 복귀, 빈 시트 제거 · 첫 화면 자격은 "왜 들어왔는가"가 정한다 → 근무정보 기본 접힘). PR#501.
+- 계기: 사용자 "MEMORY.md 확인하고 graphify·wiki·CLAUDE.md 최신화". 09-15 이후 머지 5건이 wiki 미대응이었다.

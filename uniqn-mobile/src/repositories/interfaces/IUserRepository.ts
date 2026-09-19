@@ -40,6 +40,20 @@ export interface DeletionRequest {
   status: 'pending' | 'cancelled' | 'completed';
 }
 
+/**
+ * 탈퇴가 실제로 남기는 것 — 탈퇴 화면 사전 경고용 요약.
+ *
+ * 영구삭제 RPC 는 근무·정산 기록을 **취소하지 않고 익명화만** 한다(이름이 '[deleted]' 가 될 뿐
+ * 행은 남고 정원도 그대로 소모된다). 그래서 "탈퇴하면 다 사라진다"는 기대와 실제가 어긋난다.
+ * 사용자가 그 사실을 탈퇴 **전에** 알 수 있도록 건수를 보여준다.
+ */
+export interface WithdrawalImpact {
+  /** 아직 끝나지 않은 확정 근무 (scheduled / checked_in) */
+  upcomingWorkCount: number;
+  /** 근무는 끝났는데 정산이 완료되지 않은 건 (payroll_status !== 'completed') */
+  unsettledPayrollCount: number;
+}
+
 export interface EmployerRegistrationInput {
   termsVersion: string;
   liabilityWaiverVersion: string;
@@ -106,6 +120,9 @@ export interface IUserRepository {
    * @returns 탈퇴 요청 정보 또는 null
    */
   getDeletionStatus(userId: string): Promise<DeletionRequest | null>;
+
+  /** 탈퇴 화면 사전 경고용 — 탈퇴해도 남는 근무·정산 건수 */
+  getWithdrawalImpact(userId: string): Promise<WithdrawalImpact>;
 
   // ==========================================================================
   // 변경 (Write)

@@ -98,6 +98,8 @@ describe('collaboratorService', () => {
         userId: TARGET_ID,
         addedBy: OWNER_ID,
         addedAt: '2026-05-12T00:00:00Z',
+        // S3-4: 신규 협업자의 기본 권한은 manager (기존 동작 보존)
+        role: 'manager' as const,
       });
 
       const result = await collaboratorService.add({

@@ -10,17 +10,13 @@
  * - board/boardScheduleService  : 일정게시판 동기화/정렬 헬퍼
  * - board/boardPostService      : 게시글 조회/작성/수정/잠금/숨김
  * - board/boardCommentService   : 댓글 작성/수정/상태/고정·멘션 후보
- * - board/boardReactionService  : 게시글/댓글 반응
+ * - board/boardReactionService  : 댓글 반응
  * - board/boardReportService    : 게시판 신고
- * - board/boardSubstituteService: 대타 구인 글
  */
 import {
   fetchBoardPosts,
-  getBoardHomeData,
   getBoardPostDetail,
   incrementBoardPostViewCount,
-  createBoardPost,
-  updateBoardPost,
   setBoardPostLock,
   hideBoardPost,
 } from './board/boardPostService';
@@ -31,7 +27,7 @@ import {
   setBoardCommentStatus,
   setBoardCommentPinned,
 } from './board/boardCommentService';
-import { toggleBoardPostVote, toggleBoardCommentReaction } from './board/boardReactionService';
+import { toggleBoardCommentReaction } from './board/boardReactionService';
 import {
   createBoardReport,
   getBoardReportsForAdmin,
@@ -41,10 +37,6 @@ import {
 // 일정게시판 sync 함수(@deprecated T-B12)는 named import 시 lint 규칙에 걸리므로
 // 네임스페이스 import로 boardService 객체 호환성만 유지한다.
 import * as boardScheduleService from './board/boardScheduleService';
-import {
-  createSubstitutePost,
-  archiveSubstitutePostByLinkedPosting,
-} from './board/boardSubstituteService';
 
 // boardServiceShared는 src/services/board/ 내부 전용 헬퍼·권한 가드·공통 조회를
 // 포함하므로 blanket re-export 대신 공개 API 형상 타입만 명시적으로 노출한다.
@@ -59,25 +51,18 @@ export * from './board/boardPostService';
 export * from './board/boardCommentService';
 export * from './board/boardReactionService';
 export * from './board/boardReportService';
-export * from './board/boardSubstituteService';
 
 export const boardService = {
   fetchBoardPosts,
-  getBoardHomeData,
   getBoardPostDetail,
   getBoardMentionCandidates,
   incrementBoardPostViewCount,
-  createBoardPost,
-  createSubstitutePost,
-  archiveSubstitutePostByLinkedPosting,
-  updateBoardPost,
   setBoardPostLock,
   hideBoardPost,
   createBoardComment,
   updateBoardComment,
   setBoardCommentStatus,
   setBoardCommentPinned,
-  toggleBoardPostVote,
   toggleBoardCommentReaction,
   createBoardReport,
   getBoardReportsForAdmin,

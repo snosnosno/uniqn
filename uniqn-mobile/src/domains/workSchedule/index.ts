@@ -1,7 +1,7 @@
 /**
  * workSchedule 도메인 — 근무표(홀덤펍 운영 그리드) 순수 로직 배럴.
  *
- * 설계: docs/planning/2026-06-28-weekly-batch-grid-design.md
+ * 설계: docs/archive/planning/2026-06/2026-06-28-weekly-batch-grid-design.md
  */
 export {
   getSoftTargets,
@@ -21,6 +21,13 @@ export {
 } from './gridSlotState';
 
 export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBadgeMeta';
+export {
+  collectSourcePostingIds,
+  resolveSlotSource,
+  slotSourceLabel,
+  type SlotSource,
+  type SlotSourceInput,
+} from './slotSource';
 
 export {
   parseVenueContainer,
@@ -41,11 +48,13 @@ export { resolveSelectedDateForMonth } from './monthNavigation';
 
 export {
   SLOT_COLOR_TOKENS,
+  LEGACY_SLOT_COLOR_TOKENS,
   SLOT_COLOR_CHIPS,
   DEFAULT_SLOT_START_TIME,
   MAX_SLOT_MEMO_LENGTH,
   slotMemoSchema,
   isValidSlotColor,
+  isCurrentSlotColor,
   assertSlotColor,
   slotColorSwatchClassName,
   isSafeSlotMemo,
@@ -59,7 +68,20 @@ export {
   parseTimeSlotParts,
   detectSlotConflicts,
   type SlotColorToken,
+  type LegacySlotColorToken,
+  type StoredSlotColorToken,
   type SlotColorChip,
   type SlotConflict,
   type SlotConflictInput,
 } from './slotEdit';
+
+export { readScheduledStart, type ScheduledStartReading } from './scheduledStart';
+
+export {
+  UNDECIDED_SLOT_KEY,
+  workLogRoleKey,
+  workLogSlotKey,
+  buildSlotTimeChangeGroups,
+  countAtDestination,
+  type SlotTimeChangeGroup,
+} from './postingSlotTimeChange';

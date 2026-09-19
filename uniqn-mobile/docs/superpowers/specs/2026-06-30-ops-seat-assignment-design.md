@@ -2,8 +2,8 @@
 
 > 작성: 2026-06-30 · 슬라이스 = 설계 §10 "1d 배정 2종"(1d에서 bust/재진입/ITM만 구현, 배정 2종은 미구현 → 본 슬라이스)
 > 토대: 1a~1d(+STEP A) 전부 prod 출하 · 1b 좌석/redraw 표면 위에 얹음
-> 권위 명세: `docs/planning/2026-06-23-tournament-ops-revival-slice1-design.md` §10(슬라이스 표)·§4.3(좌석)
-> 핸드오프: `docs/planning/2026-06-30-ops-remaining-slices-design-handoff-prompt.md`
+> 권위 명세: `docs/archive/planning/2026-06/2026-06-23-tournament-ops-revival-slice1-design.md` §10(슬라이스 표)·§4.3(좌석)
+> 핸드오프: `docs/archive/planning/2026-06/2026-06-30-ops-remaining-slices-design-handoff-prompt.md`
 
 ## 0. 결론 (한 줄)
 

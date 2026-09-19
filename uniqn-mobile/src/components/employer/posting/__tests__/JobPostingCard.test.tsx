@@ -169,12 +169,7 @@ describe('JobPostingCard', () => {
   });
 
   // ==========================================================================
-  // QR 진입점 게이트 (고정 공고 회귀 가드)
-  //
-  // 고정 공고의 work_log 는 confirm_application 이 dates:['FIXED_SCHEDULE'] 한 원소만
-  // flat INSERT 하므로 스태프·공고당 1행이고, 그 행을 scheduled 로 되돌리는 코드가 없다.
-  // → D일 출근·퇴근 후 D+1 부터 모든 스캔이 "이미 퇴근 처리됐습니다"로 영구 실패한다.
-  // 행 수명 재설계 전까지 고정 공고에는 QR 진입점을 노출하지 않는다.
+  // QR 진입점 — 고정 공고도 서버가 날짜별 occurrence를 생성해 같은 QR을 반복 사용한다.
   // ==========================================================================
 
   const fixedPosting: JobPosting = {
@@ -209,7 +204,7 @@ describe('JobPostingCard', () => {
     expect(queryByLabelText('현장 QR 표시')).not.toBeNull();
   });
 
-  it('고정(fixed) 공고 카드에는 QR 아이콘이 보이지 않는다', () => {
+  it('고정(fixed) 공고 카드에도 QR 아이콘이 보인다', () => {
     const { queryByLabelText } = render(
       <JobPostingCard
         posting={fixedPosting}
@@ -222,7 +217,7 @@ describe('JobPostingCard', () => {
       />
     );
 
-    expect(queryByLabelText('현장 QR 표시')).toBeNull();
+    expect(queryByLabelText('현장 QR 표시')).not.toBeNull();
   });
 
   describe('묶음 공유 선택 모드', () => {

@@ -61,7 +61,7 @@ const completeTournamentValues: OrderSheetFormValues = {
   title: 'WSOP 서울 딜러',
 };
 
-// 2그룹 완성 폼 — 그룹 삭제 버튼(order-sheet-group-delete-*)은 그룹 2개+에서만 노출(E4).
+// 2그룹 완성 폼 — 그룹 삭제 버튼(order-sheet-card-delete-*)은 그룹 2개+에서만 노출(E4).
 const twoGroupCompleteValues: OrderSheetFormValues = {
   ...completeValues,
   scheduleGroups: [
@@ -155,22 +155,24 @@ describe('OrderSheetScreen — 편집 모드 일정 개방(확정자 잠금 폐�
     expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
   });
 
-  it('일정 추가 버튼이 날짜 시트를 연다', () => {
+  // 구 "＋ 일정 추가" 버튼은 조건 유도 그룹핑에서 사라졌다 — 날짜 추가는 날짜 행(전 일정
+  // 스코프)이, 조건 분화는 예외 추출이 흡수한다. 편집 모드 개방의 나머지 축(조건 편집)을 지킨다.
+  it('편집 모드에서 카드 조건(시간·역할) 시트가 열린다', () => {
     const { getByTestId, getByText } = render(
       <OrderSheetScreen {...baseProps} mode="edit" initialValues={completeValues} />
     );
-    fireEvent.press(getByTestId('order-sheet-add-schedule'));
-    expect(getByText('날짜 선택')).toBeTruthy();
+    fireEvent.press(getByTestId('order-sheet-card-condition-0'));
+    expect(getByText('시간 · 역할')).toBeTruthy();
   });
 
-  it('그룹 삭제 버튼이 실제로 그룹을 제거한다', () => {
+  it('카드 삭제 버튼이 실제로 카드를 제거한다', () => {
     const { getByTestId, queryAllByTestId } = render(
       <OrderSheetScreen {...baseProps} mode="edit" initialValues={twoGroupCompleteValues} />
     );
-    expect(queryAllByTestId(/order-sheet-group-dates-/)).toHaveLength(2);
-    fireEvent.press(getByTestId('order-sheet-group-delete-0'));
-    // 그룹이 1개로 줄면 서브그룹 헤더 레이아웃이 해제된다(0개).
-    expect(queryAllByTestId(/order-sheet-group-dates-/)).toHaveLength(0);
+    expect(queryAllByTestId(/order-sheet-card-header-/)).toHaveLength(2);
+    fireEvent.press(getByTestId('order-sheet-card-delete-0'));
+    // 카드가 1개로 줄면 헤더 날짜 재표기가 생략된다(F1 단일 카드 축약).
+    expect(queryAllByTestId(/order-sheet-card-header-/)).toHaveLength(0);
     expect(mockAddToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
   });
 });

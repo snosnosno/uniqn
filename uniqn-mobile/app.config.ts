@@ -27,6 +27,31 @@ const SLUG = 'uniqn';
 const DOMAIN = 'uniqn.app';
 const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';
 
+/**
+ * 앱이 가로챌 웹 경로(Android App Links).
+ *
+ * 2026-08-07 이전에는 `pathPrefix: '/'` 로 **uniqn.app 전 경로**를 가로챘다. 그 결과
+ * 브라우저에서 열려야 할 링크까지 앱이 삼켰다 — ops 전광판(`/monitor/:token`)·플레이어
+ * QR(`/live/:token`)은 참가자에게 보내는 공개 링크이고, `/privacy.html`·`/guide.html`
+ * 은 라우터에 대응 라우트조차 없어 앱에서 열면 not-found 로 떨어진다.
+ *
+ * 목록은 iOS AASA(`public/.well-known/apple-app-site-association`)와 **같이 유지한다**.
+ * 한쪽만 고치면 플랫폼별로 열리는 곳이 갈린다.
+ *
+ * `/reset-password` 만 의도적 비대칭 — Android 는 앱이 프래그먼트 토큰을 직접 채택하는
+ * 경로가 출하돼 있고(`adoptRecoverySessionFromUrl`, PR#294·#295), iOS 는 웹
+ * `detectSessionInUrl` 로 처리한다. 둘 다 동작하므로 검증된 현행을 유지한다.
+ */
+const APP_LINK_PATH_PREFIXES = [
+  '/jobs',
+  '/notifications',
+  '/notices',
+  '/schedule',
+  '/settings',
+  '/support',
+  '/reset-password',
+] as const;
+
 // PortOne 공개 식별자 — eas.json 에도 평문 commit 되어 있는 클라이언트 공개 값.
 // OTA 푸시 시 shell env 가 누락된 경우의 fallback. 진짜 시크릿(API secret)은 서버 Edge Function 에만 있음.
 const PORTONE_STORE_ID_FALLBACK = 'store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93';
@@ -241,13 +266,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             {
               action: 'VIEW',
               autoVerify: true,
-              data: [
-                {
-                  scheme: 'https',
-                  host: DOMAIN,
-                  pathPrefix: '/',
-                },
-              ],
+              // 전 경로(`pathPrefix: '/'`) 가로채기 폐기 — 위 APP_LINK_PATH_PREFIXES 주석 참조.
+              data: APP_LINK_PATH_PREFIXES.map((pathPrefix) => ({
+                scheme: 'https',
+                host: DOMAIN,
+                pathPrefix,
+              })),
               category: ['BROWSABLE', 'DEFAULT'],
             },
           ],
@@ -263,6 +287,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     shortName: 'UNIQN',
     themeColor: BRAND_BG_COLOR,
     backgroundColor: BRAND_BG_COLOR,
+    // 감사 web-01: dist/index.html 의 <html lang> — 앱 전체가 한국어인데 en 으로 나가고 있었다.
+    // 🔑 이 프로젝트는 web.output 이 없어 SPA(single) 모드다 → app/+html.tsx 는 export 에
+    //    **반영되지 않는다**(실측: +html.tsx 를 두고 빌드해도 lang="en" 그대로).
+    //    SPA 의 정식 경로는 @expo/cli/static/template/index.html 의 `%LANG_ISO_CODE%` 이고
+    //    그 값이 바로 이 `web.lang` 이다(webTemplate.ts: `exp.web?.lang ?? 'en'`).
+    // 🚫 public/index.html 을 만들어 고치지 말 것 — 같은 코드가 public/index.html 을
+    //    템플릿보다 먼저 집어(getTemplateIndexHtmlAsync) 스크립트/CSS 주입 파이프라인을 덮어쓴다.
+    lang: 'ko',
   },
 
   // 플러그인

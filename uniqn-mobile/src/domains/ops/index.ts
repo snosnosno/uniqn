@@ -6,5 +6,6 @@ export * from './clock/computeClockRemaining';
 export * from './prizeCurve';
 export * from './monitor/monitorConfig';
 export * from './monitor/nextBreak';
+export * from './opsEventDate';
 export * from './resume/selectResumeTournament';
 export * from './opsHubFlag';

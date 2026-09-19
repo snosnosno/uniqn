@@ -17,8 +17,7 @@ import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabas
 import { getTodayString } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
-import { FIXED_DATE_MARKER } from '@/types/assignment';
-import type { WorkLog, PayrollStatus, QRCodeAction, QRProcessAction } from '@/types';
+import type { WorkLog, QRCodeAction, QRProcessResult } from '@/types';
 import type {
   IWorkLogRepository,
   WorkLogStats,
@@ -26,7 +25,7 @@ import type {
   UpdateSlotInput,
 } from '../interfaces';
 import {
-  executeUpdatePayrollStatus,
+  executeProcessPostingQRAttendance,
   executeProcessQRCheckInOut,
 } from './WorkLogRepositoryTransactions';
 import {
@@ -213,6 +212,41 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     return venue.getByVenueSpanInRange(venueId, fromDate, toDate);
   }
 
+  async getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]> {
+    return venue.getMissingCheckoutsByVenueSpan(venueId, beforeDate);
+  }
+
+  async getAttentionByOwnerId(ownerId: string, today: string): Promise<WorkLog[]> {
+    try {
+      // 오늘 scheduled(미출근 후보) + 오늘 이전 checked_in(퇴근 미기록 후보). 판정은 도메인이 한다.
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .eq('owner_id', ownerId)
+        .or(
+          `and(date.eq.${today},status.eq.${STATUS.WORK_LOG.SCHEDULED}),` +
+            `and(date.lt.${today},status.eq.${STATUS.WORK_LOG.CHECKED_IN})`
+        )
+        .order('date', { ascending: true })
+        .limit(MAX_STATS_PAGE_SIZE);
+
+      if (error) {
+        handleSupabaseError(error, { operation: '구인자 오늘 확인 근무 조회', table: TABLE });
+      }
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      if (items.length === MAX_STATS_PAGE_SIZE) {
+        logger.warn('구인자 오늘 확인 근무 조회 상한 도달 — 건수가 잘렸을 수 있음', {
+          ownerId,
+          limit: MAX_STATS_PAGE_SIZE,
+        });
+      }
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '구인자 오늘 확인 근무 조회', { ownerId, today });
+    }
+  }
+
   async getCompletedByOwnerId(
     ownerId: string,
     dateRange?: { start: string; end: string }
@@ -299,6 +333,33 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       return toWorkLog(data as Record<string, unknown>);
     } catch (error) {
       rethrowOrHandle(error, '오늘 출근 기록 조회', { staffId });
+    }
+  }
+
+  async getNextScheduledCandidates(staffId: string, fromDate: string): Promise<WorkLog[]> {
+    try {
+      logger.info('가장 가까운 미래 확정 근무 조회', { staffId, fromDate });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .eq('staff_id', staffId)
+        .or(
+          `and(status.eq.${STATUS.WORK_LOG.CHECKED_IN},date.eq.${fromDate}),and(status.eq.${STATUS.WORK_LOG.SCHEDULED},date.gte.${fromDate})`
+        )
+        .order('date', { ascending: true })
+        .order('time_slot', { ascending: true, nullsFirst: false })
+        .limit(20);
+
+      if (error) {
+        handleSupabaseError(error, {
+          operation: '가장 가까운 미래 확정 근무 조회',
+          table: TABLE,
+        });
+      }
+      return rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+    } catch (error) {
+      rethrowOrHandle(error, '가장 가까운 미래 확정 근무 조회', { staffId, fromDate });
     }
   }
 
@@ -451,51 +512,6 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     }
   }
 
-  /**
-   * QR 스캔용 work_log 후보 조회
-   *
-   * @description 오늘·어제·FIXED_SCHEDULE 세 값을 한 쿼리로 조회한다.
-   *   어제를 포함하는 이유는 자정 넘는 근무의 퇴근 스캔이다 — 18:00~02:00 근무의
-   *   work_logs.date 는 시작일이라 D+1 새벽 퇴근 QR 이 오늘 날짜로는 잡히지 않는다.
-   */
-  async findQRCandidates(
-    jobPostingId: string,
-    staffId: string,
-    today: string,
-    yesterday: string
-  ): Promise<WorkLog[]> {
-    try {
-      logger.info('QR 후보 근무 기록 조회', { jobPostingId, staffId, today, yesterday });
-
-      // 고정 공고는 date 가 'FIXED_SCHEDULE' 리터럴이라 오늘 날짜로는 잡히지 않는다.
-      // 어제는 자정 넘는 근무(시작일 = 어제)의 퇴근 스캔용이다.
-      // 세 값을 한 쿼리로 함께 조회해 고정/일반/자정넘김 공고를 모두 커버한다.
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select(TABLE_COLUMNS)
-        .eq('job_posting_id', jobPostingId)
-        .eq('staff_id', staffId)
-        .in('date', [today, yesterday, FIXED_DATE_MARKER]);
-
-      if (error) handleSupabaseError(error, { operation: 'QR 후보 근무 기록 조회', table: TABLE });
-
-      // 하루 다중 배정은 정상 케이스 — 예외를 던지지 않고 배열 그대로 반환한다.
-      const workLogs = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
-
-      logger.info('QR 후보 근무 기록 조회 완료', {
-        jobPostingId,
-        staffId,
-        today,
-        yesterday,
-        count: workLogs.length,
-      });
-
-      return workLogs;
-    } catch (error) {
-      rethrowOrHandle(error, 'QR 후보 근무 기록 조회', { jobPostingId, staffId, today, yesterday });
-    }
-  }
-
   // ==========================================================================
   // 실시간 구독 (Realtime)
   // ==========================================================================
@@ -625,37 +641,13 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   // 변경 (Write)
   // ==========================================================================
 
-  async updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void> {
-    try {
-      logger.info('정산 상태 변경', { workLogId, status });
-
-      const now = new Date().toISOString();
-      const updateData: Record<string, unknown> = {
-        payroll_status: status,
-        updated_at: now,
-      };
-
-      if (status === STATUS.PAYROLL.COMPLETED) {
-        updateData.payroll_date = now;
-      }
-
-      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
-
-      if (error) handleSupabaseError(error, { operation: '정산 상태 변경', table: TABLE });
-
-      logger.info('정산 상태 변경 완료', { workLogId, status });
-    } catch (error) {
-      rethrowOrHandle(error, '정산 상태 변경', { workLogId, status });
-    }
-  }
-
-  async updatePayrollStatusTransaction(
-    workLogId: string,
-    status: PayrollStatus,
-    amount?: number
-  ): Promise<void> {
-    return executeUpdatePayrollStatus(workLogId, status, amount);
-  }
+  // 🪦 updatePayrollStatus / updatePayrollStatusTransaction 제거 (2026-08-05).
+  //    payroll 컬럼을 raw PostgREST 로 직접 쓰던 경로였고, #402 가 정산을 RPC 화한 뒤로는
+  //    UI 소비자가 0곳인 죽은 회로였다(배럴 export·인터페이스 선언·테스트만 참조).
+  //    같은 PR 의 20260805120000 트리거가 서버에서 이 경로를 막으므로, 남겨두면
+  //    "되살아나는 순간 즉사"하는 지뢰가 된다.
+  //    살아있는 정본: settlementMutation.ts → SettlementRepository
+  //    .updatePayrollStatusWithTransaction → RPC set_work_log_payroll_status.
 
   async flagNegativeSettlement(workLogId: string, amount: number): Promise<void> {
     try {
@@ -680,15 +672,30 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     workLogId: string,
     staffId: string,
     jobPostingId: string,
-    action: QRProcessAction,
-    checkTime: Date,
+    action: QRCodeAction,
     date: string
   ): Promise<{
     action: QRCodeAction;
     hasExistingCheckInTime: boolean;
     workDuration: number;
+    scannedAt: Date;
+    appliedTime: Date;
   }> {
-    return executeProcessQRCheckInOut(workLogId, staffId, jobPostingId, action, checkTime, date);
+    return executeProcessQRCheckInOut(workLogId, staffId, jobPostingId, action, date);
+  }
+
+  async processPostingQRAttendance(
+    jobPostingId: string,
+    staffId: string,
+    selectedWorkLogId?: string,
+    selectionToken?: string
+  ): Promise<QRProcessResult> {
+    return executeProcessPostingQRAttendance(
+      jobPostingId,
+      staffId,
+      selectedWorkLogId,
+      selectionToken
+    );
   }
 
   // 슬롯 편집(B2) — 구현은 WorkLogRepositoryVenue 로 분리(800줄 하드캡). 검증/동작 무변경 위임.

@@ -3,12 +3,21 @@
  *
  * (1) 프리셋 없으면 온보딩 안내 문구(저장 카드도 숨김),
  * (2) 프리셋 카드 탭 → 해당 프리셋으로 onSelect,
- * (3) "저장" 카드 탭 → onSavePress.
+ * (3) "저장" 카드 탭 → onSavePress,
+ * (4) "관리" 칩 탭 → 관리 시트 오픈(프리셋 삭제·이름변경 진입점 — 회귀 복구).
  */
 import { render, fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { PresetCarousel, type OrderSheetPreset } from '../PresetCarousel';
 import type { OrderSheetFormValues } from '@/schemas/orderSheet.schema';
+
+// 관리 시트는 자체적으로 템플릿 목록을 조회한다(QueryClient 필요) — 여기서는 "열렸는가"만 본다.
+jest.mock('../sheets/PresetManageSheet', () => ({
+  PresetManageSheet: ({ visible }: { visible: boolean }) => {
+    const { Text } = require('react-native');
+    return visible ? <Text>관리 시트 열림</Text> : null;
+  },
+}));
 
 const makeValues = (title: string): OrderSheetFormValues => ({
   postingType: 'regular',
@@ -80,5 +89,30 @@ describe('PresetCarousel', () => {
     );
     fireEvent.press(getByTestId('order-sheet-preset-save'));
     expect(onSavePress).toHaveBeenCalledTimes(1);
+  });
+
+  // 회귀 복구: 캐러셀이 '적용'만 옮겨 오면서 프리셋을 지우는 픽셀이 앱 전체에 0개가 됐다.
+  it('관리 칩 탭 시 프리셋 관리 시트를 연다', () => {
+    const preset: OrderSheetPreset = {
+      id: 't1',
+      title: '템플릿',
+      subtitle: '',
+      values: makeValues('템플릿'),
+    };
+    const { getByTestId, queryByText, getByText } = render(
+      <PresetCarousel presets={[preset]} onSelect={jest.fn()} onSavePress={jest.fn()} />
+    );
+    expect(queryByText('관리 시트 열림')).toBeNull();
+
+    fireEvent.press(getByTestId('order-sheet-preset-manage'));
+
+    expect(getByText('관리 시트 열림')).toBeTruthy();
+  });
+
+  it('프리셋이 하나도 없으면 관리 칩도 노출하지 않는다 (관리할 대상이 없다)', () => {
+    const { queryByTestId } = render(
+      <PresetCarousel presets={[]} onSelect={jest.fn()} onSavePress={jest.fn()} />
+    );
+    expect(queryByTestId('order-sheet-preset-manage')).toBeNull();
   });
 });

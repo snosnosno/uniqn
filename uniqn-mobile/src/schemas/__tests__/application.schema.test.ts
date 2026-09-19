@@ -60,6 +60,26 @@ describe('applicationDocumentSchema', () => {
     );
   });
 
+  /**
+   * 🔴 [R1] 지원서 **레코드 증발** 회귀 가드.
+   *
+   * `timeSlot: z.string()` 단독이던 시절, DB 의 timeSlot 이 JSON null 이면 파싱이 통째로 실패해
+   * **지원서가 목록에서 사라졌다**. 사장은 지원자가 안 온 줄 안다. 이 사고가 "미정을 null 이
+   * 아니라 '미정' 문자열로 쓰게 된" 근본 원인이다(재설계 §2 원칙 2).
+   *
+   * 스키마를 `z.string()` 으로 되돌리면 이 테스트가 red 가 된다 — 되돌림을 막는 것이 목적이다.
+   */
+  it('timeSlot 이 null 이어도 지원서를 버리지 않고 미정으로 접는다 (레코드 증발 방지)', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      assignments: [{ ...baseAssignment, timeSlot: null }],
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.assignments).toHaveLength(1);
+    expect(result?.assignments?.[0]?.timeSlot).toBe('미정');
+  });
+
   it('keeps legacy originalApplication data when appliedAt is missing', () => {
     const result = parseApplicationDocument({
       ...baseDocument,

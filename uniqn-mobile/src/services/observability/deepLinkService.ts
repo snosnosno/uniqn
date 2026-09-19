@@ -105,5 +105,3 @@ export const deepLinkService = {
   setupDeepLinkListener,
   getInitialDeepLink,
 };
-
-export default deepLinkService;

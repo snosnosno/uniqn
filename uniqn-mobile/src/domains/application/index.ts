@@ -1,79 +1,26 @@
-export type {
-  ApplicationStatus,
-  Application,
-  CreateApplicationInput,
-  ApplicationFilters,
-  ConfirmApplicationInput,
-  RejectApplicationInput,
-  ApplicationStats,
-  CancellationRequestStatus,
-  CancellationRequest,
-  RequestCancellationInput,
-  ReviewCancellationInput,
-  RecruitmentType,
-  ConfirmApplicationInputV2,
-} from '@/types/application';
+/**
+ * UNIQN Mobile - 지원(application) 도메인 파사드
+ *
+ * ⚠️ **실제로 `@/domains/application` 경로로 소비되는 심볼만** 재수출한다.
+ * 타입·헬퍼 대부분은 `@/types/application`·`@/types/assignment` 등 원산지 경로로 직접
+ * 쓰이며, 안 쓰이는 재수출을 쌓아두면 진짜 죽은 코드가 묻힌다. 필요해지면 그때 추가하라.
+ */
 
-export { APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from '@/types/application';
-export { APPLICATION_STATUS_LABELS } from '@/shared/status';
-
-export type {
-  DurationType,
-  AssignmentDuration,
-  CheckMethod,
-  Assignment,
-  CreateSimpleAssignmentOptions,
-} from '@/types/assignment';
+export { TBA_TIME_MARKER, getAssignmentRoles } from '@/types/assignment';
 
 export {
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-  TBA_TIME_MARKER,
-  getAssignmentRole,
-  getAssignmentRoles,
-  isValidAssignment,
-  createSimpleAssignment,
-  createGroupedAssignment,
-  createMultiRoleAssignment,
-} from '@/types/assignment';
-
-export { PRE_QUESTION_TYPE_LABELS } from '@/types/preQuestion';
-export {
-  initializePreQuestionAnswers,
-  validateRequiredAnswers,
+  PRE_QUESTION_TYPE_LABELS,
   findUnansweredRequired,
+  initializePreQuestionAnswers,
   updateAnswer,
+  validateRequiredAnswers,
 } from '@/types/preQuestion';
 
-export type {
-  OriginalApplication,
-  ConfirmationHistoryEntry,
-  HistorySummary,
-} from '@/types/applicationHistory';
+export { createHistoryEntry, findActiveConfirmation } from '@/types/applicationHistory';
 
-export {
-  createHistoryEntry,
-  addCancellationToEntry,
-  findActiveConfirmation,
-  countConfirmations,
-  countCancellations,
-  createHistorySummary,
-} from '@/types/applicationHistory';
+export { applicationValidator } from './ApplicationValidator';
 
-export {
-  ApplicationValidator,
-  applicationValidator,
-  type RoleCapacityResult,
-  type ApplicationValidationResult,
-  type ApplicationValidationError,
-} from './ApplicationValidator';
-
-export {
-  buildPostingSlotCapacityMap,
-  validateAssignmentSlotCapacity,
-  type SlotCapacityIssue,
-  type SlotCapacityValidationResult,
-} from './slotCapacity';
+export { validateAssignmentSlotCapacity } from './slotCapacity';
 
 // ApplicationStatusMachine 은 제거됐다(2026-07-27). 전이표·상태 메타·취소 가드를 담고 있었지만
 // 앱 어디서도 소비하지 않았고, 같은 규칙이 ApplicationRepository 에 독립 구현돼 그쪽만 실행됐다.

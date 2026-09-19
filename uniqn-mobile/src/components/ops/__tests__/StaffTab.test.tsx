@@ -26,11 +26,12 @@ import {
   useImportOpsStaff,
   useRemoveOpsStaff,
   useAssignTableStaff,
+  useOpsStaffWorkLogs,
 } from '@/hooks/ops';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
 import { useAuthStore } from '@/stores/authStore';
-import type { OpsStaff, OpsTable, OpsTournament } from '@/types/ops';
+import type { OpsStaff, OpsStaffWorkLogLink, OpsTable, OpsTournament } from '@/types/ops';
 
 type CapturedOption = { label: string; value: string; disabled?: boolean; destructive?: boolean };
 
@@ -97,7 +98,21 @@ jest.mock('@/hooks/ops', () => ({
   useImportOpsStaff: jest.fn(),
   useRemoveOpsStaff: jest.fn(),
   useAssignTableStaff: jest.fn(),
+  useOpsStaffWorkLogs: jest.fn(),
 }));
+
+// 근태 시트(⑦-2)는 자체 테스트가 사유별 게이트를 전량 고정한다(StaffAttendanceSheet.test.tsx).
+// 여기서는 "행 액션에서 열리고 해석기 행이 주입된다" 는 배선만 본다.
+let attendanceSheetProps: Record<string, unknown> | null = null;
+jest.mock('../StaffAttendanceSheet', () => {
+  const { Text } = require('react-native');
+  return {
+    StaffAttendanceSheet: (props: Record<string, unknown>) => {
+      attendanceSheetProps = props;
+      return props.visible ? <Text>근태시트열림</Text> : null;
+    },
+  };
+});
 
 jest.mock('@/hooks/useJobManagement', () => ({
   useMyJobPostings: jest.fn(),
@@ -117,6 +132,7 @@ const mockUseSetTournamentPosting = useSetTournamentPosting as unknown as jest.M
 const mockUseImportOpsStaff = useImportOpsStaff as unknown as jest.Mock;
 const mockUseRemoveOpsStaff = useRemoveOpsStaff as unknown as jest.Mock;
 const mockUseAssignTableStaff = useAssignTableStaff as unknown as jest.Mock;
+const mockUseOpsStaffWorkLogs = useOpsStaffWorkLogs as unknown as jest.Mock;
 const mockUseMyJobPostings = useMyJobPostings as unknown as jest.Mock;
 const mockUseActiveWorkspace = useActiveWorkspace as unknown as jest.Mock;
 const mockUseAuthStore = useAuthStore as unknown as jest.Mock;
@@ -172,6 +188,22 @@ function staff(overrides: Partial<OpsStaff> & { staffId: string }): OpsStaff {
   };
 }
 
+function workLogLink(
+  overrides: Partial<OpsStaffWorkLogLink> & { opsStaffId: string; staffId: string }
+): OpsStaffWorkLogLink {
+  return {
+    staffName: '무명',
+    workLogId: 'wl-1',
+    wlStatus: 'scheduled',
+    payrollStatus: 'pending',
+    checkInTs: null,
+    checkOutTs: null,
+    writeAllowed: true,
+    reason: 'ok',
+    ...overrides,
+  };
+}
+
 function table(overrides: Partial<OpsTable> & { tableNo: number }): OpsTable {
   return {
     id: `tb${overrides.tableNo}`,
@@ -194,6 +226,8 @@ interface SetupOpts {
   postings?: { id: string; title: string }[];
   activeWorkspace?: { id: string } | undefined;
   actorId?: string | undefined;
+  /** 해석기(⑦-2) 결과. 기본은 빈 배열 — 근태 배지도 시트 주입도 없는 상태. */
+  workLogLinks?: OpsStaffWorkLogLink[];
 }
 
 function setupHooks(opts?: SetupOpts) {
@@ -208,6 +242,7 @@ function setupHooks(opts?: SetupOpts) {
   mockUseImportOpsStaff.mockReturnValue({ mutate: jest.fn() });
   mockUseRemoveOpsStaff.mockReturnValue({ mutate: jest.fn() });
   mockUseAssignTableStaff.mockReturnValue({ mutate: jest.fn() });
+  mockUseOpsStaffWorkLogs.mockReturnValue({ data: opts?.workLogLinks ?? [] });
 }
 
 let alertSpy: jest.SpyInstance;
@@ -215,6 +250,7 @@ let alertSpy: jest.SpyInstance;
 beforeEach(() => {
   addSheetProps = null;
   postingPickerProps = null;
+  attendanceSheetProps = null;
   jest.clearAllMocks();
   alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
 });
@@ -432,7 +468,7 @@ describe('로스터 리스트', () => {
     expect(queryByText('가져온 시점 기준 명단입니다')).toBeNull();
   });
 
-  it('행 탭 → 액션 시트(테이블 지정/삭제)를 연다', () => {
+  it('행 탭 → 액션 시트(근태 기록/테이블 지정/삭제)를 연다', () => {
     const roster = [staff({ staffId: 'u1', staffName: '한명' })];
     setupHooks({ roster, postings: [{ id: 'p1', title: '공고' }] });
 
@@ -442,8 +478,66 @@ describe('로스터 리스트', () => {
 
     fireEvent.press(getByText('한명'));
 
+    expect(getByText('근태 기록')).toBeTruthy();
     expect(getByText('테이블 지정')).toBeTruthy();
     expect(getByText('로스터에서 삭제')).toBeTruthy();
+  });
+
+  it('"근태 기록" → 그 스태프의 해석기 행을 시트에 주입한다 (⑦-2 배선)', () => {
+    const roster = [staff({ staffId: 'u1', staffName: '한명' })];
+    setupHooks({
+      roster,
+      postings: [{ id: 'p1', title: '공고' }],
+      workLogLinks: [workLogLink({ opsStaffId: 'os-u1', staffId: 'u1' })],
+    });
+
+    const { getByText } = render(
+      <StaffTab tournamentId={TID} tournament={tournament({ jobPostingId: 'p1' })} />
+    );
+
+    fireEvent.press(getByText('한명'));
+    fireEvent.press(getByText('근태 기록'));
+
+    expect(getByText('근태시트열림')).toBeTruthy();
+    // 🔑 키는 staffId 가 아니라 **opsStaffId** 다. 해석기 행이 ops_staff 축이므로
+    //    staffId 로 맞추면 조용히 null 이 들어가 시트가 영원히 "불러오는 중" 이 된다.
+    expect((attendanceSheetProps?.link as OpsStaffWorkLogLink)?.opsStaffId).toBe('os-u1');
+    expect(attendanceSheetProps?.staffName).toBe('한명');
+  });
+
+  it('해석기 행이 아직 없으면 link=null 로 연다 (빈 결과를 사실로 그리지 않는다)', () => {
+    const roster = [staff({ staffId: 'u1', staffName: '한명' })];
+    setupHooks({ roster, postings: [{ id: 'p1', title: '공고' }], workLogLinks: [] });
+
+    const { getByText } = render(
+      <StaffTab tournamentId={TID} tournament={tournament({ jobPostingId: 'p1' })} />
+    );
+
+    fireEvent.press(getByText('한명'));
+    fireEvent.press(getByText('근태 기록'));
+
+    expect(attendanceSheetProps?.link).toBeNull();
+  });
+
+  it('출근 기록이 있으면 행에 근태 배지를 띄운다', () => {
+    const roster = [staff({ staffId: 'u1', staffName: '한명' })];
+    setupHooks({
+      roster,
+      postings: [{ id: 'p1', title: '공고' }],
+      workLogLinks: [
+        workLogLink({
+          opsStaffId: 'os-u1',
+          staffId: 'u1',
+          checkInTs: '2026-08-09T00:05:00.000Z',
+        }),
+      ],
+    });
+
+    const { getByText } = render(
+      <StaffTab tournamentId={TID} tournament={tournament({ jobPostingId: 'p1' })} />
+    );
+
+    expect(getByText('출근')).toBeTruthy();
   });
 
   it('"테이블 지정" → 테이블 선택 시 useAssignTableStaff 를 {tableId,staffId} 로 호출한다', () => {

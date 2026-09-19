@@ -13,13 +13,15 @@ import {
   NumericText,
 } from '@/components/ui';
 import { StackHeader } from '@/components/headers';
-import { PeopleOutlineIcon } from '@/components/icons';
+import { UsersIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
 import { listEmployerApplications } from '@/services/admin';
 import type { EmployerApplication } from '@/repositories';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -187,7 +189,13 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
 
 export default function AdminEmployerApplicationsPage() {
   const [filter, setFilter] = useState<AdminApplicationFilter>('pending');
-  const { data, isLoading, isRefetching, error, refetch } = useAdminEmployerApplications(filter);
+  const { data, isLoading, error, refetch } = useAdminEmployerApplications(filter);
+
+  // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
+  // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
+  const { refreshing: pullRefreshing, onRefresh: onPullRefresh } = useManualRefresh(() =>
+    refetch()
+  );
 
   const applications = data?.items ?? [];
 
@@ -208,7 +216,7 @@ export default function AdminEmployerApplicationsPage() {
         <StackHeader title="구인자 신청" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
-            title="구인자 신청을 불러오지 못했습니다"
+            title={loadFailed('구인자 신청')}
             description="잠시 후 다시 시도해 주세요."
             icon="error"
             actionLabel="다시 시도"
@@ -258,7 +266,7 @@ export default function AdminEmployerApplicationsPage() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        refreshControl={<RefreshControl refreshing={pullRefreshing} onRefresh={onPullRefresh} />}
       >
         <Text className="mb-3 text-sm text-content-secondary font-sans">
           총 {applications.length}건
@@ -269,7 +277,7 @@ export default function AdminEmployerApplicationsPage() {
             <EmptyState
               title="신청이 없습니다"
               description="현재 조건에 맞는 신청이 없습니다."
-              icon={<PeopleOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
+              icon={<UsersIcon size={40} color={SECONDARY_PALETTE[400]} />}
             />
           </View>
         ) : (

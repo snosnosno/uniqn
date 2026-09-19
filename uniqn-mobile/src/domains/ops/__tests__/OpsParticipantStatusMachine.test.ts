@@ -33,6 +33,25 @@ describe('OpsParticipantStatusMachine.canTransition', () => {
   it('registered → markNoShow 는 no_show', () => {
     expect(canTransition('registered', 'markNoShow').nextStatus).toBe('no_show');
   });
+
+  // 결함② — 서버 ops_set_participant_no_show 와 같은 규칙이어야 한다.
+  it('checked_in → markNoShow 는 no_show (노쇼 표시)', () => {
+    expect(canTransition('checked_in', 'markNoShow').nextStatus).toBe('no_show');
+  });
+
+  it('no_show 되돌리기는 대기열(checked_in) — active 로 가지 않는다', () => {
+    expect(canTransition('no_show', 'checkIn').nextStatus).toBe('checked_in');
+    // 좌석 없는 active 는 live_stats.playing/average_stack 을 오염시키므로 금지 전이다.
+    expect(canTransition('no_show', 'activate').allowed).toBe(false);
+  });
+
+  it('active → markNoShow 는 거부(그 경로는 bust)', () => {
+    expect(canTransition('active', 'markNoShow').allowed).toBe(false);
+  });
+
+  it('busted → markNoShow 는 거부', () => {
+    expect(canTransition('busted', 'markNoShow').allowed).toBe(false);
+  });
 });
 
 describe('OpsParticipantStatusMachine.isFinalStatus', () => {

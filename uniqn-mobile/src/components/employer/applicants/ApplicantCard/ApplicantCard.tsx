@@ -21,6 +21,7 @@ import {
   GroupedAssignmentSelector,
   StatusInfo,
 } from './components';
+import { resolveFixedStartTime } from './utils';
 
 export const ApplicantCard = React.memo(function ApplicantCard({
   applicant,
@@ -34,6 +35,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   postingType,
   daysPerWeek,
   startTime,
+  noShowCount,
 }: ApplicantCardProps) {
   const postingFacts = useMemo(
     () => (applicant.jobPosting ? buildPostingFacts(applicant.jobPosting) : null),
@@ -41,10 +43,15 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   );
   const isFixedMode = postingFacts?.workflow.isFixed ?? postingType === 'fixed';
   const effectiveDaysPerWeek = daysPerWeek ?? postingFacts?.schedule.display.fixed?.daysPerWeek;
-  const effectiveStartTime =
-    startTime ??
-    postingFacts?.schedule.display.fixed?.startTime ??
-    postingFacts?.schedule.timeSlot?.split(/[-~]/)[0]?.trim();
+  // 🔴 인라인 `??` 체인이었을 때는 마지막 폴백이 `schedule.timeSlot`(레거시 센티널 'NEGOTIABLE')이라
+  //    사장 화면에 "출근시간 NEGOTIABLE" 이 그대로 떴다. 판정을 순수 함수로 떼어 테스트로 가둔다.
+  const effectiveStartTime = resolveFixedStartTime(
+    startTime,
+    postingFacts?.schedule.display.fixed?.startTime,
+    postingFacts?.schedule.timeSlot
+  );
+  const effectiveNegotiable =
+    postingFacts?.schedule.display.fixed?.isStartTimeNegotiable ?? !effectiveStartTime;
   const { isDarkMode: isDark } = useThemeStore();
 
   const iconColors = useMemo<IconColors>(
@@ -133,6 +140,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           onViewProfile={onViewProfile ? handleViewProfile : undefined}
           bubbleScore={userProfile?.bubbleScore?.score}
           reviewCount={userProfile?.bubbleScore?.totalReviewCount}
+          noShowCount={noShowCount}
         />
 
         {isExpanded && (
@@ -159,6 +167,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
                 <FixedScheduleDisplay
                   daysPerWeek={effectiveDaysPerWeek}
                   startTime={effectiveStartTime}
+                  isStartTimeNegotiable={effectiveNegotiable}
                   compact={true}
                 />
               </View>
@@ -220,5 +229,3 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     </CardStripe>
   );
 });
-
-export default ApplicantCard;

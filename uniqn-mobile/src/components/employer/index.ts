@@ -9,8 +9,8 @@
 export { ApplicantCard as EmployerApplicantCard } from './applicants/ApplicantCard';
 export type { ApplicantCardProps as EmployerApplicantCardProps } from './applicants/ApplicantCard';
 
-export { ApplicantList } from './applicants/ApplicantList';
-export type { ApplicantListProps } from './applicants/ApplicantList';
+export { ApplicantList, toApplicantFilter } from './applicants/ApplicantList';
+export type { ApplicantListProps, FilterStatus } from './applicants/ApplicantList';
 
 export { ApplicantConfirmModal } from './applicants/ConfirmModal';
 export type { ApplicantConfirmModalProps, ConfirmModalAction } from './applicants/ConfirmModal';
@@ -37,9 +37,6 @@ export type {
   SettlementEditData,
 } from './settlement/SettlementEditModal';
 
-export { SettlementRevertModal } from './settlement/SettlementRevertModal';
-export type { SettlementRevertModalProps } from './settlement/SettlementRevertModal';
-
 export { SettlementSettingsModal } from './settlement/SettlementSettingsModal';
 export type {
   SettlementSettingsModalProps,
@@ -56,9 +53,8 @@ export type { AllowanceEditorProps } from './settlement/AllowanceEditor';
 export { TaxSettingsEditor } from './settlement/TaxSettingsEditor';
 export type { TaxSettingsEditorProps, TaxSettings, TaxType } from './settlement/TaxSettingsEditor';
 
-// 시간 수정
-export { WorkTimeEditor } from './settlement/WorkTimeEditor';
-export type { WorkTimeEditorProps } from './settlement/WorkTimeEditor';
+// 근무 수정(시간·역할·색·메모)은 `@/components/workLogEdit` 의 통합 시트가 담당한다.
+// 정산 전용 `WorkTimeEditor` 는 폐지됐다 — 같은 근무를 화면마다 다른 축으로 저장하던 원인.
 
 // 취소 요청 관리
 export { CancellationRequestCard } from './applicants/CancellationRequestCard';
@@ -74,9 +70,7 @@ export type { ConfirmedStaffListProps } from './applicants/ConfirmedStaffList';
 export { StaffManagementTab } from './applicants/StaffManagementTab';
 export type { StaffManagementTabProps } from './applicants/StaffManagementTab';
 
-// 역할 변경
-export { RoleChangeModal } from './applicants/RoleChangeModal';
-export type { RoleChangeModalProps } from './applicants/RoleChangeModal';
+// 역할 변경 전용 모달은 폐지됐다 — 역할은 통합 편집 시트가 다른 축과 같은 RPC 로 저장한다.
 
 // 신고
 export { ReportModal } from './ReportModal';

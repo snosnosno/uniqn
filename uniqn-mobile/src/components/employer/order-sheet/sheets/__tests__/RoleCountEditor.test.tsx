@@ -61,10 +61,23 @@ describe('RoleCountEditor — 칩 토글', () => {
     expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 1 }]);
   });
 
-  it('스테퍼 + 는 99를 넘지 않는다', () => {
-    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 99 }]} />);
+  it('스테퍼 + 는 999를 넘지 않는다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 999 }]} />);
     fireEvent.press(getByTestId('order-role-count-plus-0'));
-    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 999 }]);
+  });
+
+  // 대회사 대규모 편성(딜러 100명+)이 타깃 — 구 상한 99 로 되돌아가면 여기서 걸린다.
+  it('세 자리 인원(120명)이 스테퍼로도 직접 입력으로도 들어간다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 119 }]} />);
+    fireEvent.press(getByTestId('order-role-count-plus-0'));
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 120 }]);
+
+    const input = getByTestId('order-role-count-input-0');
+    fireEvent(input, 'focus');
+    fireEvent.changeText(input, '250');
+    fireEvent(input, 'blur');
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 250 }]);
   });
 
   it('칩 해제 후 재선택 → 직전 인원이 복원된다 (오조작 복구)', () => {
@@ -167,13 +180,14 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
     expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 12 }]);
   });
 
-  it('세 자리 입력은 두 자리로 잘려 상한 99를 넘지 않는다', () => {
+  it('네 자리 입력은 세 자리로 잘려 상한 999를 넘지 않는다', () => {
     const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1 }]} />);
     const input = getByTestId('order-role-count-input-0');
     fireEvent(input, 'focus');
-    fireEvent.changeText(input, '999');
+    fireEvent.changeText(input, '1234');
     fireEvent(input, 'blur');
-    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+    // slice(0,3) 로 '123' 이 된다 — clamp 가 아니라 **입력 자릿수**가 먼저 막는다.
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 123 }]);
   });
 
   it('빈 문자열로 blur → 직전 값이 복구된다 (0명 저장 방지)', () => {
@@ -205,11 +219,11 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
 
   // Minor-2 회귀 가드 — 칩 해제로 기억된 인원이 범위 밖이어도 재선택 시 clamp 되어야 한다.
   // (레거시 draft 의 count=150 같은 값이 하이드레이션으로 흘러들어오는 경로)
-  it('범위 밖 인원을 기억했다가 재선택하면 99로 clamp 된다', () => {
-    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 150 }]} />);
-    fireEvent.press(getByTestId('order-role-chip-dealer')); // 해제 → lastCount=150 기억
+  it('범위 밖 인원을 기억했다가 재선택하면 999로 clamp 된다', () => {
+    const { getByTestId } = render(<Harness initial={[{ role: 'dealer', count: 1500 }]} />);
+    fireEvent.press(getByTestId('order-role-chip-dealer')); // 해제 → lastCount=1500 기억
     fireEvent.press(getByTestId('order-role-chip-dealer')); // 재선택 → clamp
-    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 99 }]);
+    expect(dump(getByTestId)).toEqual([{ role: 'dealer', count: 999 }]);
   });
 });
 
@@ -217,7 +231,7 @@ describe('RoleCountEditor — 인원 숫자 직접 입력', () => {
  * Important 회귀 가드 — 편집 중인 값이 *다른 역할*에 커밋되는 오데이터.
  *
  * 뿌리는 blur/focus 순서가 아니라 인덱스가 불안정 식별자라는 점이다. 오염 값이
- * zod min(1).max(99) 안이라 스키마가 못 잡는 조용한 오데이터라서 회귀 가드가 필수다.
+ * zod min(1).max(999) 안이라 스키마가 못 잡는 조용한 오데이터라서 회귀 가드가 필수다.
  * 또 `keyboardShouldPersistTaps="handled"` 때문에 "blur 없이 옆 버튼 탭"은 정상 경로다.
  */
 describe('RoleCountEditor — 편집 중 행이 바뀌어도 다른 역할에 커밋되지 않는다', () => {
@@ -378,10 +392,10 @@ describe('RoleCountEditor — 경계 no-op emit 차단', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('인원 99에서 ＋ 를 눌러도 onChange 가 호출되지 않는다', () => {
+  it('인원 999에서 ＋ 를 눌러도 onChange 가 호출되지 않는다', () => {
     const onChange = jest.fn();
     const { getByTestId } = render(
-      <RoleCountEditor roles={[{ role: 'dealer', count: 99 }]} onChange={onChange} />
+      <RoleCountEditor roles={[{ role: 'dealer', count: 999 }]} onChange={onChange} />
     );
     fireEvent.press(getByTestId('order-role-count-plus-0'));
     expect(onChange).not.toHaveBeenCalled();

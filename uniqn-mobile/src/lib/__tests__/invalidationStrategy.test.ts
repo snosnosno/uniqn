@@ -63,7 +63,6 @@ jest.mock('../queryClient', () => ({
       byWorkLog: (workLogId: string) => ['reviews', 'byWorkLog', workLogId],
       myGiven: () => ['reviews', 'myGiven'],
       pending: () => ['reviews', 'pending'],
-      bubbleScore: (revieweeId: string) => ['reviews', 'bubbleScore', revieweeId],
     },
     tournaments: {
       all: ['tournaments'],

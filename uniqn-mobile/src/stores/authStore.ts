@@ -191,7 +191,9 @@ async function clearRejectedServerSession(get: () => AuthState, uid: string) {
   });
 
   try {
-    await supabase.auth.signOut();
+    // 정리 경로라 global 유지 — 서버가 거부한 세션(프로필 부재)은 어느 기기에 남아도
+    // 같은 반쪽 상태로 부팅한다. 사용자 의도가 아니라 무결성 복구다.
+    await supabase.auth.signOut({ scope: 'global' });
   } catch (error) {
     logger.warn('Failed to fully sign out rejected session', {
       component: 'authStore',
@@ -210,7 +212,11 @@ async function clearAutoLoginBlockedSession(get: () => AuthState, uid: string) {
   });
 
   try {
-    await supabase.auth.signOut();
+    // 🔑 자동로그인 해제는 **이 기기의 설정**이다 (감사 auth-F2 확장).
+    // 기본값 global 로 두면 사용자가 폰에서 자동로그인을 끈 것만으로 태블릿·웹 세션까지
+    // 끊긴다 — 원장은 이 지점을 "정리 경로"로 묶었지만, 실제로는 사용자 의도가 기기 한정인
+    // 설정 반영이라 사용자 로그아웃과 같은 부류다.
+    await supabase.auth.signOut({ scope: 'local' });
   } catch (error) {
     logger.warn('Failed to sign out restored session while auto login is disabled', {
       component: 'authStore',

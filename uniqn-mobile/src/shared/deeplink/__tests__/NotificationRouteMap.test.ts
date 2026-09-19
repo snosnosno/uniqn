@@ -12,7 +12,15 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(46);
+    // 53 = 52 + posting_announcement (S3-2 — RPC send_job_posting_announcement 가 보낸다,
+    //                                  마이그 20260813140000)
+    // 52 = 51 + posting_capacity_gap (S3-1 — 크론 notify-posting-capacity-gap 이 보낸다,
+    //                                  마이그 20260813110000)
+    // 51 = 50 + ops_staff_assigned (ops 결함⑦-1 — 마이그 20260809100000 의 트리거가 보낸다)
+    // 50 = 46 + job_posting_collaborator_added/removed (DB 트리거가 보내는데 클라가 몰랐다)
+    //         + work_log_check_in/out (2026-04-21~08-07 발송분 6건 흡수용 레거시)
+    //      46 = 47 - settlement_requested(정산 요청, 2026-08-02 죽은 회로 정리로 제거 — 발신 코드가 이력 전체에 0건이었다)
+    expect(allNotificationTypes.length).toBe(53);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -70,9 +78,6 @@ describe('NotificationRouteMap', () => {
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.NEW_APPLICATION]()).toEqual({
       name: 'employer/my-postings',
     });
-    expect(NOTIFICATION_ROUTE_MAP[NotificationType.SETTLEMENT_REQUESTED]()).toEqual({
-      name: 'employer/my-postings',
-    });
   });
 
   it('keeps schedule-based staff events on the schedule screen', () => {
@@ -95,6 +100,14 @@ describe('NotificationRouteMap', () => {
     scheduleTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]()).toEqual({ name: 'schedule' });
     });
+  });
+
+  // 출근 예정 시각 변경(트리거 Case 2-B)은 스케줄 목록이 아니라 상세 모달까지 닿아야 한다.
+  // 그 화면에만 '취소 요청' 버튼이 있어서, 목록에 떨구면 무음 변경을 거부할 경로가 끊긴다.
+  it('lands schedule change on the detail sheet when applicationId is present', () => {
+    expect(
+      NOTIFICATION_ROUTE_MAP[NotificationType.SCHEDULE_CHANGE]({ applicationId: 'app-77' })
+    ).toEqual({ name: 'schedule', params: { applicationId: 'app-77' } });
   });
 
   it('maps job events to the public job detail or jobs list', () => {
@@ -230,7 +243,6 @@ describe('NotificationRouteMap', () => {
     expect(isEmployerOnlyNotification(NotificationType.APPLICATION_CANCELLED)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.STAFF_CHECKED_IN)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.STAFF_CHECKED_OUT)).toBe(true);
-    expect(isEmployerOnlyNotification(NotificationType.SETTLEMENT_REQUESTED)).toBe(true);
     expect(isEmployerOnlyNotification(NotificationType.APP_UPDATE)).toBe(false);
   });
 

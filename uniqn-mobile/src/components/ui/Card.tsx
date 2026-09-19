@@ -23,8 +23,27 @@ export interface CardProps extends ViewProps {
   accessibilityHint?: string;
 }
 
+/**
+ * elevation 은 그림자가 아니라 **배경 명도 단계**로 만든다(디자인 룰 14).
+ *
+ * 종전 `elevated` 는 `shadow-md` 를 달고 있었고, `variant` 를 안 주면 이게 기본이라
+ * 앱 전체 67곳이 같은 높이로 떠 있었다 — 전부 떠 있으면 아무것도 강조되지 않는다.
+ * 게다가 다크 배경은 `#0B0B0E` 라 **검정 위에 검은 그림자를 그리고 있었다**(보이지 않는다).
+ *
+ * 다크에는 이미 명도 +9 씩 올라가는 5단 사다리가 있다
+ * (surface #0B0B0E → card #141418 → elevated #1C1C22 → overlay #26262C → hover #2E2E34).
+ * 카드의 제자리는 `surface-card` 다 — 종전의 `dark:bg-surface-elevated` 는 그림자가
+ * 안 보이니 배경을 한 단계 올려 벌충한 것이고, `surface-elevated` 는 시트·팝오버 자리다.
+ * 경계는 헤어라인이 준다(라이트 `#D6D2CA` · 다크 `#222228`).
+ *
+ * 진짜로 떠야 하는 것들(Toast·FAB)은 Card 를 거치지 않고 자기 자리에서 `shadow-lg` 를 쓴다.
+ *
+ * 🔑 **라이트는 배경색이 그대로다** — `surface-card` 의 라이트 값이 `#FFFFFF` 라
+ * `bg-white` 와 같다. 라이트에서 바뀌는 건 그림자가 빠지고 헤어라인이 생기는 것뿐이고,
+ * 배경 하강은 다크에서만 일어난다.
+ */
 const variantStyles: Record<CardVariant, string> = {
-  elevated: 'bg-white dark:bg-surface-elevated shadow-md',
+  elevated: 'bg-surface-card border border-divider',
   outlined: 'bg-surface-card border border-secondary-200 dark:border-surface-overlay',
   filled: 'bg-secondary-50 dark:bg-surface',
 };

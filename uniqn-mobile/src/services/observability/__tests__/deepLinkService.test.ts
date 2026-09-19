@@ -149,7 +149,7 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
     case 'admin/inquiry':
       return `/(admin)/inquiries/${route.params?.id}`;
     case 'admin/tournaments':
-      return '/(admin)/tournaments';
+      return '/(admin)/tournament-approvals';
     default:
       return '/(app)/(tabs)/home-jobs';
   }

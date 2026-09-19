@@ -46,6 +46,12 @@ describe('WORK_LOG_COLUMNS — SELECT 화이트리스트 정본', () => {
     }
   });
 
+  // 출처 배지(QR/수정됨)의 유일한 근거. 빠지면 값이 DB 에 있어도 클라까지 오지 않아
+  // 배지가 조용히 사라진다(whitelist-silent-drop).
+  it('퇴근 시각 출처 컬럼(end_time_source)을 화이트리스트에 포함한다', () => {
+    expect(columns).toContain('end_time_source');
+  });
+
   it('Phase D 폐지된 jsonb 컬럼명(check_in_time/check_out_time)은 화이트리스트에 없다', () => {
     // ts 단일소스 전환 회귀 — 옛 jsonb 컬럼이 되살아나면 RED
     expect(columns).not.toContain('check_in_time');

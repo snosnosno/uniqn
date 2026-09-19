@@ -10,7 +10,10 @@ import { View, Text } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { CollaboratorRow } from './CollaboratorRow';
 import { SkeletonListItem } from '@/components/ui/Skeleton';
-import type { JobPostingCollaboratorWithUser } from '@/types/jobPostingCollaborator';
+import type {
+  JobPostingCollaboratorRole,
+  JobPostingCollaboratorWithUser,
+} from '@/types/jobPostingCollaborator';
 
 export interface CollaboratorListProps {
   collaborators: JobPostingCollaboratorWithUser[];
@@ -19,6 +22,8 @@ export interface CollaboratorListProps {
   currentUserId: string | undefined;
   onRemove?: (userId: string) => void;
   onLeave?: () => void;
+  /** owner 가 권한을 바꿀 때 (S3-4) */
+  onChangeRole?: (userId: string, role: JobPostingCollaboratorRole) => void;
   actionDisabled?: boolean;
 }
 
@@ -29,6 +34,7 @@ export function CollaboratorList({
   currentUserId,
   onRemove,
   onLeave,
+  onChangeRole,
   actionDisabled,
 }: CollaboratorListProps) {
   if (isLoading) {
@@ -68,6 +74,7 @@ export function CollaboratorList({
           currentUserId={currentUserId}
           onRemove={onRemove}
           onLeave={onLeave}
+          onChangeRole={onChangeRole}
           disabled={actionDisabled}
         />
       )}

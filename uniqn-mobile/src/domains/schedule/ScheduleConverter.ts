@@ -19,15 +19,11 @@ import type {
   WorkLog,
   PostingRoleCatalogEntry,
 } from '@/types';
-import {
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-  TBA_TIME_MARKER,
-  normalizeAssignmentRole,
-} from '@/types/assignment';
+import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
+import { isTimeTBD } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { toDate } from '@/utils/date';
-import { calculateSettlementBreakdown, DEFAULT_SALARY_INFO } from '@/utils/settlement';
+import { calculateSettlementBreakdown } from '@/utils/settlement';
 
 export interface SchedulePostingContext {
   title: string;
@@ -39,6 +35,11 @@ export interface SchedulePostingContext {
    * 화면엔 장소명만 남고 길찾기가 그 이름으로 검색돼 엉뚱한 곳을 안내했다.
    */
   locationAddress?: string;
+  /**
+   * 근무지 좌표(공고 `geoLat`/`geoLng`) — 주소 검색 2단계.
+   * 길찾기가 텍스트 검색 대신 정밀 핀으로 가는 유일한 근거다. 없으면 기존 텍스트 폴백.
+   */
+  coordinates?: { lat: number; lng: number };
   contactPhone?: string;
   ownerId?: string;
   ownerName?: string;
@@ -52,6 +53,10 @@ export function createSchedulePostingContext(posting: JobPosting): SchedulePosti
     location: posting.location?.name || '',
     detailedAddress: posting.location?.detailedAddress,
     locationAddress: posting.location?.district || posting.location?.address,
+    // 좌표는 **둘 다 있을 때만** 싣는다. 반쪽이면 링크를 못 만들 뿐 아니라 DB 도 짝을 강제한다.
+    ...(typeof posting.geoLat === 'number' && typeof posting.geoLng === 'number'
+      ? { coordinates: { lat: posting.geoLat, lng: posting.geoLng } }
+      : {}),
     contactPhone: posting.contactPhone,
     ownerId: posting.ownerId,
     ownerName: posting.ownerName,
@@ -110,7 +115,11 @@ export function createScheduleContainerContext(
         filled: 0,
         salary: entry.salary,
       })),
-      defaultSalary: DEFAULT_SALARY_INFO,
+      // 🔑 폴백 단가(시급 15,000원)를 명시 주입하지 않는다(감사 3-1) —
+      //    주입하면 표시 계층이 그것을 "구인자가 설정한 기본급"으로 오인해
+      //    합의된 적 없는 금액을 확정 금액처럼 보여준다. 계산 결과는 불변
+      //    (getRoleSalaryFromRoles 가 내부에서 같은 폴백을 계속 적용한다).
+      defaultSalary: undefined,
     },
   };
 }
@@ -172,6 +181,7 @@ export class ScheduleConverter {
       location: postingContext?.location || '',
       detailedAddress: postingContext?.detailedAddress,
       locationAddress: postingContext?.locationAddress,
+      coordinates: postingContext?.coordinates,
       role: workLog.role,
       customRole: workLog.customRole,
       status: attendanceStatus,
@@ -243,6 +253,7 @@ export class ScheduleConverter {
             location: postingContext?.location || '',
             detailedAddress: postingContext?.detailedAddress,
             locationAddress: postingContext?.locationAddress,
+            coordinates: postingContext?.coordinates,
             role: normalizedRole.role,
             customRole: normalizedRole.customRole ?? application.customRole,
             status: STATUS.ATTENDANCE.NOT_STARTED,
@@ -276,12 +287,9 @@ export class ScheduleConverter {
     date: string,
     type: 'start' | 'end'
   ): Date | null {
-    if (
-      !timeSlot ||
-      timeSlot === FIXED_TIME_MARKER ||
-      timeSlot === TBA_TIME_MARKER ||
-      timeSlot === '미정'
-    ) {
+    // [R1] 예전엔 마커 2종 + 리터럴 '미정' 을 3중으로 비교했다(뒤 둘은 같은 값이라 중복).
+    //      판정은 `isTimeTBD` 하나로 모은다 — 서버 `_posting_slot_key` 와 같은 센티널 집합이다.
+    if (isTimeTBD(timeSlot)) {
       return null;
     }
 

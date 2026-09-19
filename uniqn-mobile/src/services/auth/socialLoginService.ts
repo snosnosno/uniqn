@@ -418,7 +418,8 @@ export async function signInWithApple(): Promise<AuthResult> {
           error: error instanceof Error ? error.message : String(error),
         });
         try {
-          await supabase.auth.signOut();
+          // 정리 경로라 global 유지 — 프로필 생성이 끝나지 않은 세션은 남기지 않는다.
+          await supabase.auth.signOut({ scope: 'global' });
         } catch {
           // Cleanup failures are ignored.
         }
@@ -530,7 +531,9 @@ export async function signInWithApple(): Promise<AuthResult> {
 
     // 기존 프로필 있지만 phoneVerified=false (이전에 중단된 가입)
     if (existingProfile.isActive === false) {
-      await supabase.auth.signOut();
+      // 비활성 계정은 **전 기기에서** 끊어야 한다 — 여기서 local 로 좁히면
+      // 다른 기기에 살아 있는 세션으로 계속 쓸 수 있어 비활성화가 무의미해진다.
+      await supabase.auth.signOut({ scope: 'global' });
       throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
         userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
       });
@@ -569,7 +572,8 @@ export async function signInWithApple(): Promise<AuthResult> {
 
     // 부분 인증 상태 정리
     try {
-      await supabase.auth.signOut();
+      // 정리 경로라 global 유지 — 반쪽 인증 세션은 어디에도 남기지 않는다.
+      await supabase.auth.signOut({ scope: 'global' });
     } catch {
       // 정리 실패 무시
     }

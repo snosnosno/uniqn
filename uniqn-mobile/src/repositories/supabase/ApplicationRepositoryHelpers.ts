@@ -11,7 +11,7 @@ import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { STATUS } from '@/constants';
-import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
+import { FIXED_DATE_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { TABLE_COLUMNS } from './JobPostingRepositoryHelpers';
 import type {
   Application,
@@ -21,6 +21,7 @@ import type {
   JobPosting,
 } from '@/types';
 import type { ApplicationWithJob, ApplicantListWithStats } from '../interfaces';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -117,7 +118,7 @@ export async function loadApplication(applicationId: string): Promise<Applicatio
   if (error) handleSupabaseError(error, { operation: '지원서 조회', table: TABLES.APPLICATIONS });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '지원 내역을 찾을 수 없습니다.',
+      userMessage: notFound('지원 내역'),
     });
   }
 
@@ -140,7 +141,7 @@ export async function loadJobPosting(jobPostingId: string): Promise<JobPosting> 
   if (error) handleSupabaseError(error, { operation: '공고 조회', table: TABLES.JOB_POSTINGS });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다.',
+      userMessage: notFound('공고'),
     });
   }
 
@@ -222,7 +223,10 @@ export function buildCanonicalFixedAssignment(jobData: JobPosting, roleId: strin
   }
   return {
     roleIds: [roleId],
-    timeSlot: jobData.schedule.startTime ?? FIXED_TIME_MARKER,
+    // [R1] 시각이 없으면(=협의) 미정 센티널 하나로 통일한다. 옛 값 'NEGOTIABLE' 은 폐지.
+    //      `??` 가 아니라 `||` 인 이유: startTime 이 빈 문자열이면 그것도 '시각 없음'이다
+    //      — `??` 로 두면 ''가 서버로 나가 미정 표현이 또 하나 늘어난다.
+    timeSlot: jobData.schedule.startTime || TBA_TIME_MARKER,
     dates: [FIXED_DATE_MARKER],
     isGrouped: false,
     checkMethod: 'individual',

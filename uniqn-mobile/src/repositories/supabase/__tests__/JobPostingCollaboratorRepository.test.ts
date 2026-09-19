@@ -76,6 +76,8 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
           userId: 'user-1',
           addedBy: 'owner-1',
           addedAt: '2026-05-12T00:00:00Z',
+          // S3-4: role 이 응답에 없으면 manager 로 읽는다(권한 보존 방향).
+          role: 'manager',
           displayName: '협업자',
           email: 'collab@test.local',
           photoUrl: null,
@@ -183,6 +185,8 @@ describe('SupabaseJobPostingCollaboratorRepository', () => {
         userId: 'user-1',
         addedBy: 'owner-1',
         addedAt: '2026-05-12T00:00:00Z',
+        // S3-4: 신규 협업자의 기본 권한은 manager (기존 동작 보존)
+        role: 'manager',
       });
     });
 

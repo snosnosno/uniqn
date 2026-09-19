@@ -6,12 +6,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { opsBlindPresetRepository } from '@/repositories/ops';
 import { opsBlindPresetService } from '@/services/ops';
+// 결함⑦-3: 오프라인 가드는 배럴(@/hooks) 대신 직접 경로로 가져온다(순환 참조 회피).
+import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import { queryKeys } from '@/lib/queryClient';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -43,8 +46,10 @@ export function useSaveBlindPreset() {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (input: { name: string; levels: readonly OpsBlindLevelInput[] }) =>
-      opsBlindPresetService.save(requireActor(actorId), input.name, input.levels),
+    mutationFn: (input: { name: string; levels: readonly OpsBlindLevelInput[] }) => {
+      requireOnlineForMutation('ops.saveBlindPreset');
+      return opsBlindPresetService.save(requireActor(actorId), input.name, input.levels);
+    },
     onSuccess: () => {
       // 뮤테이션 비행 중 로그아웃 시 actorId=undefined → requireActor throw 방지(무효화만 조건부 skip).
       if (actorId) qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(actorId) });
@@ -52,7 +57,7 @@ export function useSaveBlindPreset() {
     },
     onError: (e) => {
       logger.error('ops 블라인드 프리셋 저장 실패', toError(e));
-      toast.error(extractUserMessage(e) || '프리셋 저장에 실패했습니다');
+      toast.error(extractUserMessage(e) || saveFailed('프리셋'));
     },
   });
 }
@@ -62,7 +67,10 @@ export function useDeleteBlindPreset() {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (presetId: string) => opsBlindPresetService.remove(requireActor(actorId), presetId),
+    mutationFn: (presetId: string) => {
+      requireOnlineForMutation('ops.deleteBlindPreset');
+      return opsBlindPresetService.remove(requireActor(actorId), presetId);
+    },
     onSuccess: () => {
       // 뮤테이션 비행 중 로그아웃 시 actorId=undefined → requireActor throw 방지(무효화만 조건부 skip).
       if (actorId) qc.invalidateQueries({ queryKey: queryKeys.ops.blindPresets(actorId) });

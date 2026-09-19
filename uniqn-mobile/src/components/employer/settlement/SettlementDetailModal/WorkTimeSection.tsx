@@ -11,6 +11,11 @@ import { ClockIcon } from '@/components/icons';
 import { formatTime } from '@/utils/date';
 import { formatDuration } from '@/utils/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
+import {
+  TIME_PROVENANCE_LABELS,
+  TIME_PROVENANCE_A11Y_LABELS,
+  type TimeProvenance,
+} from '@/shared/time/timeProvenance';
 
 export interface WorkTimeSectionProps {
   /** 실제 출근 시간 */
@@ -23,9 +28,39 @@ export interface WorkTimeSectionProps {
   scheduledEndTime?: Date | null;
   /** 근무 시간 (시간 단위, 실제 기록 기반) */
   hoursWorked?: number;
+  /** 출근 시각 출처 — `resolveTimeProvenance({ axis: 'start', ... })` 결과 */
+  startProvenance?: TimeProvenance;
+  /** 퇴근 시각 출처 — `resolveTimeProvenance({ axis: 'end', ... })` 결과 */
+  endProvenance?: TimeProvenance;
 }
 
 const MS_PER_HOUR = 1000 * 60 * 60;
+
+/**
+ * 실제 시각의 출처 배지.
+ *
+ * 정산 분쟁에서 "이 시각이 어디서 왔는가"가 근거가 된다. 근거가 없으면(`'unknown'`)
+ * 아무것도 그리지 않는다 — 거짓 "QR 기록"이 표시 없음보다 훨씬 나쁘다.
+ */
+function ProvenanceBadge({ provenance }: { provenance: TimeProvenance | undefined }) {
+  if (!provenance) return null;
+  const label = TIME_PROVENANCE_LABELS[provenance];
+  if (!label) return null;
+
+  const isQr = provenance === 'qr';
+  return (
+    <Text
+      className={
+        isQr
+          ? 'mt-0.5 text-micro font-sans-semibold text-success-600 dark:text-success-400'
+          : 'mt-0.5 text-micro font-sans-semibold text-secondary-500 dark:text-secondary-400'
+      }
+      accessibilityLabel={TIME_PROVENANCE_A11Y_LABELS[provenance] ?? undefined}
+    >
+      {isQr ? `✓${label}` : label}
+    </Text>
+  );
+}
 
 /**
  * 근무 시간 섹션
@@ -47,6 +82,8 @@ export function WorkTimeSection({
   scheduledStartTime = null,
   scheduledEndTime = null,
   hoursWorked,
+  startProvenance,
+  endProvenance,
 }: WorkTimeSectionProps) {
   // 출근/퇴근 각각 실제 기록 여부를 개별 판단 (한쪽만 기록된 중간 상태 정확히 표시)
   const startIsActual = Boolean(startTime);
@@ -107,6 +144,8 @@ export function WorkTimeSection({
                   {formatTime(effectiveStart)}
                 </Text>
               )}
+              {/* 예정시간에 출처를 붙이면 거짓말이 된다 — 실제 기록일 때만 */}
+              {startIsActual ? <ProvenanceBadge provenance={startProvenance} /> : null}
             </View>
             <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
             <View className="items-center">
@@ -125,6 +164,7 @@ export function WorkTimeSection({
               <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
                 {formatTime(effectiveEnd)}
               </Text>
+              {endIsActual ? <ProvenanceBadge provenance={endProvenance} /> : null}
             </View>
             <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
             <View className="items-center">
@@ -140,6 +180,15 @@ export function WorkTimeSection({
           {isScheduledOnly ? (
             <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400 text-center font-sans">
               아직 출퇴근 기록 전이에요. 시간 수정에서 기록하면 정산할 수 있어요.
+            </Text>
+          ) : null}
+
+          {/* 퇴근에만 ✓QR 이 뜨고 출근엔 아무것도 없으면 "출근은 QR 이 아니었다" 로 읽힌다.
+              실제로는 출근 시각의 출처를 기록하는 컬럼이 스키마에 없어 알 수 없는 것뿐이다.
+              정산 분쟁 근거로 쓰이는 표시라 이 비대칭을 화면에서 밝힌다. */}
+          {endProvenance === 'qr' && startProvenance === 'unknown' ? (
+            <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-400 text-center font-sans">
+              출근 시각은 출처가 기록되지 않아 QR 여부를 알 수 없어요.
             </Text>
           ) : null}
         </>

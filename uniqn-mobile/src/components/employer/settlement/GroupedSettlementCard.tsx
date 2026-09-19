@@ -1,133 +1,88 @@
 /**
  * UNIQN Mobile - GroupedSettlementCard 컴포넌트
  *
- * @description 같은 스태프의 여러 정산 기록을 통합 표시하는 카드
- * - 기본 상태: 접힘 (총 금액, 건수만 표시)
- * - 펼침 상태: 개별 날짜별 정산 상태 표시
+ * @description 같은 스태프의 여러 근무를 **한 줄**로 합산하는 카드
+ * - 기본 상태: 접힘 (지급 예정 금액, 건수만 표시)
+ * - 펼침 상태: 날짜별 금액
  * - 다중 역할 통합 지원
  *
- * @version 1.0.0
+ * @version 2.0.0 - 구인자 IA S2: 지급 상태 배지·지급 완료·일괄 정산·선택 모드 제거.
+ *
+ * 🔑 사람별 합산이 이 카드의 존재 이유다. 민수의 3일치가 세 줄이면 사장은 세 번 보낸다.
+ * 🔑 카드 금액은 **퇴근이 기록됐고 아직 지급 처리되지 않은 날만** 더한다.
+ *    - 퇴근 전 날은 금액을 만들지 않고 건수만 밝힌다.
+ *    - 과거에 `지급 완료` 로 처리된 날(워크플로우가 살아 있던 시절)은 빼고 따로 밝힌다 —
+ *      더하면 사장이 카드 금액을 그대로 보내 이미 준 돈을 한 번 더 보낸다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
-import { Avatar, CardStripe, Checkbox, NumericText } from '@/components/ui';
-import { PAYROLL_STATUS_CONFIG as PAYROLL_STATUS_SHARED } from './helpers/settlementConfig';
+import { Avatar, CardStripe, NumericText } from '@/components/ui';
 import {
   CalendarIcon,
-  BanknotesIcon,
+  CheckCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  CheckCircleIcon,
   ClockIcon,
-  ExclamationCircleIcon,
 } from '@/components/icons';
 import { formatDateDisplay, formatGroupRolesDisplay } from '@/utils/settlementGrouping';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
-import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS_LABELS } from '@/shared/status';
+import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
+import type { WorkLog } from '@/types';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface GroupedSettlementCardProps {
-  /** 그룹화된 정산 정보 */
+  /** 그룹화된 근무 금액 정보 */
   group: GroupedSettlement;
-  /** 카드 클릭 핸들러 (첫 번째 WorkLog 상세) - 그룹 정보 포함 */
+  /** 카드 클릭 핸들러 (첫 번째 WorkLog 계산 근거) - 그룹 정보 포함 */
   onPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
   /** 개별 날짜 클릭 핸들러 - 그룹 정보 포함 */
   onDatePress?: (workLog: WorkLog, group: GroupedSettlement) => void;
-  /** 그룹 일괄 정산 핸들러 */
-  onBulkSettle?: (workLogs: WorkLog[]) => void;
-  /** 개별 정산 핸들러 */
-  onSettle?: (workLog: WorkLog) => void;
   /** 기본 펼침 상태 (기본: false) */
   defaultExpanded?: boolean;
-  /** 선택 모드 활성화 */
-  selectionMode?: boolean;
-  /** 선택된 WorkLog ID 집합 */
-  selectedIds?: Set<string>;
-  /** 선택 토글 핸들러 */
-  onToggleSelect?: (workLog: WorkLog) => void;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const PAYROLL_STATUS_CONFIG: Record<
-  PayrollStatus,
-  { label: string; bgColor: string; textColor: string }
-> = {
-  pending: {
-    label: PAYROLL_STATUS_LABELS.pending,
-    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    textColor: 'text-warning-700 dark:text-warning-300',
-  },
-  processing: {
-    label: PAYROLL_STATUS_LABELS.processing,
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    textColor: 'text-primary-700 dark:text-primary-300',
-  },
-  completed: {
-    label: PAYROLL_STATUS_LABELS.completed,
-    bgColor: 'bg-success-50 dark:bg-success-900/30',
-    textColor: 'text-success-700 dark:text-success-300',
-  },
-  failed: {
-    label: PAYROLL_STATUS_LABELS.failed,
-    bgColor: 'bg-error-100 dark:bg-error-900/30',
-    textColor: 'text-error-700 dark:text-error-300',
-  },
-};
+/** 퇴근 전 날짜를 가리키는 말 — 금액 칸·배지·접근성 라벨이 같은 값을 쓴다. */
+const BEFORE_CHECKOUT_LABEL = '퇴근 전';
+/** 과거에 지급 완료로 처리된 날짜를 가리키는 말 — 같은 이유로 한 곳에서 쓴다. */
+const SETTLED_LABEL = '지급 처리됨';
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
-/** 날짜별 정산 상태 행 */
-const DateStatusRow = memo(function DateStatusRow({
+/** 날짜별 금액 행 */
+const DateAmountRow = memo(function DateAmountRow({
   status,
   workLog,
   group,
   isLast,
-  selectionMode,
-  isSelected,
-  onToggleSelect,
   onPress,
-  onSettle,
 }: {
   status: DateSettlementStatus;
   workLog: WorkLog;
   group: GroupedSettlement;
   isLast: boolean;
-  selectionMode?: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: (workLog: WorkLog) => void;
   onPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
-  onSettle?: (workLog: WorkLog) => void;
 }) {
-  const payrollConfig = PAYROLL_STATUS_CONFIG[status.payrollStatus];
   const roleDisplay = getRoleDisplayName(status.role, status.customRole);
-  const canSettle = status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
+  const isSettled = status.payrollStatus === STATUS.PAYROLL.COMPLETED;
+  const amountText = !status.hasValidTimes
+    ? BEFORE_CHECKOUT_LABEL
+    : isSettled
+      ? `${formatCurrency(status.amount)} · ${SETTLED_LABEL}`
+      : formatCurrency(status.amount);
 
   const handlePress = useCallback(() => {
-    if (selectionMode && onToggleSelect) {
-      onToggleSelect(workLog);
-    } else {
-      onPress?.(workLog, group);
-    }
-  }, [selectionMode, onToggleSelect, onPress, workLog, group]);
-
-  const handleSettle = useCallback(() => {
-    onSettle?.(workLog);
-  }, [onSettle, workLog]);
+    onPress?.(workLog, group);
+  }, [onPress, workLog, group]);
 
   return (
     <Pressable
@@ -135,20 +90,9 @@ const DateStatusRow = memo(function DateStatusRow({
       className={`flex-row items-center py-2.5 ${
         !isLast ? 'border-b border-secondary-100 dark:border-surface-overlay/50' : ''
       }`}
-      accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${payrollConfig.label}`}
+      accessibilityRole="button"
+      accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${amountText}`}
     >
-      {/* 선택 모드: 체크박스 */}
-      {selectionMode && (
-        <View className="mr-2">
-          <Checkbox
-            checked={isSelected ?? false}
-            onChange={() => onToggleSelect?.(workLog)}
-            size="sm"
-          />
-        </View>
-      )}
-
-      {/* 날짜 */}
       <View className="flex-1">
         <Text className="text-sm font-sans-medium text-secondary-800 dark:text-secondary-200">
           {status.formattedDate}
@@ -158,27 +102,15 @@ const DateStatusRow = memo(function DateStatusRow({
         </Text>
       </View>
 
-      {/* 금액 */}
-      <Text className="text-sm font-sans-semibold text-content-secondary mr-3">
-        {status.hasValidTimes ? formatCurrency(status.amount) : '-'}
+      <Text
+        className={`text-sm font-sans-semibold ${
+          status.hasValidTimes && !isSettled
+            ? 'text-content-secondary'
+            : 'text-content-muted dark:text-secondary-400'
+        }`}
+      >
+        {amountText}
       </Text>
-
-      {/* 상태 뱃지 또는 정산 버튼 */}
-      {canSettle && onSettle && !selectionMode ? (
-        <Pressable
-          onPress={handleSettle}
-          className="px-2.5 py-1 bg-primary-500 rounded-lg active:opacity-70"
-          accessibilityLabel="지급 완료로 표시"
-        >
-          <Text className="text-xs font-sans-medium text-content-onGold">지급 완료</Text>
-        </Pressable>
-      ) : (
-        <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
-          <Text className={`text-xs font-sans-medium ${payrollConfig.textColor}`}>
-            {status.hasValidTimes ? payrollConfig.label : '출퇴근 미완료'}
-          </Text>
-        </View>
-      )}
     </Pressable>
   );
 });
@@ -191,12 +123,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   group,
   onPress,
   onDatePress,
-  onBulkSettle,
-  onSettle,
   defaultExpanded = false,
-  selectionMode = false,
-  selectedIds,
-  onToggleSelect,
 }: GroupedSettlementCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -209,112 +136,60 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
     fallbackPhotoURLBlurhash: group.staffProfile.photoURLBlurhash,
   });
 
-  // 역할 표시 텍스트
-  const rolesDisplay = useMemo(() => {
-    return formatGroupRolesDisplay(group);
-  }, [group]);
+  const rolesDisplay = useMemo(() => formatGroupRolesDisplay(group), [group]);
 
-  // 날짜 표시 텍스트
-  const dateDisplay = useMemo(() => {
-    return formatDateDisplay(group.dateRange.dates);
-  }, [group.dateRange.dates]);
+  const dateDisplay = useMemo(
+    () => formatDateDisplay(group.dateRange.dates),
+    [group.dateRange.dates]
+  );
 
-  // 정산 가능 WorkLog 목록
-  const settlableWorkLogs = useMemo(() => {
-    const settlableIds = new Set(
-      group.dateStatuses
-        .filter((s) => s.hasValidTimes && s.payrollStatus !== STATUS.PAYROLL.COMPLETED)
-        .map((s) => s.workLogId)
-    );
-    return group.originalWorkLogs.filter((wl) => settlableIds.has(wl.id));
-  }, [group]);
+  // `summary.totalAmount` 는 퇴근 전 날의 계산값과 이미 지급 처리된 날까지 섞여 있다 — 직접 센다.
+  const { payableAmount, beforeCheckoutCount, settledCount } = useMemo(() => {
+    let amount = 0;
+    let before = 0;
+    let settled = 0;
+    for (const status of group.dateStatuses) {
+      if (!status.hasValidTimes) {
+        before += 1;
+      } else if (status.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        settled += 1;
+      } else {
+        amount += status.amount;
+      }
+    }
+    return { payableAmount: amount, beforeCheckoutCount: before, settledCount: settled };
+  }, [group.dateStatuses]);
 
-  // WorkLog ID → WorkLog 맵
-  const workLogMap = useMemo(() => {
-    return new Map(group.originalWorkLogs.map((wl) => [wl.id, wl]));
-  }, [group.originalWorkLogs]);
+  const workLogMap = useMemo(
+    () => new Map(group.originalWorkLogs.map((wl) => [wl.id, wl])),
+    [group.originalWorkLogs]
+  );
 
-  // 선택된 항목 수
-  const selectedCount = useMemo(() => {
-    if (!selectedIds) return 0;
-    return group.originalWorkLogs.filter((wl) => selectedIds.has(wl.id)).length;
-  }, [selectedIds, group.originalWorkLogs]);
+  // 아직 퇴근이 안 찍힌 날이 있으면 골드(진행 중), 전부 끝났으면 뮤트(지나간 근무).
+  const stripeTone = beforeCheckoutCount > 0 ? 'gold' : 'muted';
 
-  // 전체 선택 여부
-  const isAllSelected = selectedCount === group.originalWorkLogs.length;
-
-  // 그룹 대표 상태 → stripe tone
-  // 우선순위: pending(미정산) > processing(처리중) > completed(완료)
-  const groupPayrollStatus: PayrollStatus = useMemo(() => {
-    if (group.summary.pendingCount > 0) return STATUS.PAYROLL.PENDING;
-    const hasProcessing = group.dateStatuses.some((s) => s.payrollStatus === 'processing');
-    if (hasProcessing) return 'processing';
-    return STATUS.PAYROLL.COMPLETED;
-  }, [group.summary.pendingCount, group.dateStatuses]);
-
-  const stripeTone = PAYROLL_STATUS_SHARED[groupPayrollStatus].stripeTone;
-
-  // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // 카드 클릭
   const handlePress = useCallback(() => {
     if (group.originalWorkLogs.length > 0) {
       onPress?.(group.originalWorkLogs[0], group);
     }
   }, [onPress, group]);
 
-  // 그룹 일괄 정산
-  const handleBulkSettle = useCallback(() => {
-    if (settlableWorkLogs.length > 0) {
-      onBulkSettle?.(settlableWorkLogs);
-    }
-  }, [onBulkSettle, settlableWorkLogs]);
-
-  // 그룹 전체 선택/해제
-  const handleToggleAllSelect = useCallback(() => {
-    if (!onToggleSelect) return;
-
-    // 전체 선택 상태면 전체 해제, 아니면 전체 선택
-    for (const workLog of group.originalWorkLogs) {
-      if (isAllSelected) {
-        // 선택되어 있으면 해제
-        if (selectedIds?.has(workLog.id)) {
-          onToggleSelect(workLog);
-        }
-      } else {
-        // 선택되어 있지 않으면 선택
-        if (!selectedIds?.has(workLog.id)) {
-          onToggleSelect(workLog);
-        }
-      }
-    }
-  }, [onToggleSelect, group.originalWorkLogs, isAllSelected, selectedIds]);
-
   return (
     <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
       <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
-        {/* 상단: 프로필 + 상태/금액 */}
+        {/* 상단: 프로필 + 지급 예정 금액 */}
         <Pressable
-          onPress={selectionMode ? handleToggleAllSelect : handlePress}
+          onPress={handlePress}
           className="active:opacity-80"
-          accessibilityLabel={`${displayName} 정산 상세 보기`}
+          accessibilityRole="button"
+          accessibilityLabel={`${displayName} 근무 금액 상세 보기`}
         >
           <View className="flex-row items-center">
-            {/* 선택 모드: 체크박스 */}
-            {selectionMode && (
-              <View className="mr-3">
-                <Checkbox
-                  checked={isAllSelected || (selectedCount > 0 && !isAllSelected)}
-                  onChange={handleToggleAllSelect}
-                />
-              </View>
-            )}
-
-            {/* 아바타 */}
             <Avatar
               source={profilePhotoURL}
               name={displayName}
@@ -323,7 +198,6 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
               blurhash={profilePhotoURLBlurhash}
             />
 
-            {/* 이름 + 역할 */}
             <View className="flex-1">
               <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                 {displayName}
@@ -333,7 +207,6 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
               </Text>
             </View>
 
-            {/* 금액/건수 */}
             <View className="items-end">
               <NumericText
                 className="text-base font-sans-bold text-primary-600 dark:text-primary-400"
@@ -342,7 +215,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
                   textAlign: 'right',
                 }}
               >
-                {formatCurrency(group.summary.totalAmount)}
+                {formatCurrency(payableAmount)}
               </NumericText>
               <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {group.summary.totalCount}건
@@ -359,44 +232,37 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           </Text>
         </View>
 
-        {/* 정산 요약 (미정산/완료 건수) */}
-        <View className="flex-row items-center mt-2 flex-wrap gap-2">
-          {group.summary.pendingCount > 0 && (
-            <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-              <ClockIcon size={12} color="#D4A017" />
-              <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300 font-sans">
-                미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)}
-                )
-              </Text>
-            </View>
-          )}
-          {group.summary.completedCount > 0 && (
-            <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
-              <CheckCircleIcon size={12} color="#22C55E" />
-              <Text className="ml-1 text-xs text-success-700 dark:text-success-300 font-sans">
-                완료 {group.summary.completedCount}건 (
-                {formatCurrency(group.summary.completedAmount)})
-              </Text>
-            </View>
-          )}
-          {group.summary.settlableCount < group.summary.pendingCount && (
-            <View className="flex-row items-center px-2 py-1 bg-surface-page dark:bg-surface rounded-lg">
-              <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
-                출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* 합계에서 빠진 날을 밝힌다. 0건이면 자리도 없다. */}
+        {beforeCheckoutCount > 0 || settledCount > 0 ? (
+          <View className="flex-row flex-wrap items-center mt-2 gap-2">
+            {beforeCheckoutCount > 0 && (
+              <View className="flex-row items-center px-2 py-1 bg-surface-page dark:bg-surface rounded-lg">
+                <ClockIcon size={12} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+                  {BEFORE_CHECKOUT_LABEL} {beforeCheckoutCount}건 · 퇴근을 찍어야 금액이 정해져요
+                </Text>
+              </View>
+            )}
+            {settledCount > 0 && (
+              <View className="flex-row items-center px-2 py-1 bg-surface-page dark:bg-surface rounded-lg">
+                <CheckCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+                  {SETTLED_LABEL} {settledCount}건 · 합계에서 뺐어요
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
 
         {/* 펼침/접힘 버튼 */}
         <Pressable
           onPress={toggleExpanded}
           className="flex-row items-center justify-center mt-3 py-2 border-t border-divider"
-          accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
+          accessibilityRole="button"
+          accessibilityLabel={isExpanded ? '날짜별 금액 접기' : '날짜별 금액 펼치기'}
         >
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1 font-sans">
-            날짜별 상세
+            날짜별 금액
           </Text>
           {isExpanded ? (
             <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
@@ -405,7 +271,6 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           )}
         </Pressable>
 
-        {/* 펼침 상태: 날짜별 정산 상태 */}
         {isExpanded && (
           <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
             {group.dateStatuses.map((status, index) => {
@@ -413,36 +278,16 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
               if (!workLog) return null;
 
               return (
-                <DateStatusRow
+                <DateAmountRow
                   key={status.workLogId}
                   status={status}
                   workLog={workLog}
                   group={group}
                   isLast={index === group.dateStatuses.length - 1}
-                  selectionMode={selectionMode}
-                  isSelected={selectedIds?.has(status.workLogId)}
-                  onToggleSelect={onToggleSelect}
                   onPress={onDatePress}
-                  onSettle={onSettle}
                 />
               );
             })}
-          </View>
-        )}
-
-        {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
-        {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
-          <View className="mt-3 pt-3 border-t border-divider">
-            <Pressable
-              onPress={handleBulkSettle}
-              className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"
-              accessibilityLabel={`${settlableWorkLogs.length}건 일괄 정산`}
-            >
-              <BanknotesIcon size={18} color="#fff" />
-              <Text className="ml-2 text-sm font-sans-semibold text-content-onGold">
-                {settlableWorkLogs.length}건 일괄 정산
-              </Text>
-            </Pressable>
           </View>
         )}
       </View>
