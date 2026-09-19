@@ -366,7 +366,7 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
   });
 
   describe('진입점 타일 셋', () => {
-    it('일반 공고는 지원자 · 근무 · 공고 수정 셋뿐이다', () => {
+    it('일반 공고는 지원자 · 근무 · 공고 수정 · 함께 관리할 사람 넷뿐이다', () => {
       // 배정 인원이 있어도(옛 '스태프 공지' 노출 조건) 타일은 늘지 않는다.
       mockManagementView.mockReturnValue(managementView(2));
 
@@ -376,6 +376,7 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
         'job-posting-manage-applicants',
         'job-posting-manage-settlements',
         'job-posting-edit-button',
+        'job-posting-manage-collaborators',
       ]);
     });
 
@@ -390,6 +391,7 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
         'job-posting-manage-applicants',
         'job-posting-manage-settlements',
         'job-posting-edit-button',
+        'job-posting-manage-collaborators',
       ]);
     });
 
@@ -399,7 +401,7 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
 
       const { getAllByTestId } = render(<JobPostingDetailScreen />);
 
-      expect(getAllByTestId(TILE_TEST_ID)).toHaveLength(3);
+      expect(getAllByTestId(TILE_TEST_ID)).toHaveLength(4);
     });
 
     it('타일 이름은 대상 기준이다 — "관리" 로 끝나는 이름이 없다', () => {

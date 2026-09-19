@@ -2,13 +2,14 @@
  * JobPostingDetailScreen — 허브 신호 회귀 테스트 (1단계 체감 묶음).
  *
  * 고정하는 계약 넷.
- *  1. 근무 정보(일정·급여·위치)는 **기본 펼침**이다. 사장이 매 진입마다 [상세]를 누를 이유가 없다.
+ *  1. 근무 정보(일정·급여·위치)는 **기본 접힘**이다. 사장은 자기가 쓴 공고를 다시 읽으러
+ *     오는 게 아니라 진입점으로 가려고 온다 — [상세]로 언제든 편다.
  *  2. 지원자 0명이면 상태 보고("0명이 대기중입니다") 대신 다음 행동(공유 CTA)을 준다.
  *  3. 오늘 근무가 있으면 당일 운영 요약(출근/노쇼)이 허브에 뜬다 — 정산 화면까지 2탭 들어가지 않는다.
- *  4. 헤더는 `공유` · `⋯` 두 시트로 진입점을 모은다(구인자 IA S1).
- *     공유 = 링크 공유 · 지원 QR · 구직자 화면 보기 / ⋯ = 함께 관리할 사람. 눈 아이콘은 없다.
+ *  4. 헤더는 `공유` 시트 하나로 진입점을 모은다(구인자 IA S1).
+ *     공유 = 링크 공유 · 지원 QR · 구직자 화면 보기. 눈 아이콘도 `⋯` 도 없다.
  *
- * ⚠️ StackHeader 를 null 로 목하면 rightAction(공유·⋯ 버튼)이 통째로 사라져 4번이
+ * ⚠️ StackHeader 를 null 로 목하면 rightAction(공유 버튼)이 통째로 사라져 4번이
  *    "테스트가 있는데 검증되지 않는" 상태가 된다 — rightAction 을 실제로 렌더하는 목을 쓴다.
  */
 import React from 'react';
@@ -225,12 +226,24 @@ describe('JobPostingDetailScreen — 허브 신호', () => {
     mockConfirmedStaff.mockReturnValue(emptyStaff);
   });
 
-  it('근무 정보는 기본 펼침이다 — 진입하자마자 일정·급여가 보인다', () => {
+  it('근무 정보는 기본 접힘이다 — 진입하자마자 진입점 타일이 보인다', () => {
+    const { queryByTestId, getByText } = render(<JobPostingDetailScreen />);
+
+    expect(queryByTestId('schedule-content')).toBeNull();
+    expect(queryByTestId('compensation-content')).toBeNull();
+    // 접힌 상태이므로 토글 라벨은 "상세"
+    expect(getByText('상세')).toBeTruthy();
+  });
+
+  // 🔑 접힘이 기본이라고 내용을 못 보게 된 건 아니다 — 토글이 실제로 펴는지 같이 못박는다.
+  //    (없으면 "항상 안 보임"도 위 테스트를 통과한다)
+  it('[상세] 를 누르면 일정·급여가 펼쳐진다', () => {
     const { getByTestId, getByText } = render(<JobPostingDetailScreen />);
+
+    fireEvent.press(getByText('상세'));
 
     expect(getByTestId('schedule-content')).toBeTruthy();
     expect(getByTestId('compensation-content')).toBeTruthy();
-    // 펼쳐진 상태이므로 토글 라벨은 "접기"
     expect(getByText('접기')).toBeTruthy();
   });
 
@@ -322,11 +335,15 @@ describe('JobPostingDetailScreen — 허브 신호', () => {
       }
     });
 
-    it('⋯ 시트에서 함께 관리할 사람으로 간다', () => {
-      const { getByTestId } = render(<JobPostingDetailScreen />);
+    // 🔑 협업자 진입점은 헤더 `⋯` 시트가 아니라 '관리' 타일이다. 항목이 하나뿐인 점 셋 메뉴는
+    //    열기 전까지 무엇이 있는지 알 수 없어, 사장이 이 진입점을 못 찾았다.
+    it('관리 타일에서 함께 관리할 사람으로 간다', () => {
+      const { getByTestId, queryByTestId } = render(<JobPostingDetailScreen />);
 
-      fireEvent.press(getByTestId('job-posting-more'));
-      fireEvent.press(getByTestId('sheet-option-collaborators'));
+      // ⋯ 버튼 자체가 없어야 한다 — 남아 있으면 빈 시트가 열린다.
+      expect(queryByTestId('job-posting-more')).toBeNull();
+
+      fireEvent.press(getByTestId('job-posting-manage-collaborators'));
 
       expect(mockPush).toHaveBeenCalledWith('/(employer)/my-postings/posting-1/collaborators');
     });
