@@ -59,9 +59,28 @@ export function useStaffSettlementsHandlers({
       try {
         await reportService.createReport(input);
 
-        // 노쇼 신고인 경우 WorkLog 상태도 변경
+        // 🔑 여기부터 신고 행은 **이미 존재한다**. 아래 실패를 바깥 catch 로 흘려보내면
+        //    '신고 접수에 실패했습니다' 라는 거짓 안내가 나가고, 사용자가 재시도하면
+        //    중복 신고로 막혀 빠져나갈 길이 없다(신고는 남고 노쇼만 안 된 고아 상태).
+        //    신고는 되돌리지 않는다 — 감사 기록이고 클라에 삭제 권한도 없다.
+        //    대신 접수 사실을 알리고 노쇼만 다시 하도록 후속 경로를 가리킨다.
         if (input.type === 'no_show' && input.workLogId) {
-          await markAsNoShow(input.workLogId, input.description);
+          try {
+            await markAsNoShow(input.workLogId, input.description);
+          } catch (noShowError) {
+            logger.error('노쇼 신고 접수 후 상태 변경 실패', noShowError as Error, {
+              targetId: input.targetId,
+              jobPostingId: input.jobPostingId,
+              workLogId: input.workLogId,
+            });
+            addToast({
+              type: 'warning',
+              message:
+                '신고는 접수되었지만 노쇼 처리에 실패했습니다. 스태프 관리에서 상태를 변경해주세요.',
+            });
+            modals.closeReportModal();
+            return;
+          }
         }
 
         addToast({

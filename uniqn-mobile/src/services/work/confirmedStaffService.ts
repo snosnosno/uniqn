@@ -212,6 +212,27 @@ export async function markAsNoShow(workLogId: string, reason?: string): Promise<
 
   await confirmedStaffRepository.markAsNoShow({ workLogId, actorId: currentUser.id, reason });
 
+  // 되돌리는 쪽(cancelNoShow)과 일반 상태 변경(updateStaffStatus)만 동기화를 걸고 있어,
+  // 노쇼로 **가는** 경로에서만 일정 게시판 글이 낡은 채 남았다. 세 경로를 대칭으로 맞춘다.
+  // enqueue 실패는 비치명적 — 노쇼 처리 자체는 이미 끝났다(confirm 경로와 동일 정책).
+  const workLog = await workLogRepository.getById(workLogId);
+  if (workLog?.jobPostingId) {
+    try {
+      await enqueueScheduleBoardSync(workLog.jobPostingId, 'update', {
+        jobPostingId: workLog.jobPostingId,
+        workLogId,
+        reason: 'confirmed_staff_no_show',
+      });
+    } catch (error) {
+      logger.warn('Schedule board enqueue failed after confirmed staff no-show', {
+        component: 'confirmedStaffService',
+        workLogId,
+        jobPostingId: workLog.jobPostingId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   logger.info('Marked confirmed staff as no-show', { workLogId });
 }
 
