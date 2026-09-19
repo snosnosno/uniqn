@@ -174,7 +174,12 @@ ultracode 세션의 **첫 작업은 이 브랜치를 push 하고 PR 을 여는 �
 
 ⚠️ **아래 절차와 함정 목록은 지우지 않는다 — 다음 롤아웃에서 그대로 재사용한다.**
 ⚠️ 원장 초판의 `eas update --branch master` 는 **틀렸다**. 실제 EAS 채널·브랜치는 **`production`**
-(`eas channel:view production` 실측).
+(`eas channel:view production` 실측). 아래 5번은 **정정본으로 갈아 두었다**.
+⚠️ **`--environment production` 도 빼면 안 된다** (2026-09-19 실측, eas-cli 21.7.0). 없으면
+비대화형에서 `The --environment flag must be set when running in --non-interactive mode` 로
+즉시 실패한다 — 에이전트가 도구로 호출하면 TTY 가 없어 항상 비대화형이다.
+`--branch`(업데이트가 실릴 채널)와 `--environment`(EAS 서버측 환경변수 세트)는 **다른 축**이다.
+정본 절차 = `.claude/skills/deploy/SKILL.md` §5 규칙 2.
 
 ```
 #432~#442 를 웹과 OTA 로 내보낸다. 그 전에 prod 마이그 5건을 적용한다.
@@ -194,7 +199,8 @@ ultracode 세션의 **첫 작업은 이 브랜치를 push 하고 PR 을 여는 �
    안 맞으면 총계 전에 **어느 함수가 빠졌는지**부터 본다.
 3. 로컬을 origin/master 로 맞춘다 (git fetch origin master:master)
 4. 웹 배포: node scripts/deploy-cloudflare.js --force
-5. OTA: eas update --branch master (커밋 필드가 origin/master HEAD 인지 확인)
+5. OTA: eas update --branch production --environment production
+   (발행 후 Commit 필드가 origin/master HEAD 인지, Runtime version 이 대상 함대와 같은지 확인)
 6. 배포 후 번들 마커 검증
 
 금지: 워크트리에서 웹 배포하지 말 것. 메인 체크아웃에서만.
