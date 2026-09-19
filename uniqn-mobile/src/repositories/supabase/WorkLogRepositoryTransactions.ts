@@ -15,8 +15,9 @@ import {
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError } from '@/utils/supabase';
 import { settledLockMessage } from '@/domains/settlement';
-import type { QRCodeAction, QRProcessAction } from '@/types';
+import type { QRCodeAction, QRProcessResult, QRWorkCandidate } from '@/types';
 import { TABLE, rethrowOrHandle } from './WorkLogRepositoryHelpers';
+import { notFound } from '@/constants/messages';
 
 // 🪦 executeUpdatePayrollStatus 제거 (2026-08-05) — payroll 컬럼 직접 UPDATE 구현체.
 //    #402 정산 RPC 화 이후 UI 소비자 0곳이었고, 20260805120000 트리거가 서버에서 막는다.
@@ -32,8 +33,26 @@ interface QRCheckinRpcResult {
   action?: QRCodeAction;
   check_in_time?: string;
   check_out_time?: string;
+  scanned_at?: string;
+  applied_time?: string;
   work_duration?: number;
   error?: string;
+}
+
+interface PostingQRAttendanceRpcResult {
+  success: boolean;
+  error?: string;
+  requires_selection?: boolean;
+  selection_token?: string;
+  candidates?: QRWorkCandidate[];
+  work_log_id?: string;
+  assignment_group_id?: string | null;
+  date?: string;
+  time_slot?: string | null;
+  action?: QRCodeAction;
+  scanned_at?: string;
+  applied_time?: string;
+  work_duration?: number;
 }
 
 function mapQRCheckinErrorToException(errorCode: string, workLogId: string): never {
@@ -56,12 +75,12 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
     case 'work_log_not_found':
       throw new InvalidQRCodeError({
         message: '근무 기록이 존재하지 않습니다',
-        userMessage: '근무 기록을 찾을 수 없습니다',
+        userMessage: notFound('근무 기록'),
       });
     case 'job_posting_not_found':
       throw new InvalidQRCodeError({
         message: '공고가 존재하지 않습니다',
-        userMessage: '공고를 찾을 수 없습니다',
+        userMessage: notFound('공고'),
       });
     case 'job_posting_inactive':
       throw new InvalidQRCodeError({
@@ -82,6 +101,10 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
       throw new InvalidQRCodeError({
         message: 'QR date와 WorkLog date 불일치',
         userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
+      });
+    case 'checkout_too_early':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '출근 적용 시각과 같아 퇴근할 수 없습니다. 잠시 후 다시 시도해주세요.',
       });
     // 출근 상태 화이트리스트 전환(W1-8)으로 새로 생긴 거부 코드들.
     // 매핑을 빠뜨리면 default 폴백이 raw 영문 코드를 사용자에게 그대로 노출한다.
@@ -104,19 +127,134 @@ function mapQRCheckinErrorToException(errorCode: string, workLogId: string): nev
   }
 }
 
+function mapPostingQRErrorToException(errorCode: string): never {
+  switch (errorCode) {
+    case 'unauthorized':
+      throw new BusinessError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: '본인의 출퇴근만 처리할 수 있습니다',
+      });
+    case 'job_posting_not_found':
+      throw new InvalidQRCodeError({
+        message: '공고가 존재하지 않습니다',
+        userMessage: notFound('공고'),
+      });
+    case 'job_posting_inactive':
+      throw new InvalidQRCodeError({
+        message: '공고 상태가 활성 아닙니다',
+        userMessage: '종료된 공고입니다',
+      });
+    case 'no_eligible_work_log':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '지금 출퇴근할 수 있는 배정 근무가 없습니다',
+      });
+    case 'invalid_selection':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '선택한 근무가 더 이상 처리 가능한 상태가 아닙니다',
+      });
+    case 'checkout_too_early':
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '출근 적용 시각과 같아 퇴근할 수 없습니다. 잠시 후 다시 시도해주세요.',
+      });
+    default:
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: `출퇴근 처리 실패: ${errorCode}`,
+      });
+  }
+}
+
+export async function executeProcessPostingQRAttendance(
+  jobPostingId: string,
+  staffId: string,
+  selectedWorkLogId?: string,
+  selectionToken?: string
+): Promise<QRProcessResult> {
+  try {
+    logger.info('공고 QR 자동 출퇴근 (RPC)', { jobPostingId, staffId, selectedWorkLogId });
+    const params = {
+      p_job_posting_id: jobPostingId,
+      p_staff_id: staffId,
+      ...(selectedWorkLogId ? { p_selected_work_log_id: selectedWorkLogId } : {}),
+      ...(selectionToken ? { p_selection_token: selectionToken } : {}),
+    };
+    const { data, error } = await supabase.rpc('process_posting_qr_attendance', params);
+    if (error) {
+      handleSupabaseError(error, { operation: '공고 QR 자동 출퇴근 RPC', table: TABLE });
+    }
+
+    const result = data as PostingQRAttendanceRpcResult | null;
+    if (!result) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: 'QR 처리 응답이 비었습니다',
+      });
+    }
+    if (!result.success && result.requires_selection) {
+      if (!result.selection_token) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 선택 정보를 확인할 수 없습니다',
+        });
+      }
+      return {
+        success: false,
+        requiresSelection: true,
+        candidates: result.candidates ?? [],
+        selectionToken: result.selection_token,
+      };
+    }
+    if (!result.success) mapPostingQRErrorToException(result.error ?? 'unknown');
+
+    if (!result.work_log_id || !result.action) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '출퇴근 처리 결과를 확인할 수 없습니다',
+      });
+    }
+    const scannedAt = new Date(result.scanned_at ?? '');
+    const appliedTime = new Date(result.applied_time ?? '');
+    if (Number.isNaN(scannedAt.getTime()) || Number.isNaN(appliedTime.getTime())) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '출퇴근 처리 시각을 확인할 수 없습니다',
+      });
+    }
+
+    return {
+      success: true,
+      workLogId: result.work_log_id,
+      assignmentGroupId: result.assignment_group_id ?? null,
+      timeSlot: result.time_slot ?? null,
+      action: result.action,
+      scannedAt,
+      appliedTime,
+      workDuration: result.work_duration ?? 0,
+      message: result.action === 'checkIn' ? '출근이 기록되었습니다.' : '퇴근이 기록되었습니다.',
+    };
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    rethrowOrHandle(error, '공고 QR 자동 출퇴근 (Transaction)', {
+      jobPostingId,
+      staffId,
+      selectedWorkLogId,
+    });
+  }
+}
+
 export async function executeProcessQRCheckInOut(
   workLogId: string,
   staffId: string,
   jobPostingId: string,
-  action: QRProcessAction,
-  checkTime: Date,
-  date: string
+  action: QRCodeAction,
+  dateOrLegacyCheckTime: string | Date,
+  legacyDate?: string
 ): Promise<{
   action: QRCodeAction;
   hasExistingCheckInTime: boolean;
   workDuration: number;
+  scannedAt: Date;
+  appliedTime: Date;
 }> {
   try {
+    // 두 버전이 섞여 배포되는 동안 구 호출부의 (checkTime, date)도 읽기만 호환한다.
+    // checkTime 값 자체는 서버에 전달하지 않는다.
+    const date =
+      typeof dateOrLegacyCheckTime === 'string' ? dateOrLegacyCheckTime : (legacyDate ?? '');
     logger.info('QR 체크인/아웃 (RPC)', { workLogId, staffId, action });
 
     const { data, error } = await supabase.rpc('process_qr_checkin_atomically', {
@@ -124,7 +262,8 @@ export async function executeProcessQRCheckInOut(
       p_staff_id: staffId,
       p_job_posting_id: jobPostingId,
       p_action: action,
-      p_check_time: checkTime.toISOString(),
+      // 함수 시그니처의 레거시 인자는 유지하되 DB 서버시각만 신뢰한다.
+      p_check_time: null,
       p_expected_date: date ?? null,
     });
 
@@ -143,14 +282,22 @@ export async function executeProcessQRCheckInOut(
       mapQRCheckinErrorToException(result.error ?? 'unknown', workLogId);
     }
 
-    // 'auto' 호출이어도 서버는 성공 시 해소된 action('checkIn'|'checkOut')을 반환한다.
-    // 누락 시(이론상 없음) 'auto'면 출근을 기본값으로 안전 폴백.
-    const resolvedAction: QRCodeAction = result.action ?? (action === 'auto' ? 'checkIn' : action);
+    const resolvedAction: QRCodeAction = result.action ?? action;
+    const appliedTimeValue = result.applied_time ?? result.check_in_time ?? result.check_out_time;
+    const scannedAt = new Date(result.scanned_at ?? appliedTimeValue ?? '');
+    const appliedAt = new Date(appliedTimeValue ?? '');
+    if (Number.isNaN(scannedAt.getTime()) || Number.isNaN(appliedAt.getTime())) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '출퇴근 처리 시각을 확인할 수 없습니다',
+      });
+    }
 
     return {
       action: resolvedAction,
       hasExistingCheckInTime: !!result.check_in_time,
       workDuration: result.work_duration ?? 0,
+      scannedAt,
+      appliedTime: appliedAt,
     };
   } catch (error) {
     if (isAppError(error)) throw error;

@@ -12,21 +12,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, ConfirmModal } from '@/components';
 import { ActionSheet, type ActionSheetOption } from '@/components/ui';
+// 🔑 배럴이 아니라 직접 경로다. 이 화면의 테스트들은 `jest.mock('@/components/ui', ...)` 로
+//    배럴을 통째로 갈아끼우는데, 그 목에 없는 export 는 조용히 `undefined` 가 된다
+//    (tsc 는 목 문자열을 보지 않으므로 타입 체크는 통과한다). 타일 그리드는 그 테스트들이
+//    실제로 검증하는 대상이라 목되면 안 된다.
+import { ActionTileGrid, type ActionTileItem } from '@/components/ui/ActionTileGrid';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
 import { StackHeader } from '@/components/headers';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import {
-  BanknotesIcon,
   ChevronDownIcon,
-  ChevronRightIcon,
   ChevronUpIcon,
   ClockIcon,
   CurrencyDollarIcon,
   DocumentIcon,
   EditIcon,
-  EyeIcon,
   MapPinIcon,
   ShareIcon,
   TrashIcon,
@@ -79,10 +81,26 @@ import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus 
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useWorkLogsByJobPosting } from '@/hooks/useSettlement';
-import { selectPendingSettlementCount } from '@/features/employer/settlements/settlementCalc';
-import { getTodayString } from '@/utils/date';
 import { TodayOpsStrip } from '@/features/employer/settlements/TodayOpsStrip';
+import { loadFailed, notFound } from '@/constants/messages';
+import { MOTION_DURATION } from '@/constants/motion';
+
+/** 헤더 시트 옵션 값 — 테스트가 `sheet-option-*` 로 누르므로 값이 곧 계약이다. */
+const HEADER_SHEET_VALUE = {
+  shareLink: 'share-link',
+  applyQR: 'apply-qr',
+  preview: 'preview',
+} as const;
+
+/**
+ * 공유 시트 — 공고를 밖으로 내보내는 길을 한곳에 모은다.
+ * 🚨 '지원 QR' 의 '지원' 을 빼지 말 것 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다.
+ */
+const SHARE_SHEET_OPTIONS: ActionSheetOption[] = [
+  { label: '링크 공유', value: HEADER_SHEET_VALUE.shareLink },
+  { label: '지원 QR', value: HEADER_SHEET_VALUE.applyQR },
+  { label: '구직자 화면 보기', value: HEADER_SHEET_VALUE.preview },
+];
 
 /**
  * 통계 한 칸 — 숫자 자체가 목적지가 된다.
@@ -118,28 +136,40 @@ function StatColumn({
   );
 }
 
-interface ActionCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+/**
+ * "지금 할 일" 카드 전용 testID.
+ *
+ * 승격 카드는 목록 타일과 같은 목적지를 가리키지만 **다른 자리**다 — 타일의
+ * `job-posting-manage-*` 를 그대로 물려주면 같은 testID 가 화면에 둘이 되어
+ * 테스트가 무엇을 눌렀는지 구분하지 못한다.
+ */
+const PRIMARY_ACTION_TEST_ID = 'job-posting-primary-action';
+
+/**
+ * "지금 할 일" 한 장 전용.
+ *
+ * 2열 그리드 타일은 `ActionTileGrid`(@/components/ui)로 옮겼다 — 진입점 타일은 이 화면
+ * 밖에서도 같은 형태로 필요해서 프리미티브가 맞고, 여기 남는 건 이 화면 고유의 위계다.
+ *
+ * 카드 6장이 전부 같은 크기면 우선순위 표현이 0이다 — 사장이 매번 여섯 장을 읽고
+ * 무엇이 급한지 스스로 판단해야 한다. 위계는 **크기와 골드**로만 준다.
+ */
+interface PrimaryActionCardProps extends Omit<ActionTileItem, 'key'> {
   displayTitle?: string;
   displayDescription?: string;
-  badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
-  onPress: () => void;
-  testID?: string;
-  /**
-   * 'row'(기본) = 강등된 목록 행 / 'primary' = "지금 할 일" 한 장.
-   *
-   * 카드 6장이 전부 같은 크기라 우선순위 표현이 0이었다 — 사장이 매번 여섯 장을 읽고
-   * 무엇이 급한지 스스로 판단해야 했다. 위계는 **크기와 골드**로만 준다.
-   */
-  emphasis?: 'row' | 'primary';
-  /** primary 일 때 골드 버튼에 쓸 라벨 */
+  /** 골드 버튼에 쓸 라벨 */
   actionLabel?: string;
 }
 
-function ActionCard({
-  icon,
+/**
+ * 처리할 일 하나를 크게 내는 카드.
+ *
+ * 같은 진입점이라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 해서
+ * `displayTitle`/`displayDescription` 으로 문구를 갈아끼운다.
+ */
+function PrimaryActionCard({
+  // `icon` 은 받되 그리지 않는다 — 골드 버튼이 이 카드의 시선 고정점이 된 이상 아이콘
+  // 타일은 장식만 남는다. 호출부가 타일과 같은 항목을 그대로 넘길 수 있도록 계약만 맞춘다.
   title,
   description,
   displayTitle,
@@ -147,9 +177,8 @@ function ActionCard({
   badge,
   onPress,
   testID,
-  emphasis = 'row',
   actionLabel,
-}: ActionCardProps) {
+}: PrimaryActionCardProps) {
   const resolvedTitle = displayTitle ?? title;
   const resolvedDescription = displayDescription ?? description;
   // 배지가 라벨에서 빠지면 스크린리더 사용자는 "대기 3명" 같은 처리할 일 개수를 듣지 못한다 —
@@ -158,71 +187,24 @@ function ActionCard({
     ? `${resolvedTitle}, ${badge.label}, ${resolvedDescription}`
     : `${resolvedTitle}, ${resolvedDescription}`;
 
-  if (emphasis === 'primary') {
-    return (
-      <Pressable
-        onPress={onPress}
-        className="active:opacity-70"
-        accessibilityRole="button"
-        testID={testID}
-        // "지금 할 일"이라는 맥락은 시각적 위치로만 전달됐다 — 라벨에도 담는다.
-        accessibilityLabel={`지금 할 일. ${accessibilityLabel}`}
-      >
-        <Card
-          variant="elevated"
-          padding="md"
-          className="border border-primary-200 dark:border-primary-800"
-        >
-          <Text className="mb-2 text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
-            지금 할 일
-          </Text>
-          <View className="flex-row items-center">
-            <View className="mr-3 h-12 w-12 items-center justify-center rounded-sm bg-primary-50 dark:bg-primary-900/30">
-              {icon}
-            </View>
-            <View className="flex-1">
-              <View className="flex-row items-center">
-                <Text className="mr-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
-                  {resolvedTitle}
-                </Text>
-                {badge ? (
-                  <Badge variant={badge.variant} size="sm">
-                    {badge.label}
-                  </Badge>
-                ) : null}
-              </View>
-              <Text className="mt-1 text-sm text-content-secondary font-sans">
-                {resolvedDescription}
-              </Text>
-            </View>
-          </View>
-          {/* 골드는 이 버튼에만 쓴다 — 강조가 여러 곳이면 아무것도 강조되지 않는다. */}
-          <View className="mt-4 min-h-[44px] items-center justify-center rounded-md bg-primary-600 py-3">
-            <Text className="text-base font-sans-semibold text-content-onGold">
-              {actionLabel ?? '바로 가기'}
-            </Text>
-          </View>
-        </Card>
-      </Pressable>
-    );
-  }
-
   return (
     <Pressable
       onPress={onPress}
-      className="min-h-[56px] flex-row items-center px-4 py-3 active:bg-secondary-50 dark:active:bg-surface-overlay"
+      className="active:opacity-70"
       accessibilityRole="button"
       testID={testID}
-      accessibilityLabel={accessibilityLabel}
+      // "지금 할 일"이라는 맥락은 시각적 위치로만 전달됐다 — 라벨에도 담는다.
+      accessibilityLabel={`지금 할 일. ${accessibilityLabel}`}
     >
-      {/* 강등된 행의 아이콘 배경은 중립이다. 골드를 여기까지 쓰면 "지금 할 일"이 묻힌다. */}
-      <View className="mr-3 h-9 w-9 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface-overlay">
-        {icon}
-      </View>
-      <View className="flex-1">
-        <View className="flex-row items-center">
-          <Text className="mr-2 text-base font-sans-medium text-content-primary dark:text-off-white">
-            {resolvedTitle}
+      <Card
+        variant="elevated"
+        padding="sm"
+        className="border border-primary-200 dark:border-primary-800"
+      >
+        {/* 머리글과 배지를 한 줄에 둔다 — 종전에는 머리글·제목·배지가 세 줄을 먹었다. */}
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs font-sans-semibold text-primary-600 dark:text-primary-400">
+            지금 할 일
           </Text>
           {badge ? (
             <Badge variant={badge.variant} size="sm">
@@ -230,11 +212,32 @@ function ActionCard({
             </Badge>
           ) : null}
         </View>
-        <Text className="mt-0.5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-          {resolvedDescription}
-        </Text>
-      </View>
-      <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
+
+        {/* 제목·설명 좌 / 골드 버튼 우 — 한 줄이다.
+              풀폭 골드 바는 자기 줄(44px)과 위 여백(10px)을 통째로 썼는데, 카드 전체가 이미
+              같은 곳으로 가는 Pressable 이라 그 바는 두 번째 탭 타깃이 아니라 라벨이었다.
+              라벨이라면 제목 옆자리로 충분하다. 아이콘 타일도 뺀다 — 골드가 이 카드의
+              시선 고정점이 된 이상 타일은 장식만 남는다. */}
+        <View className="mt-2 flex-row items-center">
+          <View className="mr-3 flex-1">
+            <Text
+              className="text-base font-display-semibold text-content-primary dark:text-off-white"
+              numberOfLines={2}
+            >
+              {resolvedTitle}
+            </Text>
+            <Text className="mt-0.5 text-xs text-content-secondary font-sans" numberOfLines={2}>
+              {resolvedDescription}
+            </Text>
+          </View>
+          {/* 골드는 이 버튼에만 쓴다 — 강조가 여러 곳이면 아무것도 강조되지 않는다. */}
+          <View className="min-h-[44px] shrink-0 justify-center rounded-md bg-primary-600 px-3">
+            <Text className="text-sm font-sans-semibold text-content-onGold">
+              {actionLabel ?? '바로 가기'}
+            </Text>
+          </View>
+        </View>
+      </Card>
     </Pressable>
   );
 }
@@ -274,9 +277,10 @@ export default function JobPostingDetailScreen() {
   const statusTogglingRef = useRef(false);
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // 기본 펼침 — 사장이 자기 공고의 일정·급여·위치를 보려고 접기를 푸는 동작이 매 진입마다
-  // 반복될 이유가 없다. 접기는 화면을 짧게 만들고 싶은 사람을 위한 선택지로 남긴다.
-  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
+  // 기본 접힘 — 사장이 이 화면에 들어오는 이유는 자기가 쓴 공고 내용을 다시 읽는 게 아니라
+  // 지원자·근무 같은 진입점으로 가기 위해서다. 일정·급여를 펼쳐 두면 그 진입점들이 첫 화면
+  // 밖으로 밀린다(밀도 룰 34). 내용을 확인해야 할 때는 `상세` 로 편다.
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
   // 당일 운영 요약(출근/노쇼) — 정산 화면(settlements.tsx:191)에만 있던 신호를 허브로 올린다.
   //
@@ -288,17 +292,8 @@ export default function JobPostingDetailScreen() {
   });
   const todayGroup = useMemo(() => staffGrouped.find((group) => group.isToday), [staffGrouped]);
 
-  // 정산 대기 건수 — 정산 화면과 **같은 셀렉터**를 쓴다. 종전에는 이 화면만 0 을 하드코딩해서
-  // 정산 대기가 쌓여도 허브에서는 영원히 0건으로 보였다(당일 운영 스트립 배지가 안 뜸).
-  // 고정 공고는 정산 화면 자체가 없으므로 빈 id 로 쿼리를 끈다(enabled: !!jobPostingId).
-  const { data: workLogs } = useWorkLogsByJobPosting(isFixed ? '' : id || '');
-  // 🔑 미래 근무는 정산 대기가 아니다 — 확정 시점에 미래 날짜 work_log 가 먼저 생기므로
-  //    날짜 하한을 안 걸면 아무도 일하기 전에 "정산할 근무 N건" 이 뜬다(셀렉터 주석 참조).
-  const todayString = getTodayString();
-  const pendingSettlementCount = useMemo(
-    () => selectPendingSettlementCount(workLogs ?? [], todayString),
-    [workLogs, todayString]
-  );
+  // 정산 대기 건수는 구인자 IA S2 에서 없앴다 — 앱은 돈을 보내지 않으므로 "대기"가 없다.
+  // 그 숫자를 세려고 열던 근무 기록 조회(useWorkLogsByJobPosting)도 함께 걷어냈다.
 
   // 상태 뱃지에서 바로 걸 수 있는 전이 — 종전에는 목록 화면에만 있어서, 상세를 보다가
   // 마감하려면 뒤로 나갔다 들어와야 했다.
@@ -357,10 +352,6 @@ export default function JobPostingDetailScreen() {
 
   const handleEdit = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/edit`);
-  }, [id, router]);
-
-  const handleCancellationRequests = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
   }, [id, router]);
 
   const handleCollaborators = useCallback(() => {
@@ -471,19 +462,46 @@ export default function JobPostingDetailScreen() {
     void shareJob(posting, SHARE_SOURCES.employerDetail);
   }, [posting, shareJob]);
 
+  /** 구직자 시선 미리보기 — 도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 수치를 부풀리지 않는다. */
   const handlePreview = useCallback(() => {
     router.push(`/(app)/jobs/${id}`);
-  }, [id]);
-
-  /** 확정 스태프 일괄 공지 (S3-2) */
-  const handleAnnounce = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/announce`);
-  }, [id]);
+  }, [id, router]);
 
   /** 지원 QR — 출퇴근 QR(`/qr`)과 다른 화면이다. 페이로드 type 부터 다르다(S3-5). */
   const handleShowApplyQR = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/apply-qr`);
-  }, [id]);
+  }, [id, router]);
+
+  // 헤더 시트 — 매일 누르지 않는 진입점을 `공유` 시트로 모았다(구인자 IA S1).
+  const [shareSheetVisible, setShareSheetVisible] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (shareTimerRef.current) {
+        clearTimeout(shareTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const handleShareSheetSelect = useCallback(
+    (value: string) => {
+      if (value === HEADER_SHEET_VALUE.shareLink) {
+        // 🔑 시트는 RN Modal 이다. 내려가는 도중에 OS 공유창을 띄우면 iOS 가 표시를 무시할 수 있어
+        //    시트 퇴장 시간만큼 기다린 뒤 연다.
+        if (shareTimerRef.current) {
+          clearTimeout(shareTimerRef.current);
+        }
+        shareTimerRef.current = setTimeout(handleShare, MOTION_DURATION.sheetExit);
+      } else if (value === HEADER_SHEET_VALUE.applyQR) {
+        handleShowApplyQR();
+      } else if (value === HEADER_SHEET_VALUE.preview) {
+        handlePreview();
+      }
+    },
+    [handlePreview, handleShare, handleShowApplyQR]
+  );
 
   /**
    * 새 지원 인라인 알림 — 화면을 보고 있는 동안 지원이 들어오면 그 자리에서 알린다.
@@ -559,14 +577,14 @@ export default function JobPostingDetailScreen() {
     // 오프라인이면 원인이 다르다 — "찾을 수 없습니다"는 삭제됐다는 말로 읽힌다.
     // 재시도 버튼도 숨긴다. 눌러도 아무 일이 없는 버튼은 없느니만 못하다.
     const isOffline = !isOnline;
-    const errorTitle = isOffline ? '오프라인 상태예요' : '공고를 불러올 수 없습니다';
+    const errorTitle = isOffline ? '오프라인 상태예요' : loadFailed('공고');
     // error 가 있으면 message 를 넘기지 않는다 — ErrorState 가 AppError.userMessage /
     // extractUserMessage 로 sanitize 한 문구를 쓰게 둔다(원시 error.message 노출 금지).
     const errorMessage = isOffline
       ? '인터넷에 연결되면 공고 정보를 다시 불러옵니다.'
       : error
         ? undefined
-        : '공고 정보를 찾을 수 없습니다.';
+        : notFound('공고 정보');
 
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -618,13 +636,15 @@ export default function JobPostingDetailScreen() {
     cancellationPendingCount: isFixed ? 0 : cancellationPendingCount,
     todayAbsentCount: isFixed ? 0 : todayAbsentCount,
     pendingApplicantCount: pendingApplicants,
-    pendingSettlementCount: isFixed ? 0 : pendingSettlementCount,
     liveOpsCount: isLiveOpsVisible ? opsTournaments.length : 0,
   });
 
-  /** "지금 할 일"이 가리키는 카드 — 미출근과 정산 대기는 둘 다 정산 화면으로 간다. */
+  /**
+   * "지금 할 일"이 가리키는 카드 — 미출근·취소 요청은 모두 [근무] 로 간다.
+   * 취소 요청은 타일을 따로 두지 않고 [근무] 화면 맨 위 한 줄에서 검토 화면으로 이어진다.
+   */
   const primaryCardKey =
-    primaryActionKey === 'todayAbsent' || primaryActionKey === 'pendingSettlement'
+    primaryActionKey === 'todayAbsent' || primaryActionKey === 'cancellationRequests'
       ? 'settlements'
       : primaryActionKey === 'pendingApplicants'
         ? 'applicants'
@@ -632,29 +652,32 @@ export default function JobPostingDetailScreen() {
 
   /**
    * 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 해야 한다 —
-   * "스태프 관리/정산"이 미출근 때문에 올라왔는데 정산 얘기를 하면 사장은 다른 화면을 연다.
+   * [근무] 가 미출근 때문에 올라왔는데 취소 요청 얘기를 하면 사장은 다른 화면을 연다.
    * `displayTitle`/`displayDescription` 은 이 용도로 이미 준비돼 있던 확장점이다.
    */
-  const primaryOverride: Partial<ActionCardProps> =
+  const primaryOverride: Partial<PrimaryActionCardProps> =
     primaryActionKey === 'todayAbsent'
       ? {
           displayTitle: '오늘 출근 확인',
           displayDescription: `아직 출근하지 않은 스태프가 ${todayAbsentCount}명이에요.`,
           actionLabel: '출근 현황 보기',
         }
-      : primaryActionKey === 'pendingSettlement'
+      : primaryActionKey === 'cancellationRequests'
         ? {
-            displayDescription: `정산할 근무가 ${pendingSettlementCount}건 남았어요.`,
-            actionLabel: '정산하러 가기',
+            displayTitle: '취소 요청 검토',
+            displayDescription: `스태프의 취소 요청이 ${cancellationPendingCount}건 있어요.`,
+            actionLabel: '취소 요청 검토하기',
           }
-        : primaryActionKey === 'cancellationRequests'
-          ? { actionLabel: '취소 요청 검토하기' }
-          : primaryActionKey === 'pendingApplicants'
-            ? { actionLabel: '지원자 검토하기' }
-            : { actionLabel: '운영 화면 열기' };
+        : primaryActionKey === 'pendingApplicants'
+          ? { actionLabel: '지원자 검토하기' }
+          : { actionLabel: '운영 화면 열기' };
 
-  interface PostingActionItem extends ActionCardProps {
-    key: string;
+  // 상시 공고는 날짜가 없어 출퇴근·금액이 없다 — [근무] 는 근무표로 안내하는 자리가 된다.
+  const workDescription = isFixed
+    ? '실제 근무일은 근무표에서 배치합니다.'
+    : '날짜별 출퇴근과 근무 금액을 봅니다.';
+
+  interface PostingActionItem extends ActionTileItem {
     visible: boolean;
   }
 
@@ -664,7 +687,7 @@ export default function JobPostingDetailScreen() {
     {
       key: 'liveOps',
       visible: isLiveOpsVisible,
-      icon: <UsersIcon size={20} color={STATUS_COLORS.info} />,
+      icon: <UsersIcon size={18} color={STATUS_COLORS.info} />,
       title:
         opsTournaments.length > 0 ? `라이브 운영 (${opsTournaments.length})` : '라이브 운영 시작',
       description:
@@ -681,42 +704,36 @@ export default function JobPostingDetailScreen() {
       onPress: handleLiveOps,
       testID: 'job-posting-live-ops',
     },
+    // 🔑 이름은 대상 기준이다 — "관리" 로 끝나는 타일이 셋이라 서로 구분되지 않았다.
     {
       key: 'applicants',
       visible: true,
-      icon: <UsersIcon size={20} color={SECONDARY_PALETTE[500]} />,
-      title: '지원자 관리',
+      icon: <UsersIcon size={18} color={SECONDARY_PALETTE[500]} />,
+      title: '지원자',
       description:
         pendingApplicants > 0
           ? `${pendingApplicants}명의 지원자가 대기중입니다.`
           : '지원자 목록을 확인합니다.',
       badge:
-        pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined,
+        pendingApplicants > 0
+          ? { label: `${pendingApplicants}명 대기`, variant: 'warning' }
+          : undefined,
       onPress: handleApplicants,
       testID: 'job-posting-manage-applicants',
     },
-    {
-      key: 'cancellationRequests',
-      visible: !isFixed,
-      icon: <XCircleIcon size={20} color={STATUS_COLORS.error} />,
-      title: '취소 요청 관리',
-      description: '스태프의 취소 요청을 검토합니다.',
-      badge:
-        cancellationPendingCount > 0
-          ? { label: `${cancellationPendingCount}건`, variant: 'error' }
-          : undefined,
-      onPress: handleCancellationRequests,
-      testID: 'job-posting-manage-cancellation-requests',
-    },
+    // [근무] — 옛 '스태프 관리/정산'. 취소 요청 타일은 여기로 흡수됐다(도착지 맨 위 한 줄).
+    // 🚨 배지를 대기 지원자와 합치지 않는다 — `할 일 6` 으로 뭉치면 눌러 봐야 무엇인지 안다.
+    // 🚨 상시 공고에서도 숨기지 않는다 — 자리가 공고 종류에 따라 움직이면 "메뉴가 없어졌다" 로 읽힌다.
+    //    도착지가 근무표로 안내한다. testID 는 e2e 가 쓰므로 옛 이름을 유지한다.
     {
       key: 'settlements',
-      visible: !isFixed,
-      icon: <BanknotesIcon size={20} color={STATUS_COLORS.success} />,
-      title: '스태프 관리/정산',
-      description: '배정된 스태프 관리와 정산을 진행합니다.',
+      visible: true,
+      icon: <ClockIcon size={18} color={STATUS_COLORS.success} />,
+      title: '근무',
+      description: workDescription,
       badge:
-        pendingSettlementCount > 0
-          ? { label: `정산 ${pendingSettlementCount}건`, variant: 'warning' }
+        !isFixed && cancellationPendingCount > 0
+          ? { label: `취소요청 ${cancellationPendingCount}`, variant: 'error' }
           : undefined,
       onPress: handleSettlements,
       testID: 'job-posting-manage-settlements',
@@ -724,7 +741,7 @@ export default function JobPostingDetailScreen() {
     {
       key: 'edit',
       visible: true,
-      icon: <EditIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      icon: <EditIcon size={18} color={SECONDARY_PALETTE[500]} />,
       title: '공고 수정',
       description: '공고 내용을 수정합니다.',
       badge:
@@ -734,44 +751,29 @@ export default function JobPostingDetailScreen() {
       onPress: handleEdit,
       testID: 'job-posting-edit-button',
     },
-    {
-      key: 'apply-qr',
-      // 🔑 상시 노출한다. 예전엔 "지원자 0명" 빈 상태 카드 안에만 있어서 **첫 지원자가
-      //    들어오는 순간 사라졌다** — 정작 더 모으고 싶을 때 진입점이 없어지는 셈이었다.
-      visible: true,
-      icon: <ShareIcon size={20} color={SECONDARY_PALETTE[500]} />,
-      title: '지원 QR',
-      // 🚨 '지원'을 앞에 둔다 — '공고 QR' 이라고만 하면 출퇴근 QR 과 구분되지 않는다.
-      description: '매장·홍보물에 붙이면 찍는 사람에게 공고가 바로 열립니다.',
-      onPress: handleShowApplyQR,
-      testID: 'job-posting-apply-qr',
-    },
-    {
-      key: 'announce',
-      // 배정된 스태프가 있어야 보낼 대상이 있다 — 0명일 때 띄우면 눌러 봐야 빈 화면이다.
-      visible: filledPositions > 0,
-      icon: <UsersIcon size={20} color={SECONDARY_PALETTE[500]} />,
-      title: '스태프 공지',
-      description: '확정된 스태프 전원에게 한 번에 안내를 보냅니다.',
-      onPress: handleAnnounce,
-      testID: 'job-posting-announce',
-    },
+    // 🔑 협업자는 공고 하나 단위라 워크스페이스 팀과 범위가 다르다 — 제목에 '이 공고'를 넣어
+    //    [팀] 과 구분한다. 종전엔 헤더 `⋯` 시트에 단 하나 들어 있었는데, 항목이 하나뿐인
+    //    점 셋 메뉴는 열기 전까지 무엇이 있는지 알 수 없어 진입점 구실을 못 했다.
     {
       key: 'collaborators',
       visible: true,
-      icon: <UserPlusIcon size={20} color={SECONDARY_PALETTE[500]} />,
+      icon: <UserPlusIcon size={18} color={SECONDARY_PALETTE[500]} />,
       title: '함께 관리할 사람',
-      description: '이 공고를 함께 관리할 사람을 추가하거나 제거합니다.',
+      description: '이 공고를 같이 관리할 사람을 지정합니다.',
       onPress: handleCollaborators,
       testID: 'job-posting-manage-collaborators',
     },
+    // 지원 QR 은 헤더 `공유` 시트, 스태프 공지는 [근무] 헤더 `메시지` 로 옮겼다(구인자 IA S1).
   ];
 
   const actionItems = allActionItems.filter((item) => item.visible);
 
   const primaryItem = actionItems.find((item) => item.key === primaryCardKey);
-  // 승격된 카드는 목록에서 뺀다 — 같은 testID 가 두 번 나오면 무엇을 누른 건지도 모호해진다.
-  const rowItems = actionItems.filter((item) => item.key !== primaryItem?.key);
+  // 🚨 승격돼도 목록에서 빼지 않는다. 빼면 진입점 자리가 신호에 따라 움직인다 — 정산 대기가
+  //    한 건이라도 생기는 순간 [근무] 가 "관리" 에서 통째로 사라져, 사장은 늘 있던
+  //    자리를 훑고는 "메뉴가 없어졌다" 고 읽는다(실사고 제보). "지금 할 일" 은 알림이고 "관리"
+  //    는 진입점 목록이라 역할이 다르므로, 같은 목적지가 둘 다 있는 편이 맞다.
+  //    종전 제외 사유였던 testID 중복은 승격 카드에 전용 testID 를 줘서 끊는다.
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
@@ -781,31 +783,22 @@ export default function JobPostingDetailScreen() {
         fallbackHref="/(app)/(tabs)/employer"
         rightAction={
           <View className="flex-row items-center">
-            {/* 구직자 시선 미리보기 — 내 공고가 어떻게 보이는지 확인할 길이 없었다.
-                도착지 RPC 가 소유자 조회를 조회수에서 제외하므로 미리보기가 수치를 부풀리지 않는다. */}
+            {/* 공유 시트 — 링크 공유 · 지원 QR · 구직자 화면 보기. 옛 눈 아이콘(미리보기)과
+                `지원 QR` 타일이 여기로 들어왔다. */}
             <Pressable
-              onPress={handlePreview}
-              hitSlop={8}
-              className="p-2"
-              accessibilityRole="button"
-              accessibilityLabel="구직자에게 보이는 화면 미리보기"
-              testID="job-posting-preview"
-            >
-              <EyeIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
-            </Pressable>
-            <Pressable
-              onPress={handleShare}
+              onPress={() => setShareSheetVisible(true)}
               disabled={isSharing}
               hitSlop={8}
               className="p-2"
               accessibilityRole="button"
-              accessibilityLabel="공고 공유하기"
+              accessibilityLabel="공유 메뉴 열기"
+              testID="job-posting-share"
             >
               <ShareIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
             </Pressable>
             {/* 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
                 판정은 컨텍스트 하나 — 형제 화면 4곳과 같은 값을 쓰므로 탭을 옮겨도 버튼이 깜빡이지 않는다. */}
-            {!isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null}
+            <HeaderQRAction onPress={handleShowQR} />
           </View>
         }
       />
@@ -898,17 +891,17 @@ export default function JobPostingDetailScreen() {
 
             {isInfoExpanded ? (
               <>
-                <View className="mb-3 flex-row items-center">
-                  <MapPinIcon size={18} color={PRIMARY_COLORS[600]} />
-                  <Text className="ml-2 text-base text-content-secondary font-sans">
+                <View className="mb-2.5 flex-row items-center">
+                  <MapPinIcon size={16} color={PRIMARY_COLORS[600]} />
+                  <Text className="ml-2 flex-1 text-sm text-content-secondary font-sans">
                     {locationLabel}
                   </Text>
                 </View>
 
-                <View className="mb-4">
-                  <View className="mb-2 flex-row items-center">
-                    <ClockIcon size={18} color={PRIMARY_COLORS[600]} />
-                    <Text className="ml-2 text-base font-sans-medium text-content-secondary">
+                <View className="mb-3">
+                  <View className="mb-1.5 flex-row items-center">
+                    <ClockIcon size={16} color={PRIMARY_COLORS[600]} />
+                    <Text className="ml-2 text-sm font-sans-medium text-content-secondary">
                       근무 일정
                     </Text>
                   </View>
@@ -929,10 +922,10 @@ export default function JobPostingDetailScreen() {
                   </View>
                 </View>
 
-                <View className="mb-4">
-                  <View className="mb-2 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color={PRIMARY_COLORS[600]} />
-                    <Text className="ml-2 text-base font-sans-medium text-content-secondary">
+                <View className="mb-3">
+                  <View className="mb-1.5 flex-row items-center">
+                    <CurrencyDollarIcon size={16} color={PRIMARY_COLORS[600]} />
+                    <Text className="ml-2 text-sm font-sans-medium text-content-secondary">
                       급여
                     </Text>
                   </View>
@@ -948,7 +941,7 @@ export default function JobPostingDetailScreen() {
                 </View>
 
                 {allowanceItems.length > 0 ? (
-                  <View className="mb-4 ml-6 flex-row flex-wrap">
+                  <View className="mb-2 ml-6 flex-row flex-wrap">
                     {allowanceItems.map((item, index) => (
                       <Badge
                         key={`${item}-${index}`}
@@ -962,21 +955,26 @@ export default function JobPostingDetailScreen() {
                   </View>
                 ) : null}
 
-                {managementView.taxLabel ? (
-                  <View className="mb-4 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color={PRIMARY_COLORS[600]} />
-                    <Text className="ml-2 text-base text-content-secondary font-sans">
-                      {managementView.taxLabel}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {questionCount > 0 ? (
-                  <View className="mb-4 flex-row items-center">
-                    <DocumentIcon size={18} color={PRIMARY_COLORS[600]} />
-                    <Text className="ml-2 text-base text-content-secondary font-sans">
-                      사전질문 {questionCount}개 설정됨
-                    </Text>
+                {/* 세금·사전질문 — 각자 아이콘 달린 한 줄을 쓰던 보조 메타 둘을 한 줄에 묶는다.
+                    둘 다 "설정 확인"용이라 스캔 순서에서 나란히 읽히는 편이 오히려 낫다. */}
+                {managementView.taxLabel || questionCount > 0 ? (
+                  <View className="mb-2 flex-row flex-wrap items-center">
+                    {managementView.taxLabel ? (
+                      <View className="mr-3 flex-row items-center">
+                        <CurrencyDollarIcon size={16} color={PRIMARY_COLORS[600]} />
+                        <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+                          {managementView.taxLabel}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {questionCount > 0 ? (
+                      <View className="flex-row items-center">
+                        <DocumentIcon size={16} color={PRIMARY_COLORS[600]} />
+                        <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+                          사전질문 {questionCount}개
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                 ) : null}
               </>
@@ -984,7 +982,10 @@ export default function JobPostingDetailScreen() {
 
             {/* 숫자는 목적지다 — 종전에는 "대기중 3"을 보고도 지원자 화면에 들어가 필터를
                 다시 골라야 했다. 세 숫자가 각자 자기 목록으로 데려간다. */}
-            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3">
+            {/* 카드 안에 또 카드를 넣지 않는다(디자인 룰 6) — 채운 박스 대신 헤어라인으로
+                끊는다. 다크에서 이 박스는 페이지 배경과 같은 값이라 어차피 테두리 없는
+                네모로만 보였고, 카드 안에서 한 단계 더 파인 면이 위계 노이즈였다. */}
+            <View className="border-t border-secondary-100 pt-2 dark:border-surface-overlay">
               <View className="flex-row justify-around">
                 <StatColumn
                   value={totalApplicants}
@@ -1015,7 +1016,7 @@ export default function JobPostingDetailScreen() {
 
               {/* 좌석(work_logs) 축 — 위 3숫자(applications 축)와 다른 축이라 표기를 분리한다.
                   지원자 화면도 같은 컴포넌트를 써서 같은 값이 같은 이름으로 보인다. */}
-              <View className="mt-2">
+              <View className="mt-1.5">
                 <SeatFillSummary filled={filledPositions} total={totalPositions} />
               </View>
             </View>
@@ -1024,28 +1025,24 @@ export default function JobPostingDetailScreen() {
 
         {/* 오늘 근무가 있을 때만 뜬다(TodayOpsStrip 자체 가드). 고정 공고는 위 훅에서 이미 제외. */}
         <View className="mt-3">
-          <TodayOpsStrip
-            todayGroup={todayGroup}
-            pendingSettlementCount={pendingSettlementCount}
-            onPressSettlement={handleSettlements}
-          />
+          <TodayOpsStrip todayGroup={todayGroup} />
         </View>
 
         {/* 지원자 0명 — "0명이 대기중입니다"는 상태 보고일 뿐 다음 행동이 없다.
             사장이 여기서 할 수 있는 유일한 일(공유)을 실제 크기의 CTA 로 준다. */}
         {totalApplicants === 0 ? (
-          <View className="px-4 pt-4">
-            <Card variant="outlined" padding="md">
-              <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
+          <View className="px-4 pt-3">
+            <Card variant="outlined" padding="sm">
+              <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
                 아직 지원자가 없어요
               </Text>
-              <Text className="mb-4 text-sm text-content-secondary font-sans">
+              <Text className="mb-2.5 mt-0.5 text-xs text-content-secondary font-sans">
                 공고 링크를 단톡방이나 아는 분들께 보내면 지원이 훨씬 빨리 붙어요.
               </Text>
               <Pressable
                 onPress={handleShare}
                 disabled={isSharing}
-                className={`min-h-[44px] flex-row items-center justify-center rounded-md bg-primary-600 py-3 active:bg-primary-700 ${
+                className={`min-h-[44px] flex-row items-center justify-center rounded-md bg-primary-600 active:bg-primary-700 ${
                   isSharing ? 'opacity-40' : ''
                 }`}
                 accessibilityRole="button"
@@ -1068,77 +1065,66 @@ export default function JobPostingDetailScreen() {
             처음부터 다시 입력하고 있었다. 채운 골드는 "지금 할 일" 버튼과 공유 CTA 두 곳뿐이라
             여기는 테두리 버튼으로 둔다. */}
         {isPostingRepostable(posting.status) ? (
-          <View className="px-4 pt-4">
-            <Card variant="outlined" padding="md">
-              <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
-                이 공고는 끝났어요
-              </Text>
-              <Text className="mb-4 text-sm text-content-secondary font-sans">
-                같은 조건으로 다시 올리면 날짜만 새로 고르면 돼요.
-              </Text>
-              <Pressable
-                onPress={handleRepost}
-                className="min-h-[44px] items-center justify-center rounded-md border border-primary-600 py-3 active:bg-primary-50 dark:border-primary-500 dark:active:bg-primary-900/30"
-                accessibilityRole="button"
-                accessibilityLabel="같은 조건으로 공고 다시 올리기"
-                testID="job-posting-repost"
-              >
-                <Text className="text-base font-sans-semibold text-primary-600 dark:text-primary-400">
-                  같은 조건으로 다시 올리기
-                </Text>
-              </Pressable>
+          <View className="px-4 pt-3">
+            {/* 안내 두 줄과 버튼을 한 줄로 나란히 — 세로로 쌓으면 이 카드 하나가 150px 이었다. */}
+            <Card variant="outlined" padding="sm">
+              <View className="flex-row items-center">
+                <View className="mr-3 flex-1">
+                  <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+                    이 공고는 끝났어요
+                  </Text>
+                  <Text className="mt-0.5 text-xs text-content-secondary font-sans">
+                    같은 조건으로 다시 올리면 날짜만 새로 고르면 돼요.
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={handleRepost}
+                  className="min-h-[44px] shrink-0 justify-center rounded-md border border-primary-600 px-3 active:bg-primary-50 dark:border-primary-500 dark:active:bg-primary-900/30"
+                  accessibilityRole="button"
+                  accessibilityLabel="같은 조건으로 공고 다시 올리기"
+                  testID="job-posting-repost"
+                >
+                  <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
+                    다시 올리기
+                  </Text>
+                </Pressable>
+              </View>
             </Card>
           </View>
         ) : null}
 
         {/* 지금 할 일 — 손해가 가장 큰 신호 하나만 크게 낸다. 처리할 일이 없으면 이 자리도 없다. */}
         {primaryItem ? (
-          <View className="px-4 pt-4">
-            <ActionCard
+          <View className="px-4 pt-3">
+            <PrimaryActionCard
               icon={primaryItem.icon}
               title={primaryItem.title}
               description={primaryItem.description}
               badge={primaryItem.badge}
               onPress={primaryItem.onPress}
-              testID={primaryItem.testID}
-              emphasis="primary"
+              testID={PRIMARY_ACTION_TEST_ID}
               {...primaryOverride}
             />
           </View>
         ) : null}
 
-        {/* 관리 — 나머지는 행으로 강등한다. 섹션 사이를 넉넉히 띄워 덩어리를 구분한다. */}
-        <View className="px-4 pb-4 pt-8">
-          <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
+        {/* 관리 — 진입점 **전체**를 2열 그리드 타일로 낸다(승격된 카드 포함). 목록 순서
+            (라이브 운영이 맨 앞)는 좌→우, 위→아래로 그대로 읽히므로 우선순위 표현이 깨지지 않는다. */}
+        <View className="px-4 pb-4 pt-5">
+          <Text className="mb-2 text-base font-display-semibold text-content-primary dark:text-off-white">
             관리
           </Text>
 
-          <View className="overflow-hidden rounded-lg bg-white dark:bg-surface">
-            {rowItems.map((item, index) => (
-              <React.Fragment key={item.key}>
-                {index > 0 ? (
-                  <View className="h-px bg-secondary-100 dark:bg-surface-overlay" />
-                ) : null}
-                <ActionCard
-                  icon={item.icon}
-                  title={item.title}
-                  description={item.description}
-                  badge={item.badge}
-                  onPress={item.onPress}
-                  testID={item.testID}
-                />
-              </React.Fragment>
-            ))}
-          </View>
+          <ActionTileGrid items={actionItems} />
         </View>
 
         {posting.description && String(posting.description).length > 0 ? (
-          <View className="px-4 pb-6">
-            <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
+          <View className="px-4 pb-5">
+            <Text className="mb-2 text-base font-display-semibold text-content-primary dark:text-off-white">
               공고 내용
             </Text>
-            <Card variant="outlined" padding="md">
-              <Text className="text-base leading-6 text-content-secondary font-sans">
+            <Card variant="outlined" padding="sm">
+              <Text className="text-sm leading-5 text-content-secondary dark:leading-[1.375rem] font-sans">
                 {String(posting.description)}
               </Text>
             </Card>
@@ -1154,34 +1140,34 @@ export default function JobPostingDetailScreen() {
               padding="md"
               className="border-error-200 bg-error-50 dark:border-error-800 dark:bg-error-900/20"
             >
-              <View className="mb-3 flex-row items-start">
-                <XCircleIcon size={20} color={STATUS_COLORS.error} />
-                <Text className="ml-2 text-base font-sans-semibold text-error-700 dark:text-error-400">
+              <View className="mb-2 flex-row items-center">
+                <XCircleIcon size={18} color={STATUS_COLORS.error} />
+                <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-400">
                   승인 반려되었습니다
                 </Text>
               </View>
 
               {posting.tournamentConfig.rejectionReason ? (
-                <View className="mb-4 rounded-lg bg-white p-3 dark:bg-surface">
-                  <Text className="mb-1 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+                <View className="mb-3 border-t border-error-200 pt-3 dark:border-error-800">
+                  <Text className="mb-1 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
                     반려 사유
                   </Text>
-                  <Text className="text-base text-content-secondary font-sans">
+                  <Text className="text-sm text-content-secondary font-sans">
                     {posting.tournamentConfig.rejectionReason}
                   </Text>
                 </View>
               ) : null}
 
-              <Text className="mb-4 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              <Text className="mb-3 text-xs text-content-muted dark:text-secondary-400 font-sans">
                 공고 내용을 수정한 뒤 다시 제출하면 재심사가 진행됩니다.
               </Text>
 
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}
-                  className="mr-2 flex-1 items-center justify-center rounded-md border border-primary-600 py-3 dark:border-primary-500"
+                  className="mr-2 min-h-[44px] flex-1 items-center justify-center rounded-md border border-primary-600 dark:border-primary-500"
                 >
-                  <Text className="text-base font-sans-medium text-primary-600 dark:text-primary-400">
+                  <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
                     수정하기
                   </Text>
                 </Pressable>
@@ -1198,11 +1184,11 @@ export default function JobPostingDetailScreen() {
           </View>
         ) : null}
 
-        <View className="border-t border-secondary-200 px-4 pb-8 pt-4 dark:border-surface-overlay">
+        <View className="border-t border-secondary-200 px-4 pb-8 pt-3 dark:border-surface-overlay">
           <Pressable
             onPress={handleDeletePress}
             disabled={isDeleting || !canDelete}
-            className={`flex-row items-center justify-center rounded-md bg-error-50 py-4 active:bg-error-50 dark:bg-error-900/20 dark:active:bg-error-900/30 ${
+            className={`min-h-[44px] flex-row items-center justify-center rounded-md bg-error-50 active:bg-error-50 dark:bg-error-900/20 dark:active:bg-error-900/30 ${
               !canDelete ? 'opacity-40' : ''
             }`}
             accessibilityRole="button"
@@ -1254,6 +1240,14 @@ export default function JobPostingDetailScreen() {
         description={statusHint ?? undefined}
         options={statusSheetOptions}
         onSelect={handleStatusSelect}
+      />
+
+      <ActionSheet
+        visible={shareSheetVisible}
+        onClose={() => setShareSheetVisible(false)}
+        title="공유"
+        options={SHARE_SHEET_OPTIONS}
+        onSelect={handleShareSheetSelect}
       />
     </SafeAreaView>
   );

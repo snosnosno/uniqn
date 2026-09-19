@@ -15,8 +15,6 @@ import {
   filterSchedulesByDate,
   filterSchedulesByStatus,
   countSchedulesByType,
-  countUnpaidSchedules,
-  isUnpaidCompleted,
   splitSchedulesByToday,
   pickGroupFocusDate,
   resolveSelectedDateForMonth,
@@ -775,47 +773,8 @@ describe('resolveSelectedDateForMonth', () => {
   });
 });
 
-describe('isUnpaidCompleted / filterSchedulesByStatus("unpaid")', () => {
-  it('완료가 아니면 미지급이 아니다', () => {
-    expect(isUnpaidCompleted(createScheduleEvent({ type: 'confirmed' }))).toBe(false);
-  });
-
-  // payrollStatus 가 없으면 곧 '아직 못 받음'이다 — 기본값을 지급 완료로 오해하면 안 된다.
-  it('정산 상태가 비어 있으면 미지급으로 본다', () => {
-    expect(isUnpaidCompleted(createScheduleEvent({ type: 'completed' }))).toBe(true);
-  });
-
-  it('정산 완료 건은 미지급이 아니다', () => {
-    expect(
-      isUnpaidCompleted(createScheduleEvent({ type: 'completed', payrollStatus: 'completed' }))
-    ).toBe(false);
-  });
-
-  it('그룹은 한 날짜라도 미정산이면 미지급으로 본다', () => {
-    const group = {
-      id: 'g1',
-      type: 'completed',
-      dateRange: { start: '2026-07-01', end: '2026-07-02', dates: [], totalDays: 2 },
-      originalEvents: [
-        createScheduleEvent({ type: 'completed', payrollStatus: 'completed' }),
-        createScheduleEvent({ type: 'completed', payrollStatus: 'pending' }),
-      ],
-    } as unknown as GroupedScheduleEvent;
-
-    expect(isUnpaidCompleted(group)).toBe(true);
-  });
-
-  it('unpaid 필터와 건수 집계가 같은 기준을 쓴다', () => {
-    const items = [
-      createScheduleEvent({ id: 'a', type: 'completed', payrollStatus: 'completed' }),
-      createScheduleEvent({ id: 'b', type: 'completed', payrollStatus: 'pending' }),
-      createScheduleEvent({ id: 'c', type: 'confirmed' }),
-    ];
-
-    expect(filterSchedulesByStatus(items, 'unpaid').map((s) => s.id)).toEqual(['b']);
-    expect(countUnpaidSchedules(items)).toBe(1);
-  });
-});
+// `isUnpaidCompleted` / `countUnpaidSchedules` / `'unpaid'` 필터는 구인자 IA S2b 에서 없앴다 —
+// 사장이 `지급 완료` 를 누르는 흐름이 없으니 모든 완료 근무가 영원히 "미지급" 으로 잡힌다.
 
 describe('그룹 id 충돌 방어', () => {
   // 회귀 방어: id 가 `grouped_${applicationId}` 뿐이라, 한 지원이 '일부 완료 + 일부 예정'으로

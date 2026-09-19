@@ -6,6 +6,7 @@
  * 투영해 반환한다(CLAUDE.md 필드명 규칙).
  */
 import type { GridSummaryRow } from '@/domains/workSchedule';
+import type { WorkTimeModification } from '@/types';
 
 /** get_venue_day_slots 한 행(camelCase 투영). 그 날 venue 스팬 배치 work_log. */
 export interface VenueDaySlot {
@@ -26,8 +27,14 @@ export interface VenueDaySlot {
   notes: string | null;
   /** 실제 출근 시각(ISO timestamptz). 미기록이면 null. */
   checkInTs: string | null;
+  /** QR이 DB에 도착한 원본 출근 시각. 관리자 수정과 무관한 감사값. */
+  checkInScannedAt?: string | null;
   /** 실제 퇴근 시각(ISO timestamptz). 미기록이면 null. */
   checkOutTs: string | null;
+  /** QR이 DB에 도착한 원본 퇴근 시각. 관리자 수정과 무관한 감사값. */
+  checkOutScannedAt?: string | null;
+  /** 관리자 출퇴근 시각 수정 이력. */
+  modificationHistory?: WorkTimeModification[];
   /** 정산 상태 — 'completed' 면 시트가 읽기 전용으로 열린다. */
   payrollStatus: string | null;
   /** YYYY-MM-DD. 시트가 시각을 Date 로 조립할 때 기준 날짜. */

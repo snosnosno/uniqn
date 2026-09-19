@@ -11,12 +11,12 @@ import type { FirebaseDocument } from './common';
 import type { Announcement, AnnouncementCategory, AnnouncementImage } from './announcement';
 import type { UserRole } from './role';
 
-export type BoardType = 'notice' | 'schedule' | 'free' | 'tda' | 'substitute';
+export type BoardType = 'notice' | 'schedule';
+export type CommunicationBoardType = BoardType;
 export type BoardSource = 'board' | 'announcement';
 export type BoardVisibility = 'public' | 'participants_only';
 export type BoardPostStatus = 'active' | 'locked' | 'hidden' | 'archived';
 export type BoardCommentStatus = 'active' | 'hidden' | 'deleted';
-export type BoardVoteType = 'like' | 'dislike';
 export type BoardMemberRole = 'author' | 'confirmed' | 'admin';
 export type BoardReportTargetType = 'post' | 'comment';
 export type BoardReportStatus = 'pending' | 'resolved' | 'dismissed';
@@ -53,8 +53,6 @@ export interface BoardPost extends FirebaseDocument {
   isLocked: boolean;
   lockedBy?: string | null;
   lockedAt?: Date | null;
-  likeCount: number;
-  dislikeCount: number;
   commentCount: number;
   viewCount: number;
   imageAttachments: BoardImageAttachment[];
@@ -82,12 +80,6 @@ export interface BoardComment extends FirebaseDocument {
 
 export interface BoardCommentNode extends BoardComment {
   children: BoardCommentNode[];
-}
-
-export interface BoardVote extends FirebaseDocument {
-  postId: string;
-  userId: string;
-  type: BoardVoteType;
 }
 
 export interface BoardCommentReaction extends FirebaseDocument {
@@ -136,12 +128,6 @@ export interface BoardAdminReportRecord {
   targetAuthorName?: string;
 }
 
-export interface BoardHomeData {
-  pinnedNotices: BoardPost[];
-  recentSchedulePosts: BoardPost[];
-  popularCommunityPosts: BoardPost[];
-}
-
 export interface BoardMentionCandidate {
   userId: string;
   displayName: string;
@@ -150,29 +136,11 @@ export interface BoardMentionCandidate {
 }
 
 export interface FetchBoardPostsInput {
-  boardType: BoardType;
+  boardType: CommunicationBoardType;
   viewerId?: string;
   viewerRole?: UserRole | null;
   isAdmin?: boolean;
   limitCount?: number;
-}
-
-export interface CreateBoardPostInput {
-  boardType: Extract<BoardType, 'free' | 'tda' | 'substitute'>;
-  title: string;
-  body: string;
-  authorId: string;
-  authorName: string;
-  authorRole: BoardAuthorRole;
-  imageAttachments?: BoardImageAttachment[];
-  jobSummary?: BoardJobSummary;
-  linkedJobPostingId?: string;
-}
-
-export interface UpdateBoardPostInput {
-  title?: string;
-  body?: string;
-  imageAttachments?: BoardImageAttachment[];
 }
 
 export interface CreateBoardCommentInput {
@@ -200,43 +168,11 @@ export interface CreateBoardReportInput {
   details?: string;
 }
 
-export interface ScheduleBoardSyncInput {
-  jobPostingId: string;
-  title: string;
-  body: string;
-  ownerId: string;
-  ownerName: string;
-  ownerRole: BoardAuthorRole;
-  workDate: string;
-  workDates?: string[];
-  locationName?: string;
-  totalPositions?: number;
-  filledPositions?: number;
-  compensationLabel?: string;
-  jobPostingStatus?: string;
-}
-
-export interface ScheduleMembershipSyncItem {
-  userId: string;
-  role: BoardMemberRole;
-  displayName?: string;
-  canRead: boolean;
-  canComment: boolean;
-  title: string;
-  workDate: string;
-  authorId: string;
-  lastActivityAt?: Date | null;
-}
-
-export const MAX_BOARD_POST_IMAGES = 10;
 export const MAX_BOARD_COMMENT_IMAGES = 3;
 
 export const BOARD_TYPE_LABELS: Record<BoardType, string> = {
   notice: '공지사항',
-  schedule: '일정게시판',
-  free: '자유게시판',
-  tda: 'TDA 토론',
-  substitute: '대타 구인',
+  schedule: '일정 소통',
 };
 
 export const COMMENT_REACTION_LABELS: Record<CommentReactionType, string> = {
@@ -274,8 +210,6 @@ export function mapAnnouncementToBoardPost(announcement: Announcement): BoardPos
     isLocked: true,
     lockedBy: null,
     lockedAt: null,
-    likeCount: 0,
-    dislikeCount: 0,
     commentCount: 0,
     viewCount: announcement.viewCount ?? 0,
     imageAttachments: announcement.images?.length

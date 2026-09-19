@@ -46,6 +46,7 @@ describe('buildBoardDetailListItems', () => {
       canInteract: true,
       composerMode: 'reply',
       composerTargetCommentId: 'c2',
+      expandedReplyParentIds: new Set(['c1']),
     });
 
     const commentItems = items.filter((item) => item.type === 'comment');
@@ -63,6 +64,38 @@ describe('buildBoardDetailListItems', () => {
       MAX_BOARD_COMMENT_VISUAL_DEPTH,
       MAX_BOARD_COMMENT_VISUAL_DEPTH,
     ]);
+  });
+
+  it('keeps replies collapsed until the parent toggle is expanded', () => {
+    const parent = createCommentNode('c1', {}, [createCommentNode('c2'), createCommentNode('c3')]);
+
+    const collapsedItems = buildBoardDetailListItems({
+      pinnedComments: [],
+      regularComments: [parent],
+      commentsCount: 3,
+      isLocked: false,
+      canInteract: true,
+      composerMode: 'create',
+    });
+
+    expect(collapsedItems.filter((item) => item.type === 'comment')).toHaveLength(1);
+    expect(collapsedItems.find((item) => item.type === 'reply-toggle')).toMatchObject({
+      parentCommentId: 'c1',
+      replyCount: 2,
+      expanded: false,
+    });
+
+    const expandedItems = buildBoardDetailListItems({
+      pinnedComments: [],
+      regularComments: [parent],
+      commentsCount: 3,
+      isLocked: false,
+      canInteract: true,
+      composerMode: 'create',
+      expandedReplyParentIds: new Set(['c1']),
+    });
+
+    expect(expandedItems.filter((item) => item.type === 'comment')).toHaveLength(3);
   });
 
   it('adds an empty row and root composer when there are no regular comments', () => {

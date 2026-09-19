@@ -19,7 +19,6 @@ import {
   useHideBoardPost,
   useIncrementBoardViewCount,
   useSetBoardPostLock,
-  useToggleBoardPostVote,
 } from '@/hooks/useBoard';
 import { useAuth } from '@/hooks/useAuth';
 import { uploadMultipleBoardImages } from '@/services/auth';
@@ -60,7 +59,6 @@ export function useBoardPostDetailScreen() {
   const incrementViewCount = useIncrementBoardViewCount();
   const createComment = useCreateBoardComment(postId ?? '');
   const commentMutations = useBoardCommentMutations(postId ?? '');
-  const voteMutation = useToggleBoardPostVote(postId ?? '');
   const lockMutation = useSetBoardPostLock(postId ?? '');
   const hidePostMutation = useHideBoardPost(postId ?? '');
   const createReport = useCreateBoardReport();
@@ -89,6 +87,16 @@ export function useBoardPostDetailScreen() {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [postMenuVisible, setPostMenuVisible] = useState(false);
+  const [expandedReplyParentIds, setExpandedReplyParentIds] = useState<Set<string>>(new Set());
+
+  const handleToggleReplies = useCallback((parentCommentId: string) => {
+    setExpandedReplyParentIds((current) => {
+      const next = new Set(current);
+      if (next.has(parentCommentId)) next.delete(parentCommentId);
+      else next.add(parentCommentId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (data?.post.id && viewedPostIdRef.current !== data.post.id) {
@@ -133,7 +141,6 @@ export function useBoardPostDetailScreen() {
     createComment.isPending || commentMutations.updateComment.isPending || isUploadingCommentImages;
   const isReportSubmitting = createReport.isPending;
   const isReportSubmitDisabled = !reportReason.trim() || isReportSubmitting;
-  const isVoteSubmitting = voteMutation.isPending;
   const isPostActionPending = lockMutation.isPending || hidePostMutation.isPending;
   const canReportPost =
     !!post && post.boardType !== 'notice' && !!user?.uid && user.uid !== post.authorId;
@@ -476,6 +483,7 @@ export function useBoardPostDetailScreen() {
             canInteract,
             composerMode,
             composerTargetCommentId,
+            expandedReplyParentIds,
           }),
     [
       composerMode,
@@ -485,6 +493,7 @@ export function useBoardPostDetailScreen() {
       post?.commentCount,
       post?.isLocked,
       regularComments,
+      expandedReplyParentIds,
       canInteract,
     ]
   );
@@ -617,7 +626,6 @@ export function useBoardPostDetailScreen() {
     canInteract,
     canManagePost,
     canReportPost,
-    isVoteSubmitting,
     isReportSubmitting,
     isReportSubmitDisabled,
     postFallbackHref,
@@ -641,13 +649,13 @@ export function useBoardPostDetailScreen() {
     imageViewerState,
     setImageViewerState,
     openImageViewer,
-    voteMutation,
     handleReply,
     handleEdit,
     handleDeleteComment,
     handleHideComment,
     handleTogglePin,
     handleToggleReaction,
+    handleToggleReplies,
     setReportTarget,
   };
 }

@@ -1,16 +1,15 @@
 /**
- * SettlementDetailModal — 액션 줄 렌더 규칙 (D4 진입점 통일)
+ * SettlementDetailModal(계산 근거) — 액션 줄 렌더 규칙 (구인자 IA S2)
  *
- * 이 스위트가 고정하는 계약 셋:
- *  1. 🔴 **`payrollStatus` 는 3값이다**(`pending | completed | failed`). 액션 줄을
- *     `=== PENDING` 으로 열면 **failed 가 통째로 액션을 잃는다** — 정산이 실패한 건이야말로
- *     시간·금액을 고쳐 다시 정산해야 하는 건인데 손댈 입구가 사라진다.
- *  2. 🔴 **정산 완료 건도 시트에 들어간다**(D4·D2). 거절은 버튼을 숨겨서가 아니라
- *     시트의 읽기 전용 모드가 말한다 — 세 진입점(근무표·스태프관리·정산)이 같은 답을 준다.
- *  3. 🔴 정산 완료 건에서 **금액 수정·지급 완료는 여전히 없다**. 연 것은 열람뿐이다.
- *  4. 🔴 라벨은 **`근무 수정`** — 스태프관리 카드와 같은 이름이다. 같은 시트를 여는 버튼이
- *     경로마다 다른 이름이면 D2("3곳 동일")가 표면에서 깨진다. 이 시트는 시각뿐 아니라
- *     역할·색·메모도 고치므로 '시간 수정'은 실제보다 좁은 약속이기도 하다.
+ * 앱은 돈을 만지지 않는다. 정산 **워크플로우**(지급 완료 표시·취소)를 없애고 금액 계산·표시만 남겼다.
+ *
+ * 이 스위트가 고정하는 계약:
+ *  1. 🔴 `지급 완료로 표시`·`지급 완료 취소` 는 어떤 상태에서도 없다.
+ *  2. 🔴 **이미 확정된 금액이 있는 근무**(과거에 지급 완료로 처리된 행)는 금액 수정이 없다 —
+ *     그때 확정된 금액을 그대로 보여주고, 그 사실을 한 줄로 밝힌다.
+ *  3. 🔴 `근무 수정` 은 늘 뜬다 — 세 진입점(근무표·스태프관리·계산 근거)이 같은 시트를 연다.
+ *  4. 🔴 `평가 남기기` 는 **퇴근이 기록된 근무**에 뜬다. 예전엔 지급 완료에 묶여 있어서
+ *     지급 완료 버튼이 사라지면 구인자 쪽 평가 진입점이 영영 안 뜨게 된다.
  *
  * ⚠️ `toHaveTextContent(문자열)` 은 RNTL 13.3.3 에서 완전일치라 `.not.` 형태가 빈 가드가 된다.
  *    여기서는 버튼 존재 여부를 `queryByText` 로 직접 본다.
@@ -61,14 +60,13 @@ jest.mock('@/utils/settlement', () => ({
   calculateSettlementFromWorkLog: () => ({ hoursWorked: 8, totalAmount: 100000 }),
 }));
 
-// 표시 섹션들은 스텁 — 남는 것은 SettlementActionButtons 와 정산 완료 블록뿐이다.
+// 표시 섹션들은 스텁 — 남는 것은 액션 줄·확정 금액 안내·평가 버튼뿐이다.
 jest.mock('../DateNavigationHeader', () => ({ DateNavigationHeader: () => null }));
 jest.mock('../StaffProfileHeader', () => ({ StaffProfileHeader: () => null }));
 jest.mock('../WorkTimeSection', () => ({ WorkTimeSection: () => null }));
 jest.mock('../SettlementAmountSection', () => ({ SettlementAmountSection: () => null }));
 jest.mock('../TimeModificationHistory', () => ({ TimeModificationHistory: () => null }));
 jest.mock('../AmountModificationHistory', () => ({ AmountModificationHistory: () => null }));
-jest.mock('../SettlementCompletedBanner', () => ({ SettlementCompletedBanner: () => null }));
 
 const BASE_WORK_LOG = {
   id: 'wl-1',
@@ -97,67 +95,74 @@ function renderModal(
       salaryInfo={SALARY_INFO}
       onEditTime={jest.fn()}
       onEditAmount={jest.fn()}
-      onSettle={jest.fn()}
       {...props}
     />
   );
 }
 
-describe('SettlementDetailModal — 미정산(pending)', () => {
-  it('세 버튼이 모두 뜬다', () => {
-    renderModal({ payrollStatus: 'pending' });
+describe('SettlementDetailModal — 지급 워크플로우 없음', () => {
+  it.each(['pending', 'failed', 'completed'])(
+    '🔴 payrollStatus=%s 에서도 지급 완료 표시·취소 버튼이 없다',
+    (payrollStatus) => {
+      renderModal({ payrollStatus } as Partial<WorkLog>);
+
+      expect(screen.queryByText('지급 완료로 표시')).toBeNull();
+      expect(screen.queryByText('지급 완료 취소')).toBeNull();
+    }
+  );
+});
+
+describe('SettlementDetailModal — 계산 중인 근무', () => {
+  it('근무 수정·금액 수정이 뜬다', () => {
+    renderModal({ payrollStatus: 'pending' } as Partial<WorkLog>);
 
     expect(screen.getByText('근무 수정')).toBeTruthy();
     expect(screen.getByText('금액 수정')).toBeTruthy();
-    expect(screen.getByText('지급 완료로 표시')).toBeTruthy();
+    expect(screen.queryByTestId('settlement-frozen-note')).toBeNull();
   });
 });
 
-describe('SettlementDetailModal — 정산 실패(failed)', () => {
-  it('🔴 failed 도 미정산과 똑같이 세 버튼이 뜬다', () => {
-    // `=== PENDING` 게이트에서는 액션 줄 자체가 사라져 재정산 경로가 0이 됐다.
-    renderModal({ payrollStatus: 'failed' });
+describe('SettlementDetailModal — 이미 확정된 금액이 있는 근무', () => {
+  it('🔴 근무 수정은 뜨고 금액 수정은 없다 — 확정 금액을 그대로 보여준다', () => {
+    renderModal({ payrollStatus: 'completed' } as Partial<WorkLog>);
 
     expect(screen.getByText('근무 수정')).toBeTruthy();
-    expect(screen.getByText('금액 수정')).toBeTruthy();
-    expect(screen.getByText('지급 완료로 표시')).toBeTruthy();
-  });
-});
-
-describe('SettlementDetailModal — 정산 완료(completed)', () => {
-  it('🔴 시간 수정은 뜬다 — 읽기 전용 시트로 들어가는 입구다', () => {
-    renderModal({ payrollStatus: 'completed' });
-
-    expect(screen.getByText('근무 수정')).toBeTruthy();
-  });
-
-  it('🔴 금액 수정·지급 완료는 뜨지 않는다 — 연 것은 열람뿐이다', () => {
-    renderModal({ payrollStatus: 'completed' });
-
     expect(screen.queryByText('금액 수정')).toBeNull();
-    expect(screen.queryByText('지급 완료로 표시')).toBeNull();
   });
 
-  it('지급 완료 취소는 그대로 남는다 — 오지급 정정의 유일한 경로', () => {
-    renderModal({ payrollStatus: 'completed' }, { onRevertSettlement: jest.fn() });
+  it('확정된 금액이라는 사실을 한 줄로 밝힌다', () => {
+    renderModal({ payrollStatus: 'completed' } as Partial<WorkLog>);
 
-    expect(screen.getByText('지급 완료 취소')).toBeTruthy();
+    expect(screen.getByTestId('settlement-frozen-note')).toBeTruthy();
+  });
+});
+
+describe('SettlementDetailModal — 평가 남기기', () => {
+  it('🔴 퇴근이 기록된 근무면 지급 상태와 무관하게 뜬다', () => {
+    renderModal({ payrollStatus: 'pending' } as Partial<WorkLog>);
+
+    expect(screen.getByText('평가 남기기')).toBeTruthy();
+  });
+
+  it('퇴근 전 근무에는 뜨지 않는다 — 평가할 근무가 아직 끝나지 않았다', () => {
+    renderModal({ checkOutTime: undefined } as Partial<WorkLog>);
+
+    expect(screen.queryByText('평가 남기기')).toBeNull();
   });
 });
 
 describe('SettlementDetailModal — 빈 액션 줄', () => {
   it('그려질 버튼이 하나도 없으면 액션 줄을 렌더하지 않는다', () => {
-    // 정산 완료인데 onEditTime 배선이 없는 호출부 — 예전 구조라면 빈 여백만 남았다.
-    renderModal(
-      { payrollStatus: 'completed' },
-      { onEditTime: undefined, onEditAmount: undefined, onSettle: undefined }
-    );
+    renderModal({ payrollStatus: 'completed' } as Partial<WorkLog>, {
+      onEditTime: undefined,
+      onEditAmount: undefined,
+    });
 
     expect(screen.queryByTestId('settlement-actions')).toBeNull();
   });
 
   it('대조군 — 버튼이 하나라도 있으면 액션 줄이 산다', () => {
-    renderModal({ payrollStatus: 'completed' });
+    renderModal({ payrollStatus: 'completed' } as Partial<WorkLog>);
 
     expect(screen.getByTestId('settlement-actions')).toBeTruthy();
   });

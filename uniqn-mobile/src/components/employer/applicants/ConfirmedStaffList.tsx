@@ -11,11 +11,17 @@ import type {
 } from '@/types';
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '@/components/icons';
 import { formatCapacityGapLabel, type PostingCapacityGap } from '@/domains/job-posting/capacityGap';
+import {
+  findPendingCancellation,
+  type PendingCancellation,
+  type PendingCancellationIndex,
+} from '@/domains/application/pendingCancellationIndex';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmedStaffCard } from './ConfirmedStaffCard';
+import { loadFailed } from '@/constants/messages';
 
 export interface ConfirmedStaffListProps {
   grouped: ConfirmedStaffGroup[];
@@ -37,6 +43,15 @@ export interface ConfirmedStaffListProps {
    * 미주입 시 경고 줄은 렌더되지 않는다(기존 동작 완전 보존).
    */
   capacityGapByDate?: Map<string, PostingCapacityGap>;
+  /**
+   * 검토 대기 취소 요청 (구인자 IA S1b) — 줄마다 `workLog.applicationId` 로 찾는다.
+   * 미주입 시 취소 요청 띠는 렌더되지 않는다.
+   */
+  cancellationIndex?: PendingCancellationIndex;
+  onApproveCancellation?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  onRejectCancellation?: (staff: ConfirmedStaff, cancellation: PendingCancellation) => void;
+  /** 지금 검토 중인 지원서 id — 그 지원서의 줄만 잠근다. */
+  reviewingApplicationId?: string | null;
 }
 
 type FilterStatus = 'all' | ConfirmedStaffStatus;
@@ -158,6 +173,10 @@ export function ConfirmedStaffList({
   onCancelNoShow,
   showActions = true,
   capacityGapByDate,
+  cancellationIndex,
+  onApproveCancellation,
+  onRejectCancellation,
+  reviewingApplicationId,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
@@ -225,29 +244,45 @@ export function ConfirmedStaffList({
   }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: ConfirmedStaff }) => (
-      <View className="mb-3 px-4">
-        <ConfirmedStaffCard
-          staff={item}
-          onPress={onStaffPress}
-          onViewProfile={onViewProfile}
-          onEditTime={onEditTime}
-          onReport={onReport}
-          onDelete={onDelete}
-          onStatusChange={onStatusChange}
-          onCancelNoShow={onCancelNoShow}
-          showActions={showActions}
-        />
-      </View>
-    ),
+    ({ item }: { item: ConfirmedStaff }) => {
+      const cancellation = cancellationIndex
+        ? findPendingCancellation(item, cancellationIndex)
+        : undefined;
+
+      return (
+        <View className="mb-3 px-4">
+          <ConfirmedStaffCard
+            staff={item}
+            onPress={onStaffPress}
+            onViewProfile={onViewProfile}
+            onEditTime={onEditTime}
+            onReport={onReport}
+            onDelete={onDelete}
+            onStatusChange={onStatusChange}
+            onCancelNoShow={onCancelNoShow}
+            cancellation={cancellation}
+            onApproveCancellation={onApproveCancellation}
+            onRejectCancellation={onRejectCancellation}
+            isCancellationProcessing={
+              Boolean(cancellation) && reviewingApplicationId === cancellation?.applicationId
+            }
+            showActions={showActions}
+          />
+        </View>
+      );
+    },
     [
+      cancellationIndex,
+      onApproveCancellation,
       onCancelNoShow,
       onDelete,
       onEditTime,
+      onRejectCancellation,
       onReport,
       onStaffPress,
       onStatusChange,
       onViewProfile,
+      reviewingApplicationId,
       showActions,
     ]
   );
@@ -278,9 +313,7 @@ export function ConfirmedStaffList({
   }
 
   if (error) {
-    return (
-      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={onRefresh} />
-    );
+    return <ErrorState title={loadFailed('확정된 스태프')} error={error} onRetry={onRefresh} />;
   }
 
   if (grouped.length === 0) {

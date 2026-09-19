@@ -21,6 +21,7 @@ import { DEFAULT_WORKSPACE_NAME } from '@/constants/defaultNames';
 import { logger } from '@/utils/logger';
 import type { Workspace, WorkspaceMemberWithUser } from '@/types/workspace';
 import type { WorkspaceInviteCandidate } from '@/repositories';
+import { notFound } from '@/constants/messages';
 
 function toValidationError(error: unknown): never {
   if (isAppError(error)) throw error;
@@ -96,7 +97,7 @@ export const workspaceService = {
         error: String(createError),
       });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '팀을 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+        userMessage: notFound('팀', { retry: true }),
         metadata: { ownerId, autoCreateFailed: true },
       });
     }
@@ -106,7 +107,7 @@ export const workspaceService = {
 
     logger.error('default workspace not found after auto-create', { ownerId });
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '팀을 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+      userMessage: notFound('팀', { retry: true }),
       metadata: { ownerId, retryAfterCreate: true },
     });
   },

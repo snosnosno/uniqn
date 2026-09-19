@@ -23,7 +23,6 @@ export {
   APPLICATION_STATUS_LABELS,
   SCHEDULE_TYPE_LABELS,
   PAYROLL_STATUS_LABELS,
-  toSettlementDisplayStatus,
   isSettlableWorkLogStatus,
   isWorkLogStatus,
 } from './types';

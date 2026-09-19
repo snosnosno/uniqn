@@ -11,6 +11,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { PrizeStructureInput } from '@/schemas/opsPrize.schema';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -49,7 +50,7 @@ export function useSetPrizeStructure(tournamentId: string) {
     },
     onError: (error) => {
       logger.error('ops 상금 구조 저장 실패', toError(error));
-      toast.error(extractUserMessage(error) || '상금 구조 저장에 실패했습니다');
+      toast.error(extractUserMessage(error) || saveFailed('상금 구조'));
     },
   });
 }

@@ -1,9 +1,10 @@
 /**
- * UNIQN Mobile - 스태프/정산 화면 핸들러 다발
+ * UNIQN Mobile - [근무] 화면 핸들러 다발
  * StaffSettlementsScreen에서 추출. 클로저 의존(modals/posting/salaryConfig 등)은
  * 훅 인자로 주입해 useCallback deps를 보존한다.
  *
- * @description 핸들러 본문/deps 배열은 원본과 동일. 동작·토스트 문구 불변.
+ * 구인자 IA S2 — 지급 완료 표시·일괄 정산·지급 완료 취소 핸들러를 없앴다. 앱은 돈을 보내지 않는다.
+ * 남은 것은 신고·근무 금액 수정·급여 설정이다.
  */
 
 import { useCallback } from 'react';
@@ -15,14 +16,14 @@ import {
 } from '@/services';
 import { type SettlementEditData, type SettlementSettingsData } from '@/components/employer';
 import { useSettlementModals } from '@/hooks/useSettlementModals';
-import { isDuplicateReportError, isCannotReportSelfError, toError } from '@/errors';
+import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
 import { logger } from '@/utils/logger';
-import { STATUS } from '@/constants';
 import { getEffectiveSalaryInfoFromRoles } from '@/domains/settlement';
 import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
-import type { WorkLog, Allowances, CreateReportInput, PayrollStatus } from '@/types';
+import type { WorkLog, Allowances, CreateReportInput } from '@/types';
 import type { Toast } from '@/stores/toastStore';
-import { calculateWorkLogAmount, type RoleWithSalary, type SalaryConfig } from './settlementCalc';
+import { type RoleWithSalary, type SalaryConfig } from './settlementCalc';
+import { saveFailed } from '@/constants/messages';
 
 type SettlementModals = ReturnType<typeof useSettlementModals>;
 
@@ -34,14 +35,6 @@ interface UseStaffSettlementsHandlersParams {
   addToast: (toast: Omit<Toast, 'id'>) => void;
   refresh: () => void;
   refreshJobDetail: () => Promise<void> | void;
-  settleWorkLog: (input: { workLogId: string; amount: number }) => void;
-  bulkSettle: (input: { workLogIds: string[] }) => void;
-  /** 지급 완료 되돌리기 (SETTLE-3) — 결과를 보고 모달을 닫아야 해서 Async 를 받는다. */
-  updateStatusAsync: (input: {
-    workLogId: string;
-    status: PayrollStatus;
-    reason?: string;
-  }) => Promise<void>;
 }
 
 export function useStaffSettlementsHandlers({
@@ -52,9 +45,6 @@ export function useStaffSettlementsHandlers({
   addToast,
   refresh,
   refreshJobDetail,
-  settleWorkLog,
-  bulkSettle,
-  updateStatusAsync,
 }: UseStaffSettlementsHandlersParams) {
   // ============================================================================
   // 스태프 관리 핸들러
@@ -67,7 +57,6 @@ export function useStaffSettlementsHandlers({
     async (input: CreateReportInput) => {
       modals.setIsSubmittingReport(true);
       try {
-        // 신고 생성
         await reportService.createReport(input);
 
         // 노쇼 신고인 경우 WorkLog 상태도 변경
@@ -110,105 +99,11 @@ export function useStaffSettlementsHandlers({
     [addToast, modals]
   );
 
-  // ============================================================================
-  // 정산 관리 핸들러
-  // ============================================================================
-
-  // 근무 기록 정산 금액 계산 (현재 급여 설정 적용)
-  const computeWorkLogAmount = useCallback(
-    (workLog: WorkLog) =>
-      calculateWorkLogAmount(
-        workLog,
-        rolesForList,
-        salaryConfig.defaultSalary,
-        salaryConfig.allowances,
-        salaryConfig.taxSettings
-      ),
-    [rolesForList, salaryConfig]
-  );
-
-  // 지급 완료 표시 클릭 (상세 모달에서)
-  const handleSettleFromDetail = useCallback(
-    (workLog: WorkLog) => {
-      modals.openSettleFromDetail(workLog, computeWorkLogAmount(workLog));
-    },
-    [computeWorkLogAmount, modals]
-  );
-
-  // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
-  const handleSettle = useCallback(
-    (workLog: WorkLog) => {
-      modals.openSettleConfirm({
-        visible: true,
-        workLog,
-        workLogs: [],
-        amount: computeWorkLogAmount(workLog),
-        isBulk: false,
-      });
-    },
-    [computeWorkLogAmount, modals]
-  );
-
-  // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
-  const handleBulkSettle = useCallback(
-    (selectedWorkLogs: WorkLog[]) => {
-      if (selectedWorkLogs.length === 0) return;
-
-      const totalAmount = selectedWorkLogs.reduce((sum, log) => sum + computeWorkLogAmount(log), 0);
-
-      modals.openSettleConfirm({
-        visible: true,
-        workLog: null,
-        workLogs: selectedWorkLogs,
-        amount: totalAmount,
-        isBulk: true,
-      });
-    },
-    [computeWorkLogAmount, modals]
-  );
-
-  // 정산 확인 모달에서 확인 클릭
-  const handleConfirmSettle = useCallback(() => {
-    if (modals.settleConfirm.isBulk) {
-      // 일괄 정산
-      const workLogIds = modals.settleConfirm.workLogs.map((log) => log.id);
-      bulkSettle({ workLogIds });
-    } else if (modals.settleConfirm.workLog) {
-      // 개별 정산
-      settleWorkLog({
-        workLogId: modals.settleConfirm.workLog.id,
-        amount: modals.settleConfirm.amount,
-      });
-    }
-    modals.closeSettleConfirm();
-  }, [modals, bulkSettle, settleWorkLog]);
-
-  // 시간 수정 저장 핸들러도 없다 — 통합 편집 시트가 `useUpdateSlot` 으로 직접 저장하고
+  // 시간 수정 저장 핸들러는 없다 — 통합 편집 시트가 `useUpdateSlot` 으로 직접 저장하고
   // 성공에서 스스로 닫는다. 여기서 한 번 더 쏘면 같은 저장이 두 경로로 갈라진다.
 
-  // 지급 완료 취소 (SETTLE-3) — 금전 역행이라 결과를 확인하고 성공에서만 닫는다.
-  // 실패 시 모달과 입력한 사유를 그대로 유지해 재시도할 수 있게 둔다(에러 토스트는 훅이 담당).
-  const handleRevertSettlement = useCallback(
-    async (reason: string) => {
-      const workLog = modals.selectedWorkLogForRevert;
-      if (!workLog) return;
-
-      try {
-        await updateStatusAsync({
-          workLogId: workLog.id,
-          status: STATUS.PAYROLL.PENDING,
-          reason,
-        });
-        modals.closeRevertModal();
-      } catch (error) {
-        logger.error('지급 완료 취소 실패', toError(error), { workLogId: workLog.id });
-      }
-    },
-    [modals, updateStatusAsync]
-  );
-
   // ============================================================================
-  // 정산 설정/금액 수정 핸들러
+  // 근무 금액 수정 / 급여 설정 핸들러
   // ============================================================================
 
   // 금액 수정 저장 (개인설정 - workLog에 저장)
@@ -232,7 +127,7 @@ export function useStaffSettlementsHandlers({
         // modifiedBy는 서비스 계층이 세션 사용자로 기록한다
         const modificationEntry: Record<string, unknown> = {
           modifiedAt: new Date().toISOString(),
-          reason: reason || '정산 금액 수정',
+          reason: reason || '근무 금액 수정',
           newSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
           newTaxSettings: { type: taxSettings.type, value: taxSettings.value },
         };
@@ -259,7 +154,7 @@ export function useStaffSettlementsHandlers({
 
         addToast({
           type: 'success',
-          message: '정산 금액이 수정되었습니다.',
+          message: '근무 금액이 수정되었습니다.',
         });
         modals.closeEditAmountModal();
         refresh();
@@ -269,14 +164,14 @@ export function useStaffSettlementsHandlers({
         });
         addToast({
           type: 'error',
-          message: '정산 금액 수정에 실패했습니다.',
+          message: '근무 금액 수정에 실패했습니다.',
         });
       }
     },
     [modals, rolesForList, salaryConfig, addToast, refresh]
   );
 
-  // 정산 설정 저장 (v2.0 - roles[] 구조) - jobPosting에 저장
+  // 급여 설정 저장 (v2.0 - roles[] 구조) - jobPosting에 저장
   const handleSaveSettings = useCallback(
     async (data: SettlementSettingsData) => {
       if (!jobPostingId) return;
@@ -321,7 +216,7 @@ export function useStaffSettlementsHandlers({
 
         addToast({
           type: 'success',
-          message: '정산 설정이 저장되었습니다.',
+          message: '급여 설정이 저장되었습니다.',
         });
         modals.closeSettingsModal();
         await refreshJobDetail();
@@ -330,7 +225,7 @@ export function useStaffSettlementsHandlers({
         logger.error('정산 설정 저장 실패', error as Error, { jobPostingId });
         addToast({
           type: 'error',
-          message: '정산 설정 저장에 실패했습니다.',
+          message: saveFailed('급여 설정'),
         });
       }
     },
@@ -339,13 +234,7 @@ export function useStaffSettlementsHandlers({
 
   return {
     handleReportSubmit,
-    computeWorkLogAmount,
-    handleSettleFromDetail,
-    handleSettle,
-    handleBulkSettle,
-    handleConfirmSettle,
     handleSaveAmountEdit,
     handleSaveSettings,
-    handleRevertSettlement,
   };
 }

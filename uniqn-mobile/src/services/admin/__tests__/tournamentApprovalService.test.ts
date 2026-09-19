@@ -15,6 +15,7 @@ import {
   getTournamentPostingById,
 } from '../tournamentApprovalService';
 import type { JobPosting } from '@/types';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Mock Repository
@@ -147,9 +148,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Document not found', context: { status: 404 } },
       });
 
-      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow(
-        '공고를 찾을 수 없습니다'
-      );
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow(notFound('공고'));
     });
 
     it('실패: 이미 처리된 공고 (409)', async () => {
@@ -256,7 +255,7 @@ describe('TournamentApprovalService', () => {
       });
 
       await expect(rejectTournamentPosting({ jobPostingId, reason })).rejects.toThrow(
-        '공고를 찾을 수 없습니다'
+        notFound('공고')
       );
     });
 
@@ -339,9 +338,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Posting not found', context: { status: 404 } },
       });
 
-      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow(
-        '공고를 찾을 수 없습니다'
-      );
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow(notFound('공고'));
     });
 
     it('실패: rejected 상태가 아님', async () => {

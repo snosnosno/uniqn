@@ -25,6 +25,7 @@ import {
 import { logger } from '@/utils/logger';
 import { toStoreProfile } from '@/utils/profileConverter';
 import type { LoginFormData } from '@/schemas';
+import { saveFailed } from '@/constants/messages';
 
 export default function LoginScreen() {
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
@@ -99,7 +100,7 @@ export default function LoginScreen() {
         setLoginAutoLoginEnabled(previousEnabled);
         addToast({
           type: 'error',
-          message: extractErrorMessage(error, '자동 로그인 설정 저장에 실패했습니다.'),
+          message: extractErrorMessage(error, saveFailed('자동 로그인 설정')),
         });
       }
     },

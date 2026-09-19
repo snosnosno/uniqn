@@ -43,6 +43,7 @@ import { isAppError } from '@/errors';
 import type { VenueContainer } from '@/domains/workSchedule';
 import type { PostingRoleCatalogEntry } from '@/types';
 import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
+import { saveFailed } from '@/constants/messages';
 
 const TYPE_LABEL: Record<string, string> = { hourly: '시급', daily: '일급', monthly: '월급' };
 
@@ -140,7 +141,7 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
       const message =
         isAppError(err) && err.userMessage
           ? err.userMessage
-          : '지점 정보 저장에 실패했어요. 잠시 후 다시 시도해주세요.';
+          : saveFailed('지점 정보', { retry: true });
       addToast({ type: 'error', message });
     }
   }, [container, name, placeName, phone, profileMutation, addToast]);
@@ -163,7 +164,7 @@ export function VenueSettingsSheet({ visible, onClose, container }: VenueSetting
         setEditingKey(null);
         resetAddForm();
       } catch {
-        addToast({ type: 'error', message: '단가 저장에 실패했어요. 잠시 후 다시 시도해주세요.' });
+        addToast({ type: 'error', message: saveFailed('단가', { retry: true }) });
       }
     },
     [container, mutation, addToast, resetAddForm]

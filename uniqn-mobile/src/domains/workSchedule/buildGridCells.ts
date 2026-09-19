@@ -33,13 +33,18 @@ export function buildGridCells(
     if (!dateKey) continue;
     seen.add(dateKey);
     // 필요 인원 = max(수동 목표, 파생 좌석합) — 공고 requirements 로 목표를 자동 채운다.
+    // 🔑 두 성분을 **셀에 함께 실어 보낸다**. max 로 뭉갠 값만 내려보내면 편집 UI 가 그 값을
+    //    수동 목표 입력칸에 프리필하고, 저장 한 번에 공고 파생분이 사용자의 목표를 덮는다.
     const manual = softTargets[dateKey] ?? 0;
-    const effectiveTarget = Math.max(manual, row.requiredCount ?? 0);
+    const derivedRequired = row.requiredCount ?? 0;
+    const effectiveTarget = Math.max(manual, derivedRequired);
     cells[dateKey] = computeDayCell({
       dateKey,
       headcount: row.headcount,
       jobCount: row.jobCount,
       softTarget: effectiveTarget,
+      manualTarget: manual,
+      derivedRequired,
     });
   }
 
@@ -52,6 +57,8 @@ export function buildGridCells(
       headcount: 0,
       jobCount: 0,
       softTarget: target,
+      manualTarget: target,
+      derivedRequired: 0,
     });
   }
 

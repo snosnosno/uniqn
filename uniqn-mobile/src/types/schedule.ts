@@ -454,6 +454,10 @@ export interface WorkLog extends FirebaseDocument {
   checkInTime?: TimeInput;
   /** 실제 퇴근 시간 */
   checkOutTime?: TimeInput;
+  /** QR 출근 원본 서버 수신 시각 (관리자 수정과 별도 보존) */
+  checkInScannedAt?: TimeInput;
+  /** QR 퇴근 원본 서버 수신 시각 (관리자 수정과 별도 보존) */
+  checkOutScannedAt?: TimeInput;
   /**
    * 퇴근 시각의 출처.
    *
@@ -515,17 +519,8 @@ export interface WorkLog extends FirebaseDocument {
 // QR Code Types
 // ============================================================================
 
-/** QR 코드 액션 타입 */
+/** 서버가 현재 근무 상태에서 자동으로 해소한 QR 액션 */
 export type QRCodeAction = 'checkIn' | 'checkOut';
-
-/**
- * QR 처리(RPC) 액션.
- *
- * 'auto'는 서버(process_qr_checkin_atomically)가 현재 work_log status 로 출근/퇴근을
- * 결정하도록 위임하는 값(고정 운영처 QR 경로). 클라이언트는 출/퇴근을 손수 고르지 않는다.
- * 결과 action 은 항상 'checkIn' | 'checkOut' 로 해소되어 반환된다.
- */
-export type QRProcessAction = QRCodeAction | 'auto';
 
 /**
  * QR 코드 스캔 결과 (QRCodeScanner 컴포넌트에서 사용)
@@ -544,6 +539,8 @@ export interface QRScanError {
   code: string;
   message: string;
   isRetryable: boolean;
+  /** 전용 복구 화면을 선택하기 위한 사용자 행동 기준 분류 */
+  kind?: 'checkoutTooEarly' | 'noEligibleWorkLog' | 'generic';
 }
 
 // ============================================================================
@@ -571,11 +568,37 @@ export interface VenueQRDisplayData {
  * QR 스캔 결과 (출퇴근 처리 후)
  */
 export interface EventQRScanResult {
-  success: boolean;
+  success: true;
   workLogId: string;
   assignmentGroupId?: string | null;
   timeSlot?: string | null;
   action: QRCodeAction;
-  checkTime: Date;
+  /** DB가 기록한 조작 불가능한 원본 스캔 시각 */
+  scannedAt: Date;
+  /** 출퇴근에 실제 적용된 15분 단위 시각 */
+  appliedTime: Date;
+  /** 퇴근 처리 후 서버가 계산한 근무시간. 출근 결과에서는 0. */
+  workDuration?: number;
   message: string;
 }
+
+/** 동일 공고에서 서버가 한 건으로 좁히지 못했을 때 사용자에게 보여줄 근무 후보 */
+export interface QRWorkCandidate {
+  workLogId: string;
+  date: string;
+  timeSlot?: string | null;
+  role?: StaffRole | null;
+  customRole?: string | null;
+  action: QRCodeAction;
+}
+
+/** QR 스캔 처리 결과. 평소에는 즉시 완료되고 다중 후보에서만 선택을 요구한다. */
+export type QRProcessResult =
+  | EventQRScanResult
+  | {
+      success: false;
+      requiresSelection: true;
+      candidates: QRWorkCandidate[];
+      /** 최초 서버 스캔 시각과 후보 집합을 묶는 단기 일회성 토큰 */
+      selectionToken: string;
+    };

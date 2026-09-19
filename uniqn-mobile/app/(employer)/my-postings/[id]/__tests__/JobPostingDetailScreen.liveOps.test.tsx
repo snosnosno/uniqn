@@ -70,6 +70,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EllipsisHorizontalIcon: () => null,
   EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
@@ -194,9 +195,12 @@ describe('JobPostingDetailScreen — 라이브 운영 ActionCard (1e Task 9)', (
       isLoading: false,
     });
 
-    const { getByTestId, getByText } = render(<JobPostingDetailScreen />);
+    const { getByTestId, getAllByText } = render(<JobPostingDetailScreen />);
 
-    expect(getByText('라이브 운영 (2)')).toBeTruthy();
+    // 승격되면 "지금 할 일" 카드와 "관리" 타일 **양쪽**에 뜬다 — 목록에서 빼면 정산 대기
+    // 하나에 진입점이 사라지므로 중복이 정상이다(actionHierarchy 계약 2).
+    expect(getAllByText('라이브 운영 (2)').length).toBeGreaterThan(0);
+    // 타일은 승격과 무관하게 늘 이 testID 하나다 — 눌러 가는 곳도 그대로여야 한다.
     fireEvent.press(getByTestId('job-posting-live-ops'));
 
     expect(mockPush).toHaveBeenCalledWith('/(ops)/tournaments?postingId=posting-1');

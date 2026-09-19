@@ -24,6 +24,7 @@ import type {
   UserNicknameSearchResult,
 } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Supabase Table Names
@@ -405,7 +406,7 @@ export class SupabaseUserRepository implements IUserRepository {
 
       if (!data) {
         throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '사용자를 찾을 수 없습니다',
+          userMessage: notFound('사용자'),
         });
       }
 

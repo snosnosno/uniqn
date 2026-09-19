@@ -1,8 +1,10 @@
 ---
 area: architecture
-updated: 2026-07-28
+updated: 2026-09-15
 status: current
 sources:
+  - uniqn-mobile/supabase/migrations/20260813150000_job_posting_collaborator_role.sql
+  - uniqn-mobile/src/components/job-posting/CollaboratorRow.tsx
   - uniqn-mobile/supabase/migrations/20260717093000_grid_order_sheet_security_hardening.sql
   - uniqn-mobile/supabase/migrations/20260710000002_baseline_schema_from_prod.sql
   - uniqn-mobile/supabase/migrations/archive/20260525153952_fix_job_postings_anon_public_select.sql
@@ -81,6 +83,12 @@ WITH CHECK 안 `SELECT count(*) FROM workspaces WHERE owner_id = auth.uid()` →
 | `job_postings` | 공개 status만 읽기 | 본인 workspace + collaborator |
 | `workspaces` | 없음 | owner or member (SECDEF helper) |
 | `applications` | 없음 | 본인 지원 or 공고 소유자 |
+
+### 협업자 권한 2단(`manager` / `viewer`)과 노쇼 횟수 예외 (2026-09-15 추가)
+
+- `job_posting_collaborators.role` 은 DB 기본값 `manager`(`uniqn-mobile/supabase/migrations/20260813150000_job_posting_collaborator_role.sql:48`). 쓰기 RLS·RPC 는 manager 전용 판정이라 viewer 의 쓰기는 화면과 무관하게 서버에서 막힌다(코드로 검증됨 — `src/types/jobPostingCollaborator.ts:14-18` 주석).
+- **예외:** `get_applicant_no_show_counts` 는 읽기라 `_any`(viewer 포함)로 열었다 — 사람에 대한 부정적 지표를 "관리 권한을 주지 않기로 한 사람"에게 여는 **의도적 프라이버시 완화**다(같은 파일 `:236-245`, 2026-08-16 사용자 승인). 반환은 **횟수만**(업장·날짜·사유 없음, 180일 창).
+- 그 대가로 지정하는 사장에게 알려야 한다는 조건이 붙었고, PR#495 가 viewer 지정의 유일 경로인 강등 확인창에 안내를 넣어 닫았다([[employer-ia-redesign-2026-09]]). **되돌리려면** 함수 게이트를 좁은 헬퍼로 바꾸고 UI 에서 viewer 분기로 칩을 숨긴다 — 안내 문구만 지우면 조건 없는 완화가 된다.
 
 > `wallets` 행(구 `본인만·DML REVOKE`, PR#168)은 **삭제됐다** — 지갑/IAP 전체 제거로 테이블 자체가 사라졌다. baseline 스키마에 `wallet` 문자열이 **0건**이고 정의는 `migrations/archive/` 에만 남아 있다([[wallet-iap-removal]]).
 

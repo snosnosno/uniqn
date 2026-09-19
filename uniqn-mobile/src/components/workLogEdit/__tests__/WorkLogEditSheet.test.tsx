@@ -116,6 +116,23 @@ function pickCheckOutAt2() {
   fireEvent.press(screen.getByLabelText('피커 확정 실제 퇴근 시간'));
 }
 
+describe('WorkLogEditSheet — QR 원본 감사값', () => {
+  it('원본 스캔 시각은 적용 시각과 분리해 읽기 전용으로 보여준다', () => {
+    renderSheet(
+      {},
+      {
+        checkIn: AT(10, 18, 15),
+        checkInScannedAt: AT(10, 18, 2),
+        checkOutScannedAt: AT(10, 23, 7),
+      }
+    );
+
+    expect(screen.getByTestId('qr-scan-audit')).toBeTruthy();
+    expect(screen.getByText(/출근 스캔 18:02/)).toBeTruthy();
+    expect(screen.getByText(/퇴근 스캔 23:07/)).toBeTruthy();
+  });
+});
+
 // ============================================================================
 // 0. 레거시 unreadable 회귀 — 폐기될 EditSlotSheet 의 originalUnreadable 처리 계승
 // ============================================================================
@@ -183,6 +200,7 @@ describe('WorkLogEditSheet — 안 건드린 축은 보내지 않는다 (§8-5)'
     renderSheet();
 
     pickCheckOutAt2();
+    fireEvent.changeText(screen.getByLabelText('수정 사유'), '현장 확인 후 수정');
     fireEvent.press(screen.getByLabelText('저장'));
 
     expect(mutateSpy).toHaveBeenCalledTimes(1);
@@ -665,6 +683,7 @@ describe('WorkLogEditSheet — 저장 결과', () => {
 
     renderSheet({ onSaved, onClose });
     pickCheckOutAt2();
+    fireEvent.changeText(screen.getByLabelText('수정 사유'), '현장 확인 후 수정');
     fireEvent.press(screen.getByLabelText('저장'));
 
     expect(toastSuccessSpy).toHaveBeenCalledWith('근무 정보를 수정했어요.');
@@ -678,6 +697,7 @@ describe('WorkLogEditSheet — 저장 결과', () => {
 
     renderSheet({ onClose });
     pickCheckOutAt2();
+    fireEvent.changeText(screen.getByLabelText('수정 사유'), '현장 확인 후 수정');
     fireEvent.press(screen.getByLabelText('저장'));
 
     expect(toastErrorSpy).toHaveBeenCalledWith('수정에 실패했어요. 잠시 후 다시 시도해주세요.');

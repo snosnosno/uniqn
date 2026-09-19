@@ -34,6 +34,7 @@ import type {
   UpdateAnnouncementInput,
   AnnouncementFilters,
 } from '@/types';
+import { saveFailed } from '@/constants/messages';
 
 // ============================================================================
 // 사용자용 훅
@@ -149,7 +150,7 @@ export function useCreateAnnouncement() {
     },
     onError: (error) => {
       logger.error('공지사항 생성 실패', toError(error));
-      addToast({ type: 'error', message: '공지사항 저장에 실패했습니다' });
+      addToast({ type: 'error', message: saveFailed('공지사항') });
     },
   });
 }

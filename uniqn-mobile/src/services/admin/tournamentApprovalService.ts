@@ -35,6 +35,7 @@ import type {
   RejectTournamentData,
   ResubmitTournamentData,
 } from '@/schemas';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -91,7 +92,7 @@ async function mapEdgeFunctionError(error: unknown): Promise<Error> {
         });
       case 404:
         return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
+          userMessage: notFound('공고'),
         });
       case 409:
         return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {

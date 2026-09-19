@@ -123,6 +123,14 @@ const calendarTheme = {
       justifyContent: 'center',
     },
   },
+  // 주(week) 행 간격. 라이브러리 기본값 7 은 위아래 합쳐 14px 이고, 5~6주면 격자 밖에서
+  // 70~84px 이 샌다 — 셀 자체가 이미 44px 터치 타깃이라 그만큼의 숨구멍이 필요 없다.
+  //
+  // ⚠️ `stylesheet.calendar.main` 로 week 를 덮어쓰지 말 것. 그 경로는 **머지가 아니라
+  //    치환**이라(calendar/style.js: `...(theme['stylesheet.calendar.main'] || {})`)
+  //    같이 정의된 monthView 의 backgroundColor 까지 조용히 날아간다. 라이브러리가
+  //    theme 프로퍼티로 열어 둔 값이 있으면 그쪽을 쓴다.
+  weekVerticalMargin: 2,
 };
 
 const darkCalendarTheme = {
@@ -221,14 +229,16 @@ interface LegendProps {
 
 function CalendarLegend({ types }: LegendProps) {
   return (
-    <View className="mb-1 mt-3 flex-row flex-wrap justify-center gap-3 px-2">
+    // 격자와 범례 사이를 헤어라인으로 끊고 여백을 줄인다 — 종전 mt-3+mb-1 은 점 다섯 개
+    // 설명하자고 캘린더 아래에 28px 을 더 붙였다.
+    <View className="mt-1 flex-row flex-wrap gap-x-3 gap-y-1 border-t border-secondary-100 px-3 py-2 dark:border-surface-overlay">
       {types.map((type) => (
         <View key={type} className="flex-row items-center">
           <View
-            className="mr-1.5 h-2.5 w-2.5 rounded-sm"
+            className="mr-1 h-2 w-2 rounded-sm"
             style={{ backgroundColor: SCHEDULE_DOT_COLORS[type] }}
           />
-          <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
+          <Text className="text-[11px] text-content-muted dark:text-secondary-400 font-sans">
             {SCHEDULE_TYPE_LABELS[type]}
           </Text>
         </View>
@@ -244,7 +254,7 @@ function CalendarWeekdayHeader() {
     : 'text-xs font-sans-medium text-secondary-500';
 
   return (
-    <View className="px-4 pb-2 pt-4">
+    <View className="px-4 pb-1 pt-2.5">
       <View className="flex-row">
         {CALENDAR_WEEKDAYS.map((day) => (
           <View key={day} className="flex-1 items-center">
@@ -266,12 +276,13 @@ function CalendarWeekdayHeader() {
 function CalendarGridSkeleton() {
   return (
     <View
-      className="px-4 pb-4"
+      className="px-4 pb-2"
       accessibilityRole="progressbar"
       accessibilityLabel="캘린더를 불러오는 중"
     >
-      {Array.from({ length: 6 }).map((_, row) => (
-        <View key={row} className="mb-1 flex-row justify-between">
+      {/* 실제 격자는 showSixWeeks={false} 라 대개 5주다 — 6줄을 그리면 로드 직후 높이가 준다. */}
+      {Array.from({ length: 5 }).map((_, row) => (
+        <View key={row} className="my-0.5 flex-row justify-around">
           {Array.from({ length: 7 }).map((__, col) => (
             // 셀 하나하나를 낭독하면 42번을 듣는다 — 컨테이너 라벨 하나로 충분하다.
             <Skeleton key={col} width={36} height={36} borderRadius={18} accessible={false} />

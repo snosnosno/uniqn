@@ -4,17 +4,17 @@ import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-adm
 interface SeededReports {
   pendingCommentReportId: string;
   resolvedPostReportId: string;
-  freePostId: string;
-  tdaPostId: string;
+  commentPostId: string;
+  reportedPostId: string;
   commentId: string;
 }
 
 // PR #118: BOARD_FIXTURE_IDS 의 비-UUID seed ID 가 board_reports.id (uuid 타입) 에서
 // invalid_text_representation 으로 hang 했던 문제 해결. 동적 seed + DB-generated UUID 로 전환.
 const SUFFIX = Date.now();
-const FREE_TITLE = `[e2e-abr] Free board post ${SUFFIX}`;
-const TDA_TITLE = `[e2e-abr] Employer TDA topic ${SUFFIX}`;
-const TDA_BODY = `[e2e-abr] Employer-authored TDA discussion seed ${SUFFIX}.`;
+const COMMENT_POST_TITLE = `[e2e-abr] Schedule communication ${SUFFIX}`;
+const REPORTED_POST_TITLE = `[e2e-abr] Reported schedule communication ${SUFFIX}`;
+const REPORTED_POST_BODY = `[e2e-abr] Employer-authored schedule seed ${SUFFIX}.`;
 const COMMENT_BODY = `[e2e-abr] Seeded employer comment for report detail verification ${SUFFIX}.`;
 const PENDING_REASON = `[e2e-abr] Pending board report reason ${SUFFIX}`;
 const RESOLVED_REASON = `[e2e-abr] Resolved board report reason ${SUFFIX}`;
@@ -26,48 +26,48 @@ async function seedReports(): Promise<SeededReports | null> {
     return null;
   }
 
-  // 1. Free post (staff authored)
-  const { data: freePost, error: freeErr } = await admin
+  // 1. Schedule communication post (staff authored)
+  const { data: commentPost, error: commentPostErr } = await admin
     .from('board_posts')
     .insert({
-      board_type: 'free',
-      title: FREE_TITLE,
-      body: 'Seeded free board content for report verification.',
+      board_type: 'schedule',
+      title: COMMENT_POST_TITLE,
+      body: 'Seeded schedule communication for report verification.',
       author_id: SUPABASE_QA_ACCOUNTS.staff.id,
       author_name: SUPABASE_QA_ACCOUNTS.staff.name,
       author_role: 'staff',
     })
     .select('id')
     .single();
-  if (freeErr || !freePost) {
-    console.warn('[admin-board-reports seed] free post 생성 실패:', freeErr?.message);
+  if (commentPostErr || !commentPost) {
+    console.warn('[admin-board-reports seed] schedule post 생성 실패:', commentPostErr?.message);
     return null;
   }
 
-  // 2. TDA post (employer authored)
-  const { data: tdaPost, error: tdaErr } = await admin
+  // 2. Reported schedule communication post (employer authored)
+  const { data: reportedPost, error: reportedPostErr } = await admin
     .from('board_posts')
     .insert({
-      board_type: 'tda',
-      title: TDA_TITLE,
-      body: TDA_BODY,
+      board_type: 'schedule',
+      title: REPORTED_POST_TITLE,
+      body: REPORTED_POST_BODY,
       author_id: SUPABASE_QA_ACCOUNTS.employer.id,
       author_name: SUPABASE_QA_ACCOUNTS.employer.name,
       author_role: 'employer',
     })
     .select('id')
     .single();
-  if (tdaErr || !tdaPost) {
-    console.warn('[admin-board-reports seed] tda post 생성 실패:', tdaErr?.message);
-    await admin.from('board_posts').delete().eq('id', freePost.id);
+  if (reportedPostErr || !reportedPost) {
+    console.warn('[admin-board-reports seed] reported post 생성 실패:', reportedPostErr?.message);
+    await admin.from('board_posts').delete().eq('id', commentPost.id);
     return null;
   }
 
-  // 3. Comment on free post (employer authored)
+  // 3. Comment on schedule post (employer authored)
   const { data: comment, error: commentErr } = await admin
     .from('board_comments')
     .insert({
-      post_id: freePost.id,
+      post_id: commentPost.id,
       body: COMMENT_BODY,
       author_id: SUPABASE_QA_ACCOUNTS.employer.id,
       author_name: SUPABASE_QA_ACCOUNTS.employer.name,
@@ -77,7 +77,7 @@ async function seedReports(): Promise<SeededReports | null> {
     .single();
   if (commentErr || !comment) {
     console.warn('[admin-board-reports seed] comment 생성 실패:', commentErr?.message);
-    await admin.from('board_posts').delete().in('id', [freePost.id, tdaPost.id]);
+    await admin.from('board_posts').delete().in('id', [commentPost.id, reportedPost.id]);
     return null;
   }
 
@@ -87,7 +87,7 @@ async function seedReports(): Promise<SeededReports | null> {
     .insert({
       target_type: 'comment',
       target_id: comment.id,
-      post_id: freePost.id,
+      post_id: commentPost.id,
       reporter_id: SUPABASE_QA_ACCOUNTS.staff.id,
       reason: PENDING_REASON,
       details: 'Pending board report details for the seeded employer comment.',
@@ -97,7 +97,7 @@ async function seedReports(): Promise<SeededReports | null> {
     .single();
   if (pendingErr || !pending) {
     console.warn('[admin-board-reports seed] pending report 생성 실패:', pendingErr?.message);
-    await admin.from('board_posts').delete().in('id', [freePost.id, tdaPost.id]);
+    await admin.from('board_posts').delete().in('id', [commentPost.id, reportedPost.id]);
     return null;
   }
 
@@ -106,8 +106,8 @@ async function seedReports(): Promise<SeededReports | null> {
     .from('board_reports')
     .insert({
       target_type: 'post',
-      target_id: tdaPost.id,
-      post_id: tdaPost.id,
+      target_id: reportedPost.id,
+      post_id: reportedPost.id,
       reporter_id: SUPABASE_QA_ACCOUNTS.staff.id,
       reason: RESOLVED_REASON,
       details: 'Resolved board report details for the seeded employer post.',
@@ -119,15 +119,15 @@ async function seedReports(): Promise<SeededReports | null> {
     .single();
   if (resolvedErr || !resolved) {
     console.warn('[admin-board-reports seed] resolved report 생성 실패:', resolvedErr?.message);
-    await admin.from('board_posts').delete().in('id', [freePost.id, tdaPost.id]);
+    await admin.from('board_posts').delete().in('id', [commentPost.id, reportedPost.id]);
     return null;
   }
 
   return {
     pendingCommentReportId: pending.id,
     resolvedPostReportId: resolved.id,
-    freePostId: freePost.id,
-    tdaPostId: tdaPost.id,
+    commentPostId: commentPost.id,
+    reportedPostId: reportedPost.id,
     commentId: comment.id,
   };
 }
@@ -136,7 +136,10 @@ async function cleanupReports(seeded: SeededReports): Promise<void> {
   const admin = getAdminClient();
   if (!admin) return;
   // board_posts CASCADE → board_comments, board_reports 동반 삭제
-  await admin.from('board_posts').delete().in('id', [seeded.freePostId, seeded.tdaPostId]);
+  await admin
+    .from('board_posts')
+    .delete()
+    .in('id', [seeded.commentPostId, seeded.reportedPostId]);
 }
 
 test.describe('Admin 게시판 신고', () => {
@@ -186,7 +189,7 @@ test.describe('Admin 게시판 신고', () => {
     await expect(page.getByText('댓글 신고', { exact: true })).toBeVisible();
     await expect(page.getByText(PENDING_REASON, { exact: true })).toBeVisible();
     await expect(page.getByText(COMMENT_BODY, { exact: true })).toBeVisible();
-    await expect(page.getByText(FREE_TITLE, { exact: true })).toBeVisible();
+    await expect(page.getByText(COMMENT_POST_TITLE, { exact: true })).toBeVisible();
 
     await page.evaluate(() => {
       window.confirm = () => true;
@@ -211,7 +214,7 @@ test.describe('Admin 게시판 신고', () => {
     await expect(page.getByText('게시판 신고 상세').first()).toBeVisible();
     await expect(page.getByText('게시글 신고', { exact: true })).toBeVisible();
     await expect(page.getByText(RESOLVED_REASON, { exact: true })).toBeVisible();
-    await expect(page.getByText(TDA_BODY, { exact: true })).toBeVisible();
+    await expect(page.getByText(REPORTED_POST_BODY, { exact: true })).toBeVisible();
     await expect(page.getByText(/처리 상태: 해결/)).toBeVisible();
   });
 });

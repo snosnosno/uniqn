@@ -3,6 +3,9 @@
  * 거절/취소된 지원은 스케줄 쿼리에서 제외되므로 매치 실패(missing)가 날 수 있다 —
  * 이때 무반응 대신 안내를 띄우기 위한 응급 판정 (근본 해소는 M1: 쿼리에 rejected 포함).
  */
+
+import { notFound } from '@/constants/messages';
+
 export type ApplicationDeepLinkResult<T> =
   | { kind: 'open'; schedule: T }
   | { kind: 'missing' }
@@ -87,8 +90,7 @@ const INACTIVE_APPLICATION_STATUSES: Record<string, string> = {
   cancelled: '이 지원은 취소되어 일정에서 빠졌어요.',
 };
 
-export const DEEP_LINK_APPLICATION_NOT_FOUND_MESSAGE =
-  '해당 지원 일정을 찾을 수 없어요. 이미 삭제되었거나 접근 권한이 없을 수 있어요.';
+export const DEEP_LINK_APPLICATION_NOT_FOUND_MESSAGE = `${notFound('해당 지원 일정')}. 이미 삭제되었거나 접근 권한이 없을 수 있어요`;
 
 export type MissingApplicationDeepLinkOutcome =
   /** 지원의 근무월이 조회 중인 달과 달라 그 달로 이동해야 한다 */

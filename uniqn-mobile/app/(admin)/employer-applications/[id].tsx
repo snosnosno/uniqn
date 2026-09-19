@@ -20,6 +20,7 @@ import { confirmAction } from '@/utils/confirmAction';
 import { toDate } from '@/utils/date';
 import { openExternalUrl } from '@/utils/externalLink';
 import { formatE164ToDisplay } from '@/utils/phone';
+import { josa } from '@/utils/text/josa';
 
 // ============================================================================
 // Helpers
@@ -276,7 +277,7 @@ export default function AdminEmployerApplicationDetailPage() {
                   onPress={handleCallPhone}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`${formatE164ToDisplay(applicant.phone)}로 전화`}
+                  accessibilityLabel={`${josa(formatE164ToDisplay(applicant.phone), '으로/로')} 전화`}
                 >
                   <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline">
                     {formatE164ToDisplay(applicant.phone)}
@@ -332,7 +333,7 @@ export default function AdminEmployerApplicationDetailPage() {
                   onPress={handleSendEmail}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`${applicant.email}로 이메일`}
+                  accessibilityLabel={`${josa(applicant.email, '으로/로')} 이메일`}
                 >
                   <Text
                     className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline"

@@ -15,7 +15,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
-import type { QRCodeScanResult, QRScanError } from '@/types';
+import type { EventQRScanResult, QRCodeScanResult, QRScanError, QRWorkCandidate } from '@/types';
 import { isAppError } from '@/errors/AppError';
 import { toError, normalizeError } from '@/errors';
 
@@ -25,7 +25,7 @@ import { toError, normalizeError } from '@/errors';
 
 interface UseQRCodeScannerOptions {
   /** 스캔 성공 시 콜백 */
-  onSuccess?: () => void;
+  onSuccess?: (result: EventQRScanResult) => void;
   /** 스캔 실패 시 콜백 */
   onError?: (error: Error) => void;
 }
@@ -48,10 +48,38 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastError, setLastError] = useState<QRScanError | null>(null);
+  const [pendingCandidates, setPendingCandidates] = useState<QRWorkCandidate[]>([]);
+  const pendingQRStringRef = useRef<string | null>(null);
+  const pendingSelectionTokenRef = useRef<string | null>(null);
   const lastScanTimeRef = useRef(0);
   const QR_SCAN_THROTTLE_MS = 5000; // 5초 throttle
 
   const clearError = useCallback(() => setLastError(null), []);
+
+  const classifyError = useCallback((message: string): QRScanError['kind'] => {
+    if (message.includes('출근 적용 시각과 같아')) return 'checkoutTooEarly';
+    if (message.includes('출퇴근할 수 있는 배정 근무가 없습니다')) return 'noEligibleWorkLog';
+    return 'generic';
+  }, []);
+
+  const finishSuccess = useCallback(
+    (scanResult: EventQRScanResult) => {
+      onSuccess?.(scanResult);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.workSchedule.all }),
+      ]).catch((error: unknown) => {
+        logger.warn('QR 처리 후 캐시 갱신 실패', { error: toError(error).message });
+      });
+      setPendingCandidates([]);
+      pendingQRStringRef.current = null;
+      pendingSelectionTokenRef.current = null;
+    },
+    [onSuccess]
+  );
 
   // QR 스캔 결과 처리 (고정 QR 단일 진입점, 5초 throttle 적용)
   const handleScanResult = useCallback(
@@ -116,15 +144,11 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         const scanResult = await processQRCheckIn(qrString, user.uid);
 
         if (scanResult.success) {
-          // 캐시 무효화: workLogs 변경 → schedules도 갱신 필요
-          await queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
-          await queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
-
-          addToast({
-            type: 'success',
-            message: scanResult.message,
-          });
-          onSuccess?.();
+          finishSuccess(scanResult);
+        } else if (scanResult.requiresSelection) {
+          pendingQRStringRef.current = qrString;
+          pendingSelectionTokenRef.current = scanResult.selectionToken;
+          setPendingCandidates(scanResult.candidates);
         } else {
           releaseThrottle();
           addToast({
@@ -144,6 +168,7 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
           code: appError.code,
           message: errorMessage,
           isRetryable: appError.isRetryable,
+          kind: classifyError(errorMessage),
         });
 
         // 네이티브 스캐너는 scanError prop 으로 화면에 에러를 그리므로 토스트를 겹치지 않는다.
@@ -161,14 +186,61 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         setIsProcessing(false);
       }
     },
-    [user?.uid, addToast, onSuccess, onError]
+    [user?.uid, addToast, finishSuccess, onError, classifyError]
   );
+
+  const selectCandidate = useCallback(
+    async (workLogId: string) => {
+      const qrString = pendingQRStringRef.current;
+      const selectionToken = pendingSelectionTokenRef.current;
+      if (!qrString || !selectionToken || !user?.uid) return;
+      try {
+        setIsProcessing(true);
+        requireOnlineForMutation('useQRCodeScanner.selectCandidate');
+        const result = await processQRCheckIn(qrString, user.uid, workLogId, selectionToken);
+        if (!result.success) {
+          pendingQRStringRef.current = qrString;
+          pendingSelectionTokenRef.current = result.selectionToken;
+          setPendingCandidates(result.candidates);
+          return;
+        }
+        finishSuccess(result);
+      } catch (error) {
+        logger.error('QR 근무 선택 처리 실패', toError(error), { workLogId });
+        const errorMessage = isAppError(error)
+          ? error.userMessage
+          : toError(error).message || '처리에 실패했습니다.';
+        const appError = isAppError(error) ? error : normalizeError(toError(error));
+        setLastError({
+          code: appError.code,
+          message: errorMessage,
+          isRetryable: appError.isRetryable,
+          kind: classifyError(errorMessage),
+        });
+        addToast({ type: 'error', message: errorMessage });
+        onError?.(toError(error));
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [user?.uid, addToast, finishSuccess, onError, classifyError]
+  );
+
+  const cancelCandidateSelection = useCallback(() => {
+    setPendingCandidates([]);
+    pendingQRStringRef.current = null;
+    pendingSelectionTokenRef.current = null;
+    lastScanTimeRef.current = 0;
+  }, []);
 
   return {
     handleScanResult,
     isProcessing,
     lastError,
     clearError,
+    pendingCandidates,
+    selectCandidate,
+    cancelCandidateSelection,
   };
 }
 

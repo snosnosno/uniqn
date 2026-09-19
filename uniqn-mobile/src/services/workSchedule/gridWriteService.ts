@@ -21,6 +21,7 @@ import { ValidationError, ERROR_CODES } from '@/errors';
 import { xssValidation } from '@/utils/security';
 import type { VenueContainer } from '@/domains/workSchedule';
 import type { DeleteConfirmedStaffInput } from '@/types';
+import { josa } from '@/utils/text/josa';
 
 /**
  * 지점 단가표 customRole 자유입력 길이 상한 — RPC set_venue_role_salary 의 서버 규약(≤50자)과 동일.
@@ -90,7 +91,8 @@ export function updatePostingSlotTime(
 }
 
 /**
- * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=remove_direct_staff, 지원확정분=확정해제 RPC —
+ * 배치 슬롯 빼기. 직접추가분(applicationId 없음)=사유 포함 release_scheduled_assignment,
+ * 지원확정분=확정해제 RPC —
  * 이 분기는 confirmedStaffService.cancelConfirmedStaffConfirmation 이 담당(removeDirectStaff
  * 직접 호출 금지: 공고 스팬 슬롯에서 NOT_DIRECT_STAFF). 권한 게이트는 RPC 경계.
  */
@@ -117,7 +119,7 @@ function assertVenueText(value: string, field: string, max: number, label: strin
   if (value.length > max) {
     throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
       field,
-      userMessage: `${label}은(는) ${max}자를 초과할 수 없습니다.`,
+      userMessage: `${josa(label, '은/는')} ${max}자를 넘을 수 없어요`,
     });
   }
   if (value.length > 0 && !xssValidation(value)) {

@@ -247,6 +247,8 @@ export const queryKeys = {
     byDate: (date: string) => [...queryKeys.schedules.all, 'byDate', date] as const,
     byMonth: (year: number, month: number) =>
       [...queryKeys.schedules.all, 'byMonth', year, month] as const,
+    nextConfirmed: (staffId: string) =>
+      [...queryKeys.schedules.all, 'nextConfirmed', staffId] as const,
   },
 
   // 근무 기록
@@ -429,14 +431,6 @@ export const queryKeys = {
 
   boards: {
     all: ['boards'] as const,
-    home: (userId?: string, role?: string, isAdmin?: boolean) =>
-      [
-        ...queryKeys.boards.all,
-        'home',
-        userId ?? 'anonymous',
-        role ?? 'unknown',
-        isAdmin ?? false,
-      ] as const,
     list: (
       boardType: string,
       userId?: string,

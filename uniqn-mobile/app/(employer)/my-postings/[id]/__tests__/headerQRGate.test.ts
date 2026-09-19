@@ -1,18 +1,8 @@
 /**
- * 헤더 QR 진입점 — 고정(isFixed) 공고 차단 회귀 가드
+ * 헤더 QR 진입점 — 모든 공고 지원 회귀 가드
  *
- * @description 고정 스케줄 공고에서는 QR 진입점이 **어느 화면에서도** 보이면 안 된다.
- *
- *   이유는 UI 취향이 아니라 데이터 수명이다. `confirm_application` 은 고정 공고에
- *   `dates:['FIXED_SCHEDULE']` 한 원소만 flat INSERT 하므로 **스태프·공고당 work_logs 행이
- *   정확히 1개**이고, 그 행이 모든 근무일에 재사용된다. 그런데 그 행을 `scheduled` 로
- *   되돌리는 크론·트리거·클라 코드가 어디에도 없다:
- *
- *     D일   1차 스캔 → scheduled  → 출근 ✓
- *     D일   2차 스캔 → checked_in → 퇴근 ✓  (행이 checked_out 으로 고정)
- *     D+1~  모든 스캔 → all_checked_out → "오늘 근무는 이미 퇴근 처리됐습니다" ← 영구 실패
- *
- *   행 수명 재설계는 별도 PR 이며, 그때까지 진입점을 노출하지 않는다.
+ * @description 고정 스케줄도 서버가 FIXED_SCHEDULE 템플릿에서 날짜별 근무를 생성하므로
+ *   QR 진입점을 일반 공고와 동일하게 보여준다.
  *
  * @remarks 왜 렌더링 테스트가 아니라 소스 구조 검사인가 — 이 결함의 실패 양식은 "한 화면에서
  *   로직이 틀렸다"가 아니라 **"5개 소비처 중 하나에 게이트를 빠뜨렸다"** 이다. 그러면 사용자는
@@ -36,8 +26,7 @@ const KNOWN_CONSUMERS = [
 ] as const;
 
 /**
- * `<HeaderQRAction` 앞 구문에서 찾는 고정 공고 게이트.
- * `!isFixed` / `!contextIsFixed` / `!(contextIsFixed || isFixed)` 를 모두 받아들인다.
+ * `<HeaderQRAction` 앞 구문에서 과거 고정 공고 차단 게이트가 되살아났는지 검사한다.
  */
 const FIXED_GATE_PATTERN = /!\s*\(?\s*(context)?[iI]sFixed/;
 
@@ -52,8 +41,8 @@ function listScreenFiles(): string[] {
   return readdirSync(SCREEN_DIR).filter((name) => name.endsWith('.tsx'));
 }
 
-describe('헤더 QR 진입점 — 고정 공고 차단', () => {
-  it.each(KNOWN_CONSUMERS)('%s 는 HeaderQRAction 을 isFixed 로 게이팅한다', (fileName) => {
+describe('헤더 QR 진입점 — 모든 공고 지원', () => {
+  it.each(KNOWN_CONSUMERS)('%s 는 고정 공고에서도 HeaderQRAction 을 노출한다', (fileName) => {
     const source = readScreen(fileName);
     const occurrences = [...source.matchAll(/<HeaderQRAction/g)];
 
@@ -64,11 +53,11 @@ describe('헤더 QR 진입점 — 고정 공고 차단', () => {
       const start = Math.max(0, (match.index ?? 0) - LOOKBEHIND_CHARS);
       const preceding = source.slice(start, match.index ?? 0);
 
-      expect(preceding).toMatch(FIXED_GATE_PATTERN);
+      expect(preceding).not.toMatch(FIXED_GATE_PATTERN);
     }
   });
 
-  it('HeaderQRAction 소비처는 알려진 5개뿐이다 (새 소비처는 게이트와 함께 등록할 것)', () => {
+  it('HeaderQRAction 소비처는 알려진 5개뿐이다 (새 소비처도 목록에 등록할 것)', () => {
     const consumers = listScreenFiles().filter((fileName) =>
       readScreen(fileName).includes('<HeaderQRAction')
     );

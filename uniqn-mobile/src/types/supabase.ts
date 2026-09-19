@@ -613,45 +613,6 @@ export type Database = {
           },
         ];
       };
-      board_votes: {
-        Row: {
-          created_at: string | null;
-          id: string;
-          post_id: string;
-          type: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string | null;
-          id?: string;
-          post_id: string;
-          type: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string | null;
-          id?: string;
-          post_id?: string;
-          type?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'board_votes_post_id_fkey';
-            columns: ['post_id'];
-            isOneToOne: false;
-            referencedRelation: 'board_posts';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'board_votes_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       employer_applications: {
         Row: {
           agreements_snapshot: Json;
@@ -2254,7 +2215,9 @@ export type Database = {
         Row: {
           application_id: string | null;
           assignment_group_id: string | null;
+          check_in_scanned_at: string | null;
           check_in_ts: string | null;
+          check_out_scanned_at: string | null;
           check_out_ts: string | null;
           created_at: string | null;
           custom_allowances: Json | null;
@@ -2291,7 +2254,9 @@ export type Database = {
         Insert: {
           application_id?: string | null;
           assignment_group_id?: string | null;
+          check_in_scanned_at?: string | null;
           check_in_ts?: string | null;
+          check_out_scanned_at?: string | null;
           check_out_ts?: string | null;
           created_at?: string | null;
           custom_allowances?: Json | null;
@@ -2328,7 +2293,9 @@ export type Database = {
         Update: {
           application_id?: string | null;
           assignment_group_id?: string | null;
+          check_in_scanned_at?: string | null;
           check_in_ts?: string | null;
+          check_out_scanned_at?: string | null;
           check_out_ts?: string | null;
           created_at?: string | null;
           custom_allowances?: Json | null;
@@ -3257,6 +3224,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      process_posting_qr_attendance: {
+        Args: {
+          p_job_posting_id: string;
+          p_selected_work_log_id?: string;
+          p_selection_token?: string;
+          p_staff_id: string;
+        };
+        Returns: Json;
+      };
       register_as_employer: {
         Args: { p_employer_agreements?: Json; p_intro?: string };
         Returns: Json;
@@ -3322,10 +3298,6 @@ export type Database = {
         }[];
       };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
-      toggle_board_post_vote: {
-        Args: { p_post_id: string; p_user_id: string; p_vote_type: string };
-        Returns: Json;
-      };
       toggle_comment_reaction: {
         Args: {
           p_comment_id: string;

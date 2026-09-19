@@ -148,6 +148,8 @@ export const workLogDocumentSchema = z
     // 시간 정보 (optionalTimestampSchema가 모든 입력을 ISO string으로 정규화하므로 raw union 불필요)
     checkInTime: optionalTimestampSchema,
     checkOutTime: optionalTimestampSchema,
+    checkInScannedAt: optionalTimestampSchema,
+    checkOutScannedAt: optionalTimestampSchema,
 
     // 상태
     status: workLogStatusSchema,

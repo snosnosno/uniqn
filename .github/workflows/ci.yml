@@ -69,7 +69,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: [type-check, lint, format:check, check:rpc-migrations]
+        # 🔴 `type-check` 는 루트 tsconfig 라 e2e/ 를 exclude 한다. eslint 도 e2e/ 를 ignore 한다.
+        #    → e2e/ 를 보는 잡이 하나도 없어 타입 에러가 조용히 쌓였다(2026-08-25 에 2건 발견).
+        #    `type-check:e2e` 가 그 사각지대를 막는다. 지우지 말 것.
+        check: [type-check, type-check:e2e, lint, format:check, check:rpc-migrations]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

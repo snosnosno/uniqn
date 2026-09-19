@@ -29,7 +29,7 @@ export function OrderRow({
     >
       <Text className="w-16 text-xs text-content-secondary font-sans">{state.label}</Text>
       {state.unset ? (
-        <View className="px-2 py-0.5 rounded-full bg-warning-100">
+        <View className="px-2 py-0.5 rounded-sm bg-warning-100">
           <Text className="text-[11px] font-sans-medium text-warning-700 dark:text-warning-300">
             미설정
           </Text>
@@ -46,7 +46,7 @@ export function OrderRow({
       )}
       {!state.unset && badge ? (
         <View
-          className="ml-1 mr-1 px-2 py-0.5 rounded-full bg-secondary-100 dark:bg-surface-overlay"
+          className="ml-1 mr-1 px-2 py-0.5 rounded-sm bg-secondary-100 dark:bg-surface-overlay"
           testID={`${testID}-badge`}
         >
           <Text className="text-[11px] font-sans-medium text-content-secondary">{badge}</Text>

@@ -6,7 +6,7 @@
  */
 
 import type { UnsubscribeFn } from '@/types/common';
-import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessAction, StaffRole } from '@/types';
+import type { WorkLog, WorkLogStatus, QRCodeAction, QRProcessResult, StaffRole } from '@/types';
 
 /**
  * 슬롯 편집(근무표 B2) 입력. 부분 업데이트 — 제공된 필드만 반영한다.
@@ -201,6 +201,19 @@ export interface IWorkLogRepository {
    */
   getByVenueSpanInRange(venueId: string, fromDate: string, toDate: string): Promise<WorkLog[]>;
 
+  /** 지점 스팬의 해결되지 않은 퇴근 미기록(월 무관) */
+  getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]>;
+
+  /**
+   * 구인자(ownerId) 기준 "오늘 확인할 근무" 조회 — 내 공고 탭 오늘 한 줄(구인자 IA S3)
+   *
+   * @description 오늘 날짜의 `scheduled`(미출근 후보) + 오늘 이전의 `checked_in`(퇴근 미기록 후보).
+   *   판정(고정 공고 제외·야간 유예)은 도메인 `summarizeTodayAttention` 이 한다.
+   * @param ownerId - 구인자 ID
+   * @param today - 오늘(YYYY-MM-DD)
+   */
+  getAttentionByOwnerId(ownerId: string, today: string): Promise<WorkLog[]>;
+
   /**
    * 구인자(ownerId)의 완료된 근무 기록 조회
    *
@@ -229,6 +242,9 @@ export interface IWorkLogRepository {
    * @returns 출근 중인 근무 기록 또는 null
    */
   getTodayCheckedIn(staffId: string): Promise<WorkLog | null>;
+
+  /** 조회 월과 무관한 가장 가까운 미래 확정 근무 */
+  getNextScheduledCandidates(staffId: string, fromDate: string): Promise<WorkLog[]>;
 
   /**
    * 근무 기록 통계 조회
@@ -260,29 +276,6 @@ export interface IWorkLogRepository {
     assignmentGroupId?: string | null,
     timeSlot?: string | null
   ): Promise<WorkLog | null>;
-
-  /**
-   * QR 스캔용 work_log 후보 조회
-   *
-   * @description 고정 공고(date='FIXED_SCHEDULE')와 일반 공고(date=오늘/어제)를 한 쿼리로 조회.
-   *   하루 다중 배정이 정상 케이스이므로 예외를 던지지 않고 배열을 그대로 반환한다.
-   *   (job_posting_id, staff_id, date)에 UNIQUE 제약이 없어 2건 이상이 정상 발생한다.
-   *
-   *   어제를 포함하는 이유는 **자정 넘는 근무의 퇴근 스캔**이다 — 18:00~02:00 근무의
-   *   work_logs.date 는 시작일 D 라서, D+1 새벽에 찍는 퇴근 QR 을 오늘 날짜로만 조회하면
-   *   후보가 0건이 되어 근무 중인 스태프가 퇴근을 찍지 못한다.
-   * @param jobPostingId - 공고 ID
-   * @param staffId - 스태프 ID
-   * @param today - 오늘 날짜 (YYYY-MM-DD)
-   * @param yesterday - 어제 날짜 (YYYY-MM-DD) — 자정 넘는 근무의 퇴근 스캔용
-   * @returns 후보 근무 기록 목록 (없으면 빈 배열)
-   */
-  findQRCandidates(
-    jobPostingId: string,
-    staffId: string,
-    today: string,
-    yesterday: string
-  ): Promise<WorkLog[]>;
 
   // ==========================================================================
   // 실시간 구독 (Realtime)
@@ -378,8 +371,7 @@ export interface IWorkLogRepository {
    * @param workLogId - 근무 기록 ID
    * @param staffId - 스태프 ID (방어적 검증용)
    * @param jobPostingId - 공고 ID (방어적 검증용)
-   * @param action - 출근/퇴근, 또는 'auto'(서버가 status 로 결정 — 고정 운영처 QR)
-   * @param checkTime - 체크 시각
+   * @param action - 스태프가 명시적으로 선택한 출근/퇴근
    * @param date - 근무 날짜 (YYYY-MM-DD, timeSlot 파싱용)
    * @returns action 결과 (출근/퇴근으로 해소됨, 근무시간)
    */
@@ -387,14 +379,23 @@ export interface IWorkLogRepository {
     workLogId: string,
     staffId: string,
     jobPostingId: string,
-    action: QRProcessAction,
-    checkTime: Date,
+    action: QRCodeAction,
     date: string
   ): Promise<{
     action: QRCodeAction;
     hasExistingCheckInTime: boolean;
     workDuration: number;
+    scannedAt: Date;
+    appliedTime: Date;
   }>;
+
+  /** 공고 QR 자동 출퇴근. 서버가 날짜·액션·후보를 판별한다. */
+  processPostingQRAttendance(
+    jobPostingId: string,
+    staffId: string,
+    selectedWorkLogId?: string,
+    selectionToken?: string
+  ): Promise<QRProcessResult>;
 
   /**
    * 슬롯 편집(근무표 B2) — 시간/역할/색상/메모 부분 수정.

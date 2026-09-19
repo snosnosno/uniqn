@@ -28,6 +28,7 @@ import {
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { isTournamentApprovalBlocked } from '@/domains/job-posting';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { notFound } from '@/constants/messages';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 
@@ -155,7 +156,7 @@ export default function JobDetailScreen() {
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/home-jobs" />
-        <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
+        <ErrorState message={error?.message ?? notFound('공고')} onRetry={refresh} />
       </SafeAreaView>
     );
   }

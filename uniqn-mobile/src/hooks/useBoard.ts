@@ -1,10 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   createBoardComment,
-  createBoardPost,
   createBoardReport,
   fetchBoardPosts,
-  getBoardHomeData,
   getBoardMentionCandidates,
   getBoardPostDetail,
   hideBoardPost,
@@ -13,9 +11,7 @@ import {
   setBoardCommentStatus,
   setBoardPostLock,
   toggleBoardCommentReaction,
-  toggleBoardPostVote,
   updateBoardComment,
-  updateBoardPost,
 } from '@/services';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { invalidateQueries, queryClient, queryKeys } from '@/lib/queryClient';
@@ -30,16 +26,14 @@ import { isBoardQueryAuthReady } from '@/hooks/internal/boardQueryAuthGate';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type {
-  BoardType,
-  BoardVoteType,
+  CommunicationBoardType,
   CommentReactionType,
   CreateBoardCommentInput,
-  CreateBoardPostInput,
+  BoardAuthorRole,
   CreateBoardReportInput,
   UpdateBoardCommentInput,
-  UpdateBoardPostInput,
 } from '@/types';
-import type { BoardHomeData, BoardPost } from '@/types/board';
+import type { BoardPost } from '@/types/board';
 
 function toErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -53,17 +47,15 @@ interface BoardMutationUser {
 interface BoardMutationProfile {
   nickname?: string | null;
   name?: string | null;
-  role?: CreateBoardPostInput['authorRole'] | null;
+  role?: BoardAuthorRole | null;
 }
 
 type BoardPostDetailQueryData = Awaited<ReturnType<typeof getBoardPostDetail>>;
 type BoardPostListQueryData = Awaited<ReturnType<typeof fetchBoardPosts>>;
-type BoardHomeQueryData = Awaited<ReturnType<typeof getBoardHomeData>>;
 
 interface BoardPostLockMutationContext {
   detailSnapshots: [readonly unknown[], BoardPostDetailQueryData | undefined][];
   listSnapshots: [readonly unknown[], BoardPostListQueryData | undefined][];
-  homeSnapshots: [readonly unknown[], BoardHomeQueryData | undefined][];
 }
 
 function isBoardDetailQueryKey(queryKey: readonly unknown[], postId: string): boolean {
@@ -72,10 +64,6 @@ function isBoardDetailQueryKey(queryKey: readonly unknown[], postId: string): bo
 
 function isBoardListQueryKey(queryKey: readonly unknown[]): boolean {
   return queryKey[0] === 'boards' && queryKey[1] === 'list';
-}
-
-function isBoardHomeQueryKey(queryKey: readonly unknown[]): boolean {
-  return queryKey[0] === 'boards' && queryKey[1] === 'home';
 }
 
 function applyBoardPostLockState(
@@ -132,39 +120,6 @@ function updateBoardLockCaches(postId: string, isLocked: boolean, actorId?: stri
       return updateBoardPostCollectionLockState(current, postId, isLocked, actorId);
     }
   );
-
-  queryClient.setQueriesData<BoardHomeQueryData>(
-    {
-      predicate: (query) => isBoardHomeQueryKey(query.queryKey),
-    },
-    (current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        pinnedNotices: updateBoardPostCollectionLockState(
-          current.pinnedNotices,
-          postId,
-          isLocked,
-          actorId
-        ),
-        recentSchedulePosts: updateBoardPostCollectionLockState(
-          current.recentSchedulePosts,
-          postId,
-          isLocked,
-          actorId
-        ),
-        popularCommunityPosts: updateBoardPostCollectionLockState(
-          current.popularCommunityPosts,
-          postId,
-          isLocked,
-          actorId
-        ),
-      } satisfies BoardHomeData;
-    }
-  );
 }
 
 function restoreBoardPostLockCaches(context?: BoardPostLockMutationContext) {
@@ -173,10 +128,6 @@ function restoreBoardPostLockCaches(context?: BoardPostLockMutationContext) {
   });
 
   context?.listSnapshots.forEach(([queryKey, data]) => {
-    queryClient.setQueryData(queryKey, data);
-  });
-
-  context?.homeSnapshots.forEach(([queryKey, data]) => {
     queryClient.setQueryData(queryKey, data);
   });
 }
@@ -198,13 +149,13 @@ function requireBoardMutationActor(
 async function requireBoardAuthorIdentity(
   user: BoardMutationUser | null | undefined,
   profile: BoardMutationProfile | null | undefined,
-  role: CreateBoardPostInput['authorRole'] | null | undefined,
+  role: BoardAuthorRole | null | undefined,
   isAdmin = false
 ): Promise<{
   userId: string;
   isAdmin: boolean;
   authorName: string;
-  authorRole: CreateBoardPostInput['authorRole'];
+  authorRole: BoardAuthorRole;
 }> {
   const actor = requireBoardMutationActor(user, isAdmin);
   const needsPersistedProfile = (!profile?.nickname && !profile?.name) || !role;
@@ -240,24 +191,7 @@ function useBoardQueryAuthEnabled(userId?: string | null): boolean {
   });
 }
 
-export function useBoardHome() {
-  const { user, role, isAdmin } = useAuth();
-  const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
-
-  return useQuery({
-    queryKey: queryKeys.boards.home(user?.uid, role ?? undefined, isAdmin),
-    queryFn: () =>
-      getBoardHomeData({
-        userId: user?.uid,
-        role,
-        isAdmin,
-      }),
-    staleTime: 60 * 1000,
-    enabled: isBoardQueryEnabled,
-  });
-}
-
-export function useBoardPosts(boardType: BoardType, limitCount?: number) {
+export function useBoardPosts(boardType: CommunicationBoardType, limitCount?: number) {
   const { user, role, isAdmin } = useAuth();
   const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
 
@@ -325,60 +259,6 @@ export function useIncrementBoardViewCount() {
   });
 }
 
-export function useCreateBoardPost() {
-  const { user, profile, role } = useAuth();
-  const addToast = useToastStore((state) => state.addToast);
-
-  return useMutation({
-    mutationFn: async (
-      input: Omit<CreateBoardPostInput, 'authorId' | 'authorName' | 'authorRole'>
-    ) => {
-      requireOnlineForMutation('게시글 작성');
-      const actor = await requireBoardAuthorIdentity(user, profile, role);
-
-      return createBoardPost(actor.userId, actor.authorName, actor.authorRole, {
-        ...input,
-        authorId: actor.userId,
-        authorName: actor.authorName,
-        authorRole: actor.authorRole,
-      });
-    },
-    onSuccess: () => {
-      invalidateQueries.boards();
-      addToast({ type: 'success', message: '게시글을 등록했습니다.' });
-    },
-    onError: (error) => {
-      addToast({
-        type: 'error',
-        message: toErrorMessage(error, '게시글 등록에 실패했습니다.'),
-      });
-    },
-  });
-}
-
-export function useUpdateBoardPost(postId: string) {
-  const { user, isAdmin } = useAuth();
-  const addToast = useToastStore((state) => state.addToast);
-
-  return useMutation({
-    mutationFn: (input: UpdateBoardPostInput) => {
-      requireOnlineForMutation('게시글 수정');
-      const actor = requireBoardMutationActor(user, isAdmin);
-      return updateBoardPost(postId, actor, input);
-    },
-    onSuccess: () => {
-      invalidateQueries.boards();
-      addToast({ type: 'success', message: '게시글을 수정했습니다.' });
-    },
-    onError: (error) => {
-      addToast({
-        type: 'error',
-        message: toErrorMessage(error, '게시글 수정에 실패했습니다.'),
-      });
-    },
-  });
-}
-
 export function useSetBoardPostLock(postId: string) {
   const { user, isAdmin } = useAuth();
   const addToast = useToastStore((state) => state.addToast);
@@ -397,9 +277,6 @@ export function useSetBoardPostLock(postId: string) {
         queryClient.cancelQueries({
           predicate: (query) => isBoardListQueryKey(query.queryKey),
         }),
-        queryClient.cancelQueries({
-          predicate: (query) => isBoardHomeQueryKey(query.queryKey),
-        }),
       ]);
 
       const context: BoardPostLockMutationContext = {
@@ -408,9 +285,6 @@ export function useSetBoardPostLock(postId: string) {
         }),
         listSnapshots: queryClient.getQueriesData<BoardPostListQueryData>({
           predicate: (query) => isBoardListQueryKey(query.queryKey),
-        }),
-        homeSnapshots: queryClient.getQueriesData<BoardHomeQueryData>({
-          predicate: (query) => isBoardHomeQueryKey(query.queryKey),
         }),
       };
 
@@ -649,97 +523,6 @@ export function useSetBoardCommentPinned(postId: string, commentId: string) {
       addToast({
         type: 'error',
         message: toErrorMessage(error, '댓글 고정 상태 변경에 실패했습니다.'),
-      });
-    },
-  });
-}
-
-interface BoardVoteMutationContext {
-  detailSnapshots: [readonly unknown[], BoardPostDetailQueryData | undefined][];
-}
-
-// like/dislike 토글 결과를 detail 캐시에 낙관적으로 반영. 같은 타입 재탭=취소,
-// 반대 타입=전환(상대 카운트 -1). 카운트는 음수 방지.
-function applyBoardVoteToggle(
-  data: BoardPostDetailQueryData,
-  type: BoardVoteType
-): BoardPostDetailQueryData {
-  const prev = data.myVote ?? null;
-  let likeDelta = 0;
-  let dislikeDelta = 0;
-  let nextVote: BoardPostDetailQueryData['myVote'];
-
-  if (prev === type) {
-    nextVote = null;
-    if (type === 'like') likeDelta = -1;
-    else dislikeDelta = -1;
-  } else {
-    nextVote = type;
-    if (type === 'like') {
-      likeDelta = 1;
-      if (prev === 'dislike') dislikeDelta = -1;
-    } else {
-      dislikeDelta = 1;
-      if (prev === 'like') likeDelta = -1;
-    }
-  }
-
-  return {
-    ...data,
-    myVote: nextVote,
-    post: {
-      ...data.post,
-      likeCount: Math.max(0, data.post.likeCount + likeDelta),
-      dislikeCount: Math.max(0, data.post.dislikeCount + dislikeDelta),
-    },
-  };
-}
-
-function updateBoardVoteCaches(postId: string, type: BoardVoteType) {
-  queryClient.setQueriesData<BoardPostDetailQueryData>(
-    { predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId) },
-    (current) => {
-      if (!current || current.post.id !== postId) {
-        return current;
-      }
-      return applyBoardVoteToggle(current, type);
-    }
-  );
-}
-
-export function useToggleBoardPostVote(postId: string) {
-  const { user, isAdmin } = useAuth();
-  const addToast = useToastStore((state) => state.addToast);
-
-  return useMutation({
-    mutationFn: (type: BoardVoteType) => {
-      requireOnlineForMutation('게시글 반응 변경');
-      const actor = requireBoardMutationActor(user, isAdmin);
-      return toggleBoardPostVote(postId, actor, type);
-    },
-    // 낙관적 업데이트: 좋아요/싫어요 탭 즉시 버튼 색·카운트 반영(서버 refetch 대기 제거).
-    onMutate: async (type) => {
-      await queryClient.cancelQueries({
-        predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
-      });
-      const detailSnapshots = queryClient.getQueriesData<BoardPostDetailQueryData>({
-        predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
-      });
-      updateBoardVoteCaches(postId, type);
-      return { detailSnapshots } satisfies BoardVoteMutationContext;
-    },
-    onSuccess: () => {
-      invalidateQueries.boards();
-    },
-    onError: (error, _type, context) => {
-      // 롤백 후 서버 기준 재동기화는 detail 무효화로 처리(invalidateQueries.boards 미호출 →
-      // 실패 시 낙관값만 되돌리고 다음 상호작용/포커스에서 정합).
-      context?.detailSnapshots.forEach(([queryKey, data]) => {
-        queryClient.setQueryData(queryKey, data);
-      });
-      addToast({
-        type: 'error',
-        message: toErrorMessage(error, '게시글 반응 변경에 실패했습니다.'),
       });
     },
   });

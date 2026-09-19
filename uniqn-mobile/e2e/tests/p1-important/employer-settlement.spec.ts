@@ -36,7 +36,8 @@ async function expectAnyVisible(locators: Locator[], timeout = 10_000): Promise<
 }
 
 async function openSettlementTab(page: Page): Promise<void> {
-  const settlementTab = page.getByRole('tab', { name: /^정산$/ });
+  // 구인자 IA S2 — 탭 이름이 `정산` 에서 `금액` 으로 바뀌었다.
+  const settlementTab = page.getByRole('tab', { name: /^금액$/ });
   if ((await settlementTab.count().catch(() => 0)) > 0) {
     await settlementTab.first().click();
   }
@@ -166,20 +167,21 @@ test.describe('구인자 정산 관리', () => {
     await cleanupJobPosting(testJobId);
   });
 
-  test('공고 상세에서 스태프 관리/정산 화면으로 이동한다', async ({ page }) => {
+  test('공고 상세 [근무] 타일에서 근무 화면으로 이동한다', async ({ page }) => {
     await page.goto(`/my-postings/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
+    // 타일 이름이 `근무` 로 짧아져 텍스트로 찾으면 "근무 일정" 같은 문구와 섞인다 — testID 로 잡는다.
     const settlementAction = page
-      .locator('button:visible', { hasText: /스태프 관리\/정산/ })
+      .locator('[data-testid="job-posting-manage-settlements"]:visible')
       .first();
     await expect(settlementAction).toBeVisible();
     await settlementAction.click();
     await page.waitForURL(/settlements/, { timeout: 15_000 });
-    await expect(page.getByRole('tab', { name: /^정산$/ }).first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^금액$/ }).first()).toBeVisible();
   });
 
-  test('정산 화면은 요약 또는 필터 UI를 보여준다', async ({ page }) => {
+  test('금액 탭은 지급 예정 합계를 보여준다', async ({ page }) => {
     const pendingId = await seedWorkLog(
       testJobId,
       TEST_ACCOUNTS.staff.uid,
@@ -198,10 +200,10 @@ test.describe('구인자 정산 관리', () => {
       await waitForReady(page);
       await openSettlementTab(page);
 
+      // 지급 상태 필터(미정산/완료)는 구인자 IA S2 에서 없앴다 — 합계 한 줄과 사람별 카드만 남는다.
       await expectAnyVisible(
         [
-          page.getByRole('tab', { name: /미정산/ }),
-          page.getByRole('tab', { name: /완료/ }),
+          page.getByText('지급 예정 합계', { exact: true }),
           page.getByText(/정산요약테스트 스태프|정산완료테스트 스태프/),
         ],
         15_000
@@ -212,11 +214,12 @@ test.describe('구인자 정산 관리', () => {
     }
   });
 
-  test('일괄 정산 선택 모드를 토글할 수 있다', async ({ page }) => {
+  // 구인자 IA S2 — 앱은 돈을 보내지 않는다. 일괄 정산·지급 완료 진입점이 없어야 한다.
+  test('금액 탭에는 일괄 정산·지급 완료 진입점이 없다', async ({ page }) => {
     const workLogId = await seedWorkLog(
       testJobId,
       TEST_ACCOUNTS.staff.uid,
-      '일괄정산 테스트',
+      '지급없음 테스트',
       'pending'
     );
 
@@ -225,19 +228,17 @@ test.describe('구인자 정산 관리', () => {
       await waitForReady(page);
       await openSettlementTab(page);
 
-      const batchButton = page.getByText(/일괄 정산 선택|선택 취소/).first();
-      if (await batchButton.isVisible().catch(() => false)) {
-        await batchButton.click();
-        await expect(page.getByText(/선택 취소|전체 선택|일괄 정산/).first()).toBeVisible({
-          timeout: 10_000,
-        });
-      }
+      // 대조군 — 화면이 실제로 그려진 뒤에 "없음" 을 본다(빈 화면에서의 0건은 증거가 아니다).
+      await expect(page.getByText('지급 예정 합계', { exact: true }).first()).toBeVisible({
+        timeout: 15_000,
+      });
+      await expect(page.getByText(/일괄 정산|지급 완료로 표시/)).toHaveCount(0);
     } finally {
       await cleanupWorkLog(workLogId);
     }
   });
 
-  test('개별 근무기록에서 정산 상세 UI가 열린다', async ({ page }) => {
+  test('사람별 카드에서 계산 근거가 열린다', async ({ page }) => {
     const workLogId = await seedWorkLog(
       testJobId,
       TEST_ACCOUNTS.staff.uid,
@@ -250,16 +251,15 @@ test.describe('구인자 정산 관리', () => {
       await waitForReady(page);
       await openSettlementTab(page);
 
-      const card = page.locator('[aria-label*="정산 상세 보기"]:visible').first();
+      const card = page.locator('[aria-label*="근무 금액 상세 보기"]:visible').first();
       await expect(card).toBeVisible({ timeout: 10_000 });
       await card.click();
 
       await expectAnyVisible(
         [
-          page.getByText('정산 상세', { exact: true }),
-          page.getByLabel(/정산 금액 수정/),
-          page.getByLabel(/지급 완료로 표시/),
-          page.getByText('정산 금액', { exact: true }),
+          page.getByText('계산 근거', { exact: true }),
+          page.getByLabel(/근무 금액 수정/),
+          page.getByLabel(/^근무 수정$/),
         ],
         10_000
       );

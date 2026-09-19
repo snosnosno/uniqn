@@ -71,6 +71,7 @@ import {
   collectScheduleRoleMatchKeys,
 } from './JobPostingRepositorySettlement';
 import * as venue from './JobPostingRepositoryVenue';
+import { notFound } from '@/constants/messages';
 
 export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
 
@@ -166,7 +167,7 @@ async function assertPostingUpdateApplied(
   if (!currentRow) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       message: `공고 수정: 대상 행 없음 (${jobPostingId})`,
-      userMessage: '공고를 찾을 수 없습니다. 이미 삭제되었을 수 있어요.',
+      userMessage: `${notFound('공고')}. 이미 삭제되었을 수 있어요`,
     });
   }
 

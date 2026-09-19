@@ -164,8 +164,9 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
 
 export type PayrollStatusType = PayrollStatus;
 
-// 정산 표시는 2단이다. 인덱싱은 반드시 `toSettlementDisplayStatus()` 를 거친다 —
-// 데이터 상태(3값)로 직접 인덱싱하면 'failed' 에서 undefined 가 나온다.
+// 정산 표시는 2단이다 — 데이터 상태(3값)로 직접 인덱싱하면 'failed' 에서 undefined 가 나온다.
+// ⚠️ 구인자 IA S2 에서 지급 상태를 화면에 그리는 경로(배지·필터)가 전부 사라져 현재 소비처가 없다.
+//    되살린다면 'failed' 를 'pending' 으로 접는 변환부터 다시 세워야 한다.
 export const PAYROLL_STATUS: Record<SettlementDisplayStatus, StatusConfig> = {
   pending: {
     label: PAYROLL_STATUS_LABELS.pending,

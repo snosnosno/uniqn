@@ -445,7 +445,7 @@ export function WorkTimeFields({
         </Text>
         <View
           testID="status-badge"
-          className={`rounded-full px-3 py-1 ${STATUS_BADGE_CLASS[status]}`}
+          className={`rounded-sm px-3 py-1 ${STATUS_BADGE_CLASS[status]}`}
         >
           <Text className={`font-sans-medium text-sm ${STATUS_TEXT_CLASS[status]}`}>
             {STATUS_LABELS[status]}

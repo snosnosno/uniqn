@@ -22,6 +22,7 @@ import { getLayoutColor } from '@/constants/colors';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { useThemeStore } from '@/stores/themeStore';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 function formatDateTime(date: Date | string | undefined): string {
   if (!date) {
@@ -73,7 +74,7 @@ export default function AdminStatsScreen() {
         <ErrorState
           error={error}
           title="서비스 통계"
-          message="통계 데이터를 불러오지 못했습니다."
+          message={loadFailed('통계 데이터')}
           onRetry={refresh}
         />
       </SafeAreaView>

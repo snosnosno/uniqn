@@ -24,6 +24,16 @@ jest.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: jest.fn(),
 }));
 
+// 취소 요청 검토(S1b)는 이 스위트의 관심 밖 — 요청 0건으로 둔다.
+jest.mock('@/hooks/applicant/useStaffCancellationReview', () => ({
+  useStaffCancellationReview: () => ({
+    cancellationIndex: new Map(),
+    reviewingApplicationId: null,
+    approveAsync: jest.fn(),
+    rejectAsync: jest.fn(),
+  }),
+}));
+
 jest.mock('@/stores/themeStore', () => ({
   useThemeStore: (selector?: (state: { isDarkMode: boolean }) => unknown) =>
     mockUseThemeStore(selector),

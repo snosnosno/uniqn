@@ -27,6 +27,22 @@
  * 대안은 "로그인 상태를 아예 유지하지 못하는 앱"이다. 폴백 결과는 **현재 상태와 동일**
  * 하므로 어떤 경우에도 지금보다 나빠지지 않는다. 대신 에러로 기록해 관측 가능하게 둔다.
  *
+ * ## 키체인 접근 수준 — `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` (Sentry #145607041)
+ * expo-secure-store 의 기본값은 `WHEN_UNLOCKED` 다. 그러면 **기기가 잠긴 동안 조각을 읽을 수
+ * 없다** — 키체인이 `errSecInteractionNotAllowed`("User interaction is not allowed.")로 거부한다.
+ * 백그라운드에서 세션을 읽는 경로(푸시 처리·포그라운드 복귀 직전 갱신)가 그대로 터진다.
+ *
+ * `AFTER_FIRST_UNLOCK` 계열은 **부팅 후 첫 잠금해제 이후로는** 잠긴 상태에서도 읽힌다.
+ * 세션 토큰에 필요한 건 딱 그만큼이다. `THIS_DEVICE_ONLY` 를 붙이는 이유는 이 파일이 애초에
+ * 막으려던 것이 **기기 백업·기기 이전에서의 refresh token 유출**이기 때문이다(위 참조).
+ * 대가: 기기를 새로 사서 복원하면 재로그인해야 한다. 장기 자격증명을 옮기지 않는 쪽을 택한다.
+ * (선례: `secureStorage.ts` 의 `authStorage.setRefreshToken`)
+ *
+ * ⚠️ 옵션만 바꿔서는 **기존 사용자에게 적용되지 않는다.** expo 의 iOS 구현은 이미 있는 항목에
+ * `SecItemAdd` 가 `errSecDuplicateItem` 을 내면 `SecItemUpdate` 로 넘어가는데, 그 update 는
+ * `kSecValueData` 만 갱신하고 `kSecAttrAccessible` 은 손대지 않는다. 그래서 인덱스에 형식 버전을
+ * 적어두고, 옛 버전이면 조각을 **지운 뒤 새로 넣어**(=`SecItemAdd` 경로) 접근 수준을 다시 찍는다.
+ *
  * ## 웹은 건드리지 않는다
  * 웹 절반(sessionStorage vs localStorage)은 자동로그인과의 트레이드오프가 있어
  * 원장이 "결정 기록만 남기고 교체하지 마라"로 못박았다. 이 어댑터는 네이티브 전용이다.
@@ -45,6 +61,38 @@ const CHUNK_BYTE_LIMIT = 1600;
 
 /** 조각 개수를 적어두는 인덱스 키의 접미사. 이게 있어야 몇 조각을 읽을지 안다. */
 const COUNT_SUFFIX = '.__n';
+
+/**
+ * 조각의 저장 형식 버전. 인덱스 값에 `v<N>:<개수>` 로 함께 적는다.
+ * 접두사가 없거나 번호가 다르면 옛 접근 수준으로 기록된 조각이라는 뜻이다(위 ⚠️ 참조).
+ */
+const FORMAT_VERSION = 2;
+
+/** 모든 조각에 적용할 iOS 키체인 접근 수준. Android 에서는 무시된다. */
+const KEYCHAIN_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+};
+
+/**
+ * 키체인이 **기기 잠금** 때문에 거부했을 때 원인 문구(errSecInteractionNotAllowed, -25308).
+ * expo 의 `ERR_KEY_CHAIN` 코드는 키체인 실패 전반을 뭉뚱그려서, 코드로 거르면 진짜 장애까지
+ * 함께 삼킨다. 잠금인지 아닌지는 이 문구로만 갈린다.
+ */
+const KEYCHAIN_LOCKED_HINT = 'User interaction is not allowed';
+
+/**
+ * 잠금 때문에 거부된 것인가.
+ *
+ * 부팅 후 첫 잠금해제 전에는 `AFTER_FIRST_UNLOCK` 로도 여전히 막히므로, 이 경로는 하드닝
+ * 이후에도 남는다. **정상 동작**이라 `logger.error` 로 올리면 Sentry 가 소음으로 찬다.
+ */
+function isKeychainLockedError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.message.includes(KEYCHAIN_LOCKED_HINT)) return true;
+
+  const cause: unknown = error.cause;
+  return cause instanceof Error && cause.message.includes(KEYCHAIN_LOCKED_HINT);
+}
 
 /**
  * SecureStore 는 영숫자와 `.`, `-`, `_` 만 키로 허용한다.
@@ -119,55 +167,99 @@ async function deleteChunks(base: string, count: number): Promise<void> {
   await Promise.all(deletions.map((promise) => promise.catch(() => undefined)));
 }
 
-async function readChunkCount(base: string): Promise<number> {
-  const raw = await SecureStore.getItemAsync(`${base}${COUNT_SUFFIX}`);
-  if (raw === null) return 0;
+interface ChunkIndex {
+  /** 저장된 조각 개수. 읽을 수 없으면 0. */
+  count: number;
+  /** 현재 형식 버전(=현재 키체인 접근 수준)으로 기록된 조각인가. */
+  isCurrentFormat: boolean;
+}
 
+function formatChunkIndex(count: number): string {
+  return `v${FORMAT_VERSION}:${count}`;
+}
+
+function toCount(raw: string): number {
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-/**
- * 이전 빌드가 AsyncStorage 에 남긴 평문 세션을 SecureStore 로 옮긴다.
- *
- * 이게 없으면 1.0.7 로 올라온 사용자 전원이 한 번 로그아웃된다. 27명이라 감당 가능한
- * 비용이긴 하지만, 옮기는 비용이 더 싸다. 옮긴 뒤 평문 원본은 **반드시 지운다** —
- * 남겨두면 하드닝의 의미가 없다.
- */
-async function migrateFromAsyncStorage(key: string, base: string): Promise<string | null> {
-  const legacy = await AsyncStorage.getItem(key);
-  if (legacy === null) return null;
+async function readChunkIndex(base: string): Promise<ChunkIndex> {
+  const raw = await SecureStore.getItemAsync(`${base}${COUNT_SUFFIX}`);
+  // 아무것도 없으면 옮길 옛 조각도 없다 — 이제부터 쓰는 건 전부 현재 형식이다.
+  if (raw === null) return { count: 0, isCurrentFormat: true };
 
-  logger.info('세션 저장소 마이그레이션 — AsyncStorage 평문 → SecureStore', {
+  const versioned = /^v(\d+):(\d+)$/.exec(raw);
+  if (versioned) {
+    return {
+      count: toCount(versioned[2]),
+      isCurrentFormat: Number.parseInt(versioned[1], 10) === FORMAT_VERSION,
+    };
+  }
+
+  // 접두사 없는 개수 = v1. 기본값(WHEN_UNLOCKED)으로 기록돼 잠금 중에는 못 읽는 조각이다.
+  return { count: toCount(raw), isCurrentFormat: false };
+}
+
+/**
+ * AsyncStorage 평문에 값이 있으면 SecureStore 로 올리고 원본을 지운다.
+ *
+ * 평문이 남아 있는 경우는 둘뿐이고, **둘 다 SecureStore 조각보다 나중이다**:
+ *   1. 구버전에서 올라온 세션 — 아직 조각이 없다. 이게 없으면 1.0.7 사용자 전원이 로그아웃된다.
+ *   2. 키체인 쓰기 실패로 떨어진 폴백 — 조각에는 **옛 세션**이 남아 있다.
+ *
+ * 2번을 안 챙기면 회전된 refresh token 대신 폐기된 옛 토큰을 돌려주게 되고,
+ * 결국 세션이 끊긴다. 옮긴 뒤 평문 원본은 **반드시 지운다** — 남기면 하드닝의 의미가 없다.
+ */
+async function promoteFallbackValue(key: string, base: string, value: string): Promise<string> {
+  logger.info('세션을 AsyncStorage 평문에서 SecureStore 로 옮깁니다', {
     component: 'supabaseSessionStorage',
   });
 
-  const written = await writeChunks(base, legacy);
+  const written = await writeChunks(base, value);
   if (written) {
     // 옮긴 뒤에만 지운다. 순서를 뒤집으면 쓰기 실패 시 세션이 증발한다.
-    await AsyncStorage.removeItem(key);
+    await AsyncStorage.removeItem(key).catch(() => undefined);
   }
 
-  return legacy;
+  return value;
 }
 
 async function writeChunks(base: string, value: string): Promise<boolean> {
   const chunks = chunkByUtf8Bytes(value);
 
   try {
-    // 이전 값의 조각이 더 많았다면 남는다 — 먼저 정리한다.
-    const previousCount = await readChunkCount(base);
-    if (previousCount > chunks.length) {
-      await deleteChunks(base, previousCount);
+    const previous = await readChunkIndex(base);
+
+    // 지워야 하는 두 경우:
+    //   - 옛 형식: 덮어쓰기(SecItemUpdate)로는 접근 수준이 안 바뀐다. 지워야 SecItemAdd 를 탄다.
+    //   - 조각 수 감소: 이전 값의 조각이 더 많았다면 남는다.
+    if (!previous.isCurrentFormat) {
+      await deleteChunks(base, Math.max(previous.count, chunks.length));
+    } else if (previous.count > chunks.length) {
+      await deleteChunks(base, previous.count);
     }
 
     await Promise.all(
-      chunks.map((chunk, index) => SecureStore.setItemAsync(chunkKey(base, index), chunk))
+      chunks.map((chunk, index) =>
+        SecureStore.setItemAsync(chunkKey(base, index), chunk, KEYCHAIN_OPTIONS)
+      )
     );
     // 개수는 **마지막에** 쓴다. 먼저 쓰면 중간에 실패했을 때 없는 조각을 읽으러 간다.
-    await SecureStore.setItemAsync(`${base}${COUNT_SUFFIX}`, String(chunks.length));
+    await SecureStore.setItemAsync(
+      `${base}${COUNT_SUFFIX}`,
+      formatChunkIndex(chunks.length),
+      KEYCHAIN_OPTIONS
+    );
     return true;
   } catch (error) {
+    if (isKeychainLockedError(error)) {
+      // 부팅 후 첫 잠금해제 전. 폴백으로 세션은 유지되고, 다음 쓰기에서 조각으로 복귀한다.
+      logger.warn('기기 잠금으로 세션을 SecureStore 에 저장하지 못했습니다 — 평문 폴백', {
+        component: 'supabaseSessionStorage',
+      });
+      return false;
+    }
+
     logger.error(
       '세션을 SecureStore 에 저장하지 못했습니다 — AsyncStorage 로 폴백합니다',
       error instanceof Error ? error : new Error(String(error)),
@@ -185,12 +277,19 @@ export const supabaseSessionStorage = {
   async getItem(key: string): Promise<string | null> {
     const base = sanitizeKey(key);
 
+    // 평문이 남아 있으면 그게 최신이다 — 조각보다 **먼저** 본다.
+    // (구버전 잔존이거나, 키체인 쓰기 실패로 떨어진 폴백. 자세한 이유는 promoteFallbackValue 참조)
+    const fallback = await AsyncStorage.getItem(key).catch(() => null);
+    if (fallback !== null) {
+      return promoteFallbackValue(key, base, fallback);
+    }
+
     try {
-      const count = await readChunkCount(base);
+      const { count } = await readChunkIndex(base);
 
       if (count === 0) {
-        // 아직 SecureStore 에 없다 = 첫 실행이거나 구버전에서 올라온 사용자다.
-        return await migrateFromAsyncStorage(key, base);
+        // 조각도 평문도 없다 = 로그인한 적 없거나 로그아웃 상태다.
+        return null;
       }
 
       const parts = await Promise.all(
@@ -210,6 +309,14 @@ export const supabaseSessionStorage = {
 
       return parts.join('');
     } catch (error) {
+      if (isKeychainLockedError(error)) {
+        // 부팅 후 첫 잠금해제 전의 백그라운드 조회. 정상 동작이라 error 로 올리지 않는다.
+        logger.warn('기기 잠금으로 세션을 조회하지 못했습니다 — 잠금해제 후 복구됩니다', {
+          component: 'supabaseSessionStorage',
+        });
+        return null;
+      }
+
       logger.error(
         '세션 조회 실패 — AsyncStorage 폴백을 시도합니다',
         error instanceof Error ? error : new Error(String(error)),
@@ -223,18 +330,23 @@ export const supabaseSessionStorage = {
     const base = sanitizeKey(key);
     const written = await writeChunks(base, value);
 
-    if (!written) {
-      // 가용성 우선 — 여기서 포기하면 앱이 로그인 상태를 유지하지 못한다.
-      // 폴백 결과는 하드닝 이전과 동일하므로 지금보다 나빠지지는 않는다.
-      await AsyncStorage.setItem(key, value);
+    if (written) {
+      // 이전 폴백이 남긴 평문을 지운다. 남겨두면 getItem 이 그걸 최신으로 보고
+      // 방금 쓴 조각을 계속 무시한다(=옛 세션에 갇힌다).
+      await AsyncStorage.removeItem(key).catch(() => undefined);
+      return;
     }
+
+    // 가용성 우선 — 여기서 포기하면 앱이 로그인 상태를 유지하지 못한다.
+    // 폴백 결과는 하드닝 이전과 동일하므로 지금보다 나빠지지는 않는다.
+    await AsyncStorage.setItem(key, value);
   },
 
   async removeItem(key: string): Promise<void> {
     const base = sanitizeKey(key);
 
     try {
-      const count = await readChunkCount(base);
+      const { count } = await readChunkIndex(base);
       await deleteChunks(base, Math.max(count, 1));
     } catch {
       // 삭제 실패로 로그아웃을 막지 않는다.

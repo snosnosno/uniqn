@@ -7,11 +7,10 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
-import { CheckIcon } from '@/components/icons';
 import { cancellationRequestSchema } from '@/schemas/application.schema';
 import { getRoleDisplayName } from '@/types/unified';
 import { triggerHaptic } from '@/utils/haptics';
@@ -41,14 +40,9 @@ interface CancellationRequestFormProps {
   /** 제출 중 여부 */
   isSubmitting: boolean;
   /** 취소 요청 제출 */
-  onSubmit: (applicationId: string, reason: string, wantsSubstitutePost: boolean) => void;
+  onSubmit: (applicationId: string, reason: string) => void;
   /** 닫기 */
   onClose: () => void;
-  /**
-   * 게시판에 실제로 올라갈 제목·본문. `buildSubstitutePostTitle/Body` 가 만든 것을
-   * 그대로 받아 미리보기로 노출한다 — 폼이 따로 조립하면 고지와 실물이 갈라진다.
-   */
-  substitutePreview?: { title: string; body: string };
 }
 
 // ============================================================================
@@ -61,12 +55,9 @@ export function CancellationRequestForm({
   isSubmitting,
   onSubmit,
   onClose,
-  substitutePreview,
 }: CancellationRequestFormProps) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
-  // 기본 OFF — 실명으로 전체 공개되는 게시물이라 사용자가 켠 경우에만 올린다(W1-10).
-  const [wantsSubstitutePost, setWantsSubstitutePost] = useState(false);
 
   // 제출 가능 여부 (5자 이상)
   const canSubmit = reason.trim().length >= 5 && !isSubmitting;
@@ -77,7 +68,6 @@ export function CancellationRequestForm({
     const result = cancellationRequestSchema.safeParse({
       applicationId: application.id,
       reason: reason.trim(),
-      wantsSubstitutePost,
     });
 
     if (!result.success) {
@@ -90,14 +80,13 @@ export function CancellationRequestForm({
     await triggerHaptic('warning');
 
     setError(null);
-    onSubmit(application.id, reason.trim(), wantsSubstitutePost);
-  }, [application.id, reason, wantsSubstitutePost, onSubmit]);
+    onSubmit(application.id, reason.trim());
+  }, [application.id, reason, onSubmit]);
 
   // 닫기 핸들러 (상태 초기화)
   const handleClose = useCallback(() => {
     setReason('');
     setError(null);
-    setWantsSubstitutePost(false);
     onClose();
   }, [onClose]);
 
@@ -203,55 +192,6 @@ export function CancellationRequestForm({
               {reason.length}/500
             </Text>
           </FormField>
-        </View>
-
-        {/* 대타 구인 게시글 */}
-        <View className="px-4 py-3 border-b border-divider">
-          <SectionLabel>대타 구인</SectionLabel>
-          <Pressable
-            onPress={() => setWantsSubstitutePost((prev) => !prev)}
-            className="flex-row items-center bg-surface-page dark:bg-surface-elevated rounded-lg p-4 border border-divider"
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: wantsSubstitutePost }}
-            accessibilityLabel={`대타 구해요 글 ${wantsSubstitutePost ? '자동 게시' : '게시 안 함'}`}
-          >
-            <View
-              className={`w-5 h-5 rounded border mr-3 items-center justify-center ${
-                wantsSubstitutePost ? 'bg-primary-500 border-primary-500' : 'border-divider'
-              }`}
-            >
-              {wantsSubstitutePost && <CheckIcon size={14} color="#09090B" />}
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
-                대타 구해요 글 올리기
-              </Text>
-              <Text className="text-xs text-content-muted dark:text-secondary-300 mt-0.5 font-sans">
-                게시판에 <Text className="font-sans-semibold">내 이름으로 공개</Text> 게시됩니다.
-                일정·지점 정보만 실리고, 위에 적은 취소 사유는 구인자에게만 전달됩니다.
-              </Text>
-            </View>
-          </Pressable>
-
-          {/* 미리보기 — 켠 경우에만. 실제 게시물과 같은 함수가 만든 텍스트를 그대로 보여준다. */}
-          {wantsSubstitutePost && substitutePreview ? (
-            <View
-              className="mt-3 rounded-lg border border-divider bg-surface-elevated dark:bg-surface-elevated p-4"
-              accessible
-              accessibilityLabel={`게시판 미리보기. 제목 ${substitutePreview.title}. 본문 ${substitutePreview.body}`}
-            >
-              <SectionLabel>게시판에 이렇게 올라갑니다</SectionLabel>
-              <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
-                {substitutePreview.title}
-              </Text>
-              <Text
-                className="text-xs text-content-secondary dark:text-secondary-300 mt-1 font-sans"
-                style={{ lineHeight: 18 }}
-              >
-                {substitutePreview.body}
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         {/* 주의사항 */}

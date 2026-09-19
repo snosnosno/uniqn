@@ -4,16 +4,10 @@ import type {
   BoardPost,
   BoardPostStatus,
   BoardReport,
-  BoardVote,
-  BoardVoteType,
   CommentReactionType,
   CreateBoardCommentInput,
-  CreateBoardPostInput,
   CreateBoardReportInput,
-  ScheduleBoardSyncInput,
-  ScheduleMembershipSyncItem,
   UpdateBoardCommentInput,
-  UpdateBoardPostInput,
 } from '@/types';
 
 export type BoardRepositoryType = Exclude<BoardPost['boardType'], 'notice'>;
@@ -24,7 +18,7 @@ export interface FetchBoardRepositoryPostsOptions {
   linkedJobPostingId?: string;
   statuses?: BoardPostStatus[];
   limitCount?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'lastActivityAt' | 'likeCount' | 'viewCount';
+  sortBy?: 'createdAt' | 'updatedAt' | 'lastActivityAt' | 'viewCount';
   sortDirection?: 'asc' | 'desc';
   onlyPinned?: boolean;
 }
@@ -45,8 +39,6 @@ export interface IBoardRepository {
   getPostById(postId: string): Promise<BoardPost | null>;
   getPosts(options?: FetchBoardRepositoryPostsOptions): Promise<BoardPost[]>;
   getPostsByIds(postIds: string[]): Promise<BoardPost[]>;
-  createPost(input: CreateBoardPostInput): Promise<string>;
-  updatePost(postId: string, input: UpdateBoardPostInput): Promise<void>;
   setPostStatus(postId: string, status: BoardPostStatus): Promise<void>;
   setPostLock(postId: string, isLocked: boolean, actorId: string): Promise<void>;
   incrementViewCount(postId: string): Promise<void>;
@@ -67,13 +59,6 @@ export interface IBoardRepository {
     actorId: string
   ): Promise<void>;
 
-  togglePostVote(
-    postId: string,
-    userId: string,
-    type: BoardVoteType
-  ): Promise<BoardVoteType | null>;
-  getPostVote(postId: string, userId: string): Promise<BoardVote | null>;
-
   toggleCommentReaction(
     postId: string,
     commentId: string,
@@ -91,13 +76,6 @@ export interface IBoardRepository {
   ): Promise<BoardMembership[]>;
   getMembershipsByPost(postId: string): Promise<BoardMembership[]>;
   getMembership(postId: string, userId: string): Promise<BoardMembership | null>;
-  replaceScheduleMemberships(
-    postId: string,
-    jobPostingId: string,
-    members: ScheduleMembershipSyncItem[]
-  ): Promise<void>;
-  upsertSchedulePost(input: ScheduleBoardSyncInput): Promise<string>;
-
   createReport(input: CreateBoardReportInput): Promise<string>;
   getReportById(reportId: string): Promise<BoardReport | null>;
   getReports(options?: FetchBoardReportsOptions): Promise<BoardReport[]>;

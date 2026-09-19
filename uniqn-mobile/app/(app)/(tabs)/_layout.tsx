@@ -103,7 +103,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="board"
         options={{
-          title: '게시판',
+          title: '소통',
           tabBarIcon: renderTabBarIcon(MessageIcon),
         }}
       />

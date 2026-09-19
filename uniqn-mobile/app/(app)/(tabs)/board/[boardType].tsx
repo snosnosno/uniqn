@@ -8,21 +8,17 @@ import { SkeletonBoardPostItem } from '@/components/ui/Skeleton';
 import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
-import { BoardWriteFab } from '@/components/board/BoardWriteFab';
 import { useBoardPosts } from '@/hooks/useBoard';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
+import type { BoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
+import { loadFailed, notFound } from '@/constants/messages';
 
-const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda', 'substitute'];
+const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule'];
 
 function navigateToTab(tab: BoardTabKey) {
-  if (tab === 'home') {
-    router.replace('/(app)/(tabs)/board');
-    return;
-  }
   router.replace(`/(app)/(tabs)/board/${tab}`);
 }
 
@@ -31,8 +27,7 @@ export default function BoardListScreen() {
   const { boardType: rawBoardType } = useLocalSearchParams<{ boardType: string }>();
   const boardType = rawBoardType as BoardType;
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
-  const safeBoardType = isValidBoardType ? boardType : 'notice';
-  const isWritable = safeBoardType === 'free' || safeBoardType === 'tda';
+  const safeBoardType: BoardTabKey = isValidBoardType ? (boardType as BoardTabKey) : 'schedule';
   const { data, isLoading, error, refetch } = useBoardPosts(safeBoardType, 50);
   // 스피너는 사용자가 당겼을 때만 (useManualRefresh 주석 참고).
   const { refreshing, onRefresh } = useManualRefresh(refetch);
@@ -40,11 +35,11 @@ export default function BoardListScreen() {
   if (!isValidBoardType) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader title="게시판" />
+        <TabHeader title="소통" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
-            title="게시판을 찾을 수 없어요"
-            message="잘못된 게시판 경로예요."
+            title={notFound('소통 화면')}
+            message="지원하지 않는 소통 화면이에요."
             onRetry={() => router.replace('/(app)/(tabs)/board')}
           />
         </View>
@@ -54,12 +49,12 @@ export default function BoardListScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader title={BOARD_TYPE_LABELS[boardType]} />
+      <TabHeader title="소통" />
       <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} />
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">
-          <ErrorState title="게시글 목록을 불러오지 못했어요" error={error} onRetry={refetch} />
+          <ErrorState title={loadFailed('게시글 목록')} error={error} onRetry={refetch} />
         </View>
       ) : (
         <FlashList
@@ -99,29 +94,13 @@ export default function BoardListScreen() {
                 description={
                   safeBoardType === 'notice'
                     ? '새로운 공지가 올라오면 이곳에 표시돼요.'
-                    : safeBoardType === 'schedule'
-                      ? '접근 가능한 일정 게시판이 아직 없어요.'
-                      : safeBoardType === 'substitute'
-                        ? '현재 대타 구인 글이 없어요.'
-                        : '첫 게시글을 등록해 보세요.'
-                }
-                actionLabel={isWritable ? '글쓰기' : undefined}
-                onAction={
-                  isWritable
-                    ? () => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)
-                    : undefined
+                    : '근무가 확정되면 일정 소통방이 표시돼요.'
                 }
               />
             )
           }
         />
       )}
-
-      {isWritable ? (
-        <BoardWriteFab
-          onPress={() => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }

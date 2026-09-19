@@ -1,12 +1,18 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { useStaffCancellationReview } from '@/hooks/applicant/useStaffCancellationReview';
+import { useSubmitGate } from '@/hooks/useSubmitGate';
 import type { WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { ConfirmedStaff, JobPosting } from '@/types';
 import type { PostingCapacityGap } from '@/domains/job-posting/capacityGap';
+import {
+  countWorkRowsByApplication,
+  type PendingCancellation,
+} from '@/domains/application/pendingCancellationIndex';
 import { isStaffRole } from '@/types/role';
 import { readScheduledStart } from '@/domains/workSchedule';
 import { logger } from '@/utils/logger';
@@ -26,9 +32,11 @@ import { Loading } from '@/components/ui/Loading';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { WorkLogEditSheet, type WorkLogEditInitial } from '@/components/workLogEdit';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
+import { CancellationRejectModal } from './CancellationRejectModal';
 import { StaffProfileModal } from './StaffProfileModal';
 import { AddStaffModal } from './AddStaffModal';
 import { useUser } from '@/stores/authStore';
+import { loadFailed } from '@/constants/messages';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
@@ -46,6 +54,12 @@ export interface StaffManagementTabProps {
   onShowReport?: (staff: ConfirmedStaff) => void;
 }
 
+/** 취소 요청 검토 대상 — 확인창·거절 모달이 이름과 지원서를 함께 쓴다. */
+interface CancellationTarget {
+  staff: ConfirmedStaff;
+  cancellation: PendingCancellation;
+}
+
 /**
  * 확정 스태프 → 통합 편집 시트 초기값.
  *
@@ -58,6 +72,9 @@ function toEditInitial(staff: ConfirmedStaff): WorkLogEditInitial {
     ...readScheduledStart(staff.timeSlot),
     checkIn: TimeNormalizer.parseTime(staff.checkInTime),
     checkOut: TimeNormalizer.parseTime(staff.checkOutTime),
+    checkInScannedAt: TimeNormalizer.parseTime(staff.workLog?.checkInScannedAt),
+    checkOutScannedAt: TimeNormalizer.parseTime(staff.workLog?.checkOutScannedAt),
+    modificationHistory: staff.workLog?.modificationHistory ?? [],
     role: isStaffRole(staff.role) ? staff.role : 'staff',
     customRole: staff.customRole ?? null,
     color: staff.color ?? null,
@@ -149,6 +166,10 @@ export function StaffManagementTab({
     isAddingStaff,
   } = useConfirmedStaff(jobPostingId, { realtime: true });
 
+  // 취소 요청 검토 (구인자 IA S1b) — 사람 줄에서 바로 승인·거절한다.
+  const { cancellationIndex, reviewingApplicationId, approveAsync, rejectAsync } =
+    useStaffCancellationReview(jobPostingId);
+
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
   const [showTimeEditor, setShowTimeEditor] = useState(false);
@@ -160,6 +181,13 @@ export function StaffManagementTab({
   /** 출퇴근 기록이 있는 행을 '출근 예정'으로 되돌리기 전 확인 대상 */
   const [revertTarget, setRevertTarget] = useState<ConfirmedStaff | null>(null);
   const [cancelNoShowTarget, setCancelNoShowTarget] = useState<ConfirmedStaff | null>(null);
+  const [approveCancellationTarget, setApproveCancellationTarget] =
+    useState<CancellationTarget | null>(null);
+  const [rejectCancellationTarget, setRejectCancellationTarget] =
+    useState<CancellationTarget | null>(null);
+
+  // 🔴 승인 RPC 는 지원서 단위다 — 확인창이 취소될 근무 일수를 밝히려고 지원서별 줄 수를 센다.
+  const workRowsByApplication = useMemo(() => countWorkRowsByApplication(grouped), [grouped]);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     logger.debug('Confirmed staff pressed', { workLogId: staff.id });
@@ -290,6 +318,56 @@ export function StaffManagementTab({
     setCancelNoShowTarget(null);
   }, [cancelNoShowTarget, cancelNoShow]);
 
+  const handleApproveCancellation = useCallback(
+    (staff: ConfirmedStaff, cancellation: PendingCancellation) => {
+      setApproveCancellationTarget({ staff, cancellation });
+    },
+    []
+  );
+
+  const handleCloseApproveCancellation = useCallback(() => {
+    setApproveCancellationTarget(null);
+  }, []);
+
+  // 승인 — 결과를 보고 **성공에서만** 닫는다(CANCEL-14). 실패하면 확인창이 남아 다시 누를 수 있다.
+  const approveCancellationGate = useSubmitGate({
+    action: () => approveAsync(approveCancellationTarget?.cancellation.applicationId ?? ''),
+    onSuccess: handleCloseApproveCancellation,
+    errorMessage: '취소 요청 승인 실패',
+  });
+
+  const handleConfirmApproveCancellation = useCallback(() => {
+    if (!approveCancellationTarget) {
+      return;
+    }
+    void approveCancellationGate.submit();
+  }, [approveCancellationGate, approveCancellationTarget]);
+
+  const handleRejectCancellation = useCallback(
+    (staff: ConfirmedStaff, cancellation: PendingCancellation) => {
+      setRejectCancellationTarget({ staff, cancellation });
+    },
+    []
+  );
+
+  const handleCloseRejectCancellation = useCallback(() => {
+    setRejectCancellationTarget(null);
+  }, []);
+
+  const handleSubmitRejectCancellation = useCallback(
+    (reason: string) => {
+      if (!rejectCancellationTarget) {
+        return Promise.resolve();
+      }
+      return rejectAsync(rejectCancellationTarget.cancellation.applicationId, reason);
+    },
+    [rejectAsync, rejectCancellationTarget]
+  );
+
+  const approveCancellationDays = approveCancellationTarget
+    ? (workRowsByApplication.get(approveCancellationTarget.cancellation.applicationId) ?? 1)
+    : 0;
+
   const getStatusOptions = useCallback((): ActionSheetOption[] => {
     if (!statusSheetTarget) {
       return [];
@@ -332,9 +410,7 @@ export function StaffManagementTab({
   // 일시적 구독 실패로 화면 전체를 덮으면 대회 D-day 운영 중에 운영 화면을 잃는다.
   // 데이터가 있으면 아래 목록의 error prop 으로 내려 배너 수준으로 알린다.
   if (error && grouped.length === 0) {
-    return (
-      <ErrorState title="확정된 스태프를 불러오지 못했습니다" error={error} onRetry={refresh} />
-    );
+    return <ErrorState title={loadFailed('확정된 스태프')} error={error} onRetry={refresh} />;
   }
 
   return (
@@ -360,6 +436,10 @@ export function StaffManagementTab({
           onStatusChange={handleStatusChange}
           onCancelNoShow={handleCancelNoShow}
           capacityGapByDate={capacityGapByDate}
+          cancellationIndex={cancellationIndex}
+          onApproveCancellation={handleApproveCancellation}
+          onRejectCancellation={handleRejectCancellation}
+          reviewingApplicationId={reviewingApplicationId}
           showActions
         />
       </View>
@@ -425,6 +505,40 @@ export function StaffManagementTab({
         confirmText="노쇼 취소"
         cancelText="취소"
       />
+
+      {/*
+        취소 요청 승인 — `closeOnConfirm={false}` + `isLoading` 으로 성공에서만 닫는다(CANCEL-14).
+        닫기 버튼 문구가 '취소' 이면 "취소 요청을 취소"로 읽혀 '닫기' 로 둔다.
+      */}
+      <ConfirmModal
+        visible={Boolean(approveCancellationTarget)}
+        onClose={handleCloseApproveCancellation}
+        onConfirm={handleConfirmApproveCancellation}
+        title="취소 요청 승인"
+        message={`${
+          approveCancellationTarget?.staff.staffName || '스태프'
+        }님의 취소 요청을 승인할까요?\n이 지원의 근무 ${approveCancellationDays}일이 모두 취소됩니다.`}
+        confirmText="승인"
+        cancelText="닫기"
+        isDestructive
+        isLoading={approveCancellationGate.isSubmitting}
+        closeOnConfirm={false}
+        confirmTestID="work-cancellation-approve-confirm"
+        cancelTestID="work-cancellation-approve-cancel"
+      />
+
+      {/* 거절 사유 모달 — 대상이 있을 때만 마운트해 이전 입력이 남지 않게 한다. */}
+      {rejectCancellationTarget ? (
+        <CancellationRejectModal
+          visible
+          onClose={handleCloseRejectCancellation}
+          onSubmit={handleSubmitRejectCancellation}
+          isProcessing={
+            reviewingApplicationId === rejectCancellationTarget.cancellation.applicationId
+          }
+          applicationId={rejectCancellationTarget.cancellation.applicationId}
+        />
+      ) : null}
 
       <StaffProfileModal
         visible={isProfileModalVisible}

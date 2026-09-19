@@ -14,6 +14,7 @@ import {
 } from '@/types/board';
 import { toDate, type DateInput } from '@/utils/date';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 const STATUS_OPTIONS: { value: BoardReportFilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -195,7 +196,7 @@ export default function AdminBoardReportsPage() {
         <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
-            title="게시판 신고를 불러오지 못했습니다"
+            title={loadFailed('게시판 신고')}
             description="잠시 후 다시 시도해 주세요."
             icon="error"
             actionLabel="다시 시도"

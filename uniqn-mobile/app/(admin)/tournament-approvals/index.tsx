@@ -36,6 +36,7 @@ import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatDateShortWithDay } from '@/utils/date';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -357,7 +358,7 @@ export default function AdminTournamentsPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
-            description="대회공고 목록을 불러오는 데 실패했습니다."
+            description={loadFailed('대회공고 목록')}
             actionLabel="다시 시도"
             onAction={() => refetch()}
           />

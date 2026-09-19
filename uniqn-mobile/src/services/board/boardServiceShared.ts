@@ -1,6 +1,4 @@
-import { BusinessError, ERROR_CODES, PermissionError, ValidationError, isAppError } from '@/errors';
-import { handleSilentError } from '@/errors/serviceErrorHandler';
-import { useAuthStore } from '@/stores/authStore';
+import { BusinessError, ERROR_CODES, PermissionError, ValidationError } from '@/errors';
 import { announcementRepository, boardRepository } from '@/repositories';
 import { deleteMultipleBoardImages } from '@/services/auth/storageService';
 import {
@@ -10,9 +8,7 @@ import {
   type BoardMentionCandidate,
   type BoardMembership,
   type BoardPost,
-  type BoardVoteType,
   type CommentReactionType,
-  type CreateBoardPostInput,
   buildBoardCommentTree,
   mapAnnouncementToBoardPost,
 } from '@/types/board';
@@ -20,6 +16,7 @@ import { extractAnnouncementIdFromBoardPostId, isBoardNoticePostId } from '@/sha
 import type { UserRole } from '@/types';
 import { sanitizeInput, xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
+import { notFound } from '@/constants/messages';
 
 export const COMPONENT = 'boardService';
 
@@ -38,7 +35,6 @@ export interface BoardPostDetail {
   comments: BoardComment[];
   commentTree: ReturnType<typeof buildBoardCommentTree>;
   membership: BoardMembership | null;
-  myVote: BoardVoteType | null;
   myReactions: Record<string, CommentReactionType>;
 }
 
@@ -210,56 +206,6 @@ export function assertImageLimit(count: number, maxCount: number) {
   }
 }
 
-export function isSkippableBoardHomeSectionError(error: unknown): boolean {
-  if (isAppError(error)) {
-    return (
-      error.code === ERROR_CODES.INFRA_PERMISSION_DENIED ||
-      error.code === ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS
-    );
-  }
-
-  return false;
-}
-
-export function handleBoardHomeSectionPermissionError(
-  section: 'pinnedNotices' | 'recentSchedulePosts' | 'popularCommunityPosts',
-  viewer: BoardViewer,
-  error: unknown
-) {
-  const liveUserId = useAuthStore.getState().user?.uid ?? null;
-
-  handleSilentError(error, {
-    operation: '게시판 홈 섹션 스킵',
-    component: COMPONENT,
-    context: {
-      section,
-      viewerId: viewer.userId ?? null,
-      viewerRole: viewer.role ?? null,
-      isAdmin: viewer.isAdmin ?? false,
-      liveUserId,
-      liveUserMatchesViewer: !!viewer.userId && liveUserId === viewer.userId,
-    },
-  });
-}
-
-export async function resolveBoardHomeSection<T>(
-  section: 'pinnedNotices' | 'recentSchedulePosts' | 'popularCommunityPosts',
-  viewer: BoardViewer,
-  resolver: () => Promise<T>,
-  fallback: T
-): Promise<T> {
-  try {
-    return await resolver();
-  } catch (error) {
-    if (isSkippableBoardHomeSectionError(error)) {
-      handleBoardHomeSectionPermissionError(section, viewer, error);
-      return fallback;
-    }
-
-    throw error;
-  }
-}
-
 export async function getBoardPostInternal(postId: string): Promise<BoardPost | null> {
   if (isBoardNoticePostId(postId)) {
     const announcement = await announcementRepository.getById(
@@ -273,7 +219,7 @@ export async function getBoardPostInternal(postId: string): Promise<BoardPost | 
 
 export async function getBoardPostOrThrow(
   postId: string,
-  notFoundMessage = '게시글을 찾을 수 없습니다.'
+  notFoundMessage = notFound('게시글')
 ): Promise<BoardPost> {
   const post = await getBoardPostInternal(postId);
   if (!post) {
@@ -297,7 +243,7 @@ export async function assertCanViewPost(
   post: BoardPost,
   viewer: BoardViewer
 ): Promise<BoardMembership | null> {
-  if (post.boardType === 'notice' || post.boardType === 'free' || post.boardType === 'tda') {
+  if (post.boardType === 'notice') {
     return null;
   }
 
@@ -377,14 +323,6 @@ export function assertCanManagePost(post: BoardPost, viewer: BoardViewer) {
   if (!viewer.isAdmin && post.authorId !== viewer.userId) {
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '게시글 관리 권한이 없습니다.',
-    });
-  }
-}
-
-export function assertCanCreatePost(input: CreateBoardPostInput) {
-  if (input.boardType !== 'free' && input.boardType !== 'tda' && input.boardType !== 'substitute') {
-    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-      userMessage: '직접 작성할 수 없는 게시판입니다.',
     });
   }
 }

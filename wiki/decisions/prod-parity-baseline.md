@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-08-09
+updated: 2026-09-19
 status: current
 sources:
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
@@ -8,6 +8,7 @@ sources:
   - .github/workflows/prod-migrate.yml
   - PR#241
   - PR#455
+  - PR#497
   - memory/pitfall_prod_repo_schema_drift_massive
 tags: [database, migration, parity, adr]
 ---
@@ -58,7 +59,43 @@ ops ⑦-1 과 ⑦-2 가 각각 함수를 1개씩 추가하며 **둘 다 207 을 
 > 🔑 `pg_proc` 카운트 대조 병행은 유효하나 **관측 시각을 함께 남겨라.** 병렬 세션이 상시
 > 활성이라, 남의 적용 결과를 "원래 있었다"로 읽는 사고가 실제로 났다.
 
+## 새 기준선 225 / 102 — 그리고 정책 −11 의 정체 (2026-09-19 규명)
+
+장부 기대값 216/113 과 실측 225/102 가 어긋나 `parity_baseline_guard` 가 red 였다. 숫자를
+덮지 않고 **출처를 세어** 닫았다. 차이의 전부는 **장부에 누락된 9월 마이그 7건**이다.
+
+정책 −11 의 내역:
+
+| 출처 | 정책 증감 |
+|---|---|
+| `20260910002240_harden_communication_board` — free/tda/substitute 게시판·투표 폐지 | 순감 **7** |
+| 같은 마이그의 **`DROP TABLE board_votes`** — `bv_*` 정책이 테이블과 함께 소멸 | **−4** |
+
+> 🔑 **테이블을 지우면 그 위의 정책도 함께 사라진다.** `CREATE POLICY` / `DROP POLICY` 문장만
+> 세면 계산이 맞지 않는다. `DROP TABLE` · `DROP SCHEMA` 는 정책 회계의 **보이지 않는 항목**이다.
+
+- 새 기준선 = **함수 225 / 정책 102**, 기계 마커 `PARITY_EXPECT_FUNCS` / `_POLICIES` 동시 갱신
+  (위 "3곳 동시" 규율 준수).
+- **prod 실측도 225 / 102** — 정확히 일치. 같은 날 적용한 마이그 4건은 전부 증감 0이라 적용
+  후에도 불변이었다.
+- ⚠️ 09-18 판이 `20260809140000` 을 원인으로 지목했으나 **오답**이다 — 그건 이미 장부에
+  반영돼 있었다. 상세 = [[db-red-fix-and-release-2026-09]]
+
+## 기록명 어긋남 — 재적용 금지 목록 (2026-09-19 재확인)
+
+9월 마이그 7건은 MCP apply 경로로 들어가 **prod 기록명이 레포 파일명과 다르다**. 접두사만 보고
+"미적용"으로 판단하면 재적용해 체인을 더럽힌다.
+
+`20260909135618`→`20260910163934` · `20260910002240`→`20260910003856` ·
+`20260910104500`→`20260910103444` · `20260910110000`→`20260910103943` ·
+`20260910123553`→`20260910163945` · `20260910123555`→`20260910163957` ·
+`20260910153217`→`20260910164009`
+
+🔑 `prod-migrate` 워크플로(#437) 경유분은 **파일명 그대로** 기록된다. 어긋남은 MCP 경로의 흔적이다.
+⚠️ **GRANT·트리거 전용 마이그는 `verify_function` 을 비워라** — md5 가 안 바뀌면 워크플로가
+실패로 접어서 **적용은 됐는데 red 로 보인다**.
+
 ## 판정이 뒤집힌 사례 (재발견 금지)
 "공고 INSERT RLS 느슨 계약"은 로컬 gen-1 잔상이었고 prod 진실은 `jp_insert` 역할게이트([[rls-model]]). baseline 직후 e2e red 2건은 테스트 버그가 아니라 **master가 숨겨온 prod 실결함**(board_reports UPDATE 갭)과 시드 공백이었다.
 
-관련: [[parity-baseline-squash]] · [[rls-model]] · [[test-db-grants]] · [[userflow-audit-2026-07]]
+관련: [[parity-baseline-squash]] · [[rls-model]] · [[test-db-grants]] · [[userflow-audit-2026-07]] · [[vacuous-verification]] · [[db-red-fix-and-release-2026-09]]

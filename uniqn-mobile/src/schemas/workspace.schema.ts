@@ -61,7 +61,7 @@ export type CreateWorkspaceData = z.infer<typeof createWorkspaceSchema>;
  * 워크스페이스 이름 변경
  */
 export const updateWorkspaceNameSchema = z.object({
-  workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
+  workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
   name: workspaceNameSchema,
 });
 
@@ -72,8 +72,8 @@ export type UpdateWorkspaceNameData = z.infer<typeof updateWorkspaceNameSchema>;
 // ============================================================================
 
 export const inviteWorkspaceMemberSchema = z.object({
-  workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
-  inviteeUserId: z.string().uuid({ message: '올바른 사용자 ID 가 아닙니다' }),
+  workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
+  inviteeUserId: z.string().uuid({ message: '올바른 사용자 ID가 아닙니다' }),
   role: workspaceRoleSchema.default('editor'),
 });
 
@@ -91,7 +91,7 @@ export type RemoveWorkspaceMemberData = z.infer<typeof removeWorkspaceMemberSche
 // ============================================================================
 
 export const respondInvitationSchema = z.object({
-  invitationId: z.string().uuid({ message: '올바른 초대 ID 가 아닙니다' }),
+  invitationId: z.string().uuid({ message: '올바른 초대 ID가 아닙니다' }),
 });
 
 export type RespondInvitationData = z.infer<typeof respondInvitationSchema>;
@@ -101,11 +101,11 @@ export type RespondInvitationData = z.infer<typeof respondInvitationSchema>;
 // ============================================================================
 
 export const archiveWorkspaceSchema = z.object({
-  workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
+  workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
 });
 export type ArchiveWorkspaceData = z.infer<typeof archiveWorkspaceSchema>;
 
 export const restoreWorkspaceSchema = z.object({
-  workspaceId: z.string().uuid({ message: '올바른 팀 ID 가 아닙니다' }),
+  workspaceId: z.string().uuid({ message: '올바른 팀 ID가 아닙니다' }),
 });
 export type RestoreWorkspaceData = z.infer<typeof restoreWorkspaceSchema>;

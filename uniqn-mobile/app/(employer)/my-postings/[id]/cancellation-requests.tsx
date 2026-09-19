@@ -26,6 +26,7 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 interface StatsHeaderProps {
   pendingCount: number;
@@ -47,17 +48,11 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   // 공고 데이터는 레이아웃이 realtime 구독과 함께 한 번만 조회한다.
-  const {
-    job: posting,
-    isFixed,
-    isLoading: isLoadingPosting,
-    handleShowQR,
-  } = useJobDetailContext();
+  const { job: posting, isLoading: isLoadingPosting, handleShowQR } = useJobDetailContext();
   const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
   const headerJobTitle = posting?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
-  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
@@ -196,7 +191,7 @@ export default function CancellationRequestsScreen() {
           fallbackHref={headerBackHref}
           rightAction={headerRightAction}
         />
-        <ErrorState title="취소 요청을 불러올 수 없습니다" error={error} onRetry={handleRefresh} />
+        <ErrorState title={loadFailed('취소 요청')} error={error} onRetry={handleRefresh} />
       </SafeAreaView>
     );
   }

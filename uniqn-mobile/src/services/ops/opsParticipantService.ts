@@ -249,7 +249,7 @@ export async function deleteParticipant(participantId: string, actorId: string) 
     logger.info('ops 등록 취소(삭제)', { component: COMPONENT, participantId });
     if (!UUID_LIKE_RE.test(participantId)) {
       throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-        userMessage: '올바른 참가자 ID 가 아닙니다',
+        userMessage: '올바른 참가자 ID가 아닙니다',
       });
     }
     return await opsParticipantRepository.deleteParticipant(participantId, actorId);
@@ -272,7 +272,7 @@ export async function unclaimParticipant(participantId: string, actorId: string)
     logger.info('ops 플레이어 연결 해제', { component: COMPONENT, participantId });
     if (!UUID_LIKE_RE.test(participantId)) {
       throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-        userMessage: '올바른 참가자 ID 가 아닙니다',
+        userMessage: '올바른 참가자 ID가 아닙니다',
       });
     }
     return await opsParticipantRepository.unclaimParticipant(participantId, actorId);

@@ -29,9 +29,9 @@ export const DRESS_CODE_PRESETS = [
   '반바지x',
 ] as const;
 export const EXPERIENCE_PRESETS = [
-  'TDA 숙지자',
+  'TDA 숙지',
   '6개월 이상',
-  '경력 1년이상',
+  '1년이상',
   '서빙가능',
   '연장근무',
 ] as const;

@@ -15,6 +15,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -51,7 +52,7 @@ export function useSetBlindLevels(tournamentId: string) {
     },
     onError: (e) => {
       logger.error('ops 블라인드 설정 실패', toError(e));
-      toast.error(extractUserMessage(e) || '블라인드 저장에 실패했습니다');
+      toast.error(extractUserMessage(e) || saveFailed('블라인드'));
     },
   });
 }

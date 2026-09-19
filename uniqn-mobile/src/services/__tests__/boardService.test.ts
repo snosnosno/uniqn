@@ -1,15 +1,13 @@
-import { announcementRepository, boardRepository } from '@/repositories';
+import { boardRepository } from '@/repositories';
 import { deleteMultipleBoardImages } from '@/services/auth/storageService';
 import { logger } from '@/utils/logger';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import type { BoardComment, BoardImageAttachment, BoardMembership, BoardPost } from '@/types/board';
 import {
   fetchBoardPosts,
-  getBoardHomeData,
   getBoardPostDetail,
   setBoardCommentStatus,
   updateBoardComment,
-  updateBoardPost,
 } from '../boardService';
 
 jest.mock('@/repositories', () => ({
@@ -25,7 +23,6 @@ jest.mock('@/repositories', () => ({
     getPostById: jest.fn(),
     getPosts: jest.fn(),
     getComments: jest.fn(),
-    getPostVote: jest.fn(),
     getCommentReactionsByUser: jest.fn(),
     updatePost: jest.fn(),
     updateComment: jest.fn(),
@@ -79,9 +76,6 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-const mockAnnouncementRepository = announcementRepository as jest.Mocked<
-  typeof announcementRepository
->;
 const mockBoardRepository = boardRepository as jest.Mocked<typeof boardRepository>;
 const mockDeleteMultipleBoardImages = deleteMultipleBoardImages as jest.MockedFunction<
   typeof deleteMultipleBoardImages
@@ -112,8 +106,6 @@ function createBoardPost(overrides: Partial<BoardPost> = {}): BoardPost {
     linkedJobPostingId: 'job-1',
     isAutoCreated: true,
     isLocked: false,
-    likeCount: 0,
-    dislikeCount: 0,
     commentCount: 0,
     viewCount: 0,
     imageAttachments: [],
@@ -177,7 +169,6 @@ describe('boardService.fetchBoardPosts', () => {
     jest.clearAllMocks();
     mockBoardRepository.getMembership.mockResolvedValue(null as never);
     mockBoardRepository.getComments.mockResolvedValue([] as never);
-    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
     mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
     mockDeleteMultipleBoardImages.mockResolvedValue(undefined);
   });
@@ -326,139 +317,61 @@ describe('boardService.fetchBoardPosts', () => {
   });
 });
 
-describe('boardService.getBoardHomeData', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockDeleteMultipleBoardImages.mockResolvedValue(undefined);
-  });
-
-  it('returns partial home data when pinned notices are permission denied', async () => {
-    const schedulePosts = [
-      createBoardPost({
-        id: 'schedule-post-1',
-        title: '최신 일정',
-      }),
-    ];
-    const communityPosts = [
-      createBoardPost({
-        id: 'community-post-1',
-        boardType: 'free',
-        title: '커뮤니티 글',
-        authorRole: 'staff',
-      }),
-    ];
-
-    mockAnnouncementRepository.getPublished.mockRejectedValue(
-      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, { userMessage: 'denied' })
-    );
-    mockBoardRepository.getPosts
-      .mockResolvedValueOnce(schedulePosts as never)
-      .mockResolvedValueOnce(communityPosts as never);
-
-    const result = await getBoardHomeData({
-      userId: 'viewer-1',
-      role: 'admin',
-      isAdmin: true,
-    });
-
-    expect(result).toEqual({
-      pinnedNotices: [],
-      recentSchedulePosts: schedulePosts,
-      popularCommunityPosts: communityPosts,
-    });
-  });
-
-  it('returns empty sections instead of failing the full home when all sections are permission denied', async () => {
-    const deniedError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: 'denied',
-    });
-
-    mockAnnouncementRepository.getPublished.mockRejectedValue(deniedError);
-    mockBoardRepository.getPosts.mockRejectedValue(deniedError);
-
-    const result = await getBoardHomeData({
-      userId: 'viewer-1',
-      role: 'admin',
-      isAdmin: true,
-    });
-
-    expect(result).toEqual({
-      pinnedNotices: [],
-      recentSchedulePosts: [],
-      popularCommunityPosts: [],
-    });
-  });
-});
-
 describe('boardService.getBoardPostDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockBoardRepository.getMembership.mockResolvedValue(null as never);
     mockBoardRepository.getComments.mockResolvedValue([] as never);
-    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
     mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
   });
 
-  it('keeps the detail page alive when optional vote and reaction lookups fail', async () => {
+  it('keeps the detail page alive when the optional reaction lookup fails', async () => {
     const post = createBoardPost({
-      id: 'free-post-1',
-      boardType: 'free',
-      authorId: 'staff-1',
-      authorRole: 'staff',
-      visibility: 'public',
-      linkedJobPostingId: null,
-      isAutoCreated: false,
+      id: 'schedule_job-1',
     });
-    const comments = [createBoardComment({ postId: 'free-post-1' })];
+    const comments = [createBoardComment({ postId: 'schedule_job-1' })];
 
     mockBoardRepository.getPostById.mockResolvedValue(post as never);
-    mockBoardRepository.getComments.mockResolvedValue(comments as never);
-    mockBoardRepository.getPostVote.mockRejectedValue(
-      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: 'vote denied',
-      }) as never
+    mockBoardRepository.getMembership.mockResolvedValue(
+      createMembership({ postId: 'schedule_job-1' }) as never
     );
+    mockBoardRepository.getComments.mockResolvedValue(comments as never);
     mockBoardRepository.getCommentReactionsByUser.mockRejectedValue(
       new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: 'reaction denied',
       }) as never
     );
 
-    const result = await getBoardPostDetail('free-post-1', {
+    const result = await getBoardPostDetail('schedule_job-1', {
       userId: 'staff-1',
       role: 'staff',
     });
 
-    expect(result.post.id).toBe('free-post-1');
+    expect(result.post.id).toBe('schedule_job-1');
     expect(result.comments).toEqual(comments);
     expect(result.commentTree).toHaveLength(1);
-    expect(result.myVote).toBeNull();
     expect(result.myReactions).toEqual({});
-    expect(mockLogger.warn).toHaveBeenCalledTimes(2);
+    expect(mockLogger.warn).toHaveBeenCalledTimes(1);
   });
 
   it('still fails when the core comments query fails', async () => {
     const post = createBoardPost({
-      id: 'free-post-1',
-      boardType: 'free',
-      authorId: 'staff-1',
-      authorRole: 'staff',
-      visibility: 'public',
-      linkedJobPostingId: null,
-      isAutoCreated: false,
+      id: 'schedule_job-1',
     });
 
     mockBoardRepository.getPostById.mockResolvedValue(post as never);
+    mockBoardRepository.getMembership.mockResolvedValue(
+      createMembership({ postId: 'schedule_job-1' }) as never
+    );
     mockBoardRepository.getComments.mockRejectedValue(
       new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: 'comments denied',
       }) as never
     );
-    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
     mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
 
     await expect(
-      getBoardPostDetail('free-post-1', {
+      getBoardPostDetail('schedule_job-1', {
         userId: 'staff-1',
         role: 'staff',
       })
@@ -473,75 +386,40 @@ describe('boardService image cleanup', () => {
     jest.clearAllMocks();
     mockBoardRepository.getMembership.mockResolvedValue(null as never);
     mockBoardRepository.getComments.mockResolvedValue([] as never);
-    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
     mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
     mockDeleteMultipleBoardImages.mockResolvedValue(undefined);
-  });
-
-  it('deletes removed board post images after updating the post', async () => {
-    const removedImage = createImage('image-1');
-    const keptImage = createImage('image-2');
-
-    mockBoardRepository.getPostById.mockResolvedValue(
-      createBoardPost({
-        id: 'free-post-1',
-        boardType: 'free',
-        authorId: 'staff-1',
-        authorRole: 'staff',
-        visibility: 'public',
-        isAutoCreated: false,
-        linkedJobPostingId: null,
-        imageAttachments: [removedImage, keptImage],
-      }) as never
-    );
-    mockBoardRepository.updatePost.mockResolvedValue(undefined as never);
-
-    await updateBoardPost(
-      'free-post-1',
-      { userId: 'staff-1', role: 'staff' },
-      { imageAttachments: [keptImage] }
-    );
-
-    expect(mockBoardRepository.updatePost).toHaveBeenCalledWith(
-      'free-post-1',
-      expect.objectContaining({
-        imageAttachments: [keptImage],
-      })
-    );
-    expect(mockDeleteMultipleBoardImages).toHaveBeenCalledWith([removedImage]);
   });
 
   it('deletes removed board comment images after updating the comment', async () => {
     const removedImage = createImage('comment-image-1');
     const keptImage = createImage('comment-image-2');
     const post = createBoardPost({
-      id: 'free-post-1',
-      boardType: 'free',
+      id: 'schedule_job-1',
       authorId: 'owner-1',
-      visibility: 'public',
-      isAutoCreated: false,
-      linkedJobPostingId: null,
     });
     const comment = createBoardComment({
       id: 'comment-1',
-      postId: 'free-post-1',
+      postId: 'schedule_job-1',
       authorId: 'staff-1',
       imageAttachments: [removedImage, keptImage],
     });
 
     mockBoardRepository.getPostById.mockResolvedValue(post as never);
+    mockBoardRepository.getMembership.mockResolvedValue(
+      createMembership({ postId: 'schedule_job-1' }) as never
+    );
     mockBoardRepository.getComments.mockResolvedValue([comment] as never);
     mockBoardRepository.updateComment.mockResolvedValue(undefined as never);
 
     await updateBoardComment(
-      'free-post-1',
+      'schedule_job-1',
       'comment-1',
       { userId: 'staff-1' },
       { imageAttachments: [keptImage] }
     );
 
     expect(mockBoardRepository.updateComment).toHaveBeenCalledWith(
-      'free-post-1',
+      'schedule_job-1',
       'comment-1',
       expect.objectContaining({
         imageAttachments: [keptImage],

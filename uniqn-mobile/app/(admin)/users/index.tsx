@@ -31,6 +31,7 @@ import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 interface RoleChipProps {
   role: UserRole | 'all';
@@ -251,7 +252,7 @@ export default function AdminUsersPage() {
         <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
-            description="사용자 목록을 불러오는 데 실패했습니다."
+            description={loadFailed('사용자 목록')}
             actionLabel="다시 시도"
             onAction={() => refetch()}
           />

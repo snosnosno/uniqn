@@ -1,23 +1,25 @@
 /**
- * UNIQN Mobile - 정산 목록 컴포넌트
+ * UNIQN Mobile - 근무 금액 목록 컴포넌트
  *
- * @description FlashList 기반 정산 목록 (필터링, 일괄 정산, 스태프별 그룹핑)
- * @version 4.0.0 - SummaryCard, BulkActions 서브컴포넌트 분해
+ * @description FlashList 기반 스태프별 금액 목록 ([근무] 의 `금액` 탭)
+ * @version 5.0.0 - 구인자 IA S2: 지급 상태 필터·일괄 정산·선택 모드 제거. 금액 계산·표시만 남긴다.
+ *
+ * 앱은 돈을 보내지 않는다. 그런데 이 목록은 `정산 대기 / 정산 완료` 필터와 `일괄 정산 선택` 으로
+ * 앱이 지급을 관리하는 것처럼 굴었고, 아무도 `지급 완료` 를 누르지 않으면 영원히 "정산 대기"가 쌓였다.
+ * 금액 컬럼·RPC 는 그대로 두고 **화면에서 워크플로우만** 걷어냈다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
-import { SettlementBulkActions } from './SettlementBulkActions';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { FilterTabs, type FilterTabOption } from '@/components/ui/FilterTabs';
 import { ScreenSkeleton } from '@/components/ui';
-import { BanknotesIcon, CheckIcon } from '@/components/icons';
+import { BanknotesIcon } from '@/components/icons';
 import {
   type SalaryType,
   type SalaryInfo,
@@ -28,18 +30,12 @@ import {
 import { useToast } from '@/stores/toastStore';
 import {
   groupSettlementsByStaff,
-  calculateGroupedSettlementStats,
   type SettlementGroupingContext,
 } from '@/utils/settlementGrouping';
 import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog } from '@/types';
 import { STATUS } from '@/constants';
-import {
-  PAYROLL_STATUS_LABELS,
-  isSettlableWorkLogStatus,
-  toSettlementDisplayStatus,
-  type SettlementDisplayStatus,
-} from '@/shared/status';
+import { loadFailed } from '@/constants/messages';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -70,36 +66,45 @@ export interface SettlementListProps {
   error?: Error | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  /** 근무기록 클릭 핸들러 (그룹 정보 포함) */
+  /** 근무기록 클릭 핸들러 (그룹 정보 포함) — 계산 근거 시트를 연다 */
   onWorkLogPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
-  onSettle?: (workLog: WorkLog) => void;
-  onBulkSettle?: (workLogs: WorkLog[]) => void;
-  showBulkActions?: boolean;
-  /** 설정 모달 열기 콜백 */
+  /** 급여 설정 모달 열기 콜백 */
   onOpenSettings?: () => void;
   /** 스태프별 그룹핑 활성화 (기본: true) */
   enableGrouping?: boolean;
-  /** 그룹 일괄 정산 핸들러 */
-  onGroupBulkSettle?: (workLogs: WorkLog[]) => void;
 }
 
 /**
- * 필터 축은 **화면 어휘 2단**이다(`SettlementDisplayStatus`), 데이터 3값이 아니다.
- * 예전엔 `'all' | PayrollStatus` 라 `'failed'` 가 타입상 선택 가능했는데 그 탭은 존재한 적이
- * 없다 — 고를 수 없는 값이 축에 있으니 `=== selectedFilter` 비교가 failed 행을 어느 칸에도
- * 넣지 못했다(감사 M11). 타입을 실제 탭 목록과 일치시킨다.
+ * 목록 전체의 지급 예정 합계.
+ *
+ * 🔑 `dateStatuses[].amount` 는 확정 금액(과거 지급 완료 행)이면 그 동결값, 아니면 재계산값이다
+ *    (`settlementGrouping` 의 SSOT).
+ * 🚨 과거에 `지급 완료` 로 처리된 근무는 "지급 예정" 에 넣지 않는다 — 사장이 합계를 그대로 보내면
+ *    이미 준 돈을 한 번 더 보낸다(워크플로우가 살아 있던 시절의 공고에 실재한다). 따로 센다.
  */
-type FilterStatus = 'all' | SettlementDisplayStatus;
+function summarizePayable(groups: GroupedSettlement[]) {
+  let payableCount = 0;
+  let payableAmount = 0;
+  let beforeCheckoutCount = 0;
+  let settledCount = 0;
+  let settledAmount = 0;
 
-// ============================================================================
-// Constants
-// ============================================================================
+  for (const group of groups) {
+    for (const status of group.dateStatuses) {
+      if (!status.hasValidTimes) {
+        beforeCheckoutCount += 1;
+      } else if (status.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        settledCount += 1;
+        settledAmount += status.amount;
+      } else {
+        payableCount += 1;
+        payableAmount += status.amount;
+      }
+    }
+  }
 
-const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
-  { value: 'all', label: '전체' },
-  { value: STATUS.PAYROLL.PENDING, label: PAYROLL_STATUS_LABELS.pending },
-  { value: STATUS.PAYROLL.COMPLETED, label: PAYROLL_STATUS_LABELS.completed },
-];
+  return { payableCount, payableAmount, beforeCheckoutCount, settledCount, settledAmount };
+}
 
 // ============================================================================
 // Main Component
@@ -116,19 +121,11 @@ export function SettlementList({
   onRefresh,
   isRefreshing,
   onWorkLogPress,
-  onSettle,
-  onBulkSettle,
-  showBulkActions = false,
   onOpenSettings,
   enableGrouping = true,
-  onGroupBulkSettle,
 }: SettlementListProps) {
-  const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const toast = useToast();
 
-  // 그룹핑 컨텍스트
   const groupingContext: SettlementGroupingContext = useMemo(
     () => ({
       roles,
@@ -139,284 +136,76 @@ export function SettlementList({
     [roles, defaultSalary, allowances, taxSettings]
   );
 
-  // 필터링된 목록
-  const filteredWorkLogs = useMemo(() => {
-    if (selectedFilter === 'all') return workLogs;
-    // 데이터 3값을 화면 어휘 2값으로 접어서 비교한다 — 'failed' 는 '정산 대기' 칸에 든다.
-    return workLogs.filter(
-      (log) => toSettlementDisplayStatus(log.payrollStatus) === selectedFilter
-    );
-  }, [workLogs, selectedFilter]);
-
-  // 그룹화된 목록
-  const groupedSettlements = useMemo(() => {
-    return groupSettlementsByStaff(filteredWorkLogs, groupingContext, {
-      enabled: enableGrouping,
-    });
-  }, [filteredWorkLogs, groupingContext, enableGrouping]);
-
-  // 선택 가능한 항목 (미정산 + 출퇴근 완료 + 서버 게이트 통과 status)
-  // status 축이 없으면 "전체 선택" 이 서버가 거부할 행까지 담아 일괄 정산이 부분 실패한다 —
-  // 카드 버튼과 같은 술어를 쓴다(shared/status SSOT).
-  const selectableWorkLogs = useMemo(() => {
-    return workLogs.filter(
-      (log) =>
-        log.payrollStatus !== STATUS.PAYROLL.COMPLETED &&
-        isSettlableWorkLogStatus(log.status) &&
-        log.checkInTime &&
-        log.checkOutTime
-    );
-  }, [workLogs]);
-
-  /** 이 근무를 선택 모드에서 고를 수 있는가 — 체크박스 노출·토글·전체 선택이 같은 축을 본다. */
-  const selectableIds = useMemo(
-    () => new Set(selectableWorkLogs.map((log) => log.id)),
-    [selectableWorkLogs]
+  const groupedSettlements = useMemo(
+    () => groupSettlementsByStaff(workLogs, groupingContext, { enabled: enableGrouping }),
+    [workLogs, groupingContext, enableGrouping]
   );
 
-  // 필터 옵션 (카운트 포함)
-  const filterOptions = useMemo(() => {
-    const counts: Partial<Record<FilterStatus, number>> = {
-      all: workLogs.length,
-    };
-    // 화면 어휘로 접어서 센다. 데이터 3값 그대로 세면 'failed' 가 탭이 없는 칸에 쌓여
-    // 탭 합계가 '전체' 와 안 맞는다(1 + 0 ≠ 2).
-    workLogs.forEach((log) => {
-      const status = toSettlementDisplayStatus(log.payrollStatus);
-      counts[status] = (counts[status] || 0) + 1;
-    });
-    return FILTER_OPTIONS.map((option) => ({
-      ...option,
-      count: counts[option.value] ?? 0,
-    }));
-  }, [workLogs]);
+  const summary = useMemo(() => summarizePayable(groupedSettlements), [groupedSettlements]);
 
-  // 요약 정보 (그룹 통계 사용) - 최적화: 필터='all'일 때 groupedSettlements 재사용
-  const summaryInfo = useMemo(() => {
-    // 필터가 'all'이면 이미 계산된 groupedSettlements 재사용 (중복 그룹화 방지)
-    const targetGrouped =
-      selectedFilter === 'all'
-        ? groupedSettlements
-        : groupSettlementsByStaff(workLogs, groupingContext, {
-            enabled: true,
-          });
-
-    const stats = calculateGroupedSettlementStats(targetGrouped);
-
-    return {
-      totalCount: stats.totalWorkLogs,
-      pendingCount: stats.totalPendingCount,
-      completedCount: stats.totalCompletedCount,
-      totalAmount: stats.totalAmount,
-      pendingAmount: stats.totalPendingAmount,
-    };
-  }, [selectedFilter, groupedSettlements, workLogs, groupingContext]);
-
-  // CSV 내보내기 — 전체 정산 내역(필터 무관) 기준. 세무/정산 증빙용.
+  // CSV 내보내기 — 세무 증빙용 금액 내역.
   const handleExport = useCallback(async () => {
-    const allGroups = groupSettlementsByStaff(workLogs, groupingContext, {
-      enabled: enableGrouping,
-    });
-    const result = await exportSettlementCsv(allGroups);
+    const result = await exportSettlementCsv(groupedSettlements);
     if (result.reason === 'empty') {
-      toast.info('내보낼 정산 내역이 없어요.');
+      toast.info('내보낼 근무 금액이 없어요.');
     } else if (!result.success) {
       toast.error('내보내기에 실패했어요.');
     }
-  }, [workLogs, groupingContext, enableGrouping, toast]);
+  }, [groupedSettlements, toast]);
 
-  // 선택된 항목 금액
-  const selectedAmount = useMemo(() => {
-    let totalAmount = 0;
-    for (const group of groupedSettlements) {
-      for (const status of group.dateStatuses) {
-        if (selectedIds.has(status.workLogId)) {
-          totalAmount += status.amount;
-        }
-      }
-    }
-    return totalAmount;
-  }, [groupedSettlements, selectedIds]);
-
-  // 선택 핸들러 — 선택 불가 행은 담지 않는다(전체 선택과 같은 축).
-  const handleSelect = useCallback(
-    (workLog: WorkLog) => {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(workLog.id)) {
-          next.delete(workLog.id);
-        } else if (selectableIds.has(workLog.id)) {
-          next.add(workLog.id);
-        }
-        return next;
-      });
-    },
-    [selectableIds]
-  );
-
-  const handleSelectAll = useCallback(() => {
-    setSelectedIds(new Set(selectableWorkLogs.map((log) => log.id)));
-  }, [selectableWorkLogs]);
-
-  const handleClearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
-
-  const handleBulkSettle = useCallback(() => {
-    const selectedLogs = workLogs.filter((log) => selectedIds.has(log.id));
-    onBulkSettle?.(selectedLogs);
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-  }, [workLogs, selectedIds, onBulkSettle]);
-
-  const toggleSelectionMode = useCallback(() => {
-    setSelectionMode((prev) => !prev);
-    if (selectionMode) {
-      setSelectedIds(new Set());
-    }
-  }, [selectionMode]);
-
-  // 그룹 일괄 정산 핸들러
-  const handleGroupBulkSettle = useCallback(
-    (settlableWorkLogs: WorkLog[]) => {
-      const handler = onGroupBulkSettle || onBulkSettle;
-      handler?.(settlableWorkLogs);
-    },
-    [onGroupBulkSettle, onBulkSettle]
-  );
-
-  // 렌더 아이템 (그룹화된 카드)
   const renderItem = useCallback(
-    ({ item }: { item: GroupedSettlement }) => {
-      return (
-        <View className="px-4">
-          <GroupedSettlementCard
-            group={item}
-            onPress={onWorkLogPress}
-            onDatePress={onWorkLogPress}
-            onBulkSettle={handleGroupBulkSettle}
-            onSettle={onSettle}
-            selectionMode={selectionMode}
-            selectedIds={selectedIds}
-            // 선택 게이트(`handleSelect`)와 **같은 축**을 카드에도 내려준다.
-            // 카드가 자체 판정하면 부모가 거부하는 행을 전체 선택에 넣어 편도 토글이 된다.
-            selectableIds={selectableIds}
-            onToggleSelect={handleSelect}
-          />
-        </View>
-      );
-    },
-    [
-      handleGroupBulkSettle,
-      onWorkLogPress,
-      onSettle,
-      selectionMode,
-      selectedIds,
-      selectableIds,
-      handleSelect,
-    ]
+    ({ item }: { item: GroupedSettlement }) => (
+      <View className="px-4">
+        <GroupedSettlementCard group={item} onPress={onWorkLogPress} onDatePress={onWorkLogPress} />
+      </View>
+    ),
+    [onWorkLogPress]
   );
 
   const keyExtractor = useCallback((item: GroupedSettlement) => item.id, []);
 
-  // 로딩 상태
   if (isLoading && !isRefreshing) {
     return <ScreenSkeleton type="settlementList" count={6} />;
   }
 
-  // 에러 상태
   if (error) {
-    return <ErrorState title="정산 목록을 불러올 수 없습니다" error={error} onRetry={onRefresh} />;
+    return <ErrorState title={loadFailed('근무 금액')} error={error} onRetry={onRefresh} />;
   }
 
-  // 빈 상태
   if (!workLogs.length) {
     return (
       <EmptyState
         icon={<BanknotesIcon size={48} color={SECONDARY_PALETTE[400]} />}
-        title="정산할 내역이 없습니다"
-        description="확정된 스태프의 출퇴근 기록이 여기에 표시됩니다."
+        title="아직 근무 기록이 없어요"
+        description="확정된 스태프의 출퇴근이 기록되면 여기서 금액을 확인할 수 있어요."
       />
     );
   }
 
-  const isAllSelected =
-    selectedIds.size === selectableWorkLogs.length && selectableWorkLogs.length > 0;
-
   return (
     <View className="flex-1 bg-surface-page dark:bg-surface">
-      {/* 요약 카드 */}
-      <SettlementSummaryCard {...summaryInfo} onOpenSettings={onOpenSettings} />
+      <SettlementSummaryCard {...summary} onOpenSettings={onOpenSettings} />
 
-      {/* 필터 탭 */}
-      <FilterTabs
-        options={filterOptions}
-        selectedValue={selectedFilter}
-        onSelect={setSelectedFilter}
-        countDisplay="always"
-        labelSize="sm"
-      />
+      <View className="flex-row justify-end px-4 mb-2">
+        <Pressable
+          onPress={handleExport}
+          className="flex-row items-center px-3 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
+          accessibilityRole="button"
+          accessibilityLabel="근무 금액 CSV 내보내기"
+        >
+          <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-1 text-xs font-sans-medium text-secondary-600 dark:text-secondary-400">
+            CSV 내보내기
+          </Text>
+        </Pressable>
+      </View>
 
-      {/* CSV 내보내기 — 세무/정산 증빙용 (전체 내역) */}
-      {workLogs.length > 0 && (
-        <View className="flex-row justify-end px-4 mb-2">
-          <Pressable
-            onPress={handleExport}
-            className="flex-row items-center px-3 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
-            accessibilityRole="button"
-            accessibilityLabel="정산 내역 CSV 내보내기"
-          >
-            <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-1 text-xs font-sans-medium text-secondary-600 dark:text-secondary-400">
-              CSV 내보내기
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* 일괄 선택 버튼 */}
-      {showBulkActions && selectableWorkLogs.length > 0 && (
-        <View className="px-4 mb-3">
-          <Pressable
-            onPress={toggleSelectionMode}
-            className="flex-row items-center justify-center py-2 rounded-lg bg-surface-card dark:bg-surface"
-          >
-            <CheckIcon size={16} color={selectionMode ? '#B8962E' : SECONDARY_PALETTE[500]} />
-            <Text
-              className={`
-              ml-2 text-sm font-sans-medium
-              ${
-                selectionMode
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-secondary-600 dark:text-secondary-400'
-              }
-            `}
-            >
-              {selectionMode ? '선택 취소' : '일괄 정산 선택'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* 선택 모드 액션 바 */}
-      {selectionMode && (
-        <SettlementBulkActions
-          selectedCount={selectedIds.size}
-          selectedAmount={selectedAmount}
-          onSelectAll={handleSelectAll}
-          onClearSelection={handleClearSelection}
-          onBulkSettle={handleBulkSettle}
-          isAllSelected={isAllSelected}
-        />
-      )}
-
-      {/* 목록 */}
       <AppFlashList
         data={groupedSettlements}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        // 그룹 카드는 펼침 가능하여 높이가 가변적 (기본 약 200, 펼침 시 최대 ~500)
-        estimatedItemSize={250}
+        // 그룹 카드는 펼침 가능하여 높이가 가변적 (기본 약 180, 펼침 시 최대 ~450)
+        estimatedItemSize={220}
         refreshControl={
           onRefresh ? (
             <RefreshControl

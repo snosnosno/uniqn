@@ -32,8 +32,8 @@ export type JobPostingCollaboratorData = z.infer<typeof jobPostingCollaboratorSc
  * UI 에서 닉네임으로 검색 → userId 확정 후 호출
  */
 export const addCollaboratorSchema = z.object({
-  jobPostingId: z.string().uuid({ message: '올바른 공고 ID 가 아닙니다' }),
-  userId: z.string().uuid({ message: '올바른 사용자 ID 가 아닙니다' }),
+  jobPostingId: z.string().uuid({ message: '올바른 공고 ID가 아닙니다' }),
+  userId: z.string().uuid({ message: '올바른 사용자 ID가 아닙니다' }),
 });
 
 export type AddCollaboratorData = z.infer<typeof addCollaboratorSchema>;
@@ -46,7 +46,7 @@ export type AddCollaboratorData = z.infer<typeof addCollaboratorSchema>;
  * 협업자 추가용 사용자 검색 (닉네임 prefix)
  */
 export const searchCollaboratorCandidateSchema = z.object({
-  jobPostingId: z.string().uuid({ message: '올바른 공고 ID 가 아닙니다' }),
+  jobPostingId: z.string().uuid({ message: '올바른 공고 ID가 아닙니다' }),
   nicknameQuery: z
     .string({ error: '닉네임을 입력해주세요' })
     .trim()
@@ -62,8 +62,8 @@ export type SearchCollaboratorCandidateData = z.infer<typeof searchCollaboratorC
 // ============================================================================
 
 export const removeCollaboratorSchema = z.object({
-  jobPostingId: z.string().uuid({ message: '올바른 공고 ID 가 아닙니다' }),
-  userId: z.string().uuid({ message: '올바른 사용자 ID 가 아닙니다' }),
+  jobPostingId: z.string().uuid({ message: '올바른 공고 ID가 아닙니다' }),
+  userId: z.string().uuid({ message: '올바른 사용자 ID가 아닙니다' }),
 });
 
 export type RemoveCollaboratorData = z.infer<typeof removeCollaboratorSchema>;

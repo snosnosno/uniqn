@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\" \"app/**/*.{ts,tsx,js,jsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\" \"app/**/*.{ts,tsx,js,jsx}\"",
     "type-check": "tsc --noEmit",
+    "type-check:e2e": "tsc --noEmit -p e2e/tsconfig.json",
     "knip": "knip",
     "knip:gate": "knip --max-issues=1450",
     "check:rpc-migrations": "node scripts/check-rpc-migrations.js",

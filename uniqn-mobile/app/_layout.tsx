@@ -41,6 +41,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { initializeNetworkState } from '@/services/offline/networkState';
 import { logger } from '@/utils/logger';
+import { loadFailed } from '@/constants/messages';
 
 // 웹 전용: NativeWind Metro 컴파일이 CSS 변수 기반 컬러 룰을 생성하지 않으므로 직접 주입.
 // 또한 secondary 팔레트가 서버 캐시로 인해 구 warm gray 값을 가질 수 있어 중립 그레이로 재정의.
@@ -267,7 +268,7 @@ function AppContent() {
   if (gate.kind === 'error') {
     return (
       <View className="flex-1 bg-white dark:bg-surface-dark">
-        <ErrorState error={error} title="앱을 불러올 수 없습니다" onRetry={retry} />
+        <ErrorState error={error} title={loadFailed('앱')} onRetry={retry} />
       </View>
     );
   }

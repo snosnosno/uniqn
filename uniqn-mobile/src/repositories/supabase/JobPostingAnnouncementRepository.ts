@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES, toError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
+import { notFound } from '@/constants/messages';
 
 const TABLE = 'job_posting_announcements';
 
@@ -53,7 +54,7 @@ function toAnnouncementBusinessError(error: unknown): BusinessError | null {
   }
   if (message.includes('NOT_FOUND')) {
     return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '공고를 찾을 수 없습니다.',
+      userMessage: notFound('공고'),
     });
   }
   return null;

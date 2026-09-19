@@ -10,8 +10,14 @@
  *   3. 구버전에서 올라온 평문 세션은 옮기고 **원본을 지운다** — 안 지우면 하드닝이 무의미하다.
  *   4. SecureStore 가 실패하면 AsyncStorage 로 떨어진다 — 대안이 "로그인 유지 불가"라서다.
  *      폴백 결과는 하드닝 이전과 같으므로 지금보다 나빠지지 않는다.
+ *   5. (Sentry #145607041) 조각은 `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` 로 기록한다 —
+ *      기본값 `WHEN_UNLOCKED` 는 기기가 잠긴 동안 읽히지 않아 백그라운드 세션 조회가 터진다.
+ *      옵션만 바꾸면 기존 사용자는 그대로이므로(SecItemUpdate 는 접근 수준을 안 바꾼다)
+ *      옛 형식 인덱스는 **지운 뒤 다시 넣는다**.
  */
 
+import * as SecureStore from 'expo-secure-store';
+import { logger } from '@/utils/logger';
 import {
   supabaseSessionStorage,
   chunkByUtf8Bytes,
@@ -21,15 +27,33 @@ import {
 const mockSecureStore = new Map<string, string>();
 const mockAsyncStorage = new Map<string, string>();
 
-let mockSecureStoreShouldFail = false;
+/** 실기기의 `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` 에 대응하는 상수값. */
+const AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY = 1;
+
+type FailureMode = false | 'generic' | 'locked';
+let mockSecureStoreShouldFail: FailureMode = false;
+
+/** 실기기가 잠겼을 때 expo-secure-store 가 던지는 것과 같은 형태의 에러. */
+function mockKeychainError(): Error {
+  if (mockSecureStoreShouldFail === 'locked') {
+    const error = new Error(
+      "Calling the 'getValueWithKeyAsync' function has failed\n" +
+        '→ Caused by: User interaction is not allowed.'
+    );
+    (error as { code?: string }).code = 'ERR_KEY_CHAIN';
+    return error;
+  }
+  return new Error('keychain unavailable');
+}
 
 jest.mock('expo-secure-store', () => ({
+  AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1,
   setItemAsync: jest.fn(async (key: string, value: string) => {
-    if (mockSecureStoreShouldFail) throw new Error('keychain unavailable');
+    if (mockSecureStoreShouldFail) throw mockKeychainError();
     mockSecureStore.set(key, value);
   }),
   getItemAsync: jest.fn(async (key: string) => {
-    if (mockSecureStoreShouldFail) throw new Error('keychain unavailable');
+    if (mockSecureStoreShouldFail) throw mockKeychainError();
     return mockSecureStore.get(key) ?? null;
   }),
   deleteItemAsync: jest.fn(async (key: string) => {
@@ -175,7 +199,7 @@ describe('구버전 평문 세션 마이그레이션', () => {
 
 describe('SecureStore 장애 시 가용성 우선 폴백', () => {
   it('저장이 실패하면 AsyncStorage 로 떨어진다 (로그인 유지 불가보다는 낫다)', async () => {
-    mockSecureStoreShouldFail = true;
+    mockSecureStoreShouldFail = 'generic';
 
     await supabaseSessionStorage.setItem(SESSION_KEY, 'session-value');
 
@@ -184,8 +208,110 @@ describe('SecureStore 장애 시 가용성 우선 폴백', () => {
 
   it('조회가 실패해도 폴백 값을 찾아낸다', async () => {
     mockAsyncStorage.set(SESSION_KEY, 'session-value');
-    mockSecureStoreShouldFail = true;
+    mockSecureStoreShouldFail = 'generic';
 
     await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('session-value');
+  });
+
+  it('폴백으로 저장된 새 세션이 SecureStore 의 옛 조각을 이긴다', async () => {
+    // 회전 전 세션이 조각으로 들어가 있다
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'old-session');
+
+    // 잠금 중 토큰이 회전돼 폴백 평문으로만 저장됐다
+    mockSecureStoreShouldFail = 'locked';
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'rotated-session');
+    mockSecureStoreShouldFail = false;
+
+    // 옛 조각을 돌려주면 이미 폐기된 refresh token 으로 갱신을 시도하다 세션이 끊긴다
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('rotated-session');
+
+    // 되찾은 뒤에는 조각으로 승격되고 평문은 남지 않는다
+    expect(mockAsyncStorage.has(SESSION_KEY)).toBe(false);
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('rotated-session');
+  });
+
+  it('SecureStore 저장 성공 시 이전 폴백 평문을 지운다', async () => {
+    mockAsyncStorage.set(SESSION_KEY, 'stale-plaintext');
+
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'fresh-session');
+
+    expect(mockAsyncStorage.has(SESSION_KEY)).toBe(false);
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('fresh-session');
+  });
+});
+
+describe('키체인 접근 수준 (Sentry #145607041)', () => {
+  it('모든 조각을 AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY 로 기록한다', async () => {
+    // 기본값 WHEN_UNLOCKED 면 기기가 잠긴 동안 백그라운드 조회가 전부 실패한다
+    await supabaseSessionStorage.setItem(SESSION_KEY, makeLargeSession());
+
+    const calls = jest.mocked(SecureStore.setItemAsync).mock.calls;
+    expect(calls.length).toBeGreaterThan(1);
+    calls.forEach(([, , options]) => {
+      expect(options?.keychainAccessible).toBe(AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY);
+    });
+  });
+
+  it('옛 형식 조각은 덮어쓰지 않고 지운 뒤 다시 넣는다', async () => {
+    // v1 = 접두사 없는 개수. 실기기에서는 WHEN_UNLOCKED 로 찍혀 있는 조각이다.
+    // SecItemUpdate 는 kSecAttrAccessible 을 안 바꾸므로 삭제가 없으면 영원히 안 고쳐진다.
+    mockSecureStore.set(`${SESSION_KEY}.__n`, '2');
+    mockSecureStore.set(`${SESSION_KEY}.0`, 'old-');
+    mockSecureStore.set(`${SESSION_KEY}.1`, 'session');
+
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'new-session');
+
+    const deleted = jest.mocked(SecureStore.deleteItemAsync).mock.calls.map(([key]) => key);
+    expect(deleted).toContain(`${SESSION_KEY}.0`);
+    expect(deleted).toContain(`${SESSION_KEY}.1`);
+    expect(mockSecureStore.get(`${SESSION_KEY}.__n`)).toBe('v2:1');
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('new-session');
+  });
+
+  it('옛 형식으로 저장된 세션을 그대로 읽어낸다 (재로그인 없음)', async () => {
+    mockSecureStore.set(`${SESSION_KEY}.__n`, '2');
+    mockSecureStore.set(`${SESSION_KEY}.0`, 'old-');
+    mockSecureStore.set(`${SESSION_KEY}.1`, 'session');
+
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBe('old-session');
+  });
+
+  it('현재 형식은 다시 지우지 않는다 (매 갱신마다 삭제-재삽입 금지)', async () => {
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'first');
+    jest.mocked(SecureStore.deleteItemAsync).mockClear();
+
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'second');
+
+    expect(jest.mocked(SecureStore.deleteItemAsync)).not.toHaveBeenCalled();
+  });
+});
+
+describe('기기 잠금은 에러가 아니다 (Sentry 소음 차단)', () => {
+  it('잠금으로 조회가 막히면 error 가 아니라 warn 으로 남긴다', async () => {
+    mockSecureStoreShouldFail = 'locked';
+
+    // logger.error 는 프로덕션에서 Sentry 로 전송된다 — 정상 동작을 이슈로 올리면 안 된다
+    await expect(supabaseSessionStorage.getItem(SESSION_KEY)).resolves.toBeNull();
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('잠금으로 저장이 막혀도 error 가 아니라 warn 이고, 세션은 폴백으로 유지된다', async () => {
+    mockSecureStoreShouldFail = 'locked';
+
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'session-value');
+
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
+    expect(mockAsyncStorage.get(SESSION_KEY)).toBe('session-value');
+  });
+
+  it('잠금이 아닌 진짜 키체인 장애는 error 로 남긴다 (침묵 금지)', async () => {
+    mockSecureStoreShouldFail = 'generic';
+
+    await supabaseSessionStorage.setItem(SESSION_KEY, 'session-value');
+
+    expect(logger.error).toHaveBeenCalled();
   });
 });

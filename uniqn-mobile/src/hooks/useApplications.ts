@@ -28,7 +28,6 @@ import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { STATUS } from '@/constants';
 import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
-import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
 
 /**
  * 스케줄 캐시 payload 에서 해당 지원의 일정을 걷어낸다 (낙관 갱신용).
@@ -72,8 +71,6 @@ interface SubmitApplicationV2Params {
 interface RequestCancellationParams {
   applicationId: string;
   reason: string;
-  wantsSubstitutePost?: boolean;
-  applicantContext?: { name: string; role: BoardAuthorRole; jobSummary: BoardJobSummary };
 }
 
 const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
@@ -270,10 +267,8 @@ export function useApplications() {
         {
           applicationId: params.applicationId,
           reason: params.reason,
-          wantsSubstitutePost: params.wantsSubstitutePost,
         },
-        user.uid,
-        params.applicantContext
+        user.uid
       );
     },
     onMutate: async ({ applicationId }) => {

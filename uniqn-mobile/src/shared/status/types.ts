@@ -43,12 +43,8 @@ export type PayrollStatus = 'pending' | 'completed' | 'failed';
 // 'failed' 는 스태프 입장에서 "아직 못 받았다" 이므로 pending 과 같은 칸에 든다.
 export type SettlementDisplayStatus = 'pending' | 'completed';
 
-/** 데이터 상태(3값) → 화면 어휘(2값). 정산 상태를 화면에 그리는 모든 경로는 이걸 거친다. */
-export function toSettlementDisplayStatus(
-  status: PayrollStatus | null | undefined
-): SettlementDisplayStatus {
-  return status === 'completed' ? 'completed' : 'pending';
-}
+// `toSettlementDisplayStatus`(데이터 3값 → 화면 2값)는 구인자 IA S2 에서 없앴다 — 지급 상태를
+// 화면에 그리는 경로(배지·필터)가 전부 사라져 소비처가 0이 됐다. 앱은 돈을 보내지 않는다.
 
 /**
  * 근무 기록이 **서버 정산 게이트를 통과할 수 있는 status** 인가.

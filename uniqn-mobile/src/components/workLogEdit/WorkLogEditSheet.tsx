@@ -49,7 +49,8 @@ import { MAX_WORK_TIME_REASON_LENGTH } from '@/domains/staff';
 import { isAppError } from '@/errors';
 import { useUpdateSlot } from '@/hooks/workSchedule';
 import { useToastStore } from '@/stores/toastStore';
-import type { JobPosting, StaffRole } from '@/types';
+import type { JobPosting, StaffRole, WorkTimeModification } from '@/types';
+import { TimeNormalizer } from '@/shared/time';
 import type { WorkLogStatus } from '@/shared/status';
 import { formatDate, parseDateString } from '@/utils/date';
 
@@ -127,6 +128,11 @@ export interface WorkLogEditInitial {
   scheduledUnreadable: boolean;
   checkIn: Date | null;
   checkOut: Date | null;
+  /** QR 서버 원본 시각. 편집 대상이 아니라 변경 근거로만 표시한다. */
+  checkInScannedAt?: Date | null;
+  checkOutScannedAt?: Date | null;
+  /** 관리자 시간 수정 이력. QR 원본과 적용값의 관계를 한 화면에서 감사한다. */
+  modificationHistory?: WorkTimeModification[];
   role: StaffRole;
   /**
    * `other` 역할의 커스텀 이름('바리스타').
@@ -318,11 +324,14 @@ export function WorkLogEditSheet({
     form.scheduledStart === null;
 
   const hasChanges = Object.keys(patch).length > 0;
+  const attendanceDirty = touchesAttendance(patch);
+  const needsReason = attendanceDirty && reason.trim().length === 0;
   const canSave =
     !readOnly &&
     hasChanges &&
     !insight.hasBlockingError &&
     !scheduledUnresolved &&
+    !needsReason &&
     !updateSlot.isPending;
 
   /** 🔑 요약은 **폼의 현재 값**을 읽는다 — 이름 칩으로 고른 결과가 접힘 줄에도 즉시 보여야 한다. */
@@ -334,8 +343,6 @@ export function WorkLogEditSheet({
    * 🔑 폼 값을 다시 비교하지 않고 **보낼 패치의 키 존재**로 판정한다. 비교 규칙이 두 벌이 되면
    *    배지와 서버가 갈릴 수 있고, 그 갈림이 곧 "배지가 거짓말한다"는 결함이다.
    */
-  const attendanceDirty = touchesAttendance(patch);
-
   /**
    * 이름 없는 '기타' 안내.
    *
@@ -504,6 +511,29 @@ export function WorkLogEditSheet({
           </Text>
         </View>
 
+        {initial.checkInScannedAt || initial.checkOutScannedAt ? (
+          <View
+            testID="qr-scan-audit"
+            className="mb-3 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20"
+          >
+            <Text className="font-sans-semibold text-sm text-primary-800 dark:text-primary-200">
+              QR 원본 기록
+            </Text>
+            <Text className="mt-1 font-sans text-sm text-primary-700 dark:text-primary-300">
+              {initial.checkInScannedAt
+                ? `출근 스캔 ${formatClock(initial.checkInScannedAt)}`
+                : '출근 스캔 없음'}
+              {' · '}
+              {initial.checkOutScannedAt
+                ? `퇴근 스캔 ${formatClock(initial.checkOutScannedAt)}`
+                : '퇴근 스캔 없음'}
+            </Text>
+            <Text className="mt-1 font-sans text-xs text-content-secondary dark:text-secondary-400">
+              아래 적용 시각을 수정해도 이 원본 시각은 유지됩니다.
+            </Text>
+          </View>
+        ) : null}
+
         {lockReason ? (
           // 읽기 전용의 **눈에 보이는** 신호. 칩의 `disabled`·`accessibilityState` 는 웹에서
           // 무효라 이 문구와 아래 흐린 처리가 사실상 유일한 표현이다.
@@ -566,15 +596,69 @@ export function WorkLogEditSheet({
           {/* 수정 사유 — 실적·역할을 바꿀 때만 이력에 실린다(색·메모만 바꾸면 보내지 않는다). */}
           <View className="mt-3">
             <Input
-              label="수정 사유"
+              label={attendanceDirty ? '수정 사유 *' : '수정 사유'}
               value={reason}
               onChangeText={setReason}
-              placeholder="예: QR 인식 오류로 실제 출근 시간과 다름 (선택)"
+              placeholder={
+                attendanceDirty
+                  ? '예: 현장 확인 후 실제 출근 시간으로 조정'
+                  : '시간이나 역할 변경 사유 (선택)'
+              }
               editable={!readOnly}
               maxLength={MAX_WORK_TIME_REASON_LENGTH}
               accessibilityLabel="수정 사유"
             />
+            {needsReason ? (
+              <Text className="mt-1 font-sans text-xs text-error-600 dark:text-error-400">
+                출퇴근 시각을 변경하려면 사유를 입력해주세요.
+              </Text>
+            ) : null}
           </View>
+
+          {initial.modificationHistory?.length ? (
+            <View className="mt-4" testID="work-time-modification-history">
+              <Text className="mb-2 font-sans-semibold text-sm text-content-secondary">
+                수정 이력 {initial.modificationHistory.length}회
+              </Text>
+              <View className="rounded-lg border border-divider bg-surface-page px-3 dark:bg-surface">
+                {[...initial.modificationHistory].reverse().map((entry, index) => {
+                  const changedAt = TimeNormalizer.parseTime(entry.modifiedAt);
+                  const previousStart = TimeNormalizer.parseTime(entry.previousStartTime);
+                  const newStart = TimeNormalizer.parseTime(entry.newStartTime);
+                  const previousEnd = TimeNormalizer.parseTime(entry.previousEndTime);
+                  const newEnd = TimeNormalizer.parseTime(entry.newEndTime);
+                  return (
+                    <View
+                      key={`${changedAt?.getTime() ?? 'unknown'}-${index}`}
+                      className="border-b border-divider py-3 last:border-b-0"
+                    >
+                      {previousStart || newStart ? (
+                        <Text className="font-sans-medium text-sm text-content-primary">
+                          출근 {previousStart ? formatClock(previousStart) : '미정'} →{' '}
+                          {newStart ? formatClock(newStart) : '미정'}
+                        </Text>
+                      ) : null}
+                      {previousEnd || newEnd ? (
+                        <Text className="font-sans-medium text-sm text-content-primary">
+                          퇴근 {previousEnd ? formatClock(previousEnd) : '미정'} →{' '}
+                          {newEnd ? formatClock(newEnd) : '미정'}
+                        </Text>
+                      ) : null}
+                      <Text className="mt-1 font-sans text-xs text-content-muted">
+                        {changedAt
+                          ? `${formatDate(changedAt)} ${formatClock(changedAt)}`
+                          : '수정 시각 없음'}
+                        {entry.modifiedBy ? ` · ${entry.modifiedBy}` : ''}
+                      </Text>
+                      <Text className="mt-1 font-sans text-xs text-content-secondary">
+                        {entry.reason || '수정 사유 없음'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
 
           <View className="mt-4">
             <CollapsibleSection title="역할" summary={roleSummary}>

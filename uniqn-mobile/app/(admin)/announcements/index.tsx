@@ -17,6 +17,7 @@ import { AnnouncementCard } from '@/components/admin/announcements';
 import { ErrorState } from '@/components/ui';
 import type { AnnouncementStatus, Announcement } from '@/types';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
+import { loadFailed } from '@/constants/messages';
 
 type FilterStatus = AnnouncementStatus | 'all';
 
@@ -170,7 +171,7 @@ export default function AdminAnnouncementsPage() {
           // 같은 공지를 다시 쓰게 된다(감사 A4).
           <ErrorState
             error={error}
-            title="공지사항을 불러오지 못했어요"
+            title={loadFailed('공지사항')}
             onRetry={() => {
               void refetch();
             }}

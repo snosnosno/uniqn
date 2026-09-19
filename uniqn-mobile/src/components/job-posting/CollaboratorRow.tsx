@@ -8,8 +8,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Image } from 'expo-image';
-import { UserIcon } from '@/components/icons';
+import { Avatar } from '@/components/ui/Avatar';
 import { confirmAction } from '@/utils/confirmAction';
 import { formatRelative } from '@/utils/formatters/date';
 import { triggerHaptic } from '@/utils/haptics';
@@ -56,18 +55,23 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
     // 🔑 양방향 모두 확인을 거친다. 올리는 쪽은 권한이 넓어져서, 내리는 쪽은 상대가 하던
     //    일을 즉시 못 하게 돼서다 — 작은 배지를 잘못 눌러 조용히 강등되면 상대는
     //    "왜 갑자기 안 되지" 를 혼자 겪는다.
+    // ⚠️ `who` 는 사람 이름이라 받침을 알 수 없다 — `${who}가` 처럼 조사를 박으면
+    //    "박지훈가" 가 된다. 조사 헬퍼가 생기기 전까지는 받침과 무관한 '에게/에게는'
+    //    구조를 쓴다(문구 감사 2026-08-24 P2-1).
     if (isViewer) {
       confirmAction({
         title: '관리 권한을 줄까요?',
-        message: `${who}가 공고 수정·지원자 확정·정산까지 할 수 있게 됩니다.`,
+        message: `${who}에게 공고 수정·지원자 확정·정산 권한이 생겨요.`,
         confirmText: '관리 권한 주기',
         onConfirm: () => onChangeRole(collaborator.userId, 'manager'),
       });
       return;
     }
+    // 🔒 보기 전용도 지원자 노쇼 횟수는 본다(20260813150000 결정 주석). 협업자는 관리로 추가되므로
+    //    보기 전용이 되는 길은 이 확인창뿐이다 — 사장이 모르고 지정하지 않도록 여기서 알린다(#478).
     confirmAction({
       title: '보기 전용으로 바꿀까요?',
-      message: `${who}는 공고를 볼 수는 있지만 수정·지원자 확정·정산은 할 수 없게 됩니다.`,
+      message: `${who}에게는 공고 열람만 남아요. 수정·지원자 확정·정산은 할 수 없어요.\n이 사람도 지원자 노쇼 횟수를 봅니다.`,
       confirmText: '보기 전용으로',
       onConfirm: () => onChangeRole(collaborator.userId, 'viewer'),
     });
@@ -75,18 +79,14 @@ export const CollaboratorRow = React.memo(function CollaboratorRow({
 
   return (
     <View className="flex-row items-center gap-3 py-3 px-4 bg-surface-page">
-      {/* Avatar */}
-      <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center overflow-hidden">
-        {collaborator.photoUrl ? (
-          <Image
-            source={{ uri: collaborator.photoUrl }}
-            style={{ width: 40, height: 40 }}
-            contentFit="cover"
-          />
-        ) : (
-          <UserIcon size={20} color="#9CA3AF" />
-        )}
-      </View>
+      {/* 공용 Avatar 경유 — 여기만 원형(rounded-full)에 raw bg-gray-100 을 쓰고 있어
+          같은 앱에서 아바타 모양이 두 가지였다. Avatar 는 rounded-sm(DESIGN.md)에
+          이름 이니셜 fallback·blurhash 까지 갖고 있고, md 가 정확히 h-10 w-10 이다. */}
+      <Avatar
+        source={collaborator.photoUrl ?? undefined}
+        name={collaborator.displayName ?? undefined}
+        size="md"
+      />
 
       {/* 이름 + 이메일 + 추가일 */}
       <View className="flex-1 min-w-0">

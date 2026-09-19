@@ -21,6 +21,7 @@ import {
   useSaveNotificationSettings,
   useNotificationPermission,
 } from '@/hooks/useNotifications';
+import { saveFailed } from '@/constants/messages';
 
 // ============================================================================
 // Mocks - Supabase
@@ -1036,7 +1037,7 @@ describe('useNotifications Hooks', () => {
 
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'error',
-        message: '알림 설정 저장에 실패했습니다.',
+        message: saveFailed('알림 설정'),
       });
     });
   });

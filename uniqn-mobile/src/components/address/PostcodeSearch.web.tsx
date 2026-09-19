@@ -20,6 +20,7 @@ import {
   POSTCODE_SCRIPT_SRC,
   POSTCODE_WIDGET_OPTIONS,
 } from './postcodeWidget';
+import { loadFailed } from '@/constants/messages';
 
 interface DaumPostcodeInstance {
   embed: (element: HTMLElement, options?: { autoClose?: boolean }) => void;
@@ -106,7 +107,7 @@ export function PostcodeSearch({ height, onComplete, onError }: PostcodeSearchPr
         logger.error('우편번호 스크립트 로드 실패', error instanceof Error ? error : undefined, {
           component: 'PostcodeSearch.web',
         });
-        onErrorRef.current('우편번호 검색을 불러오지 못했습니다. 네트워크를 확인해주세요');
+        onErrorRef.current(`${loadFailed('우편번호 검색')}. 네트워크를 확인해주세요`);
       });
 
     return () => {

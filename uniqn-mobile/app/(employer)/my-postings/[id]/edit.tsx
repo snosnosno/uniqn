@@ -22,6 +22,7 @@ import { draftToValues, formValuesToDraft, valuesToUpdateInput } from '@/utils/o
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import type { OrderSheetFormValues, OrderSheetValues } from '@/schemas/orderSheet.schema';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import { loadFailed, notFound } from '@/constants/messages';
 
 /**
  * 공고 수정(S3) — 전 타입(지원·급구·대회·고정) 주문서 단일 경로.
@@ -39,7 +40,6 @@ export default function EditJobPostingScreen() {
   // 낙관적 잠금 baseline 의 전제 — 아래 useOptimisticLockBaseline 주석 — 는 그대로 유지된다).
   const {
     job: existingJob,
-    isFixed: contextIsFixed,
     isLoading: isJobLoading,
     error: jobError,
     handleShowQR,
@@ -47,8 +47,7 @@ export default function EditJobPostingScreen() {
   const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
   const headerJobTitle = existingJob?.title ?? null;
   const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
-  // 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
-  const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerRightAction = <HeaderQRAction onPress={handleShowQR} />;
 
   const [isDirty, setIsDirty] = useState(false);
   // 연쇄 전환 딤 위임(B1) — OrderSheetScreen 내부 딤은 형제인 StackHeader 를 못 덮는다.
@@ -168,12 +167,12 @@ export default function EditJobPostingScreen() {
         />
         <View className="flex-1 items-center justify-center p-4">
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
-            공고를 불러올 수 없습니다
+            {loadFailed('공고')}
           </Text>
           {/* 원시 error.message 노출 금지 — 개발자 메시지가 그대로 사용자에게 간다.
               AppError 는 userMessage, 일반 Error 는 중앙 sanitize 를 거친다. */}
           <Text className="mb-4 text-center text-content-secondary font-sans">
-            {jobError ? extractUserMessage(jobError) : '공고 정보를 찾을 수 없습니다.'}
+            {jobError ? extractUserMessage(jobError) : notFound('공고 정보')}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
             <Text className="font-sans-semibold text-content-onGold">돌아가기</Text>

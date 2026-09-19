@@ -10,7 +10,6 @@ import { useShare } from '@/hooks/useShare';
 import { SHARE_SOURCES } from '@/constants/shareSource';
 import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
-import { isFixedJobPosting } from '@/utils/normalizers';
 import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/types';
 
 /**
@@ -79,7 +78,6 @@ export const JobPostingCard = memo(function JobPostingCard({
   );
   const stripeTone = POSTING_STRIPE_TONE[posting.status];
   const statusLabel = getPostingStatusMeta(posting.status).label;
-  const isFixed = isFixedJobPosting(posting);
   const { shareJob, isSharing } = useShare();
 
   // 선택 모드에서는 카드 전체가 체크박스처럼 동작한다 — 작은 체크 박스만 탭 타깃으로 두면
@@ -148,18 +146,19 @@ export const JobPostingCard = memo(function JobPostingCard({
                 </Pressable>
               ) : null}
 
-              {/* 고정 공고는 QR 진입점을 노출하지 않는다. 고정 공고의 work_log 는 스태프·공고당
-                  1행이고 그 행을 scheduled 로 되돌리는 코드가 없어, 2일차부터 모든 스캔이
-                  "이미 퇴근 처리됐습니다"로 영구 실패한다. 행 수명 재설계는 별도 PR.
-                  (헤더 QR 버튼의 동일한 게이트는 app/(employer)/my-postings/[id]/_layout.tsx 참고) */}
-              {!isFixed && !selectionMode ? (
+              {/* 고정 공고도 서버가 FIXED_SCHEDULE 템플릿에서 날짜별 근무를 만들므로
+                  같은 공고 QR을 반복 사용한다. 선택 모드에서만 오조작 방지로 감춘다. */}
+              {!selectionMode ? (
                 <Pressable
                   onPress={() => onShowQR(posting)}
-                  className="p-1.5 active:opacity-70"
+                  className="min-h-[44px] flex-row items-center rounded-md bg-primary-50 px-3 py-2 active:opacity-70 dark:bg-primary-900/20"
                   accessibilityLabel="현장 QR 표시"
                   accessibilityRole="button"
                 >
                   <QrCodeIcon size={18} color="#B8962E" />
+                  <Text className="ml-1.5 text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
+                    현장 QR 표시
+                  </Text>
                 </Pressable>
               ) : null}
 

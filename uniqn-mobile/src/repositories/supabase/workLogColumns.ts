@@ -9,7 +9,7 @@
 
 // work_logs SELECT 컬럼 화이트리스트(정본). 컬럼 추가/삭제는 여기서만.
 export const WORK_LOG_COLUMNS =
-  'id,application_id,assignment_group_id,check_in_ts,check_out_ts,color,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,end_time_source,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
+  'id,application_id,assignment_group_id,check_in_scanned_at,check_in_ts,check_out_scanned_at,check_out_ts,color,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,end_time_source,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
 
 /**
  * work_logs 에 **실재하는** 전체 컬럼 (쓰기 검증용 정본)
@@ -27,7 +27,9 @@ export const WORK_LOG_COLUMNS =
 export const WORK_LOG_ALL_COLUMNS: readonly string[] = [
   'application_id',
   'assignment_group_id',
+  'check_in_scanned_at',
   'check_in_ts',
+  'check_out_scanned_at',
   'check_out_ts',
   'clocked_out_raw',
   'color',
@@ -72,5 +74,7 @@ export function applyTsPreference(camel: Record<string, unknown>): Record<string
     ...camel,
     checkInTime: camel.checkInTs ?? null,
     checkOutTime: camel.checkOutTs ?? null,
+    checkInScannedAt: camel.checkInScannedAt ?? null,
+    checkOutScannedAt: camel.checkOutScannedAt ?? null,
   };
 }

@@ -14,6 +14,7 @@ import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
 import { queryKeys } from '@/lib/queryClient';
 import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import { saveFailed } from '@/constants/messages';
 
 const toast = {
   success: (m: string) => useToastStore.getState().success(m),
@@ -56,7 +57,7 @@ export function useSaveBlindPreset() {
     },
     onError: (e) => {
       logger.error('ops 블라인드 프리셋 저장 실패', toError(e));
-      toast.error(extractUserMessage(e) || '프리셋 저장에 실패했습니다');
+      toast.error(extractUserMessage(e) || saveFailed('프리셋'));
     },
   });
 }

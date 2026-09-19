@@ -33,6 +33,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { notFound } from '@/constants/messages';
 
 // ============================================================================
 // Constants
@@ -249,7 +250,7 @@ export function ReportModal({
   // 그 롤백은 신고 자체를 지우는 위험한 동작이 된다. 업로드가 앞서면 실패 시 "신고를 안 만들면" 끝이다.
   const handleSubmit = useCallback(async () => {
     if (!reportTarget) {
-      addToast({ type: 'error', message: '신고 대상을 찾을 수 없습니다.' });
+      addToast({ type: 'error', message: notFound('신고 대상') });
       return;
     }
 
@@ -275,7 +276,7 @@ export function ReportModal({
         });
         addToast({
           type: 'error',
-          message: '증빙 사진 업로드에 실패했어요. 신고가 접수되지 않았습니다.',
+          message: '증빙 사진 업로드에 실패했어요. 신고가 접수되지 않았어요.',
         });
         return;
       }

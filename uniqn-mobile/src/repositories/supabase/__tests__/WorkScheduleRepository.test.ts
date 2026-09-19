@@ -90,6 +90,7 @@ describe('WorkScheduleRepository', () => {
             is_container: true,
             color: null,
             notes: null,
+            modification_history: [{ reason: '현장 확인 후 수정' }],
           },
         ],
         error: null,
@@ -109,6 +110,7 @@ describe('WorkScheduleRepository', () => {
         jobPostingId: 'v1',
         isContainer: true,
         role: 'dealer',
+        modificationHistory: [{ reason: '현장 확인 후 수정' }],
       });
     });
 
@@ -131,6 +133,8 @@ describe('WorkScheduleRepository', () => {
             notes: null,
             check_in_ts: '2026-08-10T09:00:00+00:00',
             check_out_ts: null,
+            check_in_scanned_at: '2026-08-10T09:02:13+00:00',
+            check_out_scanned_at: null,
             payroll_status: 'pending',
             date: '2026-08-10',
           },
@@ -143,6 +147,8 @@ describe('WorkScheduleRepository', () => {
       expect(rows[0].checkInTs).toBe('2026-08-10T09:00:00+00:00');
       // 미기록 퇴근은 null 그대로 — 0시로 뭉개면 "안 찍었다"가 사라진다.
       expect(rows[0].checkOutTs).toBeNull();
+      expect(rows[0].checkInScannedAt).toBe('2026-08-10T09:02:13+00:00');
+      expect(rows[0].checkOutScannedAt).toBeNull();
       expect(rows[0].payrollStatus).toBe('pending');
       expect(rows[0].date).toBe('2026-08-10');
     });

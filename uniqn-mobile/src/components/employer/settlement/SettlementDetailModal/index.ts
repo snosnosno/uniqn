@@ -1,5 +1,5 @@
 /**
- * UNIQN Mobile - 정산 상세 모달 배럴 export
+ * UNIQN Mobile - 계산 근거 모달 배럴 export
  *
  * @description SettlementDetailModal 폴더의 모든 컴포넌트 및 타입 export
  */
@@ -17,7 +17,6 @@ export { SettlementAmountSection } from './SettlementAmountSection';
 export { TimeModificationHistory } from './TimeModificationHistory';
 export { AmountModificationHistory } from './AmountModificationHistory';
 export { SettlementActionButtons } from './SettlementActionButtons';
-export { SettlementCompletedBanner } from './SettlementCompletedBanner';
 
 // Types
 export type {
@@ -35,10 +34,6 @@ export type {
   SettlementModification,
 } from './AmountModificationHistory';
 export type { SettlementActionButtonsProps } from './SettlementActionButtons';
-export type { SettlementCompletedBannerProps } from './SettlementCompletedBanner';
-
-// Constants
-export { PAYROLL_STATUS_CONFIG } from './constants';
 
 // Re-export settlement types for convenience
 export type { SalaryType, SalaryInfo } from '@/utils/settlement';

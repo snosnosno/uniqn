@@ -119,15 +119,12 @@ describe('useQRCode Hooks', () => {
       });
 
       expect(mockProcessQRCheckIn).toHaveBeenCalledWith(scanResult.qrString, 'test-user-id');
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '출근이 완료되었습니다.',
-      });
+      expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
       expect(onSuccess).toHaveBeenCalled();
     });
 
-    // 고정 QR 은 출근/퇴근을 구분하지 않는다 — 같은 문자열이라도 서버가 현재 status 로 결정한다.
-    it('should process checkOut with the same fixed venue QR', async () => {
+    // 같은 QR에서 출근/퇴근 액션은 서버 응답으로 해소된다.
+    it('should process server-resolved checkOut with the same fixed venue QR', async () => {
       const mockScanResult = {
         success: true,
         workLogId: 'worklog-123',
@@ -148,10 +145,41 @@ describe('useQRCode Hooks', () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '퇴근이 완료되었습니다.',
-      });
+      expect(mockProcessQRCheckIn).toHaveBeenCalledWith(scanResult.qrString, 'test-user-id');
+
+      expect(mockAddToast).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
+    });
+
+    it('should expose multiple candidates and submit only the selected work log id', async () => {
+      mockProcessQRCheckIn
+        .mockResolvedValueOnce({
+          success: false,
+          requiresSelection: true,
+          selectionToken: 'selection-token',
+          candidates: [
+            { workLogId: 'wl-1', date: '2026-09-10', timeSlot: '18:00', action: 'checkIn' },
+            { workLogId: 'wl-2', date: '2026-09-10', timeSlot: '19:00', action: 'checkIn' },
+          ],
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          workLogId: 'wl-2',
+          action: 'checkIn',
+          message: '출근이 완료되었습니다.',
+        });
+      const { result } = renderHook(() => useQRCodeScanner({}));
+      const scanResult: QRCodeScanResult = { success: true, qrString: createVenueQRString() };
+
+      await act(async () => result.current.handleScanResult(scanResult));
+      expect(result.current.pendingCandidates).toHaveLength(2);
+
+      await act(async () => result.current.selectCandidate('wl-2'));
+      expect(mockProcessQRCheckIn).toHaveBeenLastCalledWith(
+        scanResult.qrString,
+        'test-user-id',
+        'wl-2',
+        'selection-token'
+      );
     });
 
     it('should handle processing error', async () => {
@@ -174,6 +202,7 @@ describe('useQRCode Hooks', () => {
         code: expect.any(String),
         message: '처리 실패',
         isRetryable: expect.any(Boolean),
+        kind: 'generic',
       });
       expect(onError).toHaveBeenCalled();
     });

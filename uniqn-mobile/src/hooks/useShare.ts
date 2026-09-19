@@ -20,6 +20,7 @@ import { jobPostingRepository } from '@/repositories';
 import { buildJobShareText } from '@/utils/jobShareMessage';
 import { canShareJob } from '@/domains/job-posting';
 import type { JobPosting } from '@/types';
+import { loadFailed } from '@/constants/messages';
 
 // ============================================================================
 // Types
@@ -203,14 +204,14 @@ export function useShare(): UseShareReturn {
 
         if (!job) {
           logger.warn('공유할 공고를 찾지 못함', { jobId });
-          toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+          toast.error(loadFailed('공고 정보', { retry: true }));
           return { success: false, error: new Error('공고를 찾을 수 없습니다') };
         }
 
         return await runJobShare(job, source);
       } catch (error) {
         logger.error('공고 공유 실패 (조회 단계)', toError(error), { jobId });
-        toast.error('공고 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        toast.error(loadFailed('공고 정보', { retry: true }));
         return { success: false, error: toError(error) };
       } finally {
         setIsSharing(false);

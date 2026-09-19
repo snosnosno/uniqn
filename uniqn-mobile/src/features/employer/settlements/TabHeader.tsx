@@ -1,6 +1,9 @@
 /**
- * UNIQN Mobile - 정산 화면 탭 헤더
- * StaffSettlementsScreen에서 추출. 렌더 결과·dark: 클래스 불변.
+ * UNIQN Mobile - [근무] 화면 탭 헤더
+ * StaffSettlementsScreen에서 추출.
+ *
+ * 구인자 IA S2 — 탭 이름을 `스태프 관리 / 정산` 에서 `스태프 / 금액` 으로 바꾸고 정산 대기 배지를
+ * 없앴다. 앱은 돈을 보내지 않으니 "대기" 건수가 없다. 내부 키(`'settlement'`)는 호출부 호환을 위해 둔다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -15,15 +18,17 @@ export interface TabHeaderProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   staffCount: number;
-  settlementCount: number;
 }
 
-export function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
+export function TabHeader({ activeTab, onTabChange, staffCount }: TabHeaderProps) {
   const { isDarkMode } = useThemeStore();
   const inactiveColor = isDarkMode ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500];
   const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
   const activeBadgeBg = isDarkMode ? '#2A2410' : '#F5EFDC';
   const inactiveBadgeBg = isDarkMode ? SECONDARY_PALETTE[800] : SECONDARY_PALETTE[100];
+
+  const staffColor = activeTab === 'staff' ? primaryColor : inactiveColor;
+  const amountColor = activeTab === 'settlement' ? primaryColor : inactiveColor;
 
   return (
     <View className="flex-row bg-surface-card border-b border-divider">
@@ -35,17 +40,12 @@ export function TabHeader({ activeTab, onTabChange, staffCount, settlementCount 
           borderBottomColor: primaryColor,
         }}
         accessibilityRole="tab"
-        accessibilityLabel="스태프 관리"
+        accessibilityLabel="스태프"
         accessibilityState={{ selected: activeTab === 'staff' }}
       >
-        <UsersIcon size={20} color={activeTab === 'staff' ? primaryColor : inactiveColor} />
-        <Text
-          className="ml-2 text-base font-sans-medium"
-          style={{
-            color: activeTab === 'staff' ? primaryColor : inactiveColor,
-          }}
-        >
-          스태프 관리
+        <UsersIcon size={20} color={staffColor} />
+        <Text className="ml-2 text-base font-sans-medium" style={{ color: staffColor }}>
+          스태프
         </Text>
         {staffCount > 0 && (
           <View
@@ -54,12 +54,7 @@ export function TabHeader({ activeTab, onTabChange, staffCount, settlementCount 
               backgroundColor: activeTab === 'staff' ? activeBadgeBg : inactiveBadgeBg,
             }}
           >
-            <Text
-              className="text-xs font-sans-medium"
-              style={{
-                color: activeTab === 'staff' ? primaryColor : inactiveColor,
-              }}
-            >
+            <Text className="text-xs font-sans-medium" style={{ color: staffColor }}>
               {staffCount}
             </Text>
           </View>
@@ -74,38 +69,13 @@ export function TabHeader({ activeTab, onTabChange, staffCount, settlementCount 
           borderBottomColor: primaryColor,
         }}
         accessibilityRole="tab"
-        accessibilityLabel="정산"
+        accessibilityLabel="금액"
         accessibilityState={{ selected: activeTab === 'settlement' }}
       >
-        <CurrencyWonIcon
-          size={20}
-          color={activeTab === 'settlement' ? primaryColor : inactiveColor}
-        />
-        <Text
-          className="ml-2 text-base font-sans-medium"
-          style={{
-            color: activeTab === 'settlement' ? primaryColor : inactiveColor,
-          }}
-        >
-          정산
+        <CurrencyWonIcon size={20} color={amountColor} />
+        <Text className="ml-2 text-base font-sans-medium" style={{ color: amountColor }}>
+          금액
         </Text>
-        {settlementCount > 0 && (
-          <View
-            className="ml-2 px-2 py-0.5 rounded-sm"
-            style={{
-              backgroundColor: activeTab === 'settlement' ? activeBadgeBg : inactiveBadgeBg,
-            }}
-          >
-            <Text
-              className="text-xs font-sans-medium"
-              style={{
-                color: activeTab === 'settlement' ? primaryColor : inactiveColor,
-              }}
-            >
-              {settlementCount}
-            </Text>
-          </View>
-        )}
       </Pressable>
     </View>
   );

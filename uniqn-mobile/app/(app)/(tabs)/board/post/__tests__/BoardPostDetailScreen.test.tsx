@@ -8,7 +8,6 @@ const mockUpdateComment = { isPending: false, mutateAsync: jest.fn(), mutate: je
 const mockSetStatus = { mutateAsync: jest.fn(), mutate: jest.fn() };
 const mockSetPinned = { mutate: jest.fn() };
 const mockToggleReaction = { mutate: jest.fn() };
-const mockToggleVote = { isPending: false, mutate: jest.fn() };
 const mockLockMutation = { isPending: false, mutateAsync: jest.fn() };
 const mockHideMutation = { isPending: false, mutateAsync: jest.fn() };
 const mockIncrementViewCount = { mutate: jest.fn() };
@@ -139,7 +138,6 @@ jest.mock('@/hooks/useBoard', () => ({
     setPinned: mockSetPinned,
     toggleReaction: mockToggleReaction,
   }),
-  useToggleBoardPostVote: () => mockToggleVote,
   useSetBoardPostLock: () => mockLockMutation,
   useHideBoardPost: () => mockHideMutation,
   useCreateBoardReport: () => ({
@@ -298,7 +296,7 @@ function createBoardDetailData(commentTree: ReturnType<typeof createComment>[]) 
   return {
     post: {
       id: 'post-1',
-      boardType: 'free',
+      boardType: 'schedule',
       source: 'board',
       title: '게시글 제목',
       body: '게시글 본문',
@@ -310,8 +308,6 @@ function createBoardDetailData(commentTree: ReturnType<typeof createComment>[]) 
       linkedJobPostingId: null,
       isAutoCreated: false,
       isLocked: false,
-      likeCount: 1,
-      dislikeCount: 0,
       commentCount: commentTree.length,
       viewCount: 3,
       imageAttachments: [],
@@ -319,9 +315,22 @@ function createBoardDetailData(commentTree: ReturnType<typeof createComment>[]) 
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     },
     commentTree,
-    myVote: null,
     myReactions: {},
-    membership: null,
+    membership: {
+      id: 'membership-1',
+      boardType: 'schedule',
+      userId: 'me',
+      postId: 'post-1',
+      jobPostingId: 'job-1',
+      role: 'confirmed',
+      canRead: true,
+      canComment: true,
+      title: '게시글 제목',
+      workDate: '2026-01-01',
+      authorId: 'author-1',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    },
   };
 }
 

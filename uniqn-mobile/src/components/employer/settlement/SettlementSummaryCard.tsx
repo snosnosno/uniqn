@@ -1,8 +1,13 @@
 /**
- * UNIQN Mobile - 정산 요약 카드 컴포넌트
+ * UNIQN Mobile - 지급 예정 합계 카드
  *
- * @description 정산 현황 요약 (미정산/완료/총 금액)
- * @version 1.0.0
+ * @description [근무] `금액` 탭 맨 위 한 장. 구인자 IA S2 에서 `미정산 / 완료 / 총 정산액` 세 칸을
+ *   **합계 한 줄**로 줄였다. 앱은 돈을 보내지 않으므로 "미정산"·"완료" 로 나눌 근거가 없다.
+ *
+ * 🔑 합계는 **퇴근이 기록된 근무만** 더한다. 퇴근 전 근무로 추정 금액을 만들면 사장이 그 숫자를
+ *    보고 보낸 뒤 실제 금액과 달라진다. 빠진 건수는 따로 밝힌다.
+ * 🔑 사람별 합산은 이 카드 아래 목록 자체다(스태프별 묶음 카드) — 같은 사람의 여러 날이 한 줄이라
+ *    세 번 보내지 않는다. 별도 시트를 두지 않는다.
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
@@ -12,102 +17,74 @@ import { Card } from '@/components/ui/Card';
 import { SettingsIcon } from '@/components/icons';
 import { formatCurrency } from '@/utils/settlement';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface SettlementSummaryCardProps {
-  totalCount: number;
-  pendingCount: number;
-  completedCount: number;
-  totalAmount: number;
-  pendingAmount: number;
+  /** 퇴근이 기록된 근무 수 */
+  payableCount: number;
+  /** 퇴근이 기록된 근무의 금액 합(수당 포함 · 세후, 확정 금액은 그대로) */
+  payableAmount: number;
+  /** 퇴근 전이라 합계에서 빠진 근무 수 */
+  beforeCheckoutCount: number;
+  /**
+   * 과거에 `지급 완료` 로 처리돼 합계에서 뺀 근무 수·금액(확정 동결값).
+   * 🚨 이걸 "지급 예정" 에 더하면 사장이 합계를 그대로 보내 이미 준 돈을 한 번 더 보낸다.
+   */
+  settledCount: number;
+  settledAmount: number;
   onOpenSettings?: () => void;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
-  totalCount,
-  pendingCount,
-  completedCount,
-  totalAmount,
-  pendingAmount,
+  payableCount,
+  payableAmount,
+  beforeCheckoutCount,
+  settledCount,
+  settledAmount,
   onOpenSettings,
 }: SettlementSummaryCardProps) {
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
-          정산 현황
-        </Text>
-        <View className="flex-row items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-2 font-sans">
-            총 {totalCount}건
-          </Text>
-          {onOpenSettings && (
-            <Pressable
-              onPress={onOpenSettings}
-              hitSlop={8}
-              className="flex-row items-center px-2 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
-              accessibilityLabel="정산 설정"
-              accessibilityRole="button"
-            >
-              <SettingsIcon size={16} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
-                정산설정
-              </Text>
-            </Pressable>
-          )}
-        </View>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-sans-semibold text-content-secondary">지급 예정 합계</Text>
+        {onOpenSettings && (
+          <Pressable
+            onPress={onOpenSettings}
+            hitSlop={8}
+            className="flex-row items-center px-2 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
+            accessibilityLabel="급여 설정"
+            accessibilityRole="button"
+          >
+            <SettingsIcon size={16} color={SECONDARY_PALETTE[500]} />
+            <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+              급여 설정
+            </Text>
+          </Pressable>
+        )}
       </View>
 
-      <View className="flex-row justify-between mb-2">
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            미정산
-          </Text>
-          <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
-            {pendingCount}건
-          </Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-            {formatCurrency(pendingAmount)}
-          </Text>
-        </View>
-        <View className="w-px bg-secondary-200 dark:bg-surface" />
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            완료
-          </Text>
-          <Text className="text-lg font-display text-success-600 dark:text-success-400">
-            {completedCount}건
-          </Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-            {formatCurrency(totalAmount - pendingAmount)}
-          </Text>
-        </View>
-        <View className="w-px bg-secondary-200 dark:bg-surface" />
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            총 정산액
-          </Text>
-          <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
-            {formatCurrency(totalAmount)}
-          </Text>
-          <Text className="text-micro text-content-placeholder font-sans">수당 포함</Text>
-        </View>
-      </View>
-      {/* 과거 문구는 '스태프 확정=기본급 기준, 여기 총 정산액=수당 포함' 이었는데 둘 다 사실과
-          반대였다. 동결값(payroll_amount)은 calculateSettlementAmount 의 afterTaxPay — 유효
-          수당을 포함한 세후 금액이고(SettlementRepository), 정산 완료분의 '총 정산액' 은 바로
-          그 동결값 자체다. 이 거짓 고지가 실제 금액 불일치(SETTLE-5/8)를 '원래 다른 값' 으로
-          정당화해 결함 인지 자체를 막고 있었다. */}
-      <Text className="mt-2 text-micro text-content-placeholder font-sans text-center">
-        {
-          '※ 금액은 모두 수당 포함 · 세후 기준이에요. 정산이 끝난 근무는 그때 확정된 금액이 그대로 남고, 남은 근무는 현재 설정으로 계산한 예상액이에요.'
-        }
+      <Text
+        testID="settlement-payable-total"
+        className="mt-1 text-2xl font-display text-primary-600 dark:text-primary-400"
+      >
+        {formatCurrency(payableAmount)}
+      </Text>
+
+      <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        {beforeCheckoutCount > 0
+          ? `퇴근이 기록된 근무 ${payableCount}건 · 퇴근 전 ${beforeCheckoutCount}건은 빠져요`
+          : `퇴근이 기록된 근무 ${payableCount}건`}
+      </Text>
+
+      {settledCount > 0 ? (
+        <Text
+          testID="settlement-settled-note"
+          className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+        >
+          {`이미 지급 처리된 근무 ${settledCount}건(${formatCurrency(settledAmount)})은 빠져요`}
+        </Text>
+      ) : null}
+
+      <Text className="mt-2 text-micro text-content-placeholder font-sans">
+        수당 포함 · 세후 기준이에요. 입금은 앱이 아니라 사장님이 직접 보내요.
       </Text>
     </Card>
   );

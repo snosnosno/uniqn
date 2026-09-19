@@ -26,6 +26,7 @@ import type {
   UpdatePostingSlotTimeInput,
   UpdatePostingSlotTimeResult,
 } from '../interfaces/IWorkScheduleRepository';
+import { notFound } from '@/constants/messages';
 
 const TABLE = 'work_logs' as const;
 
@@ -249,12 +250,12 @@ function toPostingSlotTimeError(error: unknown): AppError | null {
   }
   if (message.includes('JOB_POSTING_NOT_FOUND')) {
     return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '공고를 찾을 수 없습니다',
+      userMessage: notFound('공고'),
     });
   }
   if (message.includes('WORK_LOG_NOT_FOUND')) {
     return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: '근무 기록을 찾을 수 없습니다',
+      userMessage: notFound('근무 기록'),
     });
   }
   if (message.includes('INVALID_INPUT')) {

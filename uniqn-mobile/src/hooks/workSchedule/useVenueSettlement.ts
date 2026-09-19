@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { endOfMonth, format, parse, startOfMonth } from 'date-fns';
 import { queryKeys } from '@/lib/queryClient';
 import { getVenueSettlementWorkLogs } from '@/services/work/settlement';
+import { workLogRepository } from '@/repositories';
+import { getTodayString } from '@/utils/date';
 
 /** 'YYYY-MM' → 월 경계(YYYY-MM-DD inclusive). date-fns 사용(수동 날짜계산 금지 규칙). */
 export function monthToRange(month: string): { start: string; end: string } {
@@ -21,6 +23,16 @@ export function useVenueSettlement(venueId: string | null, month: string) {
   return useQuery({
     queryKey: queryKeys.settlement.byVenue(venueId ?? '', start, end),
     queryFn: () => getVenueSettlementWorkLogs(venueId as string, { start, end }),
+    enabled: !!venueId,
+  });
+}
+
+/** 달력 월을 넘어 해결 전까지 계속 보여줄 퇴근 미기록. */
+export function useVenueMissingCheckouts(venueId: string | null) {
+  const today = getTodayString();
+  return useQuery({
+    queryKey: ['workSchedule', 'venueMissingCheckouts', venueId ?? '', today],
+    queryFn: () => workLogRepository.getMissingCheckoutsByVenueSpan(venueId as string, today),
     enabled: !!venueId,
   });
 }
