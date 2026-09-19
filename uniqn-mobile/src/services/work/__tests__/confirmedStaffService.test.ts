@@ -280,6 +280,30 @@ describe('confirmedStaffService', () => {
     });
   });
 
+  // 상태 변경 3경로(updateStaffStatus·cancelNoShow·markAsNoShow) 중 노쇼로 **가는** 경로만
+  // 게시판 동기화를 enqueue 하지 않아, 일정 게시판 글이 노쇼 전 상태로 남아 있었다.
+  // 되돌리는 쪽만 동기화하던 단방향 비대칭을 여기서 닫는다.
+  it('marks no-show and enqueues schedule board sync', async () => {
+    mockConfirmedStaffRepository.markAsNoShow.mockResolvedValue(undefined);
+    mockWorkLogRepository.getById.mockResolvedValue(createMockWorkLog({ jobPostingId: 'job-1' }));
+
+    await markAsNoShow('worklog-1', 'No arrival');
+
+    expect(mockEnqueueScheduleBoardSync).toHaveBeenCalledWith('job-1', 'update', {
+      jobPostingId: 'job-1',
+      workLogId: 'worklog-1',
+      reason: 'confirmed_staff_no_show',
+    });
+  });
+
+  it('does not throw when schedule board enqueue fails after no-show', async () => {
+    mockConfirmedStaffRepository.markAsNoShow.mockResolvedValue(undefined);
+    mockWorkLogRepository.getById.mockResolvedValue(createMockWorkLog({ jobPostingId: 'job-1' }));
+    mockEnqueueScheduleBoardSync.mockRejectedValueOnce(new Error('enqueue failed'));
+
+    await expect(markAsNoShow('worklog-1')).resolves.toBeUndefined();
+  });
+
   it('cancels no-show with current owner id and enqueues schedule board sync', async () => {
     mockConfirmedStaffRepository.cancelNoShow.mockResolvedValue(undefined);
     mockWorkLogRepository.getById.mockResolvedValue(createMockWorkLog({ jobPostingId: 'job-1' }));
