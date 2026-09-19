@@ -84,7 +84,7 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 
 ## 스킬/MCP 정리 이력 (2026-07-12)
 - **무관 스킬 정리 시도 — 6종은 되살아났다** (2026-07-28 실측 정정): 실제로 제거된 건 `cache-components`(Next.js)·`frontend-code-review`(/review 와 중복) **2종뿐**이다. `ios-clean/ios-design-review/ios-fix/ios-qa/ios-sync`·`devex-review` 는 `~/.claude/skills-archive/` 에 **사본이 남았을 뿐**(이동이 아니라 복사였다) `~/.claude/skills/` 에 다시 등록돼 있다 — gstack 업그레이드가 `~/.claude/skills/gstack/` 원본에서 복원한다. 이 프로젝트는 Expo RN 이라 ios-* 는 여전히 무관하니 **호출하지 말 것**. 재아카이브하려면 gstack 원본까지 손대야 해 사실상 불가하다.
-- **MCP 제거**: revenuecat(수익모델 설계 P6=RevenueCat 재도입 안함)·tosspayments(PortOne 채택) — `.mcp.json`·전역 `mcp-config.json`. 유지: context7·playwright·supabase·mcp-installer.
+- **MCP 제거**: revenuecat(수익모델 설계 P6=RevenueCat 재도입 안함)·tosspayments(PortOne 채택) — `.mcp.json`·전역 `mcp-config.json`. 유지: context7·playwright·supabase·graphify.
 - **중복 7종은 의도적 오버라이드**(autoplan·cso·guard·health·investigate·retro·review) — 프로젝트 버전이 우선(위 우선순위 규칙). 삭제 금지.
 
 ## 스킬/MCP 정리 이력 (2026-07-26)
@@ -96,6 +96,29 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 - **도입 검토 후 탈락**: `Buoy`(RN 인앱 devtools — MCP·프로덕션 빌드가 Pro 유료), `context-mode`(툴 출력 98% 절감이지만 ELv2 라이선스 + `UserPromptSubmit`/`PostToolUse`/`Stop`을 fablize 게이트와 정면 공유).
 - 관측 도구 `claude-devtools`는 리포 밖(Docker 컨테이너, `localhost:3456`). Windows에서 `.exe`/npx 경로는 실패하므로 **Docker만** 쓸 것.
 - **스킬 추가**: `oss-vet` — 위 도입 검토 7건에 수동으로 반복한 검증을 체크리스트로 고정했다(유료벽·라이선스 OSI·훅 충돌·Windows 실행성·기존 자산 중복·npm 사칭). 실제로 4건을 걸러낸 실적이 근거다. 앞으로 스킬·MCP·패키지 도입 **전에** 먼저 돌린다.
+
+## 스킬/MCP 정리 이력 (2026-09-20)
+
+- **MCP 제거 2종** — `mcp-installer`(프로젝트 `.mcp.json` + 전역 `mcp-config.json`): 4주 표본에서
+  호출 0회인데 **매 세션 30초 CONNECT_TIMEOUT** 을 태웠다. `higgsfield`(전역 `~/.claude.json`):
+  엔드포인트 자체가 없다(ENDPOINT_NOT_FOUND). 현재 MCP = **context7·playwright·supabase·graphify**
+  (`ide` 는 IDE 확장이 떠 있을 때만 붙는 것이라 설정 대상이 아니다).
+- **잔재 삭제** — 전역 `rules/*.bak-20260712` 2개 · `~/.claude/skills-archive/`(8종 **사본**,
+  원본이 `skills/` 에 살아 있어 이중 보관이었다) · 프로젝트 `.claude/` 의 `pr-body.md`·
+  `wf-screen-audit.js`·`wf-screen-audit-v2.js`·`scheduled_tasks.lock`(6~7월 잔재, 미추적) ·
+  `.claude/worktrees/`(8월 워크트리의 **빈 디렉토리 5개**).
+- 🔑 **`ls -laR` 이 하위 디렉토리를 조용히 누락했다** — `worktrees/…/supabase` 아래 `functions`·
+  `snippets` 가 목록에 안 나와 "비었는데 rmdir 실패"로 보였다. **`find` 또는 `cmd dir /a /s /b`
+  로 교차검증**할 것(같은 계열 함정=[[pitfall_bash_grep_app_tree_silent_zero]]).
+- **훅 19개 전량 실재 확인** — PreToolUse 3 · SessionStart 2 · UserPromptSubmit 3 · PostToolUse 7 ·
+  Stop 4. 죽은 배선 0건이라 정리 대상이 없다.
+- ⚠️ **전역 스킬 70종은 줄이지 못한다** — gstack 업그레이드가 `~/.claude/skills/gstack/` 원본에서
+  복원하므로 삭제해도 되살아난다(2026-07-28 실증). ios-* 5종은 Expo RN 프로젝트에 무관하니
+  **호출하지 않는 것**으로 관리한다.
+- 🚨 **`eslint` 10 은 아직 못 올린다**(PR#479 보류) — `eslint-plugin-react@7.37.5`(최신 stable)의
+  peer 가 `eslint ^9.7` 까지고, ESLint 10 지원은 `7.8.0-rc.0` **RC 뿐**이다. 머지하면
+  `TypeError: contextOrFilename.getFilename is not a function` 으로 `npm run lint` 가 exit 2 로 죽는다.
+  플러그인 stable 이 나온 뒤 **eslint + eslint-plugin-react 를 한 PR 로** 올릴 것.
 
 ## 스킬/MCP 정리 이력 (2026-09-11)
 
