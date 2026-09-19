@@ -419,3 +419,11 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 갱신 `decisions/deploy-channel-skew` — **함대 갈림의 판단 기준**(서버가 정본인 변경만 우회로가 있다: DB 트리거 정산 문구 ○ / 순수 클라 UI #501 ×) · `eas update --environment` 비대화형 필수(eas-cli 21.7.0, 09-19 OTA 1회 실패) · 규율 6 신설: 번들 grep 거짓음성 **3종**(비ASCII만 `\uXXXX`·엣지캐시·대조군 오선정 — 정산 알림 진짜 판별자는 `지급액`).
 - 갱신 `decisions/entry-point-stability` — 규칙 6·7 신설(항목 1개짜리 `⋯` 메뉴는 진입점이 아니다 → 관리 타일 복귀, 빈 시트 제거 · 첫 화면 자격은 "왜 들어왔는가"가 정한다 → 근무정보 기본 접힘). PR#501.
 - 계기: 사용자 "MEMORY.md 확인하고 graphify·wiki·CLAUDE.md 최신화". 09-15 이후 머지 5건이 wiki 미대응이었다.
+
+## [2026-09-20] ingest | 도구 인벤토리 전면 정리 — 산출로 값을 증명한 것만 남긴다
+- 신규 `decisions/tooling-inventory.md` — `.claude/rules/skills-guide.md` 에 4개 섹션(7/12·7/26·9/11·9/20)으로 누적돼 있던 **정리 이력을 졸업**시켰다. rules 는 **13,131 → 6,107 bytes**(규칙만 남김). 🔑 CLAUDE.md 에 금지된 "날짜 노트 누적"을 rules 에서 저지르고 있었다 — 항상-로딩 계층은 전부 같은 규율을 받아야 한다([[knowledge-layer-budget]]).
+- **판정 기준을 실측으로 고정**: 세션 기록 grep 으로 4주 17세션 표본을 세니 실제 호출된 스킬은 **8종뿐**. "쓸지도 모른다"는 유지 사유가 아니고, 유지 사유는 "최근에 썼다" 또는 "없으면 막힌다"뿐이다.
+- 실행한 정리 — MCP `mcp-installer`(호출 0회·매 세션 30초 타임아웃)·`higgsfield`(엔드포인트 부재) 제거 · 플러그인 context7·playwright·supabase **비활성화**(`.mcp.json` 과 도구 정의가 2벌씩 실렸다) · 동기화 플러그인 11종(스킬 **76개**, legal/finance/HR/marketing 등) 비활성화 · `continuous-learning-v2` 관측 중단(**`observer.enabled:false` 라 산출은 2026-07-26 에 멈췄는데 수집만 6.5MB/48,637줄까지 자랐다**) · PostToolUse 훅 병합(19→18, matcher 없는 훅 3→2) · 죽은 권한 3건.
+- 🔑 **무한 증가 로그는 쌓는 쪽과 읽는 쪽을 같이 봐야 한다** — `work-log/buffer.jsonl` 27.9MB 를 SessionStart 훅이 **마지막 `session_end` 하나 때문에 전량 파싱**하고 있었다. 역방향 청크 읽기로 바꿔 **같은 값 / 0.31s→0.0005s** 확인, `work-tracker-tool.sh` 에 8MB 로테이션 추가(분기를 임계값 0으로 강제 실행해 20,009→20,000줄과 아카이브 append 실증).
+- 🚨 **훅을 고치다 조용히 죽일 뻔했다** — 셸 `python3 -c "…"` 안에 개행 이스케이프를 쓰다 문자열이 끊겨 SyntaxError 가 났는데, 훅은 `2>/dev/null` + `exit 0` 이라 **아무 신호 없이 기능만 사라진다**. `bash -n` 은 셸 문법만 보므로 통과한다. 🔑**훅 수정 후에는 반드시 실제 입력을 흘려 실행 검증**하고, 셸 안 파이썬에는 `bytes([10])` 처럼 이스케이프 없는 표현을 쓴다. ([[vacuous-verification]] 유형 3 의 실사례)
+- 계기: 사용자 "과하게 쓰고있는거있어?" → 실측 6건 제시 → "전부 진행".
