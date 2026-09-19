@@ -29,10 +29,10 @@ import {
   CurrencyDollarIcon,
   DocumentIcon,
   EditIcon,
-  EllipsisHorizontalIcon,
   MapPinIcon,
   ShareIcon,
   TrashIcon,
+  UserPlusIcon,
   UsersIcon,
   XCircleIcon,
 } from '@/components/icons';
@@ -90,7 +90,6 @@ const HEADER_SHEET_VALUE = {
   shareLink: 'share-link',
   applyQR: 'apply-qr',
   preview: 'preview',
-  collaborators: 'collaborators',
 } as const;
 
 /**
@@ -101,11 +100,6 @@ const SHARE_SHEET_OPTIONS: ActionSheetOption[] = [
   { label: '링크 공유', value: HEADER_SHEET_VALUE.shareLink },
   { label: '지원 QR', value: HEADER_SHEET_VALUE.applyQR },
   { label: '구직자 화면 보기', value: HEADER_SHEET_VALUE.preview },
-];
-
-/** ⋯ 시트 — 가끔 쓰는 설정. 협업자는 공고 하나 단위라 팀과 범위가 다르다(S5 에서 문구로 구분). */
-const MORE_SHEET_OPTIONS: ActionSheetOption[] = [
-  { label: '함께 관리할 사람', value: HEADER_SHEET_VALUE.collaborators },
 ];
 
 /**
@@ -283,9 +277,10 @@ export default function JobPostingDetailScreen() {
   const statusTogglingRef = useRef(false);
   const { shareJob, isSharing } = useShare();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  // 기본 펼침 — 사장이 자기 공고의 일정·급여·위치를 보려고 접기를 푸는 동작이 매 진입마다
-  // 반복될 이유가 없다. 접기는 화면을 짧게 만들고 싶은 사람을 위한 선택지로 남긴다.
-  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
+  // 기본 접힘 — 사장이 이 화면에 들어오는 이유는 자기가 쓴 공고 내용을 다시 읽는 게 아니라
+  // 지원자·근무 같은 진입점으로 가기 위해서다. 일정·급여를 펼쳐 두면 그 진입점들이 첫 화면
+  // 밖으로 밀린다(밀도 룰 34). 내용을 확인해야 할 때는 `상세` 로 편다.
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
   // 당일 운영 요약(출근/노쇼) — 정산 화면(settlements.tsx:191)에만 있던 신호를 허브로 올린다.
   //
@@ -477,9 +472,8 @@ export default function JobPostingDetailScreen() {
     router.push(`/(employer)/my-postings/${id}/apply-qr`);
   }, [id, router]);
 
-  // 헤더 시트 — 매일 누르지 않는 진입점을 `공유` · `⋯` 두 시트로 모았다(구인자 IA S1).
+  // 헤더 시트 — 매일 누르지 않는 진입점을 `공유` 시트로 모았다(구인자 IA S1).
   const [shareSheetVisible, setShareSheetVisible] = useState(false);
-  const [moreSheetVisible, setMoreSheetVisible] = useState(false);
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -507,15 +501,6 @@ export default function JobPostingDetailScreen() {
       }
     },
     [handlePreview, handleShare, handleShowApplyQR]
-  );
-
-  const handleMoreSheetSelect = useCallback(
-    (value: string) => {
-      if (value === HEADER_SHEET_VALUE.collaborators) {
-        handleCollaborators();
-      }
-    },
-    [handleCollaborators]
   );
 
   /**
@@ -766,8 +751,19 @@ export default function JobPostingDetailScreen() {
       onPress: handleEdit,
       testID: 'job-posting-edit-button',
     },
-    // 지원 QR 은 헤더 `공유` 시트, 함께 관리할 사람은 헤더 `⋯` 시트, 스태프 공지는 [근무] 헤더
-    // `메시지` 로 옮겼다(구인자 IA S1). 매일 누르는 타일만 여기에 둔다.
+    // 🔑 협업자는 공고 하나 단위라 워크스페이스 팀과 범위가 다르다 — 제목에 '이 공고'를 넣어
+    //    [팀] 과 구분한다. 종전엔 헤더 `⋯` 시트에 단 하나 들어 있었는데, 항목이 하나뿐인
+    //    점 셋 메뉴는 열기 전까지 무엇이 있는지 알 수 없어 진입점 구실을 못 했다.
+    {
+      key: 'collaborators',
+      visible: true,
+      icon: <UserPlusIcon size={18} color={SECONDARY_PALETTE[500]} />,
+      title: '함께 관리할 사람',
+      description: '이 공고를 같이 관리할 사람을 지정합니다.',
+      onPress: handleCollaborators,
+      testID: 'job-posting-manage-collaborators',
+    },
+    // 지원 QR 은 헤더 `공유` 시트, 스태프 공지는 [근무] 헤더 `메시지` 로 옮겼다(구인자 IA S1).
   ];
 
   const actionItems = allActionItems.filter((item) => item.visible);
@@ -803,16 +799,6 @@ export default function JobPostingDetailScreen() {
             {/* 고정 공고는 QR 진입점을 노출하지 않는다 (work_log 행 수명 미해결 — _layout.tsx 주석 참고).
                 판정은 컨텍스트 하나 — 형제 화면 4곳과 같은 값을 쓰므로 탭을 옮겨도 버튼이 깜빡이지 않는다. */}
             <HeaderQRAction onPress={handleShowQR} />
-            <Pressable
-              onPress={() => setMoreSheetVisible(true)}
-              hitSlop={8}
-              className="p-2"
-              accessibilityRole="button"
-              accessibilityLabel="더보기 메뉴 열기"
-              testID="job-posting-more"
-            >
-              <EllipsisHorizontalIcon size={22} color={getLayoutColor(isDark, 'headerTint')} />
-            </Pressable>
           </View>
         }
       />
@@ -1262,14 +1248,6 @@ export default function JobPostingDetailScreen() {
         title="공유"
         options={SHARE_SHEET_OPTIONS}
         onSelect={handleShareSheetSelect}
-      />
-
-      <ActionSheet
-        visible={moreSheetVisible}
-        onClose={() => setMoreSheetVisible(false)}
-        title="더보기"
-        options={MORE_SHEET_OPTIONS}
-        onSelect={handleMoreSheetSelect}
       />
     </SafeAreaView>
   );
