@@ -400,3 +400,22 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 신규 `decisions/knowledge-layer-budget.md` — MEMORY.md 예산 초과 7회의 원인 규명(완료분 `✅` 적체 15건=3,212자)과 결정 4건(완료 즉시 이동·섹션 분리·경고의 원인지목·색인은 범위를 좁힌다).
 - 신규 `sources/memory-live-traps-2026-08.md` — 졸업/잔류 대조표.
 - 실측: MEMORY.md 18,288자(131%) → 12,568자(90%) · 옵시디언 색인 11,548자(237중 126 노출) → 10,457자(124 전량) · graphify 재색인 12,440노드.
+
+## [2026-09-15] ingest | 구인자 IA 재설계 웨이브(S1~S5) 졸업 — 진입점 불변 규칙
+- 신규 `sources/employer-ia-redesign-2026-09.md` — PR#490·#492·#493·#494·#495 착지표 · 설계 요점(지원자↔근무 비합병 · 정산 워크플로우만 제거 · 출처 제목 RPC 무변경 · viewer 노쇼 안내 경로) · 접근성 3종 · 운영 교훈(괄호 경로 jest 무음 0 suites · 정션 해제 후 워크트리 제거 · 자동 삭제된 원격 브랜치 422) · 잔여 게이트.
+- 신규 `decisions/entry-point-stability.md` — 사장은 메뉴를 위치로 기억한다(실사고 `my-postings/[id]/index.tsx:778`). 숨김은 0개일 때만, 입구가 필요하면 같은 자리에서 바꾼다 · 배지 비합병 · 역할에 따른 의미 예외(`팀 보기` 소유자 전용).
+- 갱신 `decisions/semantic-merge-conflicts.md` — §스택 PR 착지(squash 저장소: 위 PR 베이스=아래 브랜치 → 아래 머지 → merge 재통합 → diff 파일 수 대조 → 베이스 master 변경).
+- 갱신 `architecture/rls-model.md` — 협업자 manager/viewer 2단 + `get_applicant_no_show_counts` 의도적 완화와 그 조건(지정 안내), 되돌리는 방법.
+- 🚨 **모순 플래그 2건**: ① 기획 문서 `docs/planning/2026-09-13-employer-ia-session-prompts.md` §2 의 "N명/N개 이상일 때만" 3항목 + `GridBadgeLegend` 제거 검토 + §5 `cmd mklink` 가 실제 코드·결정과 다르다(raw 라 수정 안 함, sources 페이지에 표기) ② `semantic-merge-conflicts` 의 "branch protection 없음"(07-28)이 `e2e-gate-absence`(PR#432 활성화)와 모순 → 정정 절 추가.
+- 계기: S5 착지 직후 사용자 요청(웨이브 마지막 항목 "S5 가 끝나면 /ingest").
+
+## [2026-09-19] ingest | DB red 4건 종결 + prod 배포 전량 졸업 — 검증기법 2종·함대 갈림·파리티 −11 규명
+- 신규 `sources/db-red-fix-and-release-2026-09.md` — PR#497·#498·#501·#502 착지표 · red 4건의 정체(파리티 장부 / QR 퇴근 후보 하한 / 같은 뿌리인 컨테이너 테스트 / 댓글 트리거 발화 순서) · prod 마이그 4건 적용·독립검증 · **라이브 값 정본**(master `12f5af375` · OTA `cf441657-…`(runtime 1.0.7, commit `2b4367da0`) · 웹 CF `38945720` · prod 최신 마이그 `20260918110000`) · 남은 사람 게이트.
+- 🚨 **모순 플래그 1건**: 원천 `docs/planning/2026-09-18-red-fix-review-merge-session-prompt.md` §6-0-a 의 라이브 값(OTA `b1dee268` · 웹 `74de3161` · master `2f6de5ba2`)은 **#501·#502 직전 1차 배포 값**이다. raw 라 수정하지 않고 sources 페이지를 정본으로 표기.
+- 갱신 `decisions/vacuous-verification` — **5유형 → 7유형**. ⑥ 하네스가 계약을 덮어쓴다(픽스처 블랭킷 GRANT 가 `pg_class.relacl` 을 덮어 `has_column_privilege` 가 항상 참 → **`pg_attribute.attacl` 로 단언**. 막힌 두 길=REVOKE 는 컬럼 GRANT 까지 회수 / 테스트가 마이그 문장을 재현하면 tautology). ⑦ 경계가 느슨해 "성공하기만 하면 통과"(`> '2026-01-01'` 고정 상수 하한 → 호출 직전 `clock_timestamp()` 캡처 + **하한이 조여 있다는 것 자체를 단언**). 🔑⑥까지는 단언이 **도달 못 하는** 문제였고 ⑦은 **도달했는데 아무것도 거르지 않는** 문제다.
+- 갱신 `decisions/prod-parity-baseline` — 새 기준선 **225/102**(prod 실측 일치). 09-12 숙제였던 정책 −11 규명: `20260910002240` 의 정책 순감 7 + **`DROP TABLE board_votes` 로 함께 사라진 `bv_*` 4**. 🔑**테이블을 지우면 그 위 정책도 사라진다 — CREATE/DROP POLICY 문장만 세면 설명이 안 된다**(09-18 판의 `20260809140000` 지목은 오답). 기록명 어긋난 9월 마이그 7건 재적용 금지 목록 + `verify_function` 비우기 규칙(GRANT·트리거 전용) 수록.
+- 갱신 `decisions/test-db-grants` — 이 결정의 대가를 명시(블랭킷 GRANT ↔ 컬럼 ACL 단언 무력화)와 `attacl` 질의 실물. 컬럼 목록 정본은 **마이그 원문에서 베낄 것**.
+- 갱신 `decisions/worktime-ssot` — 서버 축 확장: **15분 올림 정규화된 `check_in_ts` 와 원본 `check_in_scanned_at` 은 다른 축**. 퇴근 후보 하한을 원본 스캔시각으로(`20260918105900`, prod 적용). ⚠️미해결 선재 갭(`update_work_log_slot` 이 원본을 클램프하지 않아 16시간 이상 앞당기면 구간 역전 — 제품 판단 대기).
+- 갱신 `decisions/deploy-channel-skew` — **함대 갈림의 판단 기준**(서버가 정본인 변경만 우회로가 있다: DB 트리거 정산 문구 ○ / 순수 클라 UI #501 ×) · `eas update --environment` 비대화형 필수(eas-cli 21.7.0, 09-19 OTA 1회 실패) · 규율 6 신설: 번들 grep 거짓음성 **3종**(비ASCII만 `\uXXXX`·엣지캐시·대조군 오선정 — 정산 알림 진짜 판별자는 `지급액`).
+- 갱신 `decisions/entry-point-stability` — 규칙 6·7 신설(항목 1개짜리 `⋯` 메뉴는 진입점이 아니다 → 관리 타일 복귀, 빈 시트 제거 · 첫 화면 자격은 "왜 들어왔는가"가 정한다 → 근무정보 기본 접힘). PR#501.
+- 계기: 사용자 "MEMORY.md 확인하고 graphify·wiki·CLAUDE.md 최신화". 09-15 이후 머지 5건이 wiki 미대응이었다.

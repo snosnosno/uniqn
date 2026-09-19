@@ -125,7 +125,7 @@ export default function ScanScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="flex-1 justify-center py-6">
-            <View className="mx-auto h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/30">
+            <View className="mx-auto h-16 w-16 items-center justify-center rounded-lg bg-success-100 dark:bg-success-900/30">
               <Text className="text-3xl font-sans-bold text-success-700 dark:text-success-300">
                 ✓
               </Text>
@@ -174,7 +174,7 @@ export default function ScanScreen() {
       {isDedicatedError ? (
         <ScrollView className="flex-1" contentContainerClassName="flex-grow px-4 pb-6">
           <View className="flex-1 justify-center py-6">
-            <View className="mx-auto h-16 w-16 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/30">
+            <View className="mx-auto h-16 w-16 items-center justify-center rounded-lg bg-error-100 dark:bg-error-900/30">
               <Text className="text-2xl font-sans-bold text-error-600 dark:text-error-300">!</Text>
             </View>
             <Text className="mt-5 text-center text-xl font-display text-content-primary dark:text-off-white">

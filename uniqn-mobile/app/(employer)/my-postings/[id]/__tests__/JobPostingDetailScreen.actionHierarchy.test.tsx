@@ -1,19 +1,22 @@
 /**
- * JobPostingDetailScreen — 카드 위계 회귀 테스트 (S2-4 · S2-8).
+ * JobPostingDetailScreen — 카드 위계 회귀 테스트 (S2-4 · S2-8 · 구인자 IA S1).
  *
- * 관리 카드 6장이 전부 같은 크기·같은 모양이라 우선순위 표현이 0이었다 — 사장은 매번
- * 여섯 장을 읽고 무엇이 급한지 스스로 판단해야 했다.
+ * 관리 카드가 전부 같은 크기·같은 모양이라 우선순위 표현이 0이었다 — 사장은 매번
+ * 카드를 전부 읽고 무엇이 급한지 스스로 판단해야 했다.
  *
- * 고정하는 계약 여섯.
+ * 고정하는 계약.
  *  1. 손해가 가장 큰 신호 하나만 "지금 할 일"로 크게 낸다. 없으면 그 자리도 없다.
- *  2. 🚨 승격돼도 "관리" 목록에서는 빠지지 않는다 — 빠지면 정산 대기 1건에 '스태프 관리/정산'
+ *  2. 🚨 승격돼도 "관리" 목록에서는 빠지지 않는다 — 빠지면 정산 대기 1건에 [근무]
  *     진입점이 목록에서 통째로 사라져 사장이 "메뉴가 없어졌다"고 읽는다(실사고 제보).
  *     승격 카드는 전용 testID(job-posting-primary-action)로 타일과 구분한다.
  *  3. 우선순위가 실제로 지켜진다(취소 요청 > 대기 지원자).
- *  4. 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 한다(미출근 ≠ 정산).
+ *  4. 같은 카드라도 무엇 때문에 올라왔는지에 따라 다른 말을 한다(미출근 ≠ 정산 ≠ 취소 요청).
  *  5. 🚨 라이브 운영은 연결된 대회가 있으면 목록 **맨 위** 고정 — 빈도로 강등하면
  *     대회 D-day 현장에서 사장이 이 진입점을 못 찾는다.
  *  6. 통계 세 숫자는 각자 자기 목록으로 데려간다(`?filter=`).
+ *  7. 진입점 타일은 `지원자` · `근무` · `공고 수정` **셋**이다(대회 연결 시 라이브 운영 +1).
+ *     매일 누르는 건 둘뿐인데 타일이 8장이라 필요한 것을 찾는 데 화면을 훑어야 했다.
+ *     배지는 합치지 않는다 — `할 일 6` 으로 뭉치면 눌러 봐야 무엇인지 안다.
  *
  * ⚠️ `selectPrimaryAction` 을 목으로 덮으면 1~4 가 통째로 사라진다 — requireActual 로 태운다.
  */
@@ -27,6 +30,7 @@ const mockWorkLogs = jest.fn();
 const mockConfirmedStaff = jest.fn();
 const mockOpsTournaments = jest.fn();
 const mockPostingType = jest.fn();
+const mockIsFixed = jest.fn();
 const mockPush = jest.fn();
 const mockAddToast = jest.fn();
 const mockTriggerHaptic = jest.fn();
@@ -39,7 +43,7 @@ const mockPosting = () => ({
   status: 'active',
   postingType: mockPostingType(),
   tournamentConfig: { approvalStatus: 'approved', rejectionReason: null },
-  schedule: { kind: 'dated' },
+  schedule: { kind: mockIsFixed() ? 'fixed' : 'dated' },
 });
 
 jest.mock('expo-router', () => ({
@@ -55,7 +59,7 @@ jest.mock('expo-router', () => ({
 jest.mock('../_layout', () => ({
   useJobDetailContext: () => ({
     job: mockPosting(),
-    isFixed: false,
+    isFixed: mockIsFixed(),
     isLoading: false,
     error: null,
     refresh: jest.fn(),
@@ -88,6 +92,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EllipsisHorizontalIcon: () => null,
   EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
@@ -173,8 +178,8 @@ jest.mock('@/hooks/ops', () => ({
   useOpsTournamentsForPosting: () => ({ opsTournaments: mockOpsTournaments(), isLoading: false }),
 }));
 
-const managementView = () => ({
-  filledPositions: 0,
+const managementView = (filledPositions = 0) => ({
+  filledPositions,
   totalPositions: 5,
   totalApplicants: 3,
   confirmedApplicants: 0,
@@ -202,6 +207,13 @@ const stats = (overrides: Record<string, number> = {}) => ({
   ...overrides,
 });
 
+/**
+ * 진입점 타일 testID. 제거된 타일(취소 요청·지원 QR·스태프 공지·함께 관리할 사람)의 testID 도
+ * 같은 패턴에 걸리게 둔다 — 누가 되살리면 개수 단언이 바로 깨진다.
+ */
+const TILE_TEST_ID =
+  /^job-posting-(manage-(applicants|settlements|cancellation-requests|collaborators)|edit-button|live-ops|apply-qr|announce)$/;
+
 /** 화면의 버튼 라벨을 렌더 순서대로 훑는다 — 목록의 물리적 순서를 보기 위한 것. */
 const buttonLabels = (getAllByRole: (role: string) => { props: Record<string, unknown> }[]) =>
   getAllByRole('button')
@@ -214,6 +226,7 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     mockAddToast.mockReset();
     mockTriggerHaptic.mockReset();
     mockPostingType.mockReturnValue('regular');
+    mockIsFixed.mockReturnValue(false);
     mockApplicantStats.mockReturnValue(stats());
     mockManagementView.mockReturnValue(managementView());
     mockWorkLogs.mockReturnValue([]);
@@ -234,42 +247,62 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
 
     expect(getByText('지금 할 일')).toBeTruthy();
     const primaryLabel = getByTestId('job-posting-primary-action').props.accessibilityLabel;
-    expect(primaryLabel).toContain('지금 할 일');
-    expect(primaryLabel).toContain('지원자 관리');
+    expect(primaryLabel).toContain('지금 할 일. 지원자');
   });
 
-  // 🚨 실사고 제보 — 정산 대기가 생기자 '스태프 관리/정산' 이 "관리" 에서 사라졌다.
+  // 🚨 실사고 제보 — 신호가 생기자 [근무] 진입점이 "관리" 에서 사라졌다.
   //    승격은 알림 한 장을 **더** 내는 것이지 목록에서 진입점을 빼는 것이 아니다.
   it('승격돼도 "관리" 목록의 진입점은 그대로 남는다', () => {
-    mockWorkLogs.mockReturnValue([
-      { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
-    ]);
+    mockConfirmedStaff.mockReturnValue({
+      ...emptyStaff,
+      grouped: [
+        {
+          date: '2026-08-13',
+          formattedDate: '8월 13일',
+          isToday: true,
+          isPast: false,
+          staff: [{}],
+          stats: { total: 1, scheduled: 1, checkedIn: 0, completed: 0, noShow: 0 },
+        },
+      ],
+    });
 
     const { getAllByTestId, getByTestId } = render(<JobPostingDetailScreen />);
 
     // 목록 타일은 승격 여부와 무관하게 정확히 한 장, 늘 같은 자리에 있다.
     expect(getAllByTestId('job-posting-manage-settlements')).toHaveLength(1);
     // 승격 카드는 타일의 testID 를 물려받지 않는다 — 둘을 구분할 수 있어야 한다.
+    // (미출근으로 올라온 [근무] 카드는 제목을 '오늘 출근 확인' 으로 갈아끼운다.)
     expect(getByTestId('job-posting-primary-action').props.accessibilityLabel).toContain(
-      '스태프 관리/정산'
+      '지금 할 일. 오늘 출근 확인'
     );
   });
 
-  it('취소 요청은 대기 지원자보다 먼저 승격된다', () => {
+  it('취소 요청은 대기 지원자보다 먼저 승격되고, 취소 요청 이야기를 한다', () => {
     mockApplicantStats.mockReturnValue(stats({ applied: 5, cancellationPending: 1 }));
 
-    const { getByTestId } = render(<JobPostingDetailScreen />);
+    const { getByTestId, getByText } = render(<JobPostingDetailScreen />);
 
     const primaryLabel = getByTestId('job-posting-primary-action').props.accessibilityLabel;
-    expect(primaryLabel).toContain('취소 요청 관리');
-    expect(primaryLabel).not.toContain('지원자 관리');
+    expect(primaryLabel).toContain('취소 요청 검토');
+    expect(primaryLabel).not.toContain('지금 할 일. 지원자');
+    expect(getByText('취소 요청 검토하기')).toBeTruthy();
     // 목록 타일은 알림이 아니다 — "지금 할 일" 접두사는 승격 카드에만 붙는다.
     expect(getByTestId('job-posting-manage-applicants').props.accessibilityLabel).not.toContain(
       '지금 할 일'
     );
   });
 
-  // 같은 카드(정산)라도 미출근 때문에 올라왔으면 정산 얘기를 하면 안 된다 —
+  it('취소 요청으로 승격된 카드는 [근무] 로 데려간다', () => {
+    mockApplicantStats.mockReturnValue(stats({ cancellationPending: 1 }));
+
+    const { getByTestId } = render(<JobPostingDetailScreen />);
+    fireEvent.press(getByTestId('job-posting-primary-action'));
+
+    expect(mockPush).toHaveBeenCalledWith('/(employer)/my-postings/posting-1/settlements');
+  });
+
+  // 같은 카드(근무)라도 미출근 때문에 올라왔으면 정산 얘기를 하면 안 된다 —
   // 사장이 문구를 읽고 엉뚱한 화면을 연다.
   it('오늘 미출근으로 승격되면 정산이 아니라 출근 이야기를 한다', () => {
     mockConfirmedStaff.mockReturnValue({
@@ -297,21 +330,17 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     expect(getByText('출근 현황 보기')).toBeTruthy();
   });
 
-  it('정산 대기로 승격되면 정산 문구를 쓴다', () => {
-    // 🔑 정산 대기는 **이미 끝난** 근무만 센다 — work_log 행은 확정 시점에 미래 날짜까지
-    //    만들어지므로 날짜가 없거나 미래면 대기가 아니다. 목이 date/status 를 빠뜨리면
-    //    "미래 근무를 세지 않는다" 는 계약이 이 화면 경로에서 검증되지 않는다.
+  // 구인자 IA S2 — 앱은 돈을 보내지 않는다. 끝난 근무가 쌓여도 "정산하러 가기" 로 부르지 않는다.
+  it('끝난 근무가 있어도 정산을 "지금 할 일" 로 올리지 않는다', () => {
     mockWorkLogs.mockReturnValue([
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-05' },
       { payrollStatus: 'pending', status: 'completed', date: '2026-01-06' },
     ]);
 
-    const { getByText, getByTestId } = render(<JobPostingDetailScreen />);
+    const { queryByText, queryByTestId } = render(<JobPostingDetailScreen />);
 
-    expect(getByTestId('job-posting-primary-action').props.accessibilityLabel).toContain(
-      '정산할 근무가 2건'
-    );
-    expect(getByText('정산하러 가기')).toBeTruthy();
+    expect(queryByTestId('job-posting-primary-action')).toBeNull();
+    expect(queryByText(/정산/)).toBeNull();
   });
 
   // 🚨 대회 D-day 현장에서 사장이 이 진입점을 못 찾으면 운영이 멈춘다.
@@ -324,14 +353,80 @@ describe('JobPostingDetailScreen — 카드 위계', () => {
     const { getByTestId, getAllByRole } = render(<JobPostingDetailScreen />);
 
     expect(getByTestId('job-posting-primary-action').props.accessibilityLabel).toContain(
-      '지원자 관리'
+      '지금 할 일. 지원자'
     );
 
     const labels = buttonLabels(getAllByRole);
-    const liveOpsIndex = labels.findIndex((label) => label.includes('라이브 운영'));
-    const settlementsIndex = labels.findIndex((label) => label.includes('스태프 관리/정산'));
+    const liveOpsIndex = labels.findIndex((label) => label.startsWith('라이브 운영'));
+    // 🔑 `includes('근무')` 로 찾으면 위쪽 "근무 정보 접기" 토글이 먼저 걸린다 — 타일 라벨의
+    //    머리(`근무, ...`)로 좁힌다.
+    const workIndex = labels.findIndex((label) => label.startsWith('근무,'));
     expect(liveOpsIndex).toBeGreaterThanOrEqual(0);
-    expect(liveOpsIndex).toBeLessThan(settlementsIndex);
+    expect(liveOpsIndex).toBeLessThan(workIndex);
+  });
+
+  describe('진입점 타일 셋', () => {
+    it('일반 공고는 지원자 · 근무 · 공고 수정 · 함께 관리할 사람 넷뿐이다', () => {
+      // 배정 인원이 있어도(옛 '스태프 공지' 노출 조건) 타일은 늘지 않는다.
+      mockManagementView.mockReturnValue(managementView(2));
+
+      const { getAllByTestId } = render(<JobPostingDetailScreen />);
+
+      expect(getAllByTestId(TILE_TEST_ID).map((node) => node.props.testID)).toEqual([
+        'job-posting-manage-applicants',
+        'job-posting-manage-settlements',
+        'job-posting-edit-button',
+        'job-posting-manage-collaborators',
+      ]);
+    });
+
+    it('대회에 라이브 운영이 연결되면 맨 앞에 하나가 더 붙는다', () => {
+      mockPostingType.mockReturnValue('tournament');
+      mockOpsTournaments.mockReturnValue([{ id: 't1', status: 'active' }]);
+
+      const { getAllByTestId } = render(<JobPostingDetailScreen />);
+
+      expect(getAllByTestId(TILE_TEST_ID).map((node) => node.props.testID)).toEqual([
+        'job-posting-live-ops',
+        'job-posting-manage-applicants',
+        'job-posting-manage-settlements',
+        'job-posting-edit-button',
+        'job-posting-manage-collaborators',
+      ]);
+    });
+
+    // 상시 공고의 [근무] 는 비어 있지만 자리는 지킨다 — 도착지가 근무표로 안내한다.
+    it('상시 공고도 [근무] 타일 자리를 지킨다', () => {
+      mockIsFixed.mockReturnValue(true);
+
+      const { getAllByTestId } = render(<JobPostingDetailScreen />);
+
+      expect(getAllByTestId(TILE_TEST_ID)).toHaveLength(4);
+    });
+
+    it('타일 이름은 대상 기준이다 — "관리" 로 끝나는 이름이 없다', () => {
+      const { getByTestId } = render(<JobPostingDetailScreen />);
+
+      expect(getByTestId('job-posting-manage-applicants').props.accessibilityLabel).toMatch(
+        /^지원자,/
+      );
+      expect(getByTestId('job-posting-manage-settlements').props.accessibilityLabel).toMatch(
+        /^근무,/
+      );
+    });
+
+    it('배지는 합치지 않는다 — 대기 지원자와 취소 요청이 각자 자기 타일에 붙는다', () => {
+      mockApplicantStats.mockReturnValue(stats({ applied: 3, cancellationPending: 1 }));
+
+      const { getByTestId } = render(<JobPostingDetailScreen />);
+
+      expect(getByTestId('job-posting-manage-applicants').props.accessibilityLabel).toContain(
+        '3명 대기'
+      );
+      expect(getByTestId('job-posting-manage-settlements').props.accessibilityLabel).toContain(
+        '취소요청 1'
+      );
+    });
   });
 
   // S2-11 — realtime 으로 숫자만 조용히 바뀌면 사장은 화면을 다시 훑기 전엔 모른다.

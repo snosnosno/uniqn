@@ -13,6 +13,8 @@ import type { WorkLog } from '@/types/schedule';
 import WorkScheduleScreen from '../work-schedule';
 
 let mockWorkLogs: WorkLog[] = [];
+let mockMissingCheckoutError: Error | null = null;
+const mockMissingCheckoutRefetch = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   ...jest.requireActual('@tanstack/react-query'),
@@ -71,7 +73,12 @@ jest.mock('@/hooks/workSchedule', () => ({
   }),
   useEnsureDefaultVenue: () => ({ isCreating: false }),
   // 🔑 지점 스팬 리더 — 컨테이너 직속뿐 아니라 그 지점에 걸린 공고 근무까지 포함한다.
-  useVenueSettlement: () => ({ data: mockWorkLogs }),
+  useVenueMissingCheckouts: () => ({
+    data: mockWorkLogs,
+    isError: mockMissingCheckoutError !== null,
+    error: mockMissingCheckoutError,
+    refetch: mockMissingCheckoutRefetch,
+  }),
 }));
 
 let seq = 0;
@@ -93,6 +100,8 @@ describe('근무표 화면 — 퇴근 미기록 배너', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-31T14:00:00'));
+    mockMissingCheckoutError = null;
+    mockMissingCheckoutRefetch.mockReset();
   });
 
   afterEach(() => {
@@ -128,6 +137,15 @@ describe('근무표 화면 — 퇴근 미기록 배너', () => {
     const { queryByLabelText, queryByTestId } = render(<WorkScheduleScreen />);
 
     expect(queryByLabelText('이전 달')).not.toBeNull();
+    expect(queryByTestId('missing-checkout-banner')).toBeNull();
+  });
+
+  it('퇴근 미기록 조회 실패를 0건처럼 숨기지 않는다', () => {
+    mockMissingCheckoutError = new Error('network');
+
+    const { queryByTestId } = render(<WorkScheduleScreen />);
+
+    expect(queryByTestId('missing-checkout-error')).not.toBeNull();
     expect(queryByTestId('missing-checkout-banner')).toBeNull();
   });
 });

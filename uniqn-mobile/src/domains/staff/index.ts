@@ -13,3 +13,8 @@ export {
 export { getManualStatusTransitions } from './statusTransitions';
 export type { ManualStatusTransition } from './statusTransitions';
 export { summarizeMissingCheckouts } from './missingCheckout';
+export {
+  summarizeTodayAttention,
+  type TodayAttentionSummary,
+  type TodayAttentionTarget,
+} from './todayAttention';

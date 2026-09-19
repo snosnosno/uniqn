@@ -1,6 +1,6 @@
 ---
 area: decisions
-updated: 2026-06-23
+updated: 2026-09-19
 status: current
 sources:
   - uniqn-mobile/supabase/fixtures/jpc_helpers.sql
@@ -9,6 +9,8 @@ sources:
   - PR#179
   - PR#180
   - PR#183
+  - PR#497
+  - uniqn-mobile/supabase/tests/communication_comment_update_hardening.test.sql
 tags: [db-tests, e2e, ci, grants, supabase, pgtap]
 ---
 
@@ -33,6 +35,29 @@ prod 는 Supabase 기본 default-privilege 로 GRANT 를 보유하지만, CI 의
 3. **setup-cli 버전 pin** — `version: 2.107.0` + `github-token`(PR#180). `latest` 는 (a) 익명 GitHub API rate-limit, (b) 이미지 드리프트 두 사고의 단일 뿌리. 3개 워크플로우 일괄.
 4. **fixtures 는 prod 등록 금지** — SECDEF 헬퍼 포함, prod 적용 시 RLS 우회 가능(catastrophic).
 
+## 파생 — 블랭킷 GRANT 는 컬럼 단위 ACL 단언을 무력화한다 (2026-09-19)
+
+이 결정의 대가가 하나 드러났다. 픽스처가 마이그 **뒤에** 블랭킷 GRANT 를 실행하므로,
+컬럼 단위 `GRANT UPDATE (col, ...)` 계약을 `has_column_privilege` 로 단언하면 **항상 참**이다.
+테스트는 초록인데 아무것도 지키지 않는다.
+
+- ❌ 뒤에서 `REVOKE UPDATE ON TABLE ... FROM authenticated` → **컬럼 GRANT 까지 함께 회수**된다.
+- ❌ 테스트 안에서 마이그와 같은 `REVOKE + GRANT (cols)` 를 재현하고 단언 → **tautology**.
+- ✅ **`pg_attribute.attacl` 을 직접 읽는다.** 테이블 GRANT 는 `pg_class.relacl` 에, 컬럼 GRANT 는
+  `pg_attribute.attacl` 에 산다. 픽스처는 전자만 덮으므로 후자는 **마이그만의 영역**으로 남는다.
+
+```sql
+SELECT COALESCE(string_agg(a.attname, ',' ORDER BY a.attname), '(없음)')
+FROM pg_attribute a CROSS JOIN LATERAL aclexplode(a.attacl) x
+WHERE a.attrelid = 'public.<table>'::regclass
+  AND a.attnum > 0 AND NOT a.attisdropped
+  AND x.grantee = 'authenticated'::regrole AND x.privilege_type = 'UPDATE';
+```
+
+🔑 기대 컬럼 목록의 정본은 **마이그의 `GRANT UPDATE (...)` 원문**이다 — 기억해서 적지 말고 베껴라.
+실물 = `communication_comment_update_hardening.test.sql` 단언 2건(prod 실측과 같은 8컬럼).
+같은 함정이 걸린 다른 테이블이 있으면 같은 방식으로 옮긴다 → [[vacuous-verification]] 유형 6.
+
 ## 경계 (raw 수정 금지 영역과의 관계)
 
 테스트 grant 는 `wiki/`(여기) 가 아니라 `uniqn-mobile/supabase/fixtures/` 가 단일 소스. 이 페이지는 "왜 그렇게 했는가"의 합성일 뿐, 규칙 변경은 fixture/workflow 수정으로.
@@ -43,3 +68,5 @@ prod 는 Supabase 기본 default-privilege 로 GRANT 를 보유하지만, CI 의
 - [[e2e-cli-grant-drift]] — e2e 쪽 원천 소스(pin≠fix 반증 + 마이그레이션 수정)
 - [[enum-divergence]] — DB 스키마/환경 드리프트가 읽기를 깨는 또 다른 클래스
 - [[wallet-pgtap-caller-binding]] — 같은 계열 테스트-DB 함정(하드닝이 pgTAP 깨뜨림)
+- [[vacuous-verification]] — 픽스처가 계약을 덮어써 단언이 공허해지는 유형(위 파생 절의 상위 패턴)
+- [[db-red-fix-and-release-2026-09]] — `attacl` 단언을 확립한 세션

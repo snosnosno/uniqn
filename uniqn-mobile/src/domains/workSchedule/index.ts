@@ -21,6 +21,13 @@ export {
 } from './gridSlotState';
 
 export { GRID_BADGE_META, GRID_BADGE_ORDER, type GridBadgeMeta } from './gridBadgeMeta';
+export {
+  collectSourcePostingIds,
+  resolveSlotSource,
+  slotSourceLabel,
+  type SlotSource,
+  type SlotSourceInput,
+} from './slotSource';
 
 export {
   parseVenueContainer,

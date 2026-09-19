@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { TimeWheelPicker, type TimeValue } from '@/components/ui/TimeWheelPicker';
 import { UserPlusIcon, UsersIcon, SearchIcon, MegaphoneIcon } from '@/components/icons';
 import {
@@ -54,7 +55,7 @@ import { buildAddSlotPayload } from './addSlotPayload';
 import { RoleSalaryField, defaultVenueSalaryDraft, type VenueSalaryDraft } from './RoleSalaryField';
 import { timeStringToValue, timeValueToString } from './SlotTimeField';
 import { StartTimeField } from './StartTimeField';
-import { notFound, saveFailed } from '@/constants/messages';
+import { loadFailed, notFound, saveFailed } from '@/constants/messages';
 
 type AddMode = 'pool' | 'nickname' | 'posting';
 
@@ -127,9 +128,11 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
   const {
     staff: poolStaff,
     isLoading: isPoolLoading,
+    error: poolError,
+    refresh: refreshPool,
     addStaff,
     isAddingStaff,
-  } = useConfirmedStaff(containerId);
+  } = useConfirmedStaff(containerId, { enabled: visible });
   const nicknameSearch = useStaffNicknameSearch();
 
   const [mode, setMode] = useState<AddMode>('pool');
@@ -479,6 +482,13 @@ export function AddSlotSheet({ visible, onClose, containerId, date, onAdded }: A
               isPoolLoading ? (
                 <View className="items-center py-6">
                   <Loading size="small" />
+                </View>
+              ) : poolError ? (
+                <View className="py-4">
+                  <Text className="mb-2 text-sm font-sans-medium text-content-primary dark:text-content-primary">
+                    {loadFailed('확정 스태프')}
+                  </Text>
+                  <ErrorState compact error={poolError} onRetry={refreshPool} />
                 </View>
               ) : poolPeople.length === 0 ? (
                 <View className="py-4">

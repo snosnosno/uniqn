@@ -19,6 +19,7 @@ export { Badge, type BadgeProps } from './Badge';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Divider } from './Divider';
 export { InfoRow, type InfoRowProps } from './InfoRow';
+export { ActionTileGrid, type ActionTileGridProps, type ActionTileItem } from './ActionTileGrid';
 export {
   Accordion,
   AccordionItem,
@@ -136,12 +137,6 @@ export {
 } from './Skeleton';
 
 export { ScreenSkeleton, type ScreenSkeletonType } from './ScreenSkeleton';
-
-// ============================================================================
-// Layout Components
-// ============================================================================
-
-export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
 
 // ============================================================================
 // Filter Components

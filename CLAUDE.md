@@ -5,7 +5,7 @@
 > 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.6 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
+홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.10 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 타깃: 홀덤펍 사장(상시 단발 알바) + 대회사 운영팀(대회 D-7~D-day 집중 인력). 포커룸은 비타깃.
 
 ## 핵심 규칙
@@ -76,6 +76,8 @@ RLS/권한/위험 변경 전→`/guard` 먼저
 세션 종료·마무리→`/session-end`(착지·최신화·정리·인계 **실행**) · 회고형 탐지는 `/session-wrap`
 
 ⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있다 → **상수·enum·사용자 문구를 단일 소스로 바꿔도 `e2e/` 는 `npm run quality` 가 못 잡는다**(PR#353 실사고: 제목 상한 25→40 상향 때 E2E 단언만 25 로 남아 CI red). 상수/enum/문구 변경 시 `e2e/` 별도 Grep 필수.
+
+⚠️ **영향권 테스트를 파일명 패턴으로 고르면 뚫린다**: `jest <파일명패턴>` 은 **같은 문구를 단언하는 다른 이름의 테스트**를 매칭하지 못해 CI 에서야 빨개진다(2026-09-15 실사고: `jest notificationMessageNormalizer` 초록 → `notificationService.test.ts` red). **디렉터리로 돌려라**(`jest src/services/notifications`). 문구·상수 변경은 특히.
 
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**

@@ -66,7 +66,7 @@ export function PlayersTab({
                 </Text>
                 {/* KO 배지 — 바운티 대회 & 처치 수 > 0 인 참가자만 */}
                 {isBountyTournament && item.knockouts > 0 && (
-                  <View className="rounded-full bg-red-100 px-2 py-0.5 dark:bg-red-900/40">
+                  <View className="rounded-sm bg-red-100 px-2 py-0.5 dark:bg-red-900/40">
                     <Text className="text-[10px] font-bold text-red-600 dark:text-red-300">
                       KO {item.knockouts}
                     </Text>

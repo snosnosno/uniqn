@@ -1,16 +1,19 @@
 ---
 area: decisions
-updated: 2026-08-25
+updated: 2026-09-19
 status: current
 sources:
   - uniqn-mobile/src/components/applications/__tests__/CancellationRequestForm.test.tsx
   - uniqn-mobile/src/hooks/useTrackShareOpen.ts
   - uniqn-mobile/supabase/tests/parity_baseline_guard.test.sql
   - uniqn-mobile/package.json
+  - uniqn-mobile/supabase/tests/communication_comment_update_hardening.test.sql
+  - uniqn-mobile/supabase/tests/work_schedule_qr_container_auto.test.sql
   - memory/MEMORY.md
   - PR#474
   - PR#478
   - PR#481
+  - PR#497
 tags: [testing, verification, rls, e2e, observability, false-green]
 ---
 
@@ -98,6 +101,31 @@ tags: [testing, verification, rls, e2e, observability, false-green]
   → `supabase.rpc('오타', { 틀린키: 1 })` 도 tsc 를 통과한다. 새 RPC 마다 **이름·인자 키
   고정 계약 테스트**를 둘 것 → [[supabase-write-pitfalls]]
 
+## 유형 6 — 하네스가 계약을 덮어써서 단언이 구조적으로 무의미해진다
+
+**실물**: `board_comments` 의 컬럼 단위 `GRANT UPDATE (...)` 를 `has_column_privilege` 로
+단언했더니 **항상 참**이었다. pgTAP 픽스처(`supabase/fixtures/jpc_helpers.sql:48`)가 마이그
+적용 **뒤에** `GRANT ALL ON ALL TABLES ... TO anon, authenticated` 를 실행하기 때문이다.
+그 블랭킷 GRANT 는 의도된 설계라 픽스처를 고쳐 풀 문제가 아니다([[test-db-grants]]).
+
+막힌 두 길도 실측으로 확인됐다 — ① 뒤에서 `REVOKE UPDATE ON TABLE` 로 되돌리면 **컬럼 단위
+GRANT 까지 함께 회수**된다(부분 복구 불가) ② 테스트 안에서 마이그와 같은 문장을 재현하고
+단언하면 **자기 문장을 단언하는 tautology**(마이그가 엉뚱한 컬럼을 열어도 통과).
+
+🔑 **두 ACL 은 서로 다른 카탈로그에 산다.** 테이블 GRANT → `pg_class.relacl`(픽스처가 덮는 곳),
+컬럼 GRANT → `pg_attribute.attacl`(**마이그만 쓰는 곳**). 후자로 단언하면 하네스와 무관해진다.
+이 단언은 붙인 즉시 제 기대값의 누락(`updated_at`)을 잡았다 — **공허하지 않다는 증거**다.
+
+## 유형 7 — 단언의 경계가 느슨해 "성공하기만 하면 통과"한다
+
+**실물**: `check_out_scanned_at > '2026-01-01'`. 고정 과거 상수를 하한으로 쓰면 엉뚱한 값
+(출근 시각)이 들어와도 통과한다. 유형 1~6 은 단언이 **도달하지 못하는** 문제였지만 이것은
+단언이 **도달했는데 아무것도 거르지 않는** 문제다 — 통과 화면은 똑같다.
+
+🔑 **호출 직전 `clock_timestamp()` 를 캡처해 하한으로 쓰고, 하한이 조여 있다는 것 자체를
+단언으로 못박아라.** 실물 = `work_schedule_qr_container_auto.test.sql` 의
+`raw_lower_bound_is_tight`. (2026-09-19 fable 리뷰 지적 → [[db-red-fix-and-release-2026-09]])
+
 ## 실무 규칙
 
 1. **Red-Green 을 생략하지 마라.** 통과만 확인한 테스트는 유형 1·2 를 걸러내지 못한다.
@@ -107,7 +135,10 @@ tags: [testing, verification, rls, e2e, observability, false-green]
 3. **대조군을 같이 실행하라.** 있는 줄 아는 것을 같은 방법으로 찾아보고, 그것도 0 이면
    검증 장치가 고장난 것이다 → [[deploy-channel-skew]](배포 후 번들 grep 거짓음성)
 4. **게이트를 걸 때 그 게이트를 열 열쇠도 같이 만들어라** → [[rollout-instrumentation-gap]]
+5. **단언을 쓴 뒤 "이 단언이 거를 수 있는 값이 무엇인가"를 적어 보라.** 답이 "거의 모든 값이
+   통과한다"면 그것은 단언이 아니라 존재 확인이다(유형 7).
 
 ## 원천
 
 [[sources/memory-live-traps-2026-08]] — MEMORY.md 라이브 함정 25항목(2026-08-25 졸업분).
+[[sources/db-red-fix-and-release-2026-09]] — 유형 6·7 의 원천(PR#497 pgTAP red 종결 세션).

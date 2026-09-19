@@ -21,6 +21,7 @@ import {
   getSchedulesByDate,
   getScheduleById,
   getTodaySchedules,
+  getNextConfirmedSchedule,
   subscribeToSchedules,
   groupSchedulesByDate,
 } from '@/services/work/scheduleService';
@@ -413,7 +414,9 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
 
   return {
     schedules,
-    boundarySchedules: effectivePayload.boundarySchedules,
+    // realtime snapshot에는 월 경계 보강 데이터가 없다. 쿼리에서 받은 경계 일정을 보존하지
+    // 않으면 월말·월초 다일 근무가 snapshot 도착 순간 줄었다가 새로고침 뒤 되살아난다.
+    boundarySchedules: effectivePayload.boundarySchedules ?? queryPayload.boundarySchedules,
     groupedSchedules,
     stats,
     warning,
@@ -561,6 +564,24 @@ export function useTodaySchedules(enabled = true) {
     error: isOnline ? query.error : null,
     refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
+}
+
+/** 조회 중인 월과 무관한 가장 가까운 미래 확정 근무. */
+export function useNextConfirmedSchedule(enabled = true) {
+  const user = useAuthStore((state) => state.user);
+  const staffId = user?.uid;
+  const { isOnline } = useNetworkStatus();
+
+  return useQuery({
+    queryKey: queryKeys.schedules.nextConfirmed(staffId ?? 'anonymous'),
+    queryFn: async () => {
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
+      return getNextConfirmedSchedule(staffId);
+    },
+    enabled: enabled && !!staffId && isOnline,
+    staleTime: cachingPolicies.realtime,
+    refetchInterval: isOnline ? 60 * 1000 : false,
+  });
 }
 
 interface UseCalendarViewOptions {

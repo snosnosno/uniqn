@@ -23,6 +23,9 @@ const BUSINESS_INFO = {
   customerServiceHours: SUPPORT_HOURS_TEXT,
 };
 
+// 직업정보제공사업자 준수사항 — 고용노동부 체불사업주 명단공개 페이지 안내
+const WAGE_DEFAULTER_LIST_URL = 'https://www.moel.go.kr/info/defaulter/defaulterList.do';
+
 interface InfoRowProps {
   label: string;
   value: string;
@@ -74,6 +77,15 @@ export default function BusinessInfoScreen() {
     });
   };
 
+  const handleWageDefaulterListPress = () => {
+    void openExternalUrl(WAGE_DEFAULTER_LIST_URL, {
+      fallbackTitle: '페이지를 열 수 없어요',
+      fallbackHint: '아래 주소로 직접 접속해주세요.',
+      fallbackValue: WAGE_DEFAULTER_LIST_URL,
+      component: 'BusinessInfoScreen',
+    });
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="사업자정보" fallbackHref="/(app)/settings" />
@@ -104,6 +116,15 @@ export default function BusinessInfoScreen() {
           </View>
 
           <View className="border-t border-divider">
+            <InfoRow
+              label="체불사업주 명단"
+              value="고용노동부 명단공개 바로가기"
+              onPress={handleWageDefaulterListPress}
+              isLink
+            />
+          </View>
+
+          <View className="border-t border-divider">
             <InfoRow label="사업장 주소" value={BUSINESS_INFO.address} />
           </View>
 
@@ -126,7 +147,9 @@ export default function BusinessInfoScreen() {
         </Card>
 
         <Text className="px-2 text-xs leading-5 text-content-placeholder font-sans">
-          사업자정보 확인은 국세청 홈택스(www.hometax.go.kr)에서 가능합니다.
+          사업자정보 확인은 국세청 홈택스(www.hometax.go.kr)에서 가능합니다.{'\n'}
+          체불사업주 명단은 직업정보제공사업자 준수사항에 따라 고용노동부 정보공개 페이지를
+          안내합니다.
         </Text>
       </ScrollView>
     </SafeAreaView>

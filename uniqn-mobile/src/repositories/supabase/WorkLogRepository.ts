@@ -212,6 +212,41 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     return venue.getByVenueSpanInRange(venueId, fromDate, toDate);
   }
 
+  async getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]> {
+    return venue.getMissingCheckoutsByVenueSpan(venueId, beforeDate);
+  }
+
+  async getAttentionByOwnerId(ownerId: string, today: string): Promise<WorkLog[]> {
+    try {
+      // 오늘 scheduled(미출근 후보) + 오늘 이전 checked_in(퇴근 미기록 후보). 판정은 도메인이 한다.
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .eq('owner_id', ownerId)
+        .or(
+          `and(date.eq.${today},status.eq.${STATUS.WORK_LOG.SCHEDULED}),` +
+            `and(date.lt.${today},status.eq.${STATUS.WORK_LOG.CHECKED_IN})`
+        )
+        .order('date', { ascending: true })
+        .limit(MAX_STATS_PAGE_SIZE);
+
+      if (error) {
+        handleSupabaseError(error, { operation: '구인자 오늘 확인 근무 조회', table: TABLE });
+      }
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      if (items.length === MAX_STATS_PAGE_SIZE) {
+        logger.warn('구인자 오늘 확인 근무 조회 상한 도달 — 건수가 잘렸을 수 있음', {
+          ownerId,
+          limit: MAX_STATS_PAGE_SIZE,
+        });
+      }
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '구인자 오늘 확인 근무 조회', { ownerId, today });
+    }
+  }
+
   async getCompletedByOwnerId(
     ownerId: string,
     dateRange?: { start: string; end: string }
@@ -298,6 +333,33 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       return toWorkLog(data as Record<string, unknown>);
     } catch (error) {
       rethrowOrHandle(error, '오늘 출근 기록 조회', { staffId });
+    }
+  }
+
+  async getNextScheduledCandidates(staffId: string, fromDate: string): Promise<WorkLog[]> {
+    try {
+      logger.info('가장 가까운 미래 확정 근무 조회', { staffId, fromDate });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select(TABLE_COLUMNS)
+        .eq('staff_id', staffId)
+        .or(
+          `and(status.eq.${STATUS.WORK_LOG.CHECKED_IN},date.eq.${fromDate}),and(status.eq.${STATUS.WORK_LOG.SCHEDULED},date.gte.${fromDate})`
+        )
+        .order('date', { ascending: true })
+        .order('time_slot', { ascending: true, nullsFirst: false })
+        .limit(20);
+
+      if (error) {
+        handleSupabaseError(error, {
+          operation: '가장 가까운 미래 확정 근무 조회',
+          table: TABLE,
+        });
+      }
+      return rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+    } catch (error) {
+      rethrowOrHandle(error, '가장 가까운 미래 확정 근무 조회', { staffId, fromDate });
     }
   }
 

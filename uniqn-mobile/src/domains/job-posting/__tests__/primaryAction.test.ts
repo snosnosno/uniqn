@@ -3,6 +3,8 @@
  *
  * 순서의 근거는 방치했을 때의 손해 크기다. 이 표가 흔들리면 사장은 급한 일 대신
  * 눈에 띄는 일을 먼저 하게 된다.
+ *
+ * 구인자 IA S2 — "정산 대기" 신호는 없앴다. 앱이 돈을 만지지 않으니 "대기"도 없다.
  */
 
 import { selectPrimaryAction, type PostingActionSignals } from '@/domains/job-posting';
@@ -11,7 +13,6 @@ const noSignals: PostingActionSignals = {
   cancellationPendingCount: 0,
   todayAbsentCount: 0,
   pendingApplicantCount: 0,
-  pendingSettlementCount: 0,
   liveOpsCount: 0,
 };
 
@@ -27,7 +28,6 @@ describe('selectPrimaryAction', () => {
         cancellationPendingCount: 1,
         todayAbsentCount: 5,
         pendingApplicantCount: 9,
-        pendingSettlementCount: 9,
         liveOpsCount: 3,
       })
     ).toBe('cancellationRequests');
@@ -40,14 +40,8 @@ describe('selectPrimaryAction', () => {
   });
 
   it('현장 신호가 없으면 대기 지원자 — 늦으면 다른 공고로 간다', () => {
-    expect(
-      selectPrimaryAction({ ...noSignals, pendingApplicantCount: 2, pendingSettlementCount: 9 })
-    ).toBe('pendingApplicants');
-  });
-
-  it('정산 대기는 근무가 이미 끝난 일이라 뒤에 온다', () => {
-    expect(selectPrimaryAction({ ...noSignals, pendingSettlementCount: 3, liveOpsCount: 1 })).toBe(
-      'pendingSettlement'
+    expect(selectPrimaryAction({ ...noSignals, pendingApplicantCount: 2, liveOpsCount: 1 })).toBe(
+      'pendingApplicants'
     );
   });
 

@@ -60,6 +60,7 @@ export interface AddDirectStaffContext {
 
 export interface RemoveDirectStaffContext {
   workLogId: string;
+  reason: string;
 }
 
 export interface IConfirmedStaffRepository {

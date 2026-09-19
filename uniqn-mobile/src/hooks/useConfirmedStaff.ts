@@ -35,6 +35,7 @@ import { loadFailed } from '@/constants/messages';
 export interface UseConfirmedStaffOptions {
   realtime?: boolean;
   date?: string;
+  enabled?: boolean;
 }
 
 export interface UseConfirmedStaffReturn {
@@ -74,7 +75,7 @@ export function useConfirmedStaff(
   jobPostingId: string,
   options: UseConfirmedStaffOptions = {}
 ): UseConfirmedStaffReturn {
-  const { realtime = false, date } = options;
+  const { realtime = false, date, enabled = true } = options;
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const user = useAuthStore((state) => state.user);
@@ -108,12 +109,12 @@ export function useConfirmedStaff(
     // realtime 여부와 무관하게 항상 돈다 — 렌더 소스를 useQuery 캐시 하나로 단일화하기
     // 위한 전제다. 예전엔 `&& !realtime` 라 구독 모드에서 캐시가 비었고, 그 결과
     // setQueryData 로 쓰던 낙관적 업데이트 3벌이 화면에 도달하지 못하는 죽은 코드였다(realtime-01).
-    enabled: !!jobPostingId,
+    enabled: enabled && !!jobPostingId,
     staleTime: cachingPolicies.frequent,
   });
 
   useEffect(() => {
-    if (!realtime || !jobPostingId) {
+    if (!enabled || !realtime || !jobPostingId) {
       return;
     }
 
@@ -143,7 +144,7 @@ export function useConfirmedStaff(
       logger.info('Confirmed staff realtime subscription stopped', { jobPostingId });
       unsubscribe();
     };
-  }, [addToast, jobPostingId, realtime, queryClient, staffQueryKey]);
+  }, [addToast, enabled, jobPostingId, realtime, queryClient, staffQueryKey]);
 
   const updateWorkTimeMutation = useMutation({
     mutationFn: (input: UpdateWorkTimeInput) => {

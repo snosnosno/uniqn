@@ -2,12 +2,14 @@
  * JobPostingDetailScreen — 허브 신호 회귀 테스트 (1단계 체감 묶음).
  *
  * 고정하는 계약 넷.
- *  1. 근무 정보(일정·급여·위치)는 **기본 펼침**이다. 사장이 매 진입마다 [상세]를 누를 이유가 없다.
+ *  1. 근무 정보(일정·급여·위치)는 **기본 접힘**이다. 사장은 자기가 쓴 공고를 다시 읽으러
+ *     오는 게 아니라 진입점으로 가려고 온다 — [상세]로 언제든 편다.
  *  2. 지원자 0명이면 상태 보고("0명이 대기중입니다") 대신 다음 행동(공유 CTA)을 준다.
  *  3. 오늘 근무가 있으면 당일 운영 요약(출근/노쇼)이 허브에 뜬다 — 정산 화면까지 2탭 들어가지 않는다.
- *  4. 구직자 시선 미리보기 진입점이 헤더에 있다.
+ *  4. 헤더는 `공유` 시트 하나로 진입점을 모은다(구인자 IA S1).
+ *     공유 = 링크 공유 · 지원 QR · 구직자 화면 보기. 눈 아이콘도 `⋯` 도 없다.
  *
- * ⚠️ StackHeader 를 null 로 목하면 rightAction(미리보기 버튼)이 통째로 사라져 4번이
+ * ⚠️ StackHeader 를 null 로 목하면 rightAction(공유 버튼)이 통째로 사라져 4번이
  *    "테스트가 있는데 검증되지 않는" 상태가 된다 — rightAction 을 실제로 렌더하는 목을 쓴다.
  */
 import React from 'react';
@@ -60,13 +62,42 @@ jest.mock('@/components', () => ({
   ConfirmModal: () => null,
 }));
 
-// rightAction 을 실제로 렌더한다 — null 목이면 미리보기 진입점 검증이 무효가 된다.
-// 상태 전이 시트는 statusTransition.test.tsx 가 검증한다. 실제 컴포넌트를 태우면
+// 시트는 열렸을 때 옵션을 버튼으로 그린다 — null 목이면 공유·⋯ 시트 안의 진입점이
+// "테스트가 있는데 검증되지 않는" 상태가 된다. 실제 컴포넌트를 태우면
 // 내부 Modal 이 useThemeStore() 를 selector 없이 불러 이 파일의 themeStore 목과 어긋난다.
-jest.mock('@/components/ui', () => ({
-  ActionSheet: () => null,
-}));
+jest.mock('@/components/ui', () => {
+  const { Text: RNText, Pressable: RNPressable } = jest.requireActual('react-native');
+  return {
+    ActionSheet: ({
+      visible,
+      options,
+      onSelect,
+      onClose,
+    }: {
+      visible: boolean;
+      options: { label: string; value: string }[];
+      onSelect: (value: string) => void;
+      onClose: () => void;
+    }) =>
+      visible
+        ? options.map((option) => (
+            <RNPressable
+              key={option.value}
+              testID={`sheet-option-${option.value}`}
+              // 실제 ActionSheet 와 같은 순서 — 선택 후 닫는다.
+              onPress={() => {
+                onSelect(option.value);
+                onClose();
+              }}
+            >
+              <RNText>{option.label}</RNText>
+            </RNPressable>
+          ))
+        : null,
+  };
+});
 
+// rightAction 을 실제로 렌더한다 — null 목이면 헤더 공유·⋯ 진입점 검증이 무효가 된다.
 jest.mock('@/components/headers', () => ({
   StackHeader: ({ rightAction }: { rightAction?: React.ReactNode }) => rightAction ?? null,
 }));
@@ -80,6 +111,7 @@ jest.mock('@/components/icons', () => ({
   CurrencyDollarIcon: () => null,
   DocumentIcon: () => null,
   EditIcon: () => null,
+  EllipsisHorizontalIcon: () => null,
   EyeIcon: () => null,
   MapPinIcon: () => null,
   ShareIcon: () => null,
@@ -194,12 +226,24 @@ describe('JobPostingDetailScreen — 허브 신호', () => {
     mockConfirmedStaff.mockReturnValue(emptyStaff);
   });
 
-  it('근무 정보는 기본 펼침이다 — 진입하자마자 일정·급여가 보인다', () => {
+  it('근무 정보는 기본 접힘이다 — 진입하자마자 진입점 타일이 보인다', () => {
+    const { queryByTestId, getByText } = render(<JobPostingDetailScreen />);
+
+    expect(queryByTestId('schedule-content')).toBeNull();
+    expect(queryByTestId('compensation-content')).toBeNull();
+    // 접힌 상태이므로 토글 라벨은 "상세"
+    expect(getByText('상세')).toBeTruthy();
+  });
+
+  // 🔑 접힘이 기본이라고 내용을 못 보게 된 건 아니다 — 토글이 실제로 펴는지 같이 못박는다.
+  //    (없으면 "항상 안 보임"도 위 테스트를 통과한다)
+  it('[상세] 를 누르면 일정·급여가 펼쳐진다', () => {
     const { getByTestId, getByText } = render(<JobPostingDetailScreen />);
+
+    fireEvent.press(getByText('상세'));
 
     expect(getByTestId('schedule-content')).toBeTruthy();
     expect(getByTestId('compensation-content')).toBeTruthy();
-    // 펼쳐진 상태이므로 토글 라벨은 "접기"
     expect(getByText('접기')).toBeTruthy();
   });
 
@@ -250,11 +294,58 @@ describe('JobPostingDetailScreen — 허브 신호', () => {
     expect(queryByText('오늘')).toBeNull();
   });
 
-  it('헤더에서 구직자 시선 미리보기로 이동한다', () => {
-    const { getByTestId } = render(<JobPostingDetailScreen />);
+  describe('헤더 공유 · ⋯ 시트', () => {
+    it('눈 아이콘은 없다 — 구직자 화면 보기는 공유 시트 안에 있다', () => {
+      const { getByTestId, queryByTestId } = render(<JobPostingDetailScreen />);
 
-    fireEvent.press(getByTestId('job-posting-preview'));
+      expect(queryByTestId('job-posting-preview')).toBeNull();
+      // 시트는 닫혀 있다 — 누르기 전에는 옵션이 없다.
+      expect(queryByTestId('sheet-option-preview')).toBeNull();
 
-    expect(mockPush).toHaveBeenCalledWith('/(app)/jobs/posting-1');
+      fireEvent.press(getByTestId('job-posting-share'));
+      fireEvent.press(getByTestId('sheet-option-preview'));
+
+      expect(mockPush).toHaveBeenCalledWith('/(app)/jobs/posting-1');
+    });
+
+    it('공유 시트에서 지원 QR 로 간다', () => {
+      const { getByTestId } = render(<JobPostingDetailScreen />);
+
+      fireEvent.press(getByTestId('job-posting-share'));
+      fireEvent.press(getByTestId('sheet-option-apply-qr'));
+
+      expect(mockPush).toHaveBeenCalledWith('/(employer)/my-postings/posting-1/apply-qr');
+    });
+
+    // 🔑 시트(RN Modal)가 내려가는 도중에 OS 공유창을 띄우면 iOS 가 표시를 무시할 수 있다.
+    //    선택 즉시 부르면 이 계약이 깨진다 — 시트 퇴장 뒤에 연다.
+    it('링크 공유는 시트가 내려간 뒤에 OS 공유창을 연다', () => {
+      jest.useFakeTimers();
+      try {
+        const { getByTestId } = render(<JobPostingDetailScreen />);
+
+        fireEvent.press(getByTestId('job-posting-share'));
+        fireEvent.press(getByTestId('sheet-option-share-link'));
+        expect(mockShareJob).not.toHaveBeenCalled();
+
+        jest.runOnlyPendingTimers();
+        expect(mockShareJob).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    // 🔑 협업자 진입점은 헤더 `⋯` 시트가 아니라 '관리' 타일이다. 항목이 하나뿐인 점 셋 메뉴는
+    //    열기 전까지 무엇이 있는지 알 수 없어, 사장이 이 진입점을 못 찾았다.
+    it('관리 타일에서 함께 관리할 사람으로 간다', () => {
+      const { getByTestId, queryByTestId } = render(<JobPostingDetailScreen />);
+
+      // ⋯ 버튼 자체가 없어야 한다 — 남아 있으면 빈 시트가 열린다.
+      expect(queryByTestId('job-posting-more')).toBeNull();
+
+      fireEvent.press(getByTestId('job-posting-manage-collaborators'));
+
+      expect(mockPush).toHaveBeenCalledWith('/(employer)/my-postings/posting-1/collaborators');
+    });
   });
 });

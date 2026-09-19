@@ -247,6 +247,8 @@ export const queryKeys = {
     byDate: (date: string) => [...queryKeys.schedules.all, 'byDate', date] as const,
     byMonth: (year: number, month: number) =>
       [...queryKeys.schedules.all, 'byMonth', year, month] as const,
+    nextConfirmed: (staffId: string) =>
+      [...queryKeys.schedules.all, 'nextConfirmed', staffId] as const,
   },
 
   // 근무 기록

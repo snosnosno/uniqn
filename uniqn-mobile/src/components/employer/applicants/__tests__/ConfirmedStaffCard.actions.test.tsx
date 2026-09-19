@@ -2,11 +2,8 @@
  * ConfirmedStaffCard — 액션 줄 렌더 규칙
  *
  * 고정하는 계약 셋:
- *  1. 🔴 `allowDeleteAnyStatus` 는 **근무표 전용 탈출구**다. 근무표에는 상태 되돌리기가 없고
- *     컨테이너 직속 배치는 스태프관리 탭조차 없어서, 근태 상태로 빼기를 막으면 QR 오인식
- *     한 번에 제거 경로가 앱 전체에서 0이 된다.
- *  2. 🔴 기본값은 **그대로 좁다**. 스태프관리는 되돌리기라는 안전한 경로가 있으므로 넓히지 않는다
- *     — 이 단언이 없으면 1번을 고치다 두 화면을 함께 넓혀도 아무도 모른다.
+ *  1. 🔴 체크인 이후의 확정 배치는 삭제할 수 없고 근태 정정으로만 수정한다.
+ *  2. 🔴 삭제 버튼은 출근 전 `scheduled` 상태에서만 노출한다.
  *  3. 그려질 액션이 하나도 없으면 액션 줄(구분선) 자체를 렌더하지 않는다.
  *
  * ⚠️ `accessibilityState` 는 react-native-web 에서 무효라 판정에 쓰지 않는다.
@@ -50,19 +47,16 @@ function renderCard(
 }
 
 describe('ConfirmedStaffCard — 빼기 게이트', () => {
-  it('🔴 allowDeleteAnyStatus 면 출근한 인원도 뺄 수 있다(근무표 경로)', () => {
-    renderCard({ status: 'checked_in' }, { onDelete: jest.fn(), allowDeleteAnyStatus: true });
+  it('출근한 인원은 뺄 수 없다', () => {
+    renderCard({ status: 'checked_in' }, { onDelete: jest.fn() });
 
-    expect(screen.getByTestId('card-delete-action')).toBeTruthy();
+    expect(screen.queryByTestId('card-delete-action')).toBeNull();
   });
 
-  it('🔴 allowDeleteAnyStatus 면 노쇼 행도 뺄 수 있다', () => {
-    renderCard(
-      { status: 'no_show', isNoShow: true },
-      { onDelete: jest.fn(), allowDeleteAnyStatus: true }
-    );
+  it('노쇼 기록은 뺄 수 없다', () => {
+    renderCard({ status: 'no_show', isNoShow: true }, { onDelete: jest.fn() });
 
-    expect(screen.getByTestId('card-delete-action')).toBeTruthy();
+    expect(screen.queryByTestId('card-delete-action')).toBeNull();
   });
 
   it('🔴 기본값은 좁다 — 출근한 인원은 빼기가 안 보인다(스태프관리 규칙 보존)', () => {
@@ -128,7 +122,7 @@ describe('ConfirmedStaffCard — 빈 액션 줄', () => {
   });
 
   it('대조군 — 그려질 액션이 하나라도 있으면 액션 줄이 산다', () => {
-    renderCard({ status: 'checked_in' }, { onDelete: jest.fn(), allowDeleteAnyStatus: true });
+    renderCard({ status: 'scheduled' }, { onDelete: jest.fn() });
 
     expect(screen.getByTestId('card-actions')).toBeTruthy();
   });

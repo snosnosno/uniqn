@@ -11,14 +11,14 @@
 
 ## decisions
 - [[enum-divergence]] — enum 발산 → 읽기 레코드 증발 방지 규칙 (3회 재발 클래스)
-- [[worktime-ssot]] — 근무시간 표시 SSOT(WorkTimeDisplay) 우회 금지
+- [[worktime-ssot]] — 근무시간 표시 SSOT(WorkTimeDisplay) 우회 금지. 🔑**정규화(15분 올림) 시각과 원본 스캔시각은 다른 축** — 구간·후보 판정 하한은 `check_in_scanned_at` (PR#497, `20260918105900`)
 - [[capacity-full]] — 공고 자동마감 capacity_full + dead counter 제거 (⚠️PR#269로 담당 주체 이관: filled=work_logs 좌석 트리거·전이=job_postings BEFORE 트리거)
 - [[test-seed-contract-drift]] — DB 계약 소유권 이관 시 테스트 시드 전수 점검: red보다 **vacuous green**이 위험(사후단언만 있으면 시드가 죽어도 조용) + 수정 후 비-공허성 red-green 증명 (PR#269→#275)
-- [[test-db-grants]] — 테스트 DB는 명시 GRANT + setup-cli 버전 pin (기본 default-privilege 의존 금지)
+- [[test-db-grants]] — 테스트 DB는 명시 GRANT + setup-cli 버전 pin (기본 default-privilege 의존 금지). ⚠️그 대가: 픽스처 블랭킷 GRANT 가 `relacl` 을 덮으므로 **컬럼 단위 ACL 은 `pg_attribute.attacl` 로 단언**해야 공허하지 않다 (PR#497)
 - [[wallet-pgtap-caller-binding]] — `auth.uid()` 의존 강화가 pgTAP 하네스를 깨뜨리는 **2회 재발 클래스**: 1회차=JWT 미주입(PR#195→#198), 2회차=인라인 주입이 남긴 stale singular GUC(PR#267→#277). 테스트 JWT 주입은 헬퍼 단일 경로
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
 - [[migration-timestamp-collision]] — 병렬 세션이 같은 마이그 타임스탬프 → 병합 후 db reset `schema_migrations_pkey` 23505, 신규분 리네임 해소. **2026-08-07 하루에 2회 재발** → 확인 시점을 "브랜치 딸 때"가 아니라 **머지 직전**으로 이동(빈 슬롯이 그 사이 채워진다). prod 는 MCP-apply라 무증상이지만 **양방향 드리프트는 별개로 존재**(PR#436)
-- [[prod-parity-baseline]] — prod가 진실: baseline squash 채택 이유(함수163vs142·정책103vs173 발산) + 가드 2중 + MCP 핫픽스=같은 PR 가드 갱신 규율 (PR#241). **2026-07-25 parity-smoke 첫 실가동**(그전엔 시크릿 미설정으로 skip을 success 처리 — fail-open 가드의 침묵) + Session pooler 접속 함정 2종
+- [[prod-parity-baseline]] — prod가 진실: baseline squash 채택 이유(함수163vs142·정책103vs173 발산) + 가드 2중 + MCP 핫픽스=같은 PR 가드 갱신 규율 (PR#241). **2026-09-19 새 기준선 225/102**(prod 실측 일치) + 정책 −11 규명: `DROP TABLE` 이 그 위 정책도 함께 지운다 + 기록명 어긋난 9월 마이그 7건 재적용 금지 목록. **2026-07-25 parity-smoke 첫 실가동**(그전엔 시크릿 미설정으로 skip을 success 처리 — fail-open 가드의 침묵) + Session pooler 접속 함정 2종
 - [[e2e-gate-absence]] — E2E가 required check가 아니라 결정적 회귀가 3 PR 전파(#327→#328 유입→#330→#331 해소). 그 사이 방어=화면 분리를 지키는 "진입 경로 케이스" + 죽은 로케이터 제거. **✅2026-08-07 1단계 착지(PR#432)**: branch protection 활성화, required=`Quality Gate`·`E2E Gate`. 🔑`paths` 필터 잡을 required 로 걸면 **영구 pending 데드락** → required 는 `if: always()` **애그리게이터**에 건다(`skipped`=성공). 켜는 순간 기존 열린 PR 전부 BLOCKED
 - [[error-vs-empty-state]] — 조회 실패를 빈 배열로 그리면 화면이 **성공을 가장한 안내**를 띄운다(8화면, PR#434). "모든 평가를 완료했어요"→평가 기회 소멸 · "내역 없음"→중복 신청. 🔑근본 원인은 화면이 아니라 **error·refetch 를 반환조차 않던 훅** · error 합성은 `enabled` 와 대칭 · 에러를 **세우는 경로만큼 지우는 경로**도 필요
 - [[server-validation-completeness]] — 서버 검증이 길이·XSS·형식·enum 을 다 보면서 **관계(퇴근≥출근)만** 안 봤다(PR#433). 하류의 `GREATEST(0,…)` 가 음수를 접어 **₩0 정산 확정**까지 갔다 — 방어가 오류를 **정상값으로 세탁**한다. 🔑병합 후 최종값으로 판정 · 같음(=)도 거부 · 한쪽 NULL 이면 판정 안 함
@@ -28,7 +28,7 @@
 - [[order-sheet-form-contract]] — 주문서 폼 계약: 3제네릭 zodResolver(z.input/z.output)·canonical 매퍼 등가성·Design B(단일화면 카드+시트)·#244 지연전환·중첩Modal embedded·update=patch conditions 상시 전달·전 타입 단일 경로+레거시 은퇴 (PR#246/#247/#261)
 - [[ops-no-money-flow]] — ops 엔진 돈-흐름 비관여 경계: 프라이즈 계산만, 바이인 결제·시드권 발급·상금 정산 금지 (관광진흥법 카지노업 유사행위 리스크)
 - [[secdef-hardening]] — SECURITY DEFINER 함수 하드닝 **4규칙**: anon EXECUTE 명시 REVOKE·search_path에 extensions·plpgsql NULL fail-open 차단·**트리거 전용 함수는 PUBLIC/anon/authenticated 전부 회수**(PR#455 이탈 실증 — 권한상승은 아니나 규약 이탈+PostgREST 노출. 🚨게이트를 못 넘은 이유=회귀 테스트가 anon 만 단언) (memory 졸업, PR#195)
-- [[deploy-channel-skew]] — 배포 채널 3속도(서버·웹=즉시 / 네이티브=스토어 빌드까지 불가)라 **서버를 항상 먼저** 내야 한다. 어겼을 때의 실사고=#441(마이그 미적용 → `archived_at` 42703 으로 ops 전면 파손, 🔑기능 플래그는 라우트 게이트가 아니라 안 막아준다). 그 유일한 방어선인 **버전 게이트는 3계층 모두 죽어 있다** — 구현 부재가 아니라 배선 한 줄+서버 값 정지
+- [[deploy-channel-skew]] — 배포 채널 3속도(서버·웹=즉시 / 네이티브=스토어 빌드까지 불가)라 **서버를 항상 먼저** 내야 한다. 어겼을 때의 실사고=#441(마이그 미적용 → `archived_at` 42703 으로 ops 전면 파손, 🔑기능 플래그는 라우트 게이트가 아니라 안 막아준다). 그 유일한 방어선인 **버전 게이트는 3계층 모두 죽어 있다** — 구현 부재가 아니라 배선 한 줄+서버 값 정지. **2026-09-19 추가**: 함대가 갈리면 **서버가 정본인 변경만 우회로가 있다**(DB 트리거 문구 ○ / 순수 클라 UI ×) · `eas update` 는 비대화형에서 `--environment` 필수 · 번들 grep 거짓음성 **3종**(비ASCII만 이스케이프·엣지캐시·대조군 오선정)
 - [[secdef-replace-search-path-loss]] — 기존 함수 `CREATE OR REPLACE` 시 DDL에 안 적은 속성(`search_path`·volatility)이 원본형으로 되돌아감 → 재정의 전 `proconfig`/`provolatile` 실측 필수. "STABLE이면 중첩 DML 거부"는 거짓 (PR#273). **확장(PR#360)**: 재정의 베이스는 반드시 `grep -l "CREATE OR REPLACE FUNCTION <name>" migrations/*.sql | sort | tail -1` 이 가리키는 **최신 정의** — 낡은 판을 복사하면 그 사이 개선이 통째로 되돌아간 채 prod 까지 간다
 - [[type-honesty-runtime-vs-declared]] — 선언 타입 ≠ 런타임 진실: zod 경계가 정규화하는데 인터페이스가 이전 형태를 선언 → TS가 영원히 못 잡는 거짓말. 제네릭 기본값으로 도메인별 졸업 (PR#268)
 - [[supabase-write-pitfalls]] — Supabase 쓰기 경로 함정 종합: 카운터 트리거·realtime publication·RPC 예외 매핑·시드 zod·storage 정책·존재하지 않는 테이블 (memory 졸업)
@@ -36,7 +36,8 @@
 - [[semantic-merge-conflicts]] — 병합은 텍스트가 아니라 **의미**에서 충돌한다: 충돌 0 ≠ 안전. 실증 5종(같은 결함 양쪽 수정·상대 신규 테스트 사망·리네임+삭제·래칫 병합 산술·SQL 전용 PR 이 클라 상태 매핑 흔듦) + 종료조건=재통합 후 전체검증 green (PR#356·#357·#360)
 - [[persisted-cache-shape-drift]] — 지속 캐시는 OTA 를 건너 살아남는다: 코드만 갈리고 기기의 구 payload 는 그대로 → 신규 필드가 `undefined` 로 화면까지. 버전 승격 금지(안전망 폐기), **정규화 경계에서 필드 전량 기본값** (PR#356→#362). ⚠️`useApplications`·`useJobDetail` 은 아직 정규화 0
 - [[headcount-daily-basis]] — 인원 표시 계약: 하루 기준 분수·분자=일별 max(통지원 전제)·마감=대기 지원 허용·hydrate 키 단일 소스(postingHydrateKeys) — capacity_full(공고 단위)과 의도된 이원화 (PR#309)
-- [[vacuous-verification]] — **초록불이 "아무것도 검사하지 않았다"를 뜻할 때** 5유형(단언 미도달·구조적 0·미실행 성공·판정축 오류·도구 사각지대). 오탐이 아니라 **무음**이라 신호를 기다리면 영영 못 찾는다 → 고의로 깨뜨려 빨간불을 볼 것 (PR#474·#478·#481)
+- [[vacuous-verification]] — **초록불이 "아무것도 검사하지 않았다"를 뜻할 때** **7유형**(단언 미도달·구조적 0·미실행 성공·판정축 오류·도구 사각지대·**하네스가 계약을 덮어씀**(픽스처 블랭킷 GRANT→`attacl` 로 단언)·**경계가 느슨해 성공하면 통과**(고정 과거 상수 하한→`clock_timestamp()` 캡처)). 오탐이 아니라 **무음**이라 신호를 기다리면 영영 못 찾는다 (PR#474·#478·#481·#497)
+- [[entry-point-stability]] — 진입점은 신호로 숨기지 않는다: 사장은 메뉴를 **위치로** 기억해 빼면 "메뉴가 없어졌다"로 읽는다(실사고). 숨김은 0개일 때만, 입구가 필요하면 **같은 자리에서 바꾼다**(`팀원 초대`↔`팀`) · 배지 합치지 않음 · **항목 1개짜리 `⋯` 메뉴는 진입점이 아니다**(타일로 복귀) · 첫 화면 자격은 "왜 들어왔는가"가 정한다(근무정보 기본 접힘) · 🚨기획 문서의 "N명 이상일 때만" 3항목은 폐기 (PR#492~#495·#501)
 - [[knowledge-layer-budget]] — 항상-로딩 지식이 예산을 넘으면 **잘라내지 말고 계층을 분리**한다: 가지치기 6회 실패(07-19~08-10) 원인=완료분 적체(`✅` 15건). 경고는 원인을 지목해야 하고, 잘린 색인은 "없음"과 "안 보임"을 구별 못 한다
 
 ## domain
@@ -81,4 +82,6 @@
 - [[ops-defect7-wave-2026-08]] — ops 가 앱의 나머지와 **통합돼 있지 않았다**(offline·notification·payroll 참조 전부 0건). 오프라인 가드 44곳(🔑큐잉은 존재하지 않는 기능 — `offlineFirst`+`retry:false`) · 배정 알림에 **딥링크를 일부러 안 걸었다**(도착 화면이 RLS 로 빈 화면) · 근태 write-back 은 **새 저장소를 안 만들고** 해석기 1개+기존 RPC 위임 · UI 는 `reason==='ok'` 일 때만 열고 **일괄 버튼 금지를 테스트로 고정**(notify 트리거 3개=20명이면 60발화) — ✅PR#451~#456
 - [[full-app-audit-2026-08-09]] — 41 에이전트 2라운드 감사, 확정 **60건**·반증 3. 🔑약점이 한 패턴으로 수렴: **규약이 웨이브 단위로 소급 적용되고 신규 코드·범위 밖 도메인엔 자동 전파되지 않는다**(HIGH 7 중 5). 🏷️prod 데이터가 사실상 0이라 **지금이 가장 싼 시점** · 🚨"Grep 0건" 부재증명은 **브레이스 글롭 공허 매칭** 함정을 밟았을 수 있다 · 스키마 키에 한글 넣으면 에이전트 400 즉사
 - [[ops-followups-2026-08]] — 전광판·QR 링크가 **DNS 미해석 도메인**을 가리켰다(설계에서 "선택적"이던 인프라가 코드엔 전제로 박힘). 칩 입력이 realtime 재렌더마다 되돌아간 원인=**복제한 effect 관용구의 전제**(deps 인라인 객체). 🚨**카운트 가드는 숫자가 우연히 같으면 머지 충돌이 안 난다** — ✅PR#435·#438
+- [[employer-ia-redesign-2026-09]] — 구인자 IA 재설계 S1~S5: 진입점 12→3 · 정산 **워크플로우만** 제거(금액 유지, 잠금 미발동으로 퇴근 정정 상시 개방) · `[공고]/[근무표]` 세그먼트+오늘 한 줄 · 근무표 출처 칩 · 팀/협업자 범위 문구 · viewer 노쇼 열람 안내 경로. DB 변경 0 · 🚨기획 문서와 코드가 다른 4항목 표기 — ✅PR#490·#492·#493·#494·#495
+- [[db-red-fix-and-release-2026-09]] — DB red 4건 종결(파리티 장부·QR 퇴근 후보 하한·댓글 트리거 순서) → #497 머지 → **prod 마이그 4건·OTA·웹배포 전량 실행**(2026-09-19). 라이브 값 정본(master `12f5af375` · OTA `cf441657` · 웹 `38945720` · prod 마이그 `20260918110000`) · 검증기법 2종(`attacl`·캡처 하한) · 남은 사람 게이트 — ✅PR#497·#498·#501·#502
 - [[memory-live-traps-2026-08]] — MEMORY.md 「라이브 함정」 25항목 졸업 기록(2026-08-25). **무엇이 wiki 로 갔고 무엇이 인덱스에 남았는지**의 대조표 — 영속적 사실만 졸업, 현재 상태(플래그·웨이브 계약·삭제금지 자산)는 잔류

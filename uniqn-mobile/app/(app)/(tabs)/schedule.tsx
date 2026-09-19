@@ -29,7 +29,7 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useApplications } from '@/hooks/useApplications';
-import { useCalendarView, useTodaySchedules } from '@/hooks/useSchedules';
+import { useCalendarView, useNextConfirmedSchedule, useTodaySchedules } from '@/hooks/useSchedules';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { pickNextShift } from '@/components/schedule/helpers/nextShift';
@@ -64,7 +64,6 @@ import {
 import {
   filterSchedulesByStatus,
   countSchedulesByType,
-  countUnpaidSchedules,
   splitSchedulesByToday,
   pickGroupFocusDate,
   formatSingleDate,
@@ -91,7 +90,7 @@ function formatMonthTitle(year: number, month: number): string {
   return `${year}년 ${month}월`;
 }
 
-/** 필터 라벨 — 'unpaid' 는 상태가 아니라 정산 관점 축이라 따로 이름을 준다. */
+/** 필터 라벨 — 상태(type) 어휘와 같다. ('미지급' 필터는 구인자 IA S2b 에서 없앴다.) */
 const STATUS_FILTER_LABELS: Record<ScheduleStatusFilter, string> = {
   all: '전체',
   applied: SCHEDULE_TYPE_LABELS.applied,
@@ -99,7 +98,6 @@ const STATUS_FILTER_LABELS: Record<ScheduleStatusFilter, string> = {
   completed: SCHEDULE_TYPE_LABELS.completed,
   cancelled: SCHEDULE_TYPE_LABELS.cancelled,
   no_show: SCHEDULE_TYPE_LABELS.no_show,
-  unpaid: '미지급',
 };
 
 // ============================================================================
@@ -290,25 +288,17 @@ export default function ScheduleScreen() {
     [groupedByApplication, statusFilter]
   );
 
-  const unpaidCount = useMemo(
-    () => countUnpaidSchedules(groupedByApplication),
-    [groupedByApplication]
-  );
-
-  const statusFilterOptions = useMemo<FilterTabOption<ScheduleStatusFilter>[]>(() => {
-    const options: FilterTabOption<ScheduleStatusFilter>[] = [
+  // 구인자 IA S2b — '미지급' 필터는 없앴다. 사장이 `지급 완료` 를 누르는 흐름이 없으니
+  // 모든 완료 근무가 영원히 "미지급" 으로 잡힌다.
+  const statusFilterOptions = useMemo<FilterTabOption<ScheduleStatusFilter>[]>(
+    () => [
       { value: 'all', label: STATUS_FILTER_LABELS.all },
       { value: 'applied', label: STATUS_FILTER_LABELS.applied, count: statusCounts.applied },
       { value: 'confirmed', label: STATUS_FILTER_LABELS.confirmed, count: statusCounts.confirmed },
       { value: 'completed', label: STATUS_FILTER_LABELS.completed, count: statusCounts.completed },
-    ];
-
-    // '아직 못 받은 근무'는 있을 때만 노출한다 — 늘 0 인 탭은 소음이다.
-    if (unpaidCount > 0) {
-      options.push({ value: 'unpaid', label: STATUS_FILTER_LABELS.unpaid, count: unpaidCount });
-    }
-    return options;
-  }, [statusCounts, unpaidCount]);
+    ],
+    [statusCounts]
+  );
 
   // 리스트 뷰를 시간 축으로 가른다 — '다가오는 근무'가 먼저, 그 안에서도 가까운 날이 먼저.
   // 기본 그룹 정렬은 최신순 내림차순이라 27일인 사용자에게 31일 카드가 맨 위에 왔다.
@@ -353,9 +343,10 @@ export default function ScheduleScreen() {
   // '내 다음 근무' 히어로 — 이미 구현돼 있으나 소비자가 없던 useTodaySchedules(60초 폴링·
   // 오프라인 캐시 완비)를 오늘 근무 원천으로 쓰고, 오늘 것이 없으면 이번 달 확정 건에서 찾는다.
   const { schedules: todaySchedules } = useTodaySchedules();
+  const { data: futureNextShift } = useNextConfirmedSchedule();
   const nextShift = useMemo(
-    () => pickNextShift([...todaySchedules, ...schedules], todayStr),
-    [todaySchedules, schedules, todayStr]
+    () => futureNextShift ?? pickNextShift([...todaySchedules, ...schedules], todayStr),
+    [futureNextShift, todaySchedules, schedules, todayStr]
   );
   const listSections = useMemo(() => {
     const { upcoming, past } = splitSchedulesByToday(filteredSchedules, todayStr);
@@ -862,7 +853,6 @@ export default function ScheduleScreen() {
         collapsed={dashboardCollapsed}
         onToggle={handleToggleDashboard}
         activeFilterLabel={statusFilter === 'all' ? null : STATUS_FILTER_LABELS[statusFilter]}
-        unpaidCount={unpaidCount}
       >
         {/* 상태 필터 — 두 뷰 공통. 뷰를 토글해도 필터가 유지된다. */}
         {!hasBlockingError && groupedByApplication.length > 0 ? (

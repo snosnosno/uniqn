@@ -1,20 +1,31 @@
 /**
- * P3 공지사항 (사용자 측) 테스트 (4 tests)
+ * P3 공지 (사용자 측) 테스트 (4 tests)
  * 프로젝트: chromium (staff storageState)
+ *
+ * ⚠️ 공지는 더 이상 독립 화면이 아니다 — `/notices` 는 소통 탭의 공지로,
+ *    `/notices/[id]` 는 `/board/post/<boardNoticePostId>` 로 **리다이렉트**된다
+ *    (`app/(app)/notices/index.tsx` · `[id].tsx`). 그래서 헤더는 "공지사항"이 아니라
+ *    "소통"이고, 상세 URL 도 `/notices/...` 가 아니다.
+ *    eslint ignores 에 `e2e/` 가 있어 `npm run quality` 가 이 어긋남을 못 잡는다.
  */
+// 🔑 카드 locator 는 `[role="button"]` 이어선 안 된다 — 소통 탭의 **탭 버튼**까지 잡혀
+//    `hasCards` 가 true 가 되고, 탭을 눌러 URL 이 안 바뀌어 timeout 난다(실측).
+//    `BoardPostCard.tsx:42` 의 accessibilityLabel `"<제목> 공지 상세 보기"` 로 겨냥한다.
 import { test, expect } from '../../fixtures/base.fixture';
 
-test.describe('공지사항 (사용자)', () => {
+test.describe('공지 (사용자)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/notices', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
   });
 
-  test('공지사항 목록 렌더링 → 헤더 표시', async ({ page }) => {
-    await expect(page.getByText('공지사항').first()).toBeVisible();
+  test('공지 경로는 소통 탭의 공지로 리다이렉트된다', async ({ page }) => {
+    await page.waitForURL(/\/board\/notice$/, { timeout: 10_000 });
+    await expect(page.getByText('소통').first()).toBeVisible();
+    await expect(page.getByLabel('공지 탭')).toBeVisible();
   });
 
-  test('공지사항 빈 상태 → 안내 메시지 표시', async ({ page }) => {
+  test('공지 빈 상태 → 안내 메시지 표시', async ({ page }) => {
     // 공지가 없으면 빈 상태 표시, 있으면 목록 표시
     const emptyTitle = page.getByText('공지사항이 없습니다');
     const emptyDesc = page.getByText('새로운 공지사항이 등록되면 알려드릴게요');
@@ -25,30 +36,29 @@ test.describe('공지사항 (사용자)', () => {
     }
   });
 
-  test('공지사항 목록에 카드가 있으면 클릭 → 상세 페이지 이동', async ({
-    page,
-  }) => {
-    // 첫 번째 공지 카드 클릭 시도
-    const firstCard = page.locator('[role="button"]').first();
+  test('공지 목록에 카드가 있으면 클릭 → 게시글 상세로 이동', async ({ page }) => {
+    await page.waitForURL(/\/board\/notice$/, { timeout: 10_000 });
+
+    const firstCard = page.getByLabel(/공지 상세 보기$/).first();
     const hasCards = await firstCard.isVisible().catch(() => false);
 
     if (hasCards) {
       await firstCard.click();
-      await page.waitForURL(/\/notices\//, { timeout: 5_000 });
-
-      // 상세 페이지 렌더링 확인
-      await expect(page.getByText('공지사항').first()).toBeVisible();
+      // 상세는 `/board/post/<id>` 다 — 구 `/notices/<id>` 는 리다이렉트 경유 경로일 뿐이다
+      await page.waitForURL(/\/board\/post\//, { timeout: 5_000 });
+      await expect(page.getByText('소통').first()).toBeVisible();
     }
   });
 
-  test('공지사항 상세 → 카테고리 배지 및 메타 정보 표시', async ({ page }) => {
-    // 직접 상세 페이지 접근 시도
-    const firstCard = page.locator('[role="button"]').first();
+  test('공지 상세 → 카테고리 배지 및 메타 정보 표시', async ({ page }) => {
+    await page.waitForURL(/\/board\/notice$/, { timeout: 10_000 });
+
+    const firstCard = page.getByLabel(/공지 상세 보기$/).first();
     const hasCards = await firstCard.isVisible().catch(() => false);
 
     if (hasCards) {
       await firstCard.click();
-      await page.waitForURL(/\/notices\//, { timeout: 5_000 });
+      await page.waitForURL(/\/board\/post\//, { timeout: 5_000 });
 
       // 카테고리 배지 확인 (공지/업데이트/이벤트/점검 중 하나)
       const categoryBadges = ['공지', '업데이트', '이벤트', '점검'];

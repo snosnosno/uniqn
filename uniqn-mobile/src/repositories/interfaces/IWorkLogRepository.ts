@@ -201,6 +201,19 @@ export interface IWorkLogRepository {
    */
   getByVenueSpanInRange(venueId: string, fromDate: string, toDate: string): Promise<WorkLog[]>;
 
+  /** 지점 스팬의 해결되지 않은 퇴근 미기록(월 무관) */
+  getMissingCheckoutsByVenueSpan(venueId: string, beforeDate: string): Promise<WorkLog[]>;
+
+  /**
+   * 구인자(ownerId) 기준 "오늘 확인할 근무" 조회 — 내 공고 탭 오늘 한 줄(구인자 IA S3)
+   *
+   * @description 오늘 날짜의 `scheduled`(미출근 후보) + 오늘 이전의 `checked_in`(퇴근 미기록 후보).
+   *   판정(고정 공고 제외·야간 유예)은 도메인 `summarizeTodayAttention` 이 한다.
+   * @param ownerId - 구인자 ID
+   * @param today - 오늘(YYYY-MM-DD)
+   */
+  getAttentionByOwnerId(ownerId: string, today: string): Promise<WorkLog[]>;
+
   /**
    * 구인자(ownerId)의 완료된 근무 기록 조회
    *
@@ -229,6 +242,9 @@ export interface IWorkLogRepository {
    * @returns 출근 중인 근무 기록 또는 null
    */
   getTodayCheckedIn(staffId: string): Promise<WorkLog | null>;
+
+  /** 조회 월과 무관한 가장 가까운 미래 확정 근무 */
+  getNextScheduledCandidates(staffId: string, fromDate: string): Promise<WorkLog[]>;
 
   /**
    * 근무 기록 통계 조회
