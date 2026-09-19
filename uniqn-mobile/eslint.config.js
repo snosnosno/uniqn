@@ -10,7 +10,9 @@ const eslintConfigPrettier = require('eslint-config-prettier');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const tsParser = require('@typescript-eslint/parser');
 const reactPlugin = require('eslint-plugin-react');
-const reactHooksPlugin = require('eslint-plugin-react-hooks');
+// react-hooks 플러그인은 expoConfig(1번 블록)가 이미 등록한다. 여기서 다시 등록하면
+// eslint-plugin-react-hooks 7 부터 `Cannot redefine plugin "react-hooks"` 로 죽는다.
+// 규칙(`react-hooks/*`)은 등록 없이 그대로 참조할 수 있다.
 const reactNativePlugin = require('eslint-plugin-react-native');
 
 module.exports = [
@@ -47,7 +49,6 @@ module.exports = [
     files: ['**/*.{jsx,tsx}'],
     plugins: {
       react: reactPlugin,
-      'react-hooks': reactHooksPlugin,
       'react-native': reactNativePlugin,
     },
     settings: {
