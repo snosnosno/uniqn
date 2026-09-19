@@ -14,6 +14,7 @@
 - [[worktime-ssot]] — 근무시간 표시 SSOT(WorkTimeDisplay) 우회 금지. 🔑**정규화(15분 올림) 시각과 원본 스캔시각은 다른 축** — 구간·후보 판정 하한은 `check_in_scanned_at` (PR#497, `20260918105900`)
 - [[capacity-full]] — 공고 자동마감 capacity_full + dead counter 제거 (⚠️PR#269로 담당 주체 이관: filled=work_logs 좌석 트리거·전이=job_postings BEFORE 트리거)
 - [[test-seed-contract-drift]] — DB 계약 소유권 이관 시 테스트 시드 전수 점검: red보다 **vacuous green**이 위험(사후단언만 있으면 시드가 죽어도 조용) + 수정 후 비-공허성 red-green 증명 (PR#269→#275)
+- [[tooling-inventory]] — 도구는 "설치했으니 둔다"가 아니라 **산출로 값을 증명한 것만** 둔다. 4주 표본 실측으로 판정(17세션에서 실제 호출된 스킬 **8종뿐**) · 중복 MCP 2벌 적재 · 산출이 멈춘 수집 파이프라인 · **쌓는 쪽과 읽는 쪽을 같이 봐야 하는 로그**(27.9MB 를 세션마다 전량 파싱 → 역방향 읽기로 0.31s→0.0005s) · 줄일 수 없는 것(gstack 복원) · eslint 10 버전 벽
 - [[test-db-grants]] — 테스트 DB는 명시 GRANT + setup-cli 버전 pin (기본 default-privilege 의존 금지). ⚠️그 대가: 픽스처 블랭킷 GRANT 가 `relacl` 을 덮으므로 **컬럼 단위 ACL 은 `pg_attribute.attacl` 로 단언**해야 공허하지 않다 (PR#497)
 - [[wallet-pgtap-caller-binding]] — `auth.uid()` 의존 강화가 pgTAP 하네스를 깨뜨리는 **2회 재발 클래스**: 1회차=JWT 미주입(PR#195→#198), 2회차=인라인 주입이 남긴 stale singular GUC(PR#267→#277). 테스트 JWT 주입은 헬퍼 단일 경로
 - [[knip-signal-hygiene]] — knip 신호 정화: 래칫 게이트 + 안전 삭제 프로토콜(미사용≠죽음 ~65% 보존, tsc 오라클, 배럴 협응삭제, stale-base 안전망) (PR#231)
