@@ -427,3 +427,10 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 🔑 **무한 증가 로그는 쌓는 쪽과 읽는 쪽을 같이 봐야 한다** — `work-log/buffer.jsonl` 27.9MB 를 SessionStart 훅이 **마지막 `session_end` 하나 때문에 전량 파싱**하고 있었다. 역방향 청크 읽기로 바꿔 **같은 값 / 0.31s→0.0005s** 확인, `work-tracker-tool.sh` 에 8MB 로테이션 추가(분기를 임계값 0으로 강제 실행해 20,009→20,000줄과 아카이브 append 실증).
 - 🚨 **훅을 고치다 조용히 죽일 뻔했다** — 셸 `python3 -c "…"` 안에 개행 이스케이프를 쓰다 문자열이 끊겨 SyntaxError 가 났는데, 훅은 `2>/dev/null` + `exit 0` 이라 **아무 신호 없이 기능만 사라진다**. `bash -n` 은 셸 문법만 보므로 통과한다. 🔑**훅 수정 후에는 반드시 실제 입력을 흘려 실행 검증**하고, 셸 안 파이썬에는 `bytes([10])` 처럼 이스케이프 없는 표현을 쓴다. ([[vacuous-verification]] 유형 3 의 실사례)
 - 계기: 사용자 "과하게 쓰고있는거있어?" → 실측 6건 제시 → "전부 진행".
+
+## [2026-09-20] ingest | 도구 정리 후속 — 비활성화가 안 먹었다(식별자 오류)와 실측 효과
+- 🚨 **앞 항목의 정리가 절반 실패했다.** `settings.json` 의 `enabledPlugins` 에 손으로 `false` 를 써 넣었지만 식별자를 `legal@knowledge-work-plugins` 로 적었고 실제 값은 **`legal@synced`** 였다 → **11종이 그대로 켜진 채**였다. manifest 의 `marketplaceName` 과 플러그인 id 의 마켓플레이스 부분이 다르다. 🔑**설정 파일의 문자열은 틀려도 아무 오류를 내지 않는다** — 쓰고 나서 `claude plugin list` 로 되읽어야 안다([[vacuous-verification]] 판정축 오류).
+- 해결: `claude plugin disable <name>@synced` 11회. **`claude plugin list` = enabled 5 / disabled 14**, `claude mcp list` 의 `plugin:` 접두 서버 **84 → 0**(총 10개 = 계정 6 + 로컬 4)으로 실측 확인.
+- **정량 효과**(`claude plugin details` 의 projected token cost): synced 11종 합계 **~7,728 tok / 세션** · 스킬 81 · 딸린 MCP 84. 최대는 data(~1,126) · legal(~985) · marketing(~872).
+- 🔑 **CLI 가 진실원이다** — 같은 세션의 프롬프트는 시작 시점에 고정돼 반영 여부를 알 수 없고, 설정 파일만 보면 "썼으니 됐다"로 끝난다. `claude plugin list` / `claude mcp list` / `claude plugin details` 세 명령이 되읽기 수단이다.
+- 계기: 사용자 "세션 재시작해서 줄었는지 확인해줘" → 재시작 없이 CLI 로 되읽어 실패를 발견.

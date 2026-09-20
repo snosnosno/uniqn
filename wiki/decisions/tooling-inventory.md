@@ -55,6 +55,44 @@ deploy 6 · ingest 4 · brainstorming · oss-vet · frontend-design). 나머지 
 
 🔑 **쌓는 쪽과 읽는 쪽을 같이 보지 않으면, 로그는 조용히 세션 시작 비용이 된다.**
 
+## 🚨 비활성화는 `settings.json` 을 손으로 고치지 말고 CLI 로 하라
+
+`enabledPlugins` 에 직접 `false` 를 써 넣었다가 **11종이 그대로 켜져 있었다**(2026-09-20).
+식별자를 `legal@knowledge-work-plugins` 로 적었는데 실제 값은 **`legal@synced`** 였다.
+manifest 의 `marketplaceName` 은 `knowledge-work-plugins` 지만 플러그인 id 의 마켓플레이스
+부분은 `synced` 다 — **설정 파일의 문자열은 틀려도 아무 오류를 내지 않는다.**
+
+```bash
+claude plugin list                    # 진실원: 무엇이 enabled/disabled 인지
+claude plugin disable <name>@synced   # 올바른 식별자를 알아서 쓴다
+claude plugin details <name>@synced   # 컴포넌트 인벤토리 + projected token cost
+claude mcp list                       # 플러그인이 딸고 오는 MCP 서버까지 보인다
+```
+
+🔑 **설정을 고친 뒤에는 CLI 로 상태를 되읽어라.** 같은 세션의 프롬프트는 시작 시점에 고정돼
+있어서 반영 여부를 알 수 없고, 설정 파일만 보면 "썼으니 됐다"로 끝난다
+([[vacuous-verification]] — 판정축이 틀린 경우).
+
+## 실측 효과 (2026-09-20, `claude plugin details` 의 projected token cost)
+
+| 플러그인(@synced) | always-on | 스킬 | 딸린 MCP |
+|---|---|---|---|
+| data | ~1,126 tok | 10 | 8 |
+| legal | ~985 | 9 | 7 |
+| marketing | ~872 | 8 | 13 |
+| engineering | ~871 | 10 | 10 |
+| product-management | ~848 | 9 | 16 |
+| human-resources | ~822 | 9 | 5 |
+| finance | ~752 | 8 | 6 |
+| design | ~617 | 7 | 9 |
+| productivity | ~352 | 4 | 9 |
+| cowork-plugin-management | ~257 | 2 | 0 |
+| pdf-viewer | ~226 | 5 | 1 |
+| **합계** | **~7,728 tok / 세션** | **81** | **84** |
+
+비활성화 후 `claude plugin list` = enabled 5 / disabled 14, `claude mcp list` 의
+`plugin:` 접두 서버 **84 → 0**, 총 MCP 10개(계정 6 + 로컬 4).
+
 ## 줄일 수 없는 것도 있다 — 알고 관리한다
 
 - **전역 스킬 70종은 감축 불가.** gstack 업그레이드가 `~/.claude/skills/gstack/` 원본에서

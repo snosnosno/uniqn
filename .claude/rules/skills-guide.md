@@ -102,6 +102,11 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 
 **호출 금지**: `ios-*` 5종은 Expo RN 에 무관하다. gstack 업그레이드가 복원하므로 삭제로는 못 없앤다.
 
+**플러그인 on/off 는 CLI 로** — `claude plugin list`(진실원) · `disable <name>@synced` ·
+`details <name>@synced`(projected token cost) · `claude mcp list`(플러그인이 딸고 오는 MCP 까지).
+🚨 `settings.json` 의 `enabledPlugins` 를 손으로 고치면 **식별자가 틀려도 조용히 무시된다**
+(`@knowledge-work-plugins` 가 아니라 `@synced` 다 — 11종이 켜진 채였던 실사고).
+
 **도입 전**: `/oss-vet` 6항목(유료벽·라이선스·훅 충돌·Windows 실행성·자산 중복·npm 사칭) 먼저.
 
 **린트 버전**: `eslint` 10 보류 중(PR#479) — `eslint-plugin-react` stable 이 `eslint ^9.7` 까지다.
