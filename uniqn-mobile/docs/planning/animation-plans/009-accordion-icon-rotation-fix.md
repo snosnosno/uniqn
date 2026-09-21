@@ -70,6 +70,6 @@ const chevronAnimatedStyle = useAnimatedStyle(() => ({
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/ui/Accordion.tsx`, `jest src/components/ui`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/ui/Accordion.tsx`, `npx jest src/components/ui`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: 아코디언을 펼치고 접으며 셰브론이 순간 스냅이 아니라 150ms 동안 부드럽게 회전하는지 슬로모션으로 확인. "동작 줄이기" ON 상태에서는 회전이 즉시 목표 각도로 전환되는지(애니메이션 없음) 확인.
 - **Done when**: `transition-transform` 클래스가 파일에서 사라지고, 셰브론이 실제로 트윈 애니메이션되며, reduceMotion 시 즉시 전환된다.

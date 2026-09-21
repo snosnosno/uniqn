@@ -47,16 +47,11 @@ exiting={reduceMotion ? undefined : FadeOut.duration(225)}
 
 **1) SheetModal.tsx**
 
+> ⚠️ 160ms(chain-entry 분기)는 `MOTION_DURATION`에 정확히 일치하는 값이 없다(`fast=150`, `base=200`). **리터럴 160을 그대로 유지**하고 easing만 토큰화한다 — 값을 임의로 150/200으로 반올림하지 않는다. 연쇄 시트 진입 타이밍은 `SHEET_CHAIN_SWAP_MS`(180, `@/constants/animation`)와 맞물려 조율된 값이라 반올림이 이음매를 깨뜨릴 수 있다.
+
 ```tsx
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
 
-// isChainEntryRef 분기
-contentOpacity.value = withTiming(1, { duration: MOTION_DURATION.fast + 10, easing: MOTION_EASING.fade });
-```
-
-> ⚠️ 주의: 160ms는 `MOTION_DURATION`에 정확히 일치하는 값이 없다(`fast=150`, `base=200`). **리터럴 160을 그대로 유지**하고 easing만 토큰화한다 — 값을 임의로 150/200으로 반올림하지 않는다:
-
-```tsx
 contentOpacity.value = withTiming(1, { duration: 160, easing: MOTION_EASING.fade });
 fadeOpacity.value = withTiming(1, { duration: MOTION_DURATION.base, easing: MOTION_EASING.fade }); // 200
 translateY.value = withTiming(0, { duration: MOTION_DURATION.sheet, easing: MOTION_EASING.sheet }); // 300 — sheet travel 커브
@@ -115,6 +110,6 @@ exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.sheetExit)}
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/ui/SheetModal.tsx src/components/ui/Skeleton.tsx src/components/ui/OfflineStatusBar.tsx src/components/employer/order-sheet/sheets/SlotCard.tsx`, `jest src/components/ui src/components/employer`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/ui/SheetModal.tsx src/components/ui/Skeleton.tsx src/components/ui/OfflineStatusBar.tsx src/components/employer/order-sheet/sheets/SlotCard.tsx`, `npx jest src/components/ui src/components/employer`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: 이 계획은 값을 바꾸지 않으므로(160ms 제외 전부 동일 수치) 시각적으로는 **아무것도 달라지지 않아야 한다** — 바텀시트 열기/닫기, 스켈레톤 shimmer, 오프라인 배너 등장/퇴장, 주문서 슬롯 펼침이 이전과 동일하게 보이면 성공. 달라 보인다면 토큰 값이 원래 리터럴과 실제로 일치하는지(`src/constants/motion.ts` 재확인) 검토.
 - **Done when**: 4개 파일 모두 `Easing.*` 직접 호출 없이 `MOTION_EASING`/`MOTION_DURATION` 토큰만 참조하며, 시각적 회귀가 없다.

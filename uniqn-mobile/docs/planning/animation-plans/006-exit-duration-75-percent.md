@@ -64,6 +64,6 @@ exiting={FadeOut.duration(150)}
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/ui/SheetModal.tsx src/components/notifications/NotificationItem.tsx src/components/notifications/NotificationGroupItem.tsx`, `jest src/components/ui src/components/notifications`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/ui/SheetModal.tsx src/components/notifications/NotificationItem.tsx src/components/notifications/NotificationGroupItem.tsx`, `npx jest src/components/ui src/components/notifications`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: 바텀시트를 열고 닫아, 닫힘 애니메이션이 열림보다 눈에 띄게 빠르게(하지만 급작스럽지 않게) 느껴지는지 슬로모션으로 확인. Chrome/RN DevTools의 애니메이션 패널 또는 화면 녹화 0.25배속으로 225ms가 실제 적용됐는지 프레임 카운트로 대략 확인(60fps 기준 약 13-14프레임).
 - **Done when**: SheetModal.tsx가 `MOTION_DURATION.sheetExit`를 참조하고, 값이 225로 렌더링된다.

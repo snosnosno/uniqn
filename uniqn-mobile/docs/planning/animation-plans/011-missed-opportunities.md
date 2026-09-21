@@ -151,7 +151,7 @@ import { FadeIn, FadeOut } from 'react-native-reanimated'; // LinearTransition�
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/workLogEdit/CollapsibleSection.tsx src/components/board/BoardImageViewerOverlay.tsx src/components/employer/order-sheet/ScheduleConditionCard.tsx src/components/tutorial/TutorialOverlay.tsx`, `jest src/components/workLogEdit src/components/board src/components/employer src/components/tutorial`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/workLogEdit/CollapsibleSection.tsx src/components/board/BoardImageViewerOverlay.tsx src/components/employer/order-sheet/ScheduleConditionCard.tsx src/components/tutorial/TutorialOverlay.tsx`, `npx jest src/components/workLogEdit src/components/board src/components/employer src/components/tutorial`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**:
   - CollapsibleSection: 접기/펼치기 시 높이가 점프 없이 부드럽게 전환되는지.
   - BoardImageViewerOverlay: 이전/다음 이미지 전환 시 즉시 스냅이 아니라 짧은 페이드가 있는지.

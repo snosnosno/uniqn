@@ -104,7 +104,7 @@ const reduceMotion = useReduceMotion();
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/notifications/NotificationItem.tsx src/components/notifications/NotificationGroupItem.tsx`, `jest src/components/notifications`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/notifications/NotificationItem.tsx src/components/notifications/NotificationGroupItem.tsx`, `npx jest src/components/notifications`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: "동작 줄이기" ON 상태에서 알림 목록 화면을 열어:
   - 알림 항목이 좌우로 슬라이드하지 않고 제자리 페이드로만 나타나는지.
   - 그룹 알림을 펼치거나 접을 때 다른 항목들이 이동(layout shift)하지 않는지.

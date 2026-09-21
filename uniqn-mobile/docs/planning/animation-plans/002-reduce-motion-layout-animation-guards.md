@@ -102,9 +102,10 @@ const toggleExpanded = useCallback(() => {
 ## Verification
 
 - **Mechanical**:
-  - `cd uniqn-mobile && npx tsc --noEmit`
+  - `cd uniqn-mobile && npm run type-check`
   - `npx eslint src/components/employer/settlement/GroupedSettlementCard.tsx src/components/employer/applicants/ApplicantCard/components/GroupedAssignmentSelector.tsx src/components/employer/applicants/ApplicantCard/ApplicantCard.tsx src/components/jobs/GroupedDateRequirementDisplay.tsx src/components/ui/Accordion.tsx src/components/support/FAQList.tsx`
-  - `jest src/components/employer src/components/jobs src/components/ui src/components/support` (디렉터리 단위 — 파일명 패턴으로 좁히면 같은 문구를 검증하는 다른 이름 테스트를 놓친다는 것이 이 저장소의 알려진 함정)
+  - `npx jest src/components/employer src/components/jobs src/components/ui src/components/support` (디렉터리 단위 — 파일명 패턴으로 좁히면 같은 문구를 검증하는 다른 이름 테스트를 놓친다는 것이 이 저장소의 알려진 함정)
+  - PR 전 `npm run quality`
 - **Feel check**: 기기 접근성 설정에서 "동작 줄이기"(iOS) / "애니메이션 제거"(Android)를 켠 상태로:
   - 정산 카드, 지원자 카드, 배정 선택기, 공고 날짜 그룹, 아코디언, FAQ 항목을 각각 펼치기/접기 — 레이아웃이 애니메이션 없이 즉시 전환되는지(점프처럼 보여도 정상) 확인.
   - 설정을 끈 상태로 동일 조작 시 기존처럼 부드러운 펼침/접힘 애니메이션이 그대로 재생되는지 확인(회귀 없음).

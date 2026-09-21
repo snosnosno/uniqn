@@ -131,12 +131,13 @@ useEffect(() => {
 
 - 직접 경로 import만: `@/hooks/useReduceMotion`.
 - SheetModal.tsx는 이미 `useSheetChain`, `useMemo`, `useRef` 등 다양한 훅을 쓰는 복잡한 컴포넌트다 — `useReduceMotion()` 호출은 다른 훅 호출들과 같은 블록(컴포넌트 최상단)에 추가한다.
-- Modal.tsx는 WebModal/NativeModal 두 개의 별도 함수 컴포넌트를 한 파일에 정의한다 — `useReduceMotion()`을 **WebModal 함수에만** 추가한다(NativeModal은 이미 `reduceMotion` prop/변수가 있음, 그 이름과 겹치지 않는지 실제 코드에서 확인 후 진행).
+- Modal.tsx는 WebModal/NativeModal 두 개의 **별도 함수 컴포넌트**를 한 파일에 정의한다 — `useReduceMotion()`을 WebModal 함수에만 추가한다. **확인 완료(커밋 `d824729`)**: WebModal 본문(라인 99-140)의 지역 변수는 `isDarkMode`·`windowWidth`·`shouldRender`·`isAnimating`·`previouslyFocusedRef` 뿐이고 `reduceMotion` 이라는 이름은 없다. NativeModal 의 `reduceMotion` 은 별도 함수 스코프라 충돌하지 않는다.
+- **웹에서 이 훅이 동작하는가 — 동작한다**: `Toast.tsx`·`Skeleton.tsx`·`OfflineStatusBar.tsx` 가 플랫폼 분기 없이(`Platform.OS === 'web'` 분기 없음) 이 훅을 쓰면서 웹 빌드(Cloudflare Pages)로 이미 출고되고 있다. react-native-web 의 `AccessibilityInfo` 가 `prefers-reduced-motion` 미디어쿼리로 매핑되며, 훅 자체도 `?.` 옵셔널 호출로 미지원 환경을 방어한다 — 새로 검증할 필요 없이 기존 선례를 따른다.
 
 ## Steps
 
 1. `SheetModal.tsx`: import 추가, `useReduceMotion()` 호출 추가, `useEffect` 내부 `translateY.value` 대입 두 곳(입장/퇴장)을 Target대로 수정, deps 배열에 `reduceMotion` 추가.
-2. `Modal.tsx`: WebModal 함수 컴포넌트 본문에 `useReduceMotion()` 추가(이미 동명 변수/prop이 있는지 먼저 확인 — 있다면 이름 충돌 회피 방법을 정하고 진행). `position === 'center'`와 `position !== 'center'` 두 분기의 `transition` 문자열을 Target대로 조건부화.
+2. `Modal.tsx`: WebModal 함수 컴포넌트 본문(`const { isDarkMode } = useThemeStore();` 인근)에 `const reduceMotion = useReduceMotion();` 추가. `position === 'center'`와 `position !== 'center'` 두 분기의 `transition` 문자열을 Target대로 조건부화.
 3. `CircularProgress.tsx`: import 추가, `useReduceMotion()` 호출 추가, `useEffect` 최상단에 `if (reduceMotion) { pulseAnim.setValue(1); return undefined; }` 추가, deps 배열에 `reduceMotion` 추가.
 
 ## Boundaries
@@ -144,11 +145,12 @@ useEffect(() => {
 - 계획 001에서 이미 바뀐 cubic-bezier 값(`cubic-bezier(0.23, 1, 0.32, 1)`)을 전제로 작성됨 — 001을 먼저 적용한 뒤 이 계획을 실행한다. 001이 아직 적용 안 됐다면 기존 값(`cubic-bezier(0.34, 1.56, 0.64, 1)`)을 그대로 두고 조건부 처리만 추가해도 되지만, 두 계획을 같은 PR에 묶는 것을 권장.
 - SheetModal.tsx의 `MOTION_EASING`/`MOTION_DURATION` 토큰 미사용 문제는 건드리지 않는다(계획 007).
 - Modal.tsx의 NativeModal 경로, SheetModal.tsx의 chain-entry 분기(`isChainEntryRef`) 로직은 변경하지 않는다.
+- ⚠️ **`Modal.tsx:139` 의 `setTimeout(() => setShouldRender(false), 250)` 은 건드리지 않는다**: WebModal 은 이 타이머로 transition(200ms) 종료를 기다렸다가 언마운트한다. reduceMotion 일 때 transform transition 이 빠져도 이 타이머는 그대로 250ms 를 기다리는데, 화면상 아무것도 안 보이는 상태의 지연이라 무해하다 — "reduceMotion 이면 타이머도 0 으로" 같은 최적화를 끼워 넣지 않는다(언마운트 타이밍과 백드롭 페이드 200ms 가 함께 어긋난다).
 - 코드가 위 인용과 다르면 멈추고 보고한다.
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/ui/SheetModal.tsx src/components/ui/Modal.tsx src/components/ui/CircularProgress.tsx`, `jest src/components/ui`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/ui/SheetModal.tsx src/components/ui/Modal.tsx src/components/ui/CircularProgress.tsx`, `npx jest src/components/ui`(디렉터리 단위 — 파일명 패턴으로 좁히면 같은 문구를 검증하는 다른 이름 테스트를 놓친다는 것이 이 저장소의 알려진 함정). PR 전 `npm run quality`.
 - **Feel check**: 기기 "동작 줄이기" ON 상태에서:
   - 바텀시트(SheetModal 기반 화면 아무거나)를 열고 닫아 슬라이드 이동 없이 즉시 나타나고 사라지는지, 배경 딤(fade)은 여전히 부드럽게 전환되는지 확인.
   - 가운데 정렬 Modal을 열어 스케일 확대 없이 즉시 나타나는지(opacity 페이드는 유지) 확인.

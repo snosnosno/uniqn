@@ -124,7 +124,7 @@ const reduceMotion = useReduceMotion();
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/tutorial/TutorialPage.tsx src/components/onboarding/NotificationPermissionScreen.tsx src/components/auth/signup/SignupForm.tsx`, `jest src/components/tutorial src/components/onboarding src/components/auth`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/tutorial/TutorialPage.tsx src/components/onboarding/NotificationPermissionScreen.tsx src/components/auth/signup/SignupForm.tsx`, `npx jest src/components/tutorial src/components/onboarding src/components/auth`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: "동작 줄이기" ON 상태에서:
   - 튜토리얼 화면을 넘겨 아이콘/제목/부제/설명이 아래에서 올라오지 않고 제자리 페이드로만 순차 등장하는지.
   - 알림 권한 온보딩 화면에서 헤더/리스트/CTA가 동일하게 이동 없이 페이드만 되는지.

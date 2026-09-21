@@ -70,7 +70,7 @@ const handleToggle = useCallback(() => {
 
 ## Steps
 
-각 파일에 대해 동일 절차 반복(파일별로 개별 커�디트 권장 — 6개 파일 규모라 리뷰 단위를 작게 유지):
+각 파일에 대해 동일 절차 반복(파일별로 개별 커밋 권장 — 6개 파일 규모라 리뷰 단위를 작게 유지):
 
 1. `Accordion.tsx`: `LayoutAnimation` import가 이 용도로만 쓰였다면 제거. `handleToggle`에서 `LayoutAnimation.configureNext(...)` 호출 삭제. 바깥 `View`를 `Animated.View` + `layout` prop으로, `{isExpanded && <View className="pb-3">{children}</View>}`를 `{isExpanded && <Animated.View entering={...} exiting={...} className="pb-3">{children}</Animated.View>}`로 교체.
 2. `FAQList.tsx`: 동일 패턴 (`handleToggle`에서 `LayoutAnimation.configureNext` 제거, 아코디언 컨테이너에 `layout`, 콘텐츠에 `entering`/`exiting`).
@@ -79,7 +79,7 @@ const handleToggle = useCallback(() => {
 5. `GroupedAssignmentSelector.tsx`: 동일 패턴 (그룹별 `Set<string>` 상태이므로 각 그룹 아이템 레벨에 적용).
 6. `ApplicantCard.tsx`: 동일 패턴.
 
-각 파일 수정 후 즉시 `npx tsc --noEmit`으로 해당 파일 타입 에러가 없는지 확인하고 다음 파일로 진행.
+각 파일 수정 후 즉시 `npm run type-check`로 타입 에러가 없는지 확인하고 다음 파일로 진행.
 
 ## Boundaries
 
@@ -91,6 +91,6 @@ const handleToggle = useCallback(() => {
 
 ## Verification
 
-- **Mechanical**: 파일별 `npx tsc --noEmit` + `npx eslint <파일>`, 전체 완료 후 `jest src/components/ui src/components/support src/components/jobs src/components/employer`.
+- **Mechanical**: 파일별 `npm run type-check` + `npx eslint <파일>`, 전체 완료 후 `npx jest src/components/ui src/components/support src/components/jobs src/components/employer`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: 각 컴포넌트를 빠르게 연타(펼침→접힘→펼침 연속)해 애니메이션이 끊기지 않고 매끄럽게 이어지는지(중단 가능성 개선 확인) — 이전 `LayoutAnimation`은 연타 시 버벅였던 지점. "동작 줄이기" ON/OFF 양쪽에서 정상 동작 확인.
 - **Done when**: 6개 파일에서 `LayoutAnimation` import/호출이 완전히 제거되고, Reanimated 기반 전환이 reduceMotion 가드와 함께 동작하며, 연타 테스트에서 끊김이 없다.

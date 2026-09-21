@@ -64,11 +64,15 @@ position === 'center'
     }
 ```
 
-**2) Modal.tsx:430** — 임계댐핑 이상(ζ≥1)으로 조정. `stiffness=220` 유지 시 `damping ≥ 30`(여유 있게 32):
+**2) Modal.tsx:430** — 임계댐핑 이상(ζ≥1)으로 조정. `stiffness=220` 유지 시 `damping ≥ 29.66`이므로 여유 있게 32. **숫자만 바꾸지 말고 주석을 함께 남긴다** — 근거 없는 매직넘버는 다음 사람이 "튀는 맛이 없다"며 되돌린다:
 
 ```tsx
+// damping 32 = 임계댐핑(2√220 ≈ 29.66) 이상 → 오버슈트 없음.
+// 이 값을 낮추면 바운스가 생겨 impeccable §8 금지 규칙을 위반한다.
 translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 32, stiffness: 220 });
 ```
+
+> **대안 검토(채택 안 함)**: Reanimated 3+ 의 `withSpring(0, { duration, dampingRatio: 1 })` API가 "바운스 없음"을 훨씬 명시적으로 표현한다. 하지만 duration 기반 스프링은 stiffness 기반과 감속 곡선이 달라 **feel 이 두 축 동시에 바뀐다** — 이번 변경 목적은 오버슈트 제거 하나뿐이므로 기존 stiffness 를 보존하는 최소 diff(숫자 1개)를 택한다. 나중에 스프링 표현을 통일하고 싶다면 그때 별도 작업으로 다룬다.
 
 **3) SignupForm.tsx:452** — `.springify()` 제거, duration 기반으로:
 
@@ -97,11 +101,12 @@ translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 32, stiffness: 22
 - Modal.tsx의 다른 위치(`position !== 'center'`, NativeModal의 다른 애니메이션 등)는 이 계획 범위가 아니다 — 006(exit=75%), 007(토큰 소비) 계획에서 다룬다.
 - 이 계획은 커브/스프링 파라미터 값만 바꾼다. `useReduceMotion` 적용 여부는 003/004/005 계획에서 다룬다(단, Modal.tsx:430은 이미 `reduceMotion` 분기가 있으므로 손대지 않는다).
 - 새 의존성 추가 금지.
+- ⚠️ **duration 은 건드리지 않는다**: `Modal.tsx:139` 에 `setTimeout(() => setShouldRender(false), 250)` 이 있다 — WebModal 은 transition(200ms)이 끝나기를 이 타이머로 기다렸다가 언마운트한다. transition duration 을 250 이상으로 올리면 애니메이션이 끝나기 전에 DOM 에서 사라진다. 이 계획은 **커브만** 바꾸므로 안전하지만, 값을 함께 손대고 싶은 유혹이 생기면 이 커플링을 먼저 확인한다.
 - 커밋 `d824729` 이후 이 파일들이 크게 바뀌었다면(라인 번호 불일치) 진행을 멈추고 보고한다.
 
 ## Verification
 
-- **Mechanical**: `cd uniqn-mobile && npx tsc --noEmit` (타입 에러 없음), `npx eslint src/components/ui/Modal.tsx src/components/auth/signup/SignupForm.tsx`.
+- **Mechanical**: `cd uniqn-mobile && npm run type-check` (타입 에러 없음), `npx eslint src/components/ui/Modal.tsx src/components/auth/signup/SignupForm.tsx`. PR 전에는 `npm run quality`(css-vars-sync + rpc-migrations + type-check + lint + format:check) 통과 확인.
 - **Feel check**:
   - iOS/Android 실기기 또는 시뮬레이터에서 가운데 정렬 Modal(예: 확인 다이얼로그)을 열어 스케일 진입 시 목표 크기를 넘어서서 커졌다가 줄어드는 "튕김"이 사라졌는지 확인.
   - 바텀시트를 드래그했다가 임계값 미만에서 손을 떼 원위치로 복귀할 때, 반동이 목표 위치를 지나치지 않고 매끄럽게 감속하며 멈추는지 확인.

@@ -95,6 +95,6 @@ export function SlotCard({ slot, index, expanded, removable, onExpand, onPressTi
 
 ## Verification
 
-- **Mechanical**: `npx tsc --noEmit`, `npx eslint src/components/jobs/DateCalendar/DateCalendar.tsx src/components/employer/order-sheet/sheets/SlotCard.tsx`, `jest src/components/jobs src/components/employer`.
+- **Mechanical**: `npm run type-check`, `npx eslint src/components/jobs/DateCalendar/DateCalendar.tsx src/components/employer/order-sheet/sheets/SlotCard.tsx`, `npx jest src/components/jobs src/components/employer`(디렉터리 단위). PR 전 `npm run quality`.
 - **Feel check**: "동작 줄이기"를 앱 실행 **중에** 켜고 끄면서(재시작 없이) DateCalendar와 SlotCard의 애니메이션이 실시간으로 반영되는지 확인 — 이전 SlotCard는 마운트 시점에만 값을 읽었으므로 이 부분이 실질적 개선점.
 - **Done when**: 두 파일 모두 로컬 `AccessibilityInfo` 재구현이 사라지고 공유 훅만 참조하며, 런타임 설정 변경에 반응한다.
