@@ -9,6 +9,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { NumericText } from '@/components/ui';
 import { NotificationIcon } from './NotificationIcon';
@@ -43,6 +44,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
   defaultExpanded = false,
 }: NotificationGroupItemProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const reduceMotion = useReduceMotion();
 
   // 컨텍스트 정보 (공고명)
   const contextLabel = group.context.jobTitle || '';
@@ -78,8 +80,10 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
   return (
     <Animated.View
       entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(200)}
-      layout={Layout.duration(200)}
+      // 퇴장은 입장의 75%(200 × 0.75 = 150) — 룰 8.
+      exiting={FadeOut.duration(150)}
+      // entering/exiting 은 순수 opacity 라 그대로 두고, 위치 이동을 만드는 layout 만 끈다(룰 8).
+      layout={reduceMotion ? undefined : Layout.duration(200)}
       className={`
         border-b border-divider dark:border-surface-overlay
         ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-surface-card'}

@@ -6,6 +6,7 @@ import { STATUS } from '@/constants';
 import { getRoleDisplayName } from '@/types/unified';
 import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { formatRelativeTime } from '@/utils/date';
 import { CardStripe } from '@/components/ui';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
@@ -92,10 +93,15 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     [applicant.createdAt]
   );
 
+  const reduceMotion = useReduceMotion();
+
   const toggleExpand = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setIsExpanded((prev) => !prev);
-  }, []);
+  }, [reduceMotion]);
 
   const handleViewProfile = useCallback(() => {
     onViewProfile?.(applicant);

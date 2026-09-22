@@ -1,6 +1,6 @@
 # 001 — Modal/SignupForm 바운스·오버슈트 제거
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: HIGH
 - **Category**: 이징/지속시간 · 물리성 (impeccable-design.md §8 "금지: bounce/elastic" 정책 위반)

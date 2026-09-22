@@ -6,9 +6,12 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { ChevronDownIcon } from '@/components/icons';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
 
 // ============================================================================
 // AccordionItem
@@ -52,11 +55,31 @@ export function AccordionItem({
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
 
+  const reduceMotion = useReduceMotion();
+
+  // 셰브론 회전 — 이전에는 NativeWind `transition-transform` 클래스(웹 전용이라 네이티브에서
+  // 무효)와 정적 인라인 transform 조합이라, 코드상 애니메이션처럼 보여도 실기기에서는
+  // 180도로 즉시 스냅됐다. Reanimated 로 실제 트윈을 건다.
+  const rotation = useSharedValue(isExpanded ? 180 : 0);
+
+  useEffect(() => {
+    const target = isExpanded ? 180 : 0;
+    rotation.value = reduceMotion
+      ? target
+      : withTiming(target, { duration: MOTION_DURATION.fast, easing: MOTION_EASING.enter });
+  }, [isExpanded, reduceMotion, rotation]);
+
+  const chevronAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
   const handleToggle = useCallback(() => {
     if (disabled) return;
 
-    // 애니메이션 설정
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // 애니메이션 설정 — '동작 줄이기'가 켜져 있으면 생략한다(룰 8).
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
 
     const newExpanded = !isExpanded;
 
@@ -101,12 +124,9 @@ export function AccordionItem({
             )}
           </View>
         </View>
-        <View
-          className={`ml-2 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
-          style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
-        >
+        <Animated.View className="ml-2" style={chevronAnimatedStyle}>
           <ChevronDownIcon size={20} color={SECONDARY_PALETTE[400]} />
-        </View>
+        </Animated.View>
       </Pressable>
 
       {/* Content */}

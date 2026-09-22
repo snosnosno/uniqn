@@ -1,6 +1,6 @@
 # 011 — 놓친 기회 4건: 상태 변화에 전환 모션 추가
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22) — 4건 중 3건 적용. 2번 항목(BoardImageViewerOverlay)은 전제가 틀려 취소.
 - **Commit**: d824729
 - **Severity**: LOW-MEDIUM (additive — 정책 위반 아님, 누락된 다듬기)
 - **Category**: 놓친 기회 (AUDIT.md §8)
@@ -57,26 +57,22 @@ export function CollapsibleSection({ title, summary, defaultExpanded = false, ch
 }
 ```
 
-### 2) `src/components/board/BoardImageViewerOverlay.tsx:84-92,113-121`
+### 2) `src/components/board/BoardImageViewerOverlay.tsx` — ❌ 취소(2026-09-22, 적용하지 않음)
+
+감사 발견이 **부정확했다**. 실제 이미지 렌더부(`BoardImageViewerOverlay.tsx:101-110`)를 읽어보니 이미 `expo-image` 의 내장 전환이 걸려 있다:
 
 ```tsx
-// 현재 — 이전/다음 전환 시 즉시 스냅
-<Pressable onPress={() => onChangeIndex(currentIndex - 1)} ...>
-<Pressable onPress={() => onChangeIndex(currentIndex + 1)} ...>
+<Image
+  source={{ uri: activeImage.url }}
+  style={{ width: '100%', height: '100%' }}
+  contentFit="contain"
+  placeholder={activeImage.blurhash ? { blurhash: activeImage.blurhash } : undefined}
+  placeholderContentFit="contain"
+  transition={200}   // ← 소스가 바뀔 때 200ms 크로스페이드
+/>
 ```
 
-**Target**: 이미지 자체를 `key={currentIndex}`로 감싼 `Animated.View`에 방향성 fade를 추가(전체 슬라이드 캐러셀로 재작성하지 않고 최소 변경):
-
-```tsx
-import Animated, { FadeIn } from 'react-native-reanimated';
-
-// 이미지 렌더 부분(정확한 JSX 구조는 실제 코드 확인 후 적용)
-<Animated.View key={currentIndex} entering={FadeIn.duration(200)} style={{ flex: 1 }}>
-  {/* 기존 <Image> ... */}
-</Animated.View>
-```
-
-> 이 항목은 실제 이미지 렌더 JSX 구조를 먼저 읽고, `key` prop을 이미지 컨테이너에 추가할 수 있는 위치를 찾아 적용한다(현재 인용은 버튼 핸들러 부분만 확인된 상태 — 실행자는 이미지 렌더 블록을 먼저 Read로 확인).
+`transition={200}` 은 `source` 가 바뀔 때 expo-image 가 자체적으로 크로스페이드를 재생한다. 즉 "즉시 스냅 교체"라는 전제가 틀렸고, 여기에 `Animated.View` + `FadeIn` 을 덧대면 **페이드가 2중으로 걸려 오히려 지저분해진다**. 방향성 모션(좌/우 슬라이드)을 원한다면 그건 이 계획의 "최소 변경" 범위가 아니라 캐러셀 도입 논의이므로 별건으로 둔다.
 
 ### 3) `src/components/employer/order-sheet/ScheduleConditionCard.tsx:106-113`
 
@@ -138,7 +134,7 @@ import { FadeIn, FadeOut } from 'react-native-reanimated'; // LinearTransition�
 ## Steps
 
 1. `CollapsibleSection.tsx`: `react-native-reanimated`(`Animated`, `FadeIn`, `FadeOut`, `LinearTransition`), `@/constants/motion`(`MOTION_DURATION`), `@/hooks/useReduceMotion` import 추가. 컴포넌트 본문에 `const reduceMotion = useReduceMotion();` 추가. 최상위 `View`를 `Animated.View`+`layout`으로, 조건부 렌더 블록을 `Animated.View`+`entering`/`exiting`으로 교체.
-2. `BoardImageViewerOverlay.tsx`: 먼저 파일 전체를 Read해 이미지 렌더 JSX의 정확한 구조를 확인한다. 이미지를 감싼 컨테이너(또는 이미지 자체를 감싸는 새 `Animated.View`)에 `key={currentIndex}`와 `entering={FadeIn.duration(200)}`을 추가.
+2. ~~`BoardImageViewerOverlay.tsx`~~ — 취소(위 2번 항목 참조). 이미 `expo-image` `transition={200}` 이 크로스페이드를 담당한다.
 3. `ScheduleConditionCard.tsx`: 기존 `react-native-reanimated` import에 `FadeIn`, `FadeOut` 추가(이미 있다면 생략). `Animated.View`(라인 106-113)에 `entering`/`exiting` prop 추가.
 4. `TutorialOverlay.tsx`: 기존 `FadeIn` import에 `FadeOut` 추가. 279-285 라인의 `Animated.Text`에 `exiting={FadeOut.duration(150)}` 추가.
 

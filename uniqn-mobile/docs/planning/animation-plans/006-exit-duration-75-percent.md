@@ -1,6 +1,6 @@
 # 006 — 퇴장 애니메이션을 "입장 × 75%" 규칙에 맞게 정정
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22) — 007 과 같은 블록이라 한 번에 적용했다.
 - **Commit**: d824729
 - **Severity**: MEDIUM
 - **Category**: 이징/지속시간 (impeccable-design.md §8: "퇴장(exit) = 시작의 75%")

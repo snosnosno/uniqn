@@ -1,6 +1,6 @@
 # 007 — MOTION_EASING/MOTION_DURATION 토큰 소비로 통일
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: MEDIUM
 - **Category**: 응집성/토큰 (impeccable-design.md §8: "컴포넌트에서 Easing.*를 직접 쓰지 말고 이 토큰을 소비한다")

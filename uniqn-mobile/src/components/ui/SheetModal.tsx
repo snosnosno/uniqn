@@ -19,18 +19,15 @@ import {
 } from 'react-native';
 import { ModalKeyboardAvoider } from '@/components/ui/ModalKeyboardAvoider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { useSheetChain } from '@/components/ui/SheetChainContext';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { focusIfPossible } from '@/utils/focusNode';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
 import { WebPortal } from '@/components/ui/WebPortal';
 
 /**
@@ -292,6 +289,7 @@ function NativeSheetModal({
   // 키보드 오픈 시 헤더가 상태바를 침범). 훅으로 앱 루트 provider 값을 직접 읽어
   // 패딩으로 적용하면 중첩 SafeAreaProvider 없이 해소된다.
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   // 연쇄 진입(주문서 미설정 항목 이어가기) — 마운트 시점 값을 고정한다.
   // 이후 Context 가 바뀌어도 이미 시작한 연출을 갈아치우지 않기 위함.
   const chain = useSheetChain();
@@ -334,22 +332,36 @@ function NativeSheetModal({
       if (isChainEntryRef.current) {
         // 백드롭은 즉시 불투명 — 호출부가 같은 농도의 딤을 이미 깔아 두어 이음매가 없다.
         fadeOpacity.value = 1;
-        contentOpacity.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.ease) });
+        // 160ms 는 MOTION_DURATION 에 대응 값이 없다 — 연쇄 시트 이음매(SHEET_CHAIN_SWAP_MS)에
+        // 맞춰 조율된 값이라 반올림하지 않고 그대로 둔다. 커브만 토큰을 소비한다.
+        contentOpacity.value = withTiming(1, { duration: 160, easing: MOTION_EASING.fade });
         return;
       }
-      fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
-      translateY.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.out(Easing.ease),
+      fadeOpacity.value = withTiming(1, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
       });
+      // 이동(translateY)은 '동작 줄이기'면 즉시 목표값으로 — 딤 페이드만 남긴다(룰 8).
+      translateY.value = reduceMotion
+        ? 0
+        : withTiming(0, {
+            duration: MOTION_DURATION.sheet,
+            easing: MOTION_EASING.sheet,
+          });
     } else {
-      fadeOpacity.value = withTiming(0, { duration: 200, easing: Easing.ease });
-      translateY.value = withTiming(windowHeight, {
-        duration: 250,
-        easing: Easing.in(Easing.ease),
+      fadeOpacity.value = withTiming(0, {
+        duration: MOTION_DURATION.base,
+        easing: MOTION_EASING.fade,
       });
+      translateY.value = reduceMotion
+        ? windowHeight
+        : withTiming(windowHeight, {
+            // 퇴장 = 입장(sheet 300)의 75% — 룰 8. 이전에는 250(83%)으로 어긋나 있었다.
+            duration: MOTION_DURATION.sheetExit,
+            easing: MOTION_EASING.exitTravel,
+          });
     }
-  }, [visible, fadeOpacity, translateY, contentOpacity, windowHeight]);
+  }, [visible, fadeOpacity, translateY, contentOpacity, windowHeight, reduceMotion]);
 
   const handleRequestClose = useCallback(() => {
     if (!isLoading) {

@@ -1,10 +1,31 @@
 # 010 — 구형 LayoutAnimation을 Reanimated LinearTransition으로 전환
 
-- **Status**: TODO
+- **Status**: HOLD — 실행 보류(2026-09-22). 사유는 바로 아래 "보류 사유" 참조.
 - **Commit**: d824729
 - **Severity**: MEDIUM (정책 위반은 아니나 성능·중단가능성 개선, 리팩터 규모가 커서 레버리지는 낮음 — 후순위 권장)
 - **Category**: 성능 · 중단가능성 (AUDIT.md §4, §5)
 - **Estimated scope**: 6 files — **선행 조건: 계획 002, 006, 009가 먼저 적용되어 있어야 충돌 없이 진행 가능**
+
+## 보류 사유 (2026-09-22 실행 시도 중 발견)
+
+이 계획을 실행하려다 **계획 작성 시점에 몰랐던 제약**을 발견해 보류했다. 나머지 10개 계획은 모두 적용·검증 완료된 상태다.
+
+1. **대상 6개 중 3개가 FlashList 재활용 뷰 안에 있다.**
+   - `ApplicantCard.tsx` → `ApplicantList.tsx:375` 의 `AppFlashList`
+   - `GroupedSettlementCard.tsx` → `SettlementList.tsx:203` 의 `AppFlashList`
+   - `GroupedAssignmentSelector.tsx` → `ApplicantCard` 내부이므로 동일하게 재활용 대상
+   FlashList 는 아이템 뷰를 재활용하는데, Reanimated 의 `entering`/`layout` 은 뷰 단위로 살아 있는 애니메이션이라 재활용된 뷰가 다른 아이템으로 쓰일 때 무관한 두 지오메트리 사이를 전이하는 글리치가 날 수 있다. 현재 `LayoutAnimation` 은 다음 레이아웃 커밋 1회에만 걸리는 일회성이라 이 실패 모드가 훨씬 약하다.
+   - 참고: 이 저장소에 **선례는 있다** — `NotificationItem.tsx` 가 FlashList 안에서 `layout`/`entering` 을 쓴다. 따라서 "불가능"이 아니라 **실기기 확인이 필요한 변경**이라는 뜻이다.
+
+2. **이 계획의 완료 기준이 실기기 검증에 묶여 있다.** Verification 절의 핵심은 "연타 시 끊김이 사라졌는지"인데, 단위 테스트로는 관측되지 않는 항목이다. 스크롤 중 글리치 여부도 마찬가지다.
+
+3. **기대 이득이 원래 작다.** README 가 이 계획을 "후순위 권장 · 레버리지 낮음 · 체감 미세"로 분류했다. 검증 불가능한 리스크를 안고 먼저 넣을 근거가 약하다.
+
+**다시 집을 때의 권고**: 6개를 한 덩어리로 보지 말고 둘로 나눈다.
+- **비재활용 3개**(`Accordion.tsx` · `FAQList.tsx` · `GroupedDateRequirementDisplay.tsx`) → 리스크 낮음. 단 `FAQList` 의 `LayoutAnimation` 은 자기 콘텐츠가 아니라 `AccordionItem` 바깥의 형제 리플로우만 담당하므로 `Accordion` 전환과 함께 묶어 판단해야 하고, `GroupedDateRequirementDisplay` 는 grep 상 **프로덕션 사용처가 없다**(테스트에서만 참조) → 이득도 0 에 가깝다.
+- **재활용 3개** → 실기기(또는 최소한 시뮬레이터)에서 긴 목록 스크롤 + 연타 확인을 통과한 뒤에만 머지한다.
+
+또한 이 계획은 `reduceMotion` 변수가 이미 있다고 전제하는데, **계획 002 가 6개 파일 전부에 적용 완료**됐으므로 그 전제는 이제 충족된 상태다. 즉 접근성 결함 자체는 002 로 이미 해소됐고, 010 은 순수하게 "메커니즘 현대화"만 남은 작업이다.
 
 ## Problem
 

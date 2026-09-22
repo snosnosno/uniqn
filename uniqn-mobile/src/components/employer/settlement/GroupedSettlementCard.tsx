@@ -30,6 +30,7 @@ import { formatDateDisplay, formatGroupRolesDisplay } from '@/utils/settlementGr
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { STATUS } from '@/constants';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog } from '@/types';
@@ -168,10 +169,15 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   // 아직 퇴근이 안 찍힌 날이 있으면 골드(진행 중), 전부 끝났으면 뮤트(지나간 근무).
   const stripeTone = beforeCheckoutCount > 0 ? 'gold' : 'muted';
 
+  const reduceMotion = useReduceMotion();
+
   const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setIsExpanded((prev) => !prev);
-  }, []);
+  }, [reduceMotion]);
 
   const handlePress = useCallback(() => {
     if (group.originalWorkLogs.length > 0) {

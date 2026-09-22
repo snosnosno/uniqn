@@ -1,6 +1,6 @@
 # 008 — DateCalendar/SlotCard의 reduceMotion 로컬 재구현을 공유 훅으로 전환
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: MEDIUM
 - **Category**: 응집성/토큰 (SSOT 위반 — impeccable-design.md §8 "컴포넌트 안에 useState+AccessibilityInfo로 다시 구현하지 말 것")

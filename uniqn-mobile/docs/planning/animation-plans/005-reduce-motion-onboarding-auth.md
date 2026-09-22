@@ -1,6 +1,6 @@
 # 005 — 온보딩/회원가입 진입 애니메이션에 reduceMotion 적용
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: HIGH (정책 위반이지만 1회성 화면이라 빈도는 낮음 — AUDIT.md 빈도표 기준 "rare/first-time"이라 delight 여지는 있으나 §8 필수 요구사항 자체는 빈도와 무관하게 적용)
 - **Category**: 접근성

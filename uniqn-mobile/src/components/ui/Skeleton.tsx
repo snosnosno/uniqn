@@ -16,9 +16,9 @@ import Animated, {
   withRepeat,
   withTiming,
   cancelAnimation,
-  Easing,
 } from 'react-native-reanimated';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_EASING } from '@/constants/motion';
 
 // ============================================================================
 // Types
@@ -89,7 +89,8 @@ export function Skeleton({
     opacity.value = withRepeat(
       withTiming(OPACITY_MAX, {
         duration: SHIMMER_HALF_DURATION,
-        easing: Easing.inOut(Easing.ease),
+        // shimmer 는 opacity 전용이라 fade 토큰이 맞다(룰 8 — 커브는 토큰을 소비한다).
+        easing: MOTION_EASING.fade,
       }),
       -1, // 무한 반복
       true // auto-reverse → 총 1.2s 루프 (0.3→0.5→0.3)

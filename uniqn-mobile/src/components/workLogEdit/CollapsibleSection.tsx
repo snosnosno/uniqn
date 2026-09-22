@@ -15,9 +15,12 @@
  */
 import React, { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { MOTION_DURATION } from '@/constants/motion';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 export interface CollapsibleSectionProps {
   /** 섹션 제목. 토글 접근성 라벨('<title> 펼치기')의 앞부분이기도 하다. */
@@ -36,6 +39,7 @@ export function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const reduceMotion = useReduceMotion();
 
   const handleToggle = useCallback(() => {
     setExpanded((previous) => !previous);
@@ -44,7 +48,11 @@ export function CollapsibleSection({
   const Chevron = expanded ? ChevronUpIcon : ChevronDownIcon;
 
   return (
-    <View className="mb-3 overflow-hidden rounded-lg border border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface">
+    // 접기/펼치기 때 카드 높이가 순간 점프하지 않도록 위치·크기 전이를 건다.
+    <Animated.View
+      layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+      className="mb-3 overflow-hidden rounded-lg border border-secondary-200 bg-surface-card dark:border-surface-overlay dark:bg-surface"
+    >
       <Pressable
         onPress={handleToggle}
         accessibilityRole="button"
@@ -67,7 +75,15 @@ export function CollapsibleSection({
         </View>
       </Pressable>
 
-      {expanded ? <View className="px-4 pb-4">{children}</View> : null}
-    </View>
+      {expanded ? (
+        <Animated.View
+          entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+          exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
+          className="px-4 pb-4"
+        >
+          {children}
+        </Animated.View>
+      ) : null}
+    </Animated.View>
   );
 }

@@ -9,7 +9,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
 import {
@@ -102,6 +103,7 @@ const IDENTITY_FRESHNESS_MS = 5 * 60 * 1000;
 // ============================================================================
 
 export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: SignupFormProps) {
+  const reduceMotion = useReduceMotion();
   const isSocial = mode === 'social';
   const isReverify = mode === 'reverify';
   const flow = STEP_FLOW[mode];
@@ -449,7 +451,8 @@ export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: Si
         {/* 현재 스텝 폼 (fade 애니메이션) */}
         <Animated.View
           key={currentStepKey}
-          entering={FadeInRight.duration(200).springify()}
+          // '동작 줄이기'면 옆에서 밀려오는 이동을 빼고 제자리 페이드만 남긴다(룰 8).
+          entering={reduceMotion ? FadeIn.duration(200) : FadeInRight.duration(200)}
           className="flex-1"
         >
           {renderStep()}

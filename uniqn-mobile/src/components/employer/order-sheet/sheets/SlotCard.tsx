@@ -9,9 +9,11 @@
  * 한 트리로 합치고 본문 display 를 토글하면 접힘 시에도 RoleCountEditor 가 마운트된 채
  * 남아 (1) testID 다중 매치 (2) 슬롯 간 편집 state 누수가 생긴다(테스트 3건이 이를 잡는다).
  */
-import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
+import React from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { MOTION_DURATION } from '@/constants/motion';
 import { ChevronRightIcon } from '@/components/icons';
 import { RoleCountEditor, roleLabel, type SlotRoles } from './RoleCountEditor';
 
@@ -51,18 +53,10 @@ export function SlotCard({
   onChangeRoles,
   onRemove,
 }: SlotCardProps) {
-  // 동작 줄이기 — 프로젝트 기존 패턴(Skeleton.tsx:68, OfflineStatusBar.tsx:69) 승계.
-  // ON 이면 진입/종료 애니메이션 없이 즉시 전환한다.
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(enabled);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // 동작 줄이기 — 공용 훅(SSOT, 룰 8). ON 이면 진입/종료 애니메이션 없이 즉시 전환한다.
+  // 여기 있던 로컬 재구현은 reduceMotionChanged 리스너가 없어 앱 사용 중 설정을 바꿔도
+  // 반영되지 않았다.
+  const reduceMotion = useReduceMotion();
 
   if (!expanded) {
     return (
@@ -84,8 +78,8 @@ export function SlotCard({
 
   return (
     <Animated.View
-      entering={reduceMotion ? undefined : FadeIn.duration(300)}
-      exiting={reduceMotion ? undefined : FadeOut.duration(225)}
+      entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.sheet)}
+      exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.sheetExit)}
       accessibilityState={{ expanded: true }}
       className="rounded-xl border border-secondary-200 dark:border-surface-overlay bg-surface-card px-4 py-3"
     >

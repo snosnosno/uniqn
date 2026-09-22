@@ -1,6 +1,6 @@
 # 002 — LayoutAnimation 호출부에 reduceMotion 가드 추가
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: HIGH
 - **Category**: 접근성 (impeccable-design.md §8 필수 요구사항)

@@ -9,6 +9,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 // ============================================================================
 // Types
@@ -102,7 +103,14 @@ export function CircularProgress({
   const strokeDashoffset = circumference * (1 - progress);
 
   // 위험 구간 펄스 애니메이션
+  const reduceMotion = useReduceMotion();
+
   useEffect(() => {
+    // '동작 줄이기'가 켜져 있으면 무한 펄스(scale)를 아예 시작하지 않는다(룰 8).
+    if (reduceMotion) {
+      pulseAnim.setValue(1);
+      return undefined;
+    }
     if (remainingSeconds <= DANGER_THRESHOLD && remainingSeconds > 0 && !isExpired) {
       const animation = Animated.loop(
         Animated.sequence([
@@ -126,7 +134,7 @@ export function CircularProgress({
       pulseAnim.setValue(1);
       return undefined;
     }
-  }, [remainingSeconds, isExpired, pulseAnim]);
+  }, [remainingSeconds, isExpired, pulseAnim, reduceMotion]);
 
   return (
     <Animated.View

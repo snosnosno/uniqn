@@ -1,6 +1,6 @@
 # 004 — 알림 리스트 컴포넌트에 reduceMotion 적용
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: HIGH
 - **Category**: 접근성 (impeccable-design.md §8) — 알림 리스트는 "tens of times/day" 빈도(AUDIT.md §1)라 파급이 큼

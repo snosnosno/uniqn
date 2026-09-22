@@ -2,21 +2,28 @@
 
 `/improve-animations` 감사(2026-09-21, 커밋 `d824729`) 결과로 작성된 11개 계획. 148개 화면 + 44개 UI 컴포넌트 전수 감사(공용 UI/`(app)`/`(employer)`/`(admin)+(ops)+(auth)+(public)` 4개 영역 병렬 감사 후 직접 재검증) 기반.
 
-## 상태
+## 상태 (2026-09-22 실행 완료)
 
 | # | 제목 | 심각도 | 상태 | 파일 수 |
 |---|---|---|---|---|
-| 001 | Modal/SignupForm 바운스·오버슈트 제거 | HIGH | TODO | 2 |
-| 002 | LayoutAnimation 호출부에 reduceMotion 가드 추가 | HIGH | TODO | 6 |
-| 003 | 공용 UI 프리미티브 Reanimated에 reduceMotion 적용 | HIGH | TODO | 3 |
-| 004 | 알림 리스트에 reduceMotion 적용 | HIGH | TODO | 2 |
-| 005 | 온보딩/회원가입 진입 애니메이션에 reduceMotion 적용 | HIGH | TODO | 3 |
-| 006 | 퇴장 애니메이션 75% 규칙 정정 | MEDIUM | TODO | 2 |
-| 007 | MOTION_EASING/MOTION_DURATION 토큰 소비 통일 | MEDIUM | TODO | 4 |
-| 008 | DateCalendar/SlotCard SSOT 훅 전환 | MEDIUM | TODO | 2 |
-| 009 | Accordion 아이콘 회전 죽은 코드 수정 | MEDIUM | TODO | 1 |
-| 010 | LayoutAnimation→Reanimated 전환 | MEDIUM | TODO | 6 |
-| 011 | 놓친 기회 4건(전환 모션 추가) | LOW-MEDIUM | TODO | 4 |
+| 001 | Modal/SignupForm 바운스·오버슈트 제거 | HIGH | ✅ DONE | 2 |
+| 002 | LayoutAnimation 호출부에 reduceMotion 가드 추가 | HIGH | ✅ DONE | 6 |
+| 003 | 공용 UI 프리미티브 Reanimated에 reduceMotion 적용 | HIGH | ✅ DONE(웹 시트 경로 제외) | 3 |
+| 004 | 알림 리스트에 reduceMotion 적용 | HIGH | ✅ DONE | 2 |
+| 005 | 온보딩/회원가입 진입 애니메이션에 reduceMotion 적용 | HIGH | ✅ DONE | 3 |
+| 006 | 퇴장 애니메이션 75% 규칙 정정 | MEDIUM | ✅ DONE | 2 |
+| 007 | MOTION_EASING/MOTION_DURATION 토큰 소비 통일 | MEDIUM | ✅ DONE | 4 |
+| 008 | DateCalendar/SlotCard SSOT 훅 전환 | MEDIUM | ✅ DONE | 2 |
+| 009 | Accordion 아이콘 회전 죽은 코드 수정 | MEDIUM | ✅ DONE | 1 |
+| 010 | LayoutAnimation→Reanimated 전환 | MEDIUM | ⏸️ **HOLD** — FlashList 재활용 충돌 리스크, 실기기 검증 필요(계획서 "보류 사유") | 6 |
+| 011 | 놓친 기회 4건(전환 모션 추가) | LOW-MEDIUM | ✅ DONE(3/4, 1건은 전제 오류로 취소) | 3 |
+
+**검증 증거(2026-09-22)**: `npm run quality` exit 0(type-check 통과 · eslint 0 errors/125 pre-existing warnings · prettier all clean) · `npx jest src/components` → **199 suites / 1728 tests / 98 snapshots 전부 통과**.
+
+### 실행 중 계획이 틀렸던 것 2건 (기록)
+
+1. **011-2 `BoardImageViewerOverlay`** — "이미지 전환 시 모션 없음"은 오진이었다. 이미 `expo-image` 의 `transition={200}` 이 크로스페이드를 재생 중이라, 계획대로 `FadeIn` 을 덧대면 페이드가 2중이 된다 → **취소**.
+2. **010 전체** — 대상 6개 중 3개(`ApplicantCard`·`GroupedSettlementCard`·`GroupedAssignmentSelector`)가 FlashList 재활용 뷰 안에 있다는 사실이 계획 작성 시 누락됐다. 접근성 결함은 002 가 이미 해소했으므로 010 은 순수 메커니즘 현대화만 남았고, 실기기 확인 없이 넣을 이유가 없어 **보류**.
 
 ## 권장 실행 순서 및 의존성
 

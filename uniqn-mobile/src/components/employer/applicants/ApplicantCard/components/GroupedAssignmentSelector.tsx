@@ -23,6 +23,7 @@ import type { GroupedAssignmentDisplay, IconColors } from '../types';
 import type { GroupSelectionState } from '../useAssignmentSelection';
 import { createAssignmentKey } from '../utils';
 import { formatDateDisplay } from '@/utils/scheduleGrouping';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 // ============================================================================
 // Types
@@ -102,18 +103,26 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
   // 그룹별 펼침 상태
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const toggleExpand = useCallback((groupId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
+  const reduceMotion = useReduceMotion();
+
+  const toggleExpand = useCallback(
+    (groupId: string) => {
+      // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
+      if (!reduceMotion) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       }
-      return next;
-    });
-  }, []);
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(groupId)) {
+          next.delete(groupId);
+        } else {
+          next.add(groupId);
+        }
+        return next;
+      });
+    },
+    [reduceMotion]
+  );
 
   if (groupedAssignments.length === 0) {
     return null;

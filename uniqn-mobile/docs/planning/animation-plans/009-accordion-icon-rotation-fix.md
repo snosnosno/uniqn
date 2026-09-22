@@ -1,6 +1,6 @@
 # 009 — Accordion 셰브론 회전의 죽은 CSS 클래스 정리 + 실제 애니메이션 적용
 
-- **Status**: TODO
+- **Status**: DONE (2026-09-22)
 - **Commit**: d824729
 - **Severity**: MEDIUM
 - **Category**: 정확성 버그 (물리성/원점 겸 해당)

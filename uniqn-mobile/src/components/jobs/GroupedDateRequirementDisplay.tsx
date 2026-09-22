@@ -3,6 +3,7 @@ import React, { memo, useCallback, useMemo, useState } from 'react';
 import { LayoutAnimation, Pressable, Text, View } from 'react-native';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 import {
@@ -127,10 +128,15 @@ const GroupItem = memo(function GroupItem({
   const isSingleDay = group.stats.dayCount === 1;
   const dateDisplay = formatDateRangeWithCount(group.startDate, group.endDate);
 
+  const reduceMotion = useReduceMotion();
+
   const toggleExpand = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
+    if (!reduceMotion) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setIsExpanded((prev) => !prev);
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <View className="mb-3">
