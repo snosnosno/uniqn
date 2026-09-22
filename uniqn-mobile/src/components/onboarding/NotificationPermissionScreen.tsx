@@ -5,7 +5,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   type IconComponent,
   BanknotesIcon,
@@ -113,6 +114,12 @@ export function NotificationPermissionScreen({
 
   const loading = isLoading || isProcessing;
   const BadgeIcon = content.badgeIcon;
+  // '동작 줄이기'면 위아래 이동을 빼고 제자리 페이드만 남긴다(룰 8).
+  const reduceMotion = useReduceMotion();
+  const enterUp = (delay: number) =>
+    reduceMotion ? FadeIn.delay(delay).duration(500) : FadeInUp.delay(delay).duration(500);
+  const enterDown = (delay: number) =>
+    reduceMotion ? FadeIn.delay(delay).duration(500) : FadeInDown.delay(delay).duration(500);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-card">
@@ -123,10 +130,7 @@ export function NotificationPermissionScreen({
         bounces={false}
       >
         <View className="flex-1 px-6 py-8">
-          <Animated.View
-            entering={FadeInUp.delay(100).duration(500)}
-            className="mb-8 items-center pt-4"
-          >
+          <Animated.View entering={enterUp(100)} className="mb-8 items-center pt-4">
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
               <BadgeIcon size={40} color={PRIMARY_COLORS[500]} />
             </View>
@@ -145,7 +149,7 @@ export function NotificationPermissionScreen({
               return (
                 <Animated.View
                   key={item.title}
-                  entering={FadeInUp.delay(200 + index * 100).duration(500)}
+                  entering={enterUp(200 + index * 100)}
                   className="mb-3 flex-row items-center rounded-md bg-surface-page dark:bg-surface px-4 py-4"
                 >
                   <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
@@ -164,7 +168,7 @@ export function NotificationPermissionScreen({
             })}
           </View>
 
-          <Animated.View entering={FadeInDown.delay(600).duration(500)} className="mt-auto pb-4">
+          <Animated.View entering={enterDown(600)} className="mt-auto pb-4">
             <Pressable
               onPress={handlePrimaryAction}
               disabled={loading}

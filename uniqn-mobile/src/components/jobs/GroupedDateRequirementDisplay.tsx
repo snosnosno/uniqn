@@ -1,8 +1,11 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { LayoutAnimation, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_DURATION } from '@/constants/motion';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 import {
@@ -127,13 +130,18 @@ const GroupItem = memo(function GroupItem({
   const isSingleDay = group.stats.dayCount === 1;
   const dateDisplay = formatDateRangeWithCount(group.startDate, group.endDate);
 
+  const reduceMotion = useReduceMotion();
+
+  // 높이 전이는 아래 Animated.View 의 layout 이 담당한다(구 LayoutAnimation 대체).
   const toggleExpand = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded((prev) => !prev);
   }, []);
 
   return (
-    <View className="mb-3">
+    <Animated.View
+      layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+      className="mb-3"
+    >
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <View className="mb-1 flex-row items-center">
@@ -188,7 +196,11 @@ const GroupItem = memo(function GroupItem({
       </View>
 
       {isExpanded && !isSingleDay && (
-        <View className="mt-2 ml-4 border-l-2 border-secondary-200 pl-3 dark:border-surface-overlay">
+        <Animated.View
+          entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+          exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
+          className="mt-2 ml-4 border-l-2 border-secondary-200 pl-3 dark:border-surface-overlay"
+        >
           {group.originalRequirements.map((requirement, idx) => {
             const dateStr = toDateString(requirement.date);
             const stats = calculateTimeSlotStats(requirement.timeSlots);
@@ -206,9 +218,9 @@ const GroupItem = memo(function GroupItem({
               </View>
             );
           })}
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 });
 

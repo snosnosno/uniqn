@@ -7,7 +7,8 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import {
   CheckIcon,
@@ -23,6 +24,8 @@ import type { GroupedAssignmentDisplay, IconColors } from '../types';
 import type { GroupSelectionState } from '../useAssignmentSelection';
 import { createAssignmentKey } from '../utils';
 import { formatDateDisplay } from '@/utils/scheduleGrouping';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_DURATION } from '@/constants/motion';
 
 // ============================================================================
 // Types
@@ -102,8 +105,10 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
   // 그룹별 펼침 상태
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  const reduceMotion = useReduceMotion();
+
+  // 높이 전이는 아래 Animated.View 의 layout 이 담당한다(구 LayoutAnimation 대체).
   const toggleExpand = useCallback((groupId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupId)) {
@@ -208,7 +213,11 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
               : 'bg-secondary-100 border-secondary-200';
 
           return (
-            <View key={group.groupId} className={`rounded-lg border overflow-hidden ${bgClass}`}>
+            <Animated.View
+              key={group.groupId}
+              layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+              className={`rounded-lg border overflow-hidden ${bgClass}`}
+            >
               {/* 그룹 헤더 */}
               <Pressable
                 onPress={() => onToggleGroup(group.groupId)}
@@ -279,7 +288,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
 
               {/* 펼침 상태: 개별 날짜 */}
               {isExpanded && (
-                <View
+                <Animated.View
+                  entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+                  exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
                   className={`border-t ${isDark ? 'border-secondary-600' : 'border-secondary-200'} px-3 py-2`}
                 >
                   <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2 font-sans">
@@ -327,9 +338,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       );
                     })}
                   </View>
-                </View>
+                </Animated.View>
               )}
-            </View>
+            </Animated.View>
           );
         })}
       </View>

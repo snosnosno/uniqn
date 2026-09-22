@@ -10,7 +10,7 @@
  */
 import React from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ChevronRightIcon, XMarkIcon } from '@/components/icons';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { MOTION_DURATION } from '@/constants/motion';
@@ -107,6 +107,10 @@ export function ScheduleConditionCard({
       // 카드가 합쳐지고 갈라질 때 위치가 순간이동하면 사장은 무슨 일이 일어났는지 못 본다.
       // 200ms 위치 전이로 "저 카드가 여기로 왔구나"를 눈이 따라가게 한다(D4/F8).
       layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+      // layout 만 있으면 형제 카드의 위치 이동만 부드럽고, 삭제·분리되는 카드 자신은
+      // 순간이동한다. 입장/퇴장을 붙여 "이 카드가 사라졌구나"가 눈에 남게 한다.
+      entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+      exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
       onLayout={(e) => onLayoutY?.(index, e.nativeEvent.layout.y)}
       className={highlighted ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
       testID={`order-sheet-card-${index}`}

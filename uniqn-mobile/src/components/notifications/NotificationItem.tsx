@@ -4,7 +4,14 @@
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import Animated, { FadeInRight, FadeOutLeft, Layout } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInRight,
+  FadeOut,
+  FadeOutLeft,
+  Layout,
+} from 'react-native-reanimated';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { NumericText } from '@/components/ui';
 import { getIconColor } from '@/constants/colors';
@@ -31,6 +38,7 @@ export const NotificationItem = memo(function NotificationItem({
   animated = true,
 }: NotificationItemProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const reduceMotion = useReduceMotion();
 
   const handlePress = useCallback(() => {
     if (onPress) {
@@ -133,9 +141,11 @@ export const NotificationItem = memo(function NotificationItem({
   if (animated) {
     return (
       <Animated.View
-        entering={FadeInRight.duration(200)}
-        exiting={FadeOutLeft.duration(200)}
-        layout={Layout.duration(200)}
+        // '동작 줄이기'면 좌우 이동 없이 제자리 페이드만 — 목록은 하루에도 수십 번 보는 화면이다(룰 8).
+        entering={reduceMotion ? FadeIn.duration(200) : FadeInRight.duration(200)}
+        // 퇴장은 입장의 75%(200 × 0.75 = 150) — 룰 8.
+        exiting={reduceMotion ? FadeOut.duration(150) : FadeOutLeft.duration(150)}
+        layout={reduceMotion ? undefined : Layout.duration(200)}
       >
         {content}
       </Animated.View>

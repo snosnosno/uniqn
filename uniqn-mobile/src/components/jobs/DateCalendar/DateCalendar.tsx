@@ -17,18 +17,11 @@
  *   - (Rule  8) 접기/펼치기 LayoutAnimation (300ms/225ms) + Reduce Motion 대응
  */
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AccessibilityInfo,
-  LayoutAnimation,
-  Platform,
-  Pressable,
-  Text,
-  UIManager,
-  View,
-} from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from 'react-native';
 import { addMonths, isBefore, isAfter, startOfMonth, subMonths, format } from 'date-fns';
 import { useRegularDateCounts } from '@/hooks/useRegularDateCounts';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
 import { CollapsedHeader } from './CollapsedHeader';
@@ -82,21 +75,10 @@ export const DateCalendar = memo(function DateCalendar({
     selectedDate ? startOfMonth(selectedDate) : startOfMonth(new Date())
   );
 
-  // Reduce Motion 감지 (Rule 8)
-  const reduceMotionRef = useRef(false);
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) reduceMotionRef.current = enabled;
-    });
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled: boolean) => {
-      reduceMotionRef.current = enabled;
-    });
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
+  // Reduce Motion 감지 — 공용 훅(SSOT, 룰 8). 여기 있던 로컬 재구현은 프리페치 캐시가 없어
+  // 마운트 첫 1~2프레임 동안 모션이 재생된 뒤 스냅됐고, ref 라서 런타임 설정 변경에도
+  // 리렌더가 걸리지 않았다. 공용 훅은 둘 다 해결돼 있다.
+  const reduceMotion = useReduceMotion();
 
   // 월 범위 경계 (spec 결정 #2: -1 ~ +3개월)
   const { minMonth, maxMonth } = useMemo(() => {
@@ -113,17 +95,19 @@ export const DateCalendar = memo(function DateCalendar({
 
   const { data: counts = {}, isLoading, isError, refetch } = useRegularDateCounts(visibleMonth);
 
+  // deps 에 reduceMotion 이 빠지면 마운트 시점 값이 클로저에 갇혀, 앱 사용 중 설정을 바꿔도
+  // 반영되지 않는다(이전 ref 구현에는 없던 함정 — 공용 훅은 state 라 deps 가 필요하다).
   const triggerExpandAnimation = useCallback(() => {
-    if (!reduceMotionRef.current && typeof LayoutAnimation.configureNext === 'function') {
+    if (!reduceMotion && typeof LayoutAnimation.configureNext === 'function') {
       LayoutAnimation.configureNext(createExpandAnimation());
     }
-  }, []);
+  }, [reduceMotion]);
 
   const triggerCollapseAnimation = useCallback(() => {
-    if (!reduceMotionRef.current && typeof LayoutAnimation.configureNext === 'function') {
+    if (!reduceMotion && typeof LayoutAnimation.configureNext === 'function') {
       LayoutAnimation.configureNext(createCollapseAnimation());
     }
-  }, []);
+  }, [reduceMotion]);
 
   const handleDateSelect = useCallback(
     (date: Date) => {

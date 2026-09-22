@@ -26,16 +26,12 @@
 import { useColorScheme } from 'nativewind';
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform, Text } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WifiIcon, WifiOff } from '@/components/icons';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_EASING } from '@/constants/motion';
 import { getNetworkState, subscribeToNetworkState } from '@/services/offline/networkState';
 
 type BannerPhase = 'hidden' | 'offline' | 'reconnected';
@@ -150,7 +146,8 @@ export function OfflineStatusBar(): React.ReactElement | null {
   useEffect(() => {
     const show = phase !== 'hidden';
     const duration = show ? ENTRANCE_MS : EXIT_MS;
-    const easing = show ? Easing.out(Easing.quad) : Easing.in(Easing.quad);
+    // duration 은 이미 §25 스펙(300/225)을 지키고 있었고, 커브만 토큰 밖에 있었다(룰 8).
+    const easing = show ? MOTION_EASING.enter : MOTION_EASING.exitTravel;
 
     if (reduceMotion) {
       translateY.value = 0;

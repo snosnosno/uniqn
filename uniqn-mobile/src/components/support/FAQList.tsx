@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, LayoutAnimation } from 'react-native';
+import { View, Text } from 'react-native';
 import { AccordionItem } from '@/components/ui';
 import type { FAQItem, InquiryCategory } from '@/types';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
@@ -54,8 +54,9 @@ export function FAQList({
     return groups;
   }, [filteredItems, selectedCategory]);
 
+  // 펼침 높이 전이는 AccordionItem 내부의 Reanimated layout 이 담당한다.
+  // 여기 있던 LayoutAnimation.configureNext 는 그 위에 한 겹 더 얹히던 중복이라 제거했다.
   const handleToggle = useCallback((id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 

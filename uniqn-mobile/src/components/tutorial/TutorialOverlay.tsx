@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -279,6 +280,9 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
           <Animated.Text
             key={isLastPage ? 'cta' : 'next'}
             entering={FadeIn.duration(200)}
+            // exiting 이 없으면 이전 텍스트가 페이드아웃 없이 즉시 사라져 반쪽 크로스페이드가 된다.
+            // 퇴장 = 입장의 75%(200 × 0.75 = 150) — 룰 8.
+            exiting={FadeOut.duration(150)}
             className="text-content-onGold font-sans-semibold text-base"
           >
             {isLastPage ? ctaText : '다음'}

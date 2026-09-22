@@ -109,6 +109,7 @@ function WebModal({
   closeAccessibilityLabel = '닫기',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
+  const reduceMotion = useReduceMotion();
   // 높이는 더 이상 읽지 않는다 — maxHeight 를 % 로 바꿔 뷰포트를 자동 추종한다(아래 참조).
   // 너비는 size='full' 여백 계산에 여전히 필요하다.
   const { width: windowWidth } = useWindowDimensions();
@@ -216,16 +217,22 @@ function WebModal({
               position === 'center'
                 ? {
                     opacity: isAnimating ? 1 : 0,
-                    transform: [{ scale: isAnimating ? 1 : 0.9 }],
+                    // '동작 줄이기'면 스케일 변화 자체를 주지 않는다 — 페이드만 남긴다(룰 8).
+                    transform: [{ scale: reduceMotion || isAnimating ? 1 : 0.9 }],
+                    // 커브는 오버슈트 없는 강한 ease-out — 제어점 y 가 1 을 넘으면(back-ease)
+                    // 목표 크기를 지나쳤다 돌아오는 바운스가 생겨 impeccable 룰 8 을 위반한다.
                     // @ts-expect-error - 웹 전용 스타일
-                    transition:
-                      'opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transition: reduceMotion
+                      ? 'opacity 200ms ease'
+                      : 'opacity 200ms ease, transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
                     pointerEvents: 'auto' as const,
                   }
                 : {
                     opacity: isAnimating ? 1 : 0,
-                    transform: [{ translateY: isAnimating ? 0 : 100 }],
-                    transition: 'opacity 200ms ease, transform 300ms ease-out',
+                    transform: [{ translateY: reduceMotion || isAnimating ? 0 : 100 }],
+                    transition: reduceMotion
+                      ? 'opacity 200ms ease'
+                      : 'opacity 200ms ease, transform 300ms ease-out',
                     pointerEvents: 'auto' as const,
                   },
             ]}
@@ -427,7 +434,9 @@ function NativeModal({
 
           if (!shouldDismiss) {
             // 되돌아가는 반동은 '동작 줄이기'가 켜져 있으면 생략한다.
-            translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 22, stiffness: 220 });
+            // damping 32 = 임계댐핑(2√220 ≈ 29.66) 이상이라 오버슈트가 없다.
+            // 낮추면 목표 지점을 지나쳤다 돌아오는 바운스가 생겨 impeccable 룰 8 을 위반한다.
+            translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 32, stiffness: 220 });
             return;
           }
 
