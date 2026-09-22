@@ -6,11 +6,10 @@
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, LayoutAnimation } from 'react-native';
+import { View, Text } from 'react-native';
 import { AccordionItem } from '@/components/ui';
 import type { FAQItem, InquiryCategory } from '@/types';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
-import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 export interface FAQListProps {
   /** FAQ 아이템 목록 */
@@ -55,18 +54,11 @@ export function FAQList({
     return groups;
   }, [filteredItems, selectedCategory]);
 
-  const reduceMotion = useReduceMotion();
-
-  const handleToggle = useCallback(
-    (id: string) => {
-      // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
-      if (!reduceMotion) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      }
-      setExpandedId((prev) => (prev === id ? null : id));
-    },
-    [reduceMotion]
-  );
+  // 펼침 높이 전이는 AccordionItem 내부의 Reanimated layout 이 담당한다.
+  // 여기 있던 LayoutAnimation.configureNext 는 그 위에 한 겹 더 얹히던 중복이라 제거했다.
+  const handleToggle = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }, []);
 
   // 빈 상태
   if (filteredItems.length === 0) {

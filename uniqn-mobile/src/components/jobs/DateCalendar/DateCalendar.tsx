@@ -95,17 +95,19 @@ export const DateCalendar = memo(function DateCalendar({
 
   const { data: counts = {}, isLoading, isError, refetch } = useRegularDateCounts(visibleMonth);
 
+  // deps 에 reduceMotion 이 빠지면 마운트 시점 값이 클로저에 갇혀, 앱 사용 중 설정을 바꿔도
+  // 반영되지 않는다(이전 ref 구현에는 없던 함정 — 공용 훅은 state 라 deps 가 필요하다).
   const triggerExpandAnimation = useCallback(() => {
     if (!reduceMotion && typeof LayoutAnimation.configureNext === 'function') {
       LayoutAnimation.configureNext(createExpandAnimation());
     }
-  }, []);
+  }, [reduceMotion]);
 
   const triggerCollapseAnimation = useCallback(() => {
     if (!reduceMotion && typeof LayoutAnimation.configureNext === 'function') {
       LayoutAnimation.configureNext(createCollapseAnimation());
     }
-  }, []);
+  }, [reduceMotion]);
 
   const handleDateSelect = useCallback(
     (date: Date) => {

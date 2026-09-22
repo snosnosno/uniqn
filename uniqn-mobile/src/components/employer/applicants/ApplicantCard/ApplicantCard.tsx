@@ -1,12 +1,14 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
-import { LayoutAnimation, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { buildPostingFacts } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
 import { getRoleDisplayName } from '@/types/unified';
 import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_DURATION } from '@/constants/motion';
 import { formatRelativeTime } from '@/utils/date';
 import { CardStripe } from '@/components/ui';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
@@ -95,13 +97,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   const reduceMotion = useReduceMotion();
 
+  // 높이 전이는 아래 Animated.View 의 layout 이 담당한다(구 LayoutAnimation 대체).
   const toggleExpand = useCallback(() => {
-    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
-    if (!reduceMotion) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    }
     setIsExpanded((prev) => !prev);
-  }, [reduceMotion]);
+  }, []);
 
   const handleViewProfile = useCallback(() => {
     onViewProfile?.(applicant);
@@ -134,7 +133,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   return (
     <CardStripe tone={STATUS_STRIPE_TONE[applicant.status]}>
-      <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
+      <Animated.View
+        layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+        className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3"
+      >
         <CardHeader
           displayName={displayName}
           profilePhotoURL={profilePhotoURL}
@@ -150,7 +152,11 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         />
 
         {isExpanded && (
-          <View className="mt-3 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
+          <Animated.View
+            entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+            exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
+            className="mt-3 border-t border-secondary-100 pt-3 dark:border-surface-overlay"
+          >
             <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {getRoleDisplayName(
                 applicant.assignments[0]?.roleIds?.[0] || 'other',
@@ -213,7 +219,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               confirmationHistory={applicant.confirmationHistory}
               showConfirmationHistory={showConfirmationHistory}
             />
-          </View>
+          </Animated.View>
         )}
 
         {canShowConfirmedActions && (
@@ -231,7 +237,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             onReject={handleReject}
           />
         )}
-      </View>
+      </Animated.View>
     </CardStripe>
   );
 });

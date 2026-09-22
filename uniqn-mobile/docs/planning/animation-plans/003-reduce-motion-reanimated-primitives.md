@@ -1,6 +1,6 @@
 # 003 — 공용 UI 프리미티브의 Reanimated 애니메이션에 reduceMotion 적용
 
-- **Status**: DONE (2026-09-22) — 단 `SheetModal` 의 **웹 경로(`WebSheetModal`)는 미적용**. 이 계획은 `NativeSheetModal` 만 다뤘는데, 웹 경로도 `transition: transform 300ms` 로 슬라이드한다(`SheetModal.tsx:213-215`). 후속 과제.
+- **Status**: DONE (2026-09-22) — 계획 범위(`NativeSheetModal`) 적용 후, 범위 밖이던 **웹 경로(`WebSheetModal`)도 같은 날 함께 적용**했다. 웹 경로는 `transform 300ms` 로 슬라이드하고 있었으므로 `reduceMotion` 일 때 `translateY` 를 0 으로 고정하고 transition 에서 transform 을 뺐다.
 - **Commit**: d824729
 - **Severity**: HIGH
 - **Category**: 접근성 (impeccable-design.md §8)

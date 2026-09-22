@@ -78,6 +78,7 @@ function WebSheetModal({
   overlay,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
+  const reduceMotion = useReduceMotion();
   // 연쇄 진입 — 네이티브와 같은 계약을 웹에서도 지킨다(마운트 시점 값 고정).
   // 웹은 onShow 가 없어 표시 전환 시점에 onEntered 를 직접 호출한다.
   const chain = useSheetChain();
@@ -206,13 +207,19 @@ function WebSheetModal({
                 height: fullHeight ? ('100%' as const) : undefined,
                 // 연쇄 진입은 제자리에서 내용만 갈린다 — 슬라이드 없이 fade 만(네이티브와 동일).
                 opacity: isChainEntryRef.current ? (chainContentIn ? 1 : 0) : isAnimating ? 1 : 0,
+                // '동작 줄이기'면 아래에서 올라오는 이동 자체를 주지 않는다 — 딤/페이드만 남긴다(룰 8).
                 transform: [
-                  { translateY: isChainEntryRef.current || isAnimating ? 0 : windowHeight },
+                  {
+                    translateY:
+                      reduceMotion || isChainEntryRef.current || isAnimating ? 0 : windowHeight,
+                  },
                 ],
                 // @ts-expect-error - 웹 전용 스타일
                 transition: isChainEntryRef.current
                   ? 'opacity 160ms ease-out'
-                  : 'opacity 200ms ease, transform 300ms ease-out',
+                  : reduceMotion
+                    ? 'opacity 200ms ease'
+                    : 'opacity 200ms ease, transform 300ms ease-out',
                 pointerEvents: 'auto' as const,
               },
             ]}

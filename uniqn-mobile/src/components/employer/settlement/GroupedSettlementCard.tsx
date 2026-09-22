@@ -17,7 +17,8 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, LayoutAnimation } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { Avatar, CardStripe, NumericText } from '@/components/ui';
 import {
   CalendarIcon,
@@ -31,6 +32,7 @@ import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION_DURATION } from '@/constants/motion';
 import { STATUS } from '@/constants';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog } from '@/types';
@@ -171,13 +173,10 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
   const reduceMotion = useReduceMotion();
 
+  // 높이 전이는 아래 Animated.View 의 layout 이 담당한다(구 LayoutAnimation 대체).
   const toggleExpanded = useCallback(() => {
-    // 모션을 줄이도록 설정한 사용자에게 펼침 애니메이션을 강행하지 않는다(룰 8).
-    if (!reduceMotion) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    }
     setIsExpanded((prev) => !prev);
-  }, [reduceMotion]);
+  }, []);
 
   const handlePress = useCallback(() => {
     if (group.originalWorkLogs.length > 0) {
@@ -187,7 +186,10 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
   return (
     <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
-      <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
+      <Animated.View
+        layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
+        className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3"
+      >
         {/* 상단: 프로필 + 지급 예정 금액 */}
         <Pressable
           onPress={handlePress}
@@ -278,7 +280,11 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         </Pressable>
 
         {isExpanded && (
-          <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
+          <Animated.View
+            entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+            exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
+            className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay"
+          >
             {group.dateStatuses.map((status, index) => {
               const workLog = workLogMap.get(status.workLogId);
               if (!workLog) return null;
@@ -294,9 +300,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
                 />
               );
             })}
-          </View>
+          </Animated.View>
         )}
-      </View>
+      </Animated.View>
     </CardStripe>
   );
 });

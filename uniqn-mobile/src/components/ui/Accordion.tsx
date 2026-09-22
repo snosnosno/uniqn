@@ -7,8 +7,15 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, LayoutAnimation } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { View, Text, Pressable } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { ChevronDownIcon } from '@/components/icons';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { MOTION_EASING, MOTION_DURATION } from '@/constants/motion';
@@ -73,13 +80,9 @@ export function AccordionItem({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
+  // 높이 전이는 아래 Animated.View 의 layout 이 담당한다(구 LayoutAnimation 대체).
   const handleToggle = useCallback(() => {
     if (disabled) return;
-
-    // 애니메이션 설정 — '동작 줄이기'가 켜져 있으면 생략한다(룰 8).
-    if (!reduceMotion) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    }
 
     const newExpanded = !isExpanded;
 
@@ -92,7 +95,8 @@ export function AccordionItem({
   }, [disabled, isExpanded, isControlled, onToggle]);
 
   return (
-    <View
+    <Animated.View
+      layout={reduceMotion ? undefined : LinearTransition.duration(MOTION_DURATION.base)}
       className={`overflow-hidden ${className}`}
       accessibilityRole="button"
       accessibilityState={{ expanded: isExpanded, disabled }}
@@ -130,8 +134,16 @@ export function AccordionItem({
       </Pressable>
 
       {/* Content */}
-      {isExpanded && <View className="pb-3">{children}</View>}
-    </View>
+      {isExpanded && (
+        <Animated.View
+          entering={reduceMotion ? undefined : FadeIn.duration(MOTION_DURATION.base)}
+          exiting={reduceMotion ? undefined : FadeOut.duration(MOTION_DURATION.fast)}
+          className="pb-3"
+        >
+          {children}
+        </Animated.View>
+      )}
+    </Animated.View>
   );
 }
 

@@ -8,22 +8,30 @@
 |---|---|---|---|---|
 | 001 | Modal/SignupForm 바운스·오버슈트 제거 | HIGH | ✅ DONE | 2 |
 | 002 | LayoutAnimation 호출부에 reduceMotion 가드 추가 | HIGH | ✅ DONE | 6 |
-| 003 | 공용 UI 프리미티브 Reanimated에 reduceMotion 적용 | HIGH | ✅ DONE(웹 시트 경로 제외) | 3 |
+| 003 | 공용 UI 프리미티브 Reanimated에 reduceMotion 적용 | HIGH | ✅ DONE(+범위 밖 웹 시트 경로 추가 적용) | 3 |
 | 004 | 알림 리스트에 reduceMotion 적용 | HIGH | ✅ DONE | 2 |
 | 005 | 온보딩/회원가입 진입 애니메이션에 reduceMotion 적용 | HIGH | ✅ DONE | 3 |
 | 006 | 퇴장 애니메이션 75% 규칙 정정 | MEDIUM | ✅ DONE | 2 |
 | 007 | MOTION_EASING/MOTION_DURATION 토큰 소비 통일 | MEDIUM | ✅ DONE | 4 |
 | 008 | DateCalendar/SlotCard SSOT 훅 전환 | MEDIUM | ✅ DONE | 2 |
 | 009 | Accordion 아이콘 회전 죽은 코드 수정 | MEDIUM | ✅ DONE | 1 |
-| 010 | LayoutAnimation→Reanimated 전환 | MEDIUM | ⏸️ **HOLD** — FlashList 재활용 충돌 리스크, 실기기 검증 필요(계획서 "보류 사유") | 6 |
+| 010 | LayoutAnimation→Reanimated 전환 | MEDIUM | ✅ DONE — 한 번 보류 후 재개(계획서 "보류 → 재개") | 6 |
 | 011 | 놓친 기회 4건(전환 모션 추가) | LOW-MEDIUM | ✅ DONE(3/4, 1건은 전제 오류로 취소) | 3 |
 
-**검증 증거(2026-09-22)**: `npm run quality` exit 0(type-check 통과 · eslint 0 errors/125 pre-existing warnings · prettier all clean) · `npx jest src/components` → **199 suites / 1728 tests / 98 snapshots 전부 통과**.
+**검증 증거(2026-09-22)**: `npm run quality` exit 0(type-check 통과 · eslint **0 errors** · prettier all clean). eslint 경고는 착수 전 125 → **122** 로 감소. `npx jest src/components` → **199 suites / 1728 tests / 98 snapshots 전부 통과**.
 
-### 실행 중 계획이 틀렸던 것 2건 (기록)
+### 실행 중 계획이 틀렸던 것 (기록)
 
-1. **011-2 `BoardImageViewerOverlay`** — "이미지 전환 시 모션 없음"은 오진이었다. 이미 `expo-image` 의 `transition={200}` 이 크로스페이드를 재생 중이라, 계획대로 `FadeIn` 을 덧대면 페이드가 2중이 된다 → **취소**.
-2. **010 전체** — 대상 6개 중 3개(`ApplicantCard`·`GroupedSettlementCard`·`GroupedAssignmentSelector`)가 FlashList 재활용 뷰 안에 있다는 사실이 계획 작성 시 누락됐다. 접근성 결함은 002 가 이미 해소했으므로 010 은 순수 메커니즘 현대화만 남았고, 실기기 확인 없이 넣을 이유가 없어 **보류**.
+1. **011-2 `BoardImageViewerOverlay` → 취소.** "이미지 전환 시 모션 없음"은 오진이었다. 이미 `expo-image` 의 `transition={200}` 이 크로스페이드를 재생 중이라, 계획대로 `FadeIn` 을 덧대면 페이드가 2중이 된다.
+2. **010 → 보류했다가 재개.** 대상 6개 중 3개가 FlashList 재활용 뷰 안이라는 사실이 계획 작성 시 누락돼 한 번 멈췄으나, `NotificationItem` 이 이미 같은 패턴으로 FlashList 안에서 출고 중인 선례를 확인하고 재개했다. 재활용 루트에는 `entering` 을 달지 않고 안쪽 컨테이너에만 `layout` 을 거는 방식으로 리스크를 줄였다.
+3. **008 이 stale closure 를 남겼고 lint 가 잡았다.** `DateCalendar` 에서 `reduceMotionRef.current` → `reduceMotion`(state) 로 바꾸면서 `useCallback` deps 에 추가하지 않아, 앱 사용 중 설정을 바꿔도 반영되지 않는 상태였다. `react-hooks/exhaustive-deps` 경고로 발견해 수정. **ref → state 전환 시 deps 점검이 필수**라는 교훈.
+
+### 실기기 검증은 여전히 미실시
+
+전부 코드 정합성(type-check · lint · 테스트)만 통과한 상태다. 다음은 기기에서 확인해야 한다.
+- "동작 줄이기" ON/OFF 를 번갈아 켜며 각 화면의 모션이 의도대로 갈리는지
+- 지원자/정산 목록을 길게 스크롤하며 FlashList 재활용 글리치가 없는지 (010 영향)
+- 모달·시트·회원가입 스텝에서 튕김(오버슈트)이 사라졌는지 (001 영향)
 
 ## 권장 실행 순서 및 의존성
 

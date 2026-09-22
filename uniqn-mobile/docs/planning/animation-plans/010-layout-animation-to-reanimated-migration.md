@@ -1,12 +1,21 @@
 # 010 — 구형 LayoutAnimation을 Reanimated LinearTransition으로 전환
 
-- **Status**: HOLD — 실행 보류(2026-09-22). 사유는 바로 아래 "보류 사유" 참조.
+- **Status**: DONE (2026-09-22) — 한 번 보류했다가 사용자 지시로 재개해 6개 파일 전부 적용. 보류 사유와 그 판단이 어떻게 뒤집혔는지는 아래 "보류 → 재개" 절 참조.
 - **Commit**: d824729
 - **Severity**: MEDIUM (정책 위반은 아니나 성능·중단가능성 개선, 리팩터 규모가 커서 레버리지는 낮음 — 후순위 권장)
 - **Category**: 성능 · 중단가능성 (AUDIT.md §4, §5)
 - **Estimated scope**: 6 files — **선행 조건: 계획 002, 006, 009가 먼저 적용되어 있어야 충돌 없이 진행 가능**
 
-## 보류 사유 (2026-09-22 실행 시도 중 발견)
+## 보류 → 재개 (2026-09-22, 같은 날)
+
+아래 "보류 사유"로 한 번 멈췄다가 재개해 **6개 파일 전부 적용 완료**했다. 판단을 뒤집은 근거:
+
+- **FlashList + Reanimated layout 선례가 이 저장소에 이미 있다.** `NotificationList.tsx:189` 의 `AppFlashList` 가 `keyExtractor` + `getItemType` 과 함께 `NotificationItem` 을 렌더하고, 그 `NotificationItem` 은 `layout`/`entering`/`exiting` 을 쓴 채 프로덕션에 나가 있다. 즉 "FlashList 안에서는 쓰면 안 되는 패턴"이 아니라 **이 저장소가 이미 채택한 패턴**이었다.
+- 적용 시 재활용 리스크를 줄이려고 **카드 최상단(`CardStripe`)이 아니라 그 안쪽 컨테이너에만 `layout` 을 걸었고**, `entering`/`exiting` 은 펼침 콘텐츠 블록에만 달았다(재활용되는 루트에 `entering` 을 달지 않음).
+
+**남은 검증**: 실기기에서 지원자/정산 목록을 길게 스크롤하며 글리치가 없는지, 연타 시 끊김이 사라졌는지는 여전히 확인이 필요하다. 코드 정합성(type-check·lint·199 suites/1728 tests)만 통과한 상태다.
+
+## 보류 사유 (재개 전 기록 — 판단 근거를 남긴다)
 
 이 계획을 실행하려다 **계획 작성 시점에 몰랐던 제약**을 발견해 보류했다. 나머지 10개 계획은 모두 적용·검증 완료된 상태다.
 
