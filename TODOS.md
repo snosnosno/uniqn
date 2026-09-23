@@ -121,6 +121,7 @@
 ## 근무표 대회 포함 — 이월 (2026-07-19)
 
 ### required CTE 에 job_postings.status 필터 부재
+- ✅ **해소(2026-07-27)** — `uniqn-mobile/supabase/migrations/20260727120000_work_schedule_soft_cancel_and_required_status_filter.sql` ② 가 `required` CTE 에 `jp.status` 필터를 추가했다. 아래 본문은 결정 이력 보존용.
 - **What**: `get_venue_grid_summary` 의 `required` CTE 가 공고 status 를 전혀 보지 않아 **취소된(`cancelled`) 일반 공고의 requirements 도 필요인원에 산입**된다.
 - **Why 이월**: `closed` 는 만석 마감(capacity_full→closed)일 수 있어 배제하면 required 만 떨어지고 headcount 는 남아 셀이 왜곡된다. 상태별 구분 판단이 선행돼야 한다.
 - **Effort**: S | **Priority**: P2 | 대회 포함과 무관하게 기존 배치에 이미 존재하는 동작.

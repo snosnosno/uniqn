@@ -434,3 +434,9 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - **정량 효과**(`claude plugin details` 의 projected token cost): synced 11종 합계 **~7,728 tok / 세션** · 스킬 81 · 딸린 MCP 84. 최대는 data(~1,126) · legal(~985) · marketing(~872).
 - 🔑 **CLI 가 진실원이다** — 같은 세션의 프롬프트는 시작 시점에 고정돼 반영 여부를 알 수 없고, 설정 파일만 보면 "썼으니 됐다"로 끝난다. `claude plugin list` / `claude mcp list` / `claude plugin details` 세 명령이 되읽기 수단이다.
 - 계기: 사용자 "세션 재시작해서 줄었는지 확인해줘" → 재시작 없이 CLI 로 되읽어 실패를 발견.
+
+## [2026-09-23] note | 핵심 퍼널 영속화 + 관리자 DAU — 계측 계약 확장 (마이그 20260923100000)
+- `analytics_events` event 화이트리스트에 핵심 퍼널 8종 추가(로그인 전용, RLS 무변경). 클라 `trackEvent` 가 `CORE_FUNNEL_EVENTS` 이면 서버에도 기록 — 속성은 `PERSISTED_PROP_KEYS`(id·method·role·count)만. 🔑 **CHECK 화이트리스트 ↔ 클라 유니온(`PersistedAnalyticsEvent`) ↔ `CORE_FUNNEL_EVENTS` 셋이 1:1** 이어야 한다. 한쪽만 늘리면 서버가 조용히 거부한다(20260813160000 의 CHECK↔RLS 두 층 교훈과 같은 클래스).
+- 신규 RPC `get_admin_daily_active_users` — count(DISTINCT) 는 PostgREST 로 못 하고, 행을 끌어오면 1000행 상한에서 조용히 잘리므로 서버 집계. 🔑 **측정 실패 = null, 0 과 섞지 않는다**([[vacuous-verification]] 유형 2 "구조적 0" 의 예방형).
+- 파리티 225 → 226. prod 적용 전까지 주간 parity-smoke 는 1 차이로 red — 적용과 동기.
+- 계기: 출시 준비도 점검 9·10번(가입·지원 집계 불가 / DAU 항상 0).
