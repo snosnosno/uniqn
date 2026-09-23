@@ -90,6 +90,13 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 **MCP 4종**: `context7` · `playwright` · `supabase` · `graphify` (`.mcp.json`).
 동명 플러그인 3종은 **중복이라 비활성화**했다 — 다시 켜면 도구 정의가 2벌 실린다.
 
+**user 스코프 MCP `lazyweb`**(2026-09-24, 디자인 레퍼런스 — 실제 앱 화면 257k). 토큰이 들어가므로
+`.mcp.json` 이 아니라 `~/.claude.json` 에 있다(`claude mcp get lazyweb`). **MCP 만 등록**했다 —
+공식 `curl …/install.sh | bash` 는 `~/.claude/skills` 에 스킬 15개를 복사하고 자동 업데이트를 켜므로
+🚨 **실행 금지**. 토큰 발급 단계만 재현(`POST /api/mcp/install-token` → `claude mcp add --scope user`).
+⚠️ 무료라지만 데이터 도구 노출은 계정 플랜·서버측 실험 배정에 달렸다 — 도구가 없으면 `lazyweb_account` 확인.
+탈락: **Inspo**(`Nutlope/inspo`, inspomcp.dev) — 웹사이트 832개 캡처뿐이라 네이티브 앱 레퍼런스로 약함.
+
 **graphify 운영** — 재색인은 수동이고 **그래프는 조용히 낡는다**(MCP 툴은 낡은 그래프에도 정상
 응답한다). `graphify update uniqn-mobile`(레포 루트, ~3분). 머지 웨이브 직후·대규모 리팩터링 후·
 `get_node` 가 최근 심볼을 못 찾을 때 돌린다. 검증=방금 추가한 함수를 `get_node` 로 조회.
