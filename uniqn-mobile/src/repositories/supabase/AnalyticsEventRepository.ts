@@ -22,13 +22,31 @@ export type OpsFunnelEvent =
   | 'job_share_opened';
 
 /**
+ * 핵심 퍼널(마이그 20260923100000) — 가입 → 열람 → 지원 → 출퇴근 → 정산.
+ * **로그인 사용자 전용**이다. anon INSERT 정책(ae_anon_insert)에는 없으므로 비로그인에서
+ * 보내면 RLS 가 조용히 거부한다. 서버 CHECK 화이트리스트와 1:1 — 늘릴 때는 마이그레이션과 함께.
+ */
+export type CoreFunnelEvent =
+  | 'signup'
+  | 'login'
+  | 'job_view'
+  | 'job_apply'
+  | 'job_create'
+  | 'check_in'
+  | 'check_out'
+  | 'settlement_complete';
+
+/** analytics_events 에 영속되는 이벤트 전체 — 서버 event CHECK 화이트리스트와 1:1. */
+export type PersistedAnalyticsEvent = OpsFunnelEvent | CoreFunnelEvent;
+
+/**
  * 퍼널 이벤트 영속 Repository (S1 D1).
  * fire-and-forget: 계측 실패는 앱 동작에 절대 영향 금지(throw 없음, dev 로깅만).
  * user_id 는 서버 가드 트리거가 auth.uid() 로 캐노니컬라이즈(위조 불가), anon 은 props.tk 필수.
  */
 class SupabaseAnalyticsEventRepository {
   async insert(
-    event: OpsFunnelEvent,
+    event: PersistedAnalyticsEvent,
     props: Record<string, string | number | boolean> = {}
   ): Promise<void> {
     try {

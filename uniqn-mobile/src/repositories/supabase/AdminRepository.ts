@@ -396,6 +396,33 @@ export class SupabaseAdminRepository implements IAdminRepository {
   // 시스템 메트릭스 (System Metrics)
   // ==========================================================================
 
+  /**
+   * 일별 활성 사용자(DAU) — 서버 집계 RPC(마이그 20260923100000).
+   *
+   * count(DISTINCT user_id) 는 PostgREST 로 표현할 수 없고, 행을 끌어와 세면 기본
+   * 1000행 상한에서 조용히 잘린다. 그래서 서버가 날짜당 한 행만 돌려준다(빈 날 0 포함).
+   * 실패하면 **null** 을 돌려준다 — 0 으로 채우면 "측정 실패"가 "아무도 안 왔다"로 읽힌다.
+   */
+  private async getDailyActiveUsers(days: number): Promise<DailyCount[] | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_admin_daily_active_users', {
+        p_days: days,
+        p_tz: 'Asia/Seoul',
+      });
+      if (error) {
+        logger.warn('DAU 집계 조회 실패 — 측정 불가로 표시', { code: error.code });
+        return null;
+      }
+      return ((data ?? []) as { activity_date: string; active_users: number }[]).map((row) => ({
+        date: row.activity_date,
+        count: Number(row.active_users) || 0,
+      }));
+    } catch (error) {
+      logger.warn('DAU 집계 조회 실패 — 측정 불가로 표시', { error: String(error) });
+      return null;
+    }
+  }
+
   async getSystemMetrics(): Promise<SystemMetricsData> {
     try {
       logger.info('시스템 메트릭스 조회');
@@ -412,7 +439,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
         dateRanges.push({ start: date.toISOString(), end: endDate.toISOString() });
       }
 
-      const [signupsData, applicationsData] = await Promise.all([
+      const [signupsData, applicationsData, dailyActiveUsers] = await Promise.all([
         Promise.all(
           dateRanges.map(async ({ start, end }, i) => {
             const { count, error } = await supabase
@@ -445,6 +472,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
             return { date: dates[i], count: count ?? 0 } as DailyCount;
           })
         ),
+        this.getDailyActiveUsers(dates.length),
       ]);
 
       // 시스템 상태 체크 (간단 조회로 확인)
@@ -459,6 +487,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
       const metrics: SystemMetricsData = {
         dailySignups: signupsData,
         dailyApplications: applicationsData,
+        dailyActiveUsers,
         isHealthy,
       };
 

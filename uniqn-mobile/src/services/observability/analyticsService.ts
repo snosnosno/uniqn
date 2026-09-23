@@ -1,12 +1,14 @@
 /**
  * UNIQN Mobile - Analytics 서비스
  *
- * @description Firebase Analytics 이벤트 추적 및 사용자 속성 관리
- * @version 2.0.0
+ * @description 이벤트 추적 및 사용자 속성 관리
+ * @version 3.0.0
  *
- * 구현 상태:
- * - 웹: Firebase Analytics SDK
- * - 네이티브: 로깅 (추후 네이티브 SDK 추가 예정)
+ * 레일 (Firebase Analytics 는 제거됐다 — 전 플랫폼 동일):
+ * - 모든 이벤트: Sentry 브레드크럼 (에러 리포트에 "직전 행동"이 붙는다)
+ * - 영속 이벤트: Supabase `analytics_events` (집계·퍼널·DAU 의 원천)
+ *   = ops 퍼널 · 공유 퍼널 · app_session_start · 핵심 퍼널(CORE_FUNNEL_EVENTS)
+ *   서버 event CHECK 화이트리스트와 1:1 이다 — 목록 밖 이름은 서버가 거부한다.
  *
  * 이벤트 카테고리:
  * - 인증: login, signup, logout
@@ -21,6 +23,7 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import {
   analyticsEventRepository,
+  type CoreFunnelEvent,
   type OpsFunnelEvent,
 } from '@/repositories/supabase/AnalyticsEventRepository';
 import {
@@ -148,6 +151,52 @@ export interface UserProperties {
 }
 
 // ============================================================================
+// 영속 레일 — 핵심 퍼널
+// ============================================================================
+
+/**
+ * `trackEvent` 가 브레드크럼과 함께 **서버에도** 남기는 이벤트 (마이그 20260923100000).
+ * 서버 CHECK 화이트리스트와 1:1 — 여기만 늘리면 서버가 조용히 거부한다.
+ */
+const CORE_FUNNEL_EVENTS: ReadonlySet<string> = new Set<CoreFunnelEvent>([
+  'signup',
+  'login',
+  'job_view',
+  'job_apply',
+  'job_create',
+  'check_in',
+  'check_out',
+  'settlement_complete',
+]);
+
+/**
+ * 서버에 싣는 속성 화이트리스트 — 식별자·방식·분류·건수만.
+ *
+ * 🔑 브레드크럼에는 전부 싣되 서버에는 **여기 있는 키만** 보낸다.
+ *    `job_title`·`search_term`·`error_message` 는 사용자가 입력한 자유 텍스트라 PII 가
+ *    섞일 수 있고, `settlement_amount` 는 개인 급여다. analytics_events 는 보존 기한이 없는
+ *    계측 테이블이라 한번 들어가면 지우기 어렵다 — 퍼널 집계에 필요 없는 값은 싣지 않는다.
+ */
+const PERSISTED_PROP_KEYS: ReadonlySet<string> = new Set([
+  'method',
+  'job_id',
+  'job_role',
+  'settlement_count',
+]);
+
+function pickPersistedProps(
+  params: Record<string, string | number | boolean | undefined>
+): Record<string, string | number | boolean> {
+  const picked: Record<string, string | number | boolean> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && PERSISTED_PROP_KEYS.has(key)) {
+      picked[key] = value;
+    }
+  }
+  return picked;
+}
+
+// ============================================================================
 // Analytics Instance Management
 // ============================================================================
 
@@ -155,15 +204,12 @@ let isAnalyticsInitialized = false;
 let isAnalyticsEnabled = true;
 
 /**
- * Analytics 초기화
- * 웹: Firebase Analytics SDK
- * 네이티브: 로깅 (추후 네이티브 SDK 추가)
+ * Analytics 초기화 — 외부 SDK 없음. 레일 구성은 파일 머리 주석 참조.
  */
 async function initializeAnalytics(): Promise<boolean> {
   if (isAnalyticsInitialized) return true;
 
-  // Firebase Analytics 제거됨 — 로깅 모드로 동작
-  logger.info('Analytics: 로깅 모드 (Firebase 제거됨)', {
+  logger.info('Analytics: 브레드크럼 + analytics_events 영속 레일', {
     platform: Platform.OS,
   });
   isAnalyticsInitialized = true;
@@ -213,6 +259,15 @@ export async function trackEvent(
     // 출시 빌드에서는 문자 그대로 아무 일도 하지 않았다(testgap-01).
     // Sentry 브레드크럼으로 남기면 에러 리포트에 "그 직전에 무엇을 했는가"가 붙는다.
     void leaveBreadcrumb(`analytics:${eventName}`, cleanParams as BreadcrumbData);
+
+    // 핵심 퍼널은 서버에도 남긴다 — 브레드크럼은 "에러가 난 세션"에만 붙어 나오므로
+    // 가입·지원 같은 정상 흐름은 브레드크럼만으로는 **한 건도 셀 수 없다**.
+    // 로그인 사용자 전용(RLS). 비로그인이면 서버가 거부하고 리포지토리가 삼킨다.
+    if (CORE_FUNNEL_EVENTS.has(eventName)) {
+      void analyticsEventRepository
+        .insert(eventName as CoreFunnelEvent, pickPersistedProps(cleanParams))
+        .catch(() => undefined);
+    }
   } catch (error) {
     // Analytics 에러는 앱 동작에 영향을 주지 않도록 조용히 처리
     if (__DEV__) {

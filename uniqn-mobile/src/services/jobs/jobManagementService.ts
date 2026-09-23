@@ -18,6 +18,7 @@ import type {
   PostingLocation,
   UpdateJobPostingInput,
 } from '@/types';
+import { trackJobCreate } from '@/services/observability';
 import { geocodeAddress } from './geocodingService';
 
 export type { CreateJobPostingResult, JobPostingStats, ScheduleBoardSyncAction };
@@ -250,6 +251,8 @@ export async function createJobPosting(
       jobPostingId: result.id,
       ownerId,
     });
+    // 공고 등록 퍼널 — 헬퍼는 정의돼 있었지만 호출부가 없어 한 건도 기록된 적이 없었다.
+    trackJobCreate(result.id, result.jobPosting.title);
     return result;
   } catch (error) {
     throw handleServiceError(error, {

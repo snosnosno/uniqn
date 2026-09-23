@@ -193,6 +193,25 @@ export default function AdminStatsScreen() {
           7일 트렌드
         </Text>
         <View className="mb-4">
+          {metrics && metrics.dailyActiveUsers === null ? (
+            // null = 측정 실패. 0 으로 그리면 "아무도 안 왔다"로 오독된다.
+            <View className="rounded-md border border-secondary-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+              <Text className="mb-1 text-base font-display-semibold text-content-primary dark:text-off-white">
+                일별 활성 사용자
+              </Text>
+              <Text className="text-sm text-content-secondary font-sans">
+                활성 사용자 집계를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
+              </Text>
+            </View>
+          ) : (
+            <TrendChart
+              title="일별 활성 사용자"
+              data={metrics?.dailyActiveUsers ?? []}
+              suffix="명"
+            />
+          )}
+        </View>
+        <View className="mb-4">
           <TrendChart title="일별 가입자 수" data={metrics?.dailySignups ?? []} suffix="명" />
         </View>
         <View className="mb-6">

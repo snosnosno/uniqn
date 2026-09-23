@@ -219,8 +219,11 @@ export interface PaginatedUsers {
  * 시스템 메트릭스
  */
 export interface SystemMetrics {
-  /** 일별 활성 사용자 (최근 7일) */
-  dailyActiveUsers: { date: string; count: number }[];
+  /**
+   * 일별 활성 사용자 (최근 7일, KST). 그 날 활동 기록(analytics_events)을 남긴 로그인 사용자 수.
+   * **null = 측정 실패** — 0(아무도 안 옴)과 구분해 화면에 따로 표시한다.
+   */
+  dailyActiveUsers: { date: string; count: number }[] | null;
   /** 일별 신규 가입자 (최근 7일) */
   dailySignups: { date: string; count: number }[];
   /** 일별 지원 수 (최근 7일) */

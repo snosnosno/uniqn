@@ -175,18 +175,12 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
 
     const metricsData = await adminRepository.getSystemMetrics();
 
-    // DAU 데이터는 현재 미구현 - 날짜만 채워서 반환
-    const dailyActiveUsers = metricsData.dailySignups.map((entry) => ({
-      date: entry.date,
-      count: 0,
-    }));
-
     const systemStatus: 'healthy' | 'degraded' | 'down' = metricsData.isHealthy
       ? 'healthy'
       : 'degraded';
 
     const metrics: SystemMetrics = {
-      dailyActiveUsers,
+      dailyActiveUsers: metricsData.dailyActiveUsers,
       dailySignups: metricsData.dailySignups,
       dailyApplications: metricsData.dailyApplications,
       systemStatus,
