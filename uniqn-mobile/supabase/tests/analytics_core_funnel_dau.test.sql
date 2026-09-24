@@ -10,9 +10,10 @@
 --   그럴듯한 0 을 그린다(이 마이그가 고친 결함 자체가 그 형태였다). 그래서 값까지 단언한다.
 --
 -- 시나리오:
---   F1. 핵심 퍼널 8종이 인증 경로로 INSERT 된다
+--   F1. 핵심 퍼널 8종 + chat_open(20260925200000)이 인증 경로로 INSERT 된다
 --   F2. anon 은 핵심 퍼널을 넣을 수 없다 (ae_anon_insert 가 넓어지지 않음)
 --   F3. 기존 이벤트(app_session_start·공유 짝)가 밀려나지 않았다
+--   F4. 화이트리스트 값이 정확히 18종이다(값이 빠진 교체도 F1 은 통과하므로 개수로 고정)
 --   D1. admin 은 연속 날짜를 받고, 활동한 날만 고유 사용자 수가 찬다 (같은 사용자 2행 = 1)
 --   D2. 범위 밖(과거) 행은 세지 않는다
 --   D3. 비관리자 인증 사용자는 거부된다 (P0001)
@@ -34,6 +35,7 @@ DECLARE
   v_today_count int;
   v_nonzero_days int;
   v_old_count int;
+  v_check_values int;
 BEGIN
   -- 테스트 격리: 트랜잭션 안의 기존 행이 DAU 값을 오염시키지 않도록 비운다(ROLLBACK 으로 복원).
   DELETE FROM public.analytics_events;
@@ -42,7 +44,8 @@ BEGIN
   PERFORM jpc_test_set_user(v_u1);
   FOREACH v_event IN ARRAY ARRAY[
     'signup', 'login', 'job_view', 'job_apply',
-    'job_create', 'check_in', 'check_out', 'settlement_complete'
+    'job_create', 'check_in', 'check_out', 'settlement_complete',
+    'chat_open'
   ] LOOP
     BEGIN
       INSERT INTO public.analytics_events (event, props) VALUES (v_event, '{}'::jsonb);
@@ -50,6 +53,19 @@ BEGIN
       RAISE EXCEPTION 'F1 fail: 핵심 퍼널 % 가 화이트리스트에 없다', v_event;
     END;
   END LOOP;
+
+  -- F4: CHECK 안의 따옴표 값 개수 = 18 (ops 6 · 세션 1 · 공유 2 · 핵심 퍼널 8 · 채팅 1)
+  SELECT count(*) INTO v_check_values
+    FROM pg_constraint con
+    JOIN pg_class rel ON rel.oid = con.conrelid
+    JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace,
+    LATERAL regexp_matches(pg_get_constraintdef(con.oid), '''([a-z_]+)''', 'g') m
+   WHERE nsp.nspname = 'public'
+     AND rel.relname = 'analytics_events'
+     AND con.conname = 'analytics_events_event_check';
+  IF v_check_values <> 18 THEN
+    RAISE EXCEPTION 'F4 fail: event 화이트리스트 값이 18개가 아니라 %개다', v_check_values;
+  END IF;
 
   -- F3: 기존 이벤트 보존
   FOREACH v_event IN ARRAY ARRAY['app_session_start', 'job_share_created', 'job_share_opened', 'ops_hub_entered'] LOOP
@@ -142,7 +158,7 @@ BEGIN
 END;
 $$;
 
-SELECT pass('핵심 퍼널·DAU 계약 (F1 8종 기록 · F2 anon 차단 · F3 기존 보존 · D1 연속·고유 · D2 범위 · D3 게이트 · D4 인자 · D5 anon)');
+SELECT pass('핵심 퍼널·DAU 계약 (F1 9종 기록 · F2 anon 차단 · F3 기존 보존 · F4 18종 · D1 연속·고유 · D2 범위 · D3 게이트 · D4 인자 · D5 anon)');
 
 SELECT * FROM finish();
 ROLLBACK;

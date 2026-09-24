@@ -10,15 +10,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
 import { ChatRoomView } from '@/components/chat';
-import { useChatRoom, useChatRoomActions } from '@/hooks/chat';
+import { useChatRoom, useChatRoomActions, useTrackChatOpen } from '@/hooks/chat';
 import { confirmAction } from '@/utils/confirmAction';
 import { loadFailed, notFound } from '@/constants/messages';
 
 export default function ChatRoomScreen() {
-  const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
+  const { conversationId, src } = useLocalSearchParams<{ conversationId: string; src?: string }>();
   const id = conversationId ?? null;
   const { meta, summary, mySide, readCursor, isLoading, error } = useChatRoom(id);
   const { hide, isHiding } = useChatRoomActions(id);
+  useTrackChatOpen(meta?.jobPostingId ?? null, src);
 
   const counterpartName =
     summary?.counterpartName ??

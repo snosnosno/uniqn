@@ -15,7 +15,7 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
 import { ChatRoomView } from '@/components/chat';
-import { useChatLookup } from '@/hooks/chat';
+import { useChatLookup, useTrackChatOpen } from '@/hooks/chat';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { notFound } from '@/constants/messages';
@@ -26,6 +26,8 @@ export default function NewChatScreen() {
   const seekerId = params.seekerId || null;
   const lookup = useChatLookup(postingId, seekerId);
   const { job } = useJobDetail(postingId ?? '', { enabled: !!postingId });
+  // 기존 방으로 바로 넘어가면 그 화면이 센다 — 여기선 새 방을 실제로 보여 줄 때만
+  useTrackChatOpen(lookup.isLoading || lookup.conversationId ? null : postingId, params.src);
 
   const handleSent = useCallback(
     (conversationId: string) => {

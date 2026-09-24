@@ -11,3 +11,4 @@ export {
 export { useChatRoomActions } from './useChatRoomActions';
 export { useChatEntry, type OpenChatParams } from './useChatEntry';
 export { useChatLookup } from './useChatLookup';
+export { useTrackChatOpen, toChatOpenMethod } from './useTrackChatOpen';
