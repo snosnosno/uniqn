@@ -12,6 +12,7 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
+    // 54 = 53 + chat_message (채팅 S1 — RPC chat_send_message 가 보낸다, 마이그 20260925100000)
     // 53 = 52 + posting_announcement (S3-2 — RPC send_job_posting_announcement 가 보낸다,
     //                                  마이그 20260813140000)
     // 52 = 51 + posting_capacity_gap (S3-1 — 크론 notify-posting-capacity-gap 이 보낸다,
@@ -20,7 +21,7 @@ describe('NotificationRouteMap', () => {
     // 50 = 46 + job_posting_collaborator_added/removed (DB 트리거가 보내는데 클라가 몰랐다)
     //         + work_log_check_in/out (2026-04-21~08-07 발송분 6건 흡수용 레거시)
     //      46 = 47 - settlement_requested(정산 요청, 2026-08-02 죽은 회로 정리로 제거 — 발신 코드가 이력 전체에 0건이었다)
-    expect(allNotificationTypes.length).toBe(53);
+    expect(allNotificationTypes.length).toBe(54);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -30,6 +31,17 @@ describe('NotificationRouteMap', () => {
       expect(route).toBeDefined();
       expect(typeof route.name).toBe('string');
     });
+  });
+
+  // 채팅방 화면은 S3 에서 들어온다. 그 전까지(S1·S2, 플래그 OFF) 서버가 보낸 채팅 알림을
+  // 탭하면 존재하지 않는 화면이 아니라 알림함에 착지해야 한다. S3 에서 'chat' 라우트로 바꾸며
+  // 이 단언도 함께 고친다(설계 §14-4 — ROUTE_MAP_PRIORITY_TYPES 등록 포함).
+  it('CHAT_MESSAGE는 채팅 화면이 생기기 전까지 알림함으로 라우팅된다', () => {
+    expect(
+      getRouteForNotificationType(NotificationType.CHAT_MESSAGE, {
+        conversationId: '11111111-1111-4111-8111-111111111111',
+      })
+    ).toEqual({ name: 'notifications' });
   });
 
   // 설정 화면에는 역할 표기가 한 곳도 없어 "무엇이 바뀌었는지" 확인 불가능한 도착지였다.

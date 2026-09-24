@@ -35,6 +35,16 @@ export const NotificationType = {
   /** 취소 요청 접수됨 (사장·워크스페이스 멤버·협업자에게) */
   CANCELLATION_REQUESTED: 'cancellation_requested',
 
+  // === 채팅 ===
+  /**
+   * 1:1 채팅 새 메시지 (공고 × 구직자 방의 상대에게).
+   *
+   * ⚠️ 생산자는 RPC `chat_send_message`(마이그 20260925100000) — 방·수신자당 미읽음 1행으로
+   * 묶인다(5분 창). 제목·본문(미리보기 60자, 사진은 "사진을 보냈어요")은 RPC 가 정본이다.
+   * category 는 enum 을 늘리지 않으려고 `application` 을 쓴다(설계 D4).
+   */
+  CHAT_MESSAGE: 'chat_message',
+
   // === 출퇴근/스케줄 관련 ===
   /**
    * ⚠️ 아래 STAFF_CHECKED_* / CHECK_*_CONFIRMED 4종은
@@ -243,6 +253,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.CANCELLATION_APPROVED]: NotificationCategory.APPLICATION,
   [NotificationType.CANCELLATION_REJECTED]: NotificationCategory.APPLICATION,
   [NotificationType.CANCELLATION_REQUESTED]: NotificationCategory.APPLICATION,
+  // 채팅 — enum ADD VALUE(불가역) 대신 application 에 싣는다. 트레이드오프: '지원/확정'
+  // 푸시를 끈 사람은 채팅 푸시도 못 받는다(설계 §6 · D4). EF 사본과 1:1(typeCategoryMapDrift).
+  [NotificationType.CHAT_MESSAGE]: NotificationCategory.APPLICATION,
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: NotificationCategory.ATTENDANCE,
@@ -335,6 +348,8 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.CANCELLATION_APPROVED]: 'normal',
   [NotificationType.CANCELLATION_REJECTED]: 'high',
   [NotificationType.CANCELLATION_REQUESTED]: 'high',
+  // 채팅 — 행의 priority 는 RPC 가 'normal' 로 심는다(여기는 그와 같은 값의 폴백)
+  [NotificationType.CHAT_MESSAGE]: 'normal',
 
   // 출퇴근/스케줄 관련 - 리마인더/노쇼는 urgent
   [NotificationType.STAFF_CHECKED_IN]: 'normal',
@@ -527,6 +542,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.CANCELLATION_APPROVED]: '취소 승인',
   [NotificationType.CANCELLATION_REJECTED]: '취소 거절',
   [NotificationType.CANCELLATION_REQUESTED]: '취소 요청',
+  [NotificationType.CHAT_MESSAGE]: '채팅',
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: '출근 알림',
