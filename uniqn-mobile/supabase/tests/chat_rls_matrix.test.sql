@@ -13,9 +13,10 @@
 -- 안전: BEGIN/ROLLBACK. 선행: npm run test:db:helpers
 -- ============================================================
 BEGIN;
-SELECT plan(31);
+SELECT plan(32);
 
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 
 -- 구직자(비지원)가 방을 열고 메시지 1건
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
@@ -112,6 +113,14 @@ RESET ROLE;
 SELECT jpc_test_set_user(jpc_chat_id('third'));
 SELECT is(chat_is_member(jpc_chat_id('conv'), jpc_chat_id('seeker')), false, 'L2 제3자가 남의 멤버십을 물으면 false');
 SELECT is(chat_is_employer_side(jpc_chat_id('jp'), jpc_chat_id('editor')), false, 'L3 제3자가 남의 구인자 측 여부를 물으면 false');
+RESET ROLE;
+
+-- role claim 이 빠진 JWT(`{}`)는 신뢰 컨텍스트가 아니다(보안 L1 — 거부 목록이던 판정을 허용 목록으로)
+SELECT set_config('request.jwt.claim.sub', '', true);
+SELECT set_config('request.jwt.claims', '{}', true);
+SET LOCAL ROLE authenticated;
+SELECT is(chat_is_member(jpc_chat_id('conv'), jpc_chat_id('seeker')), false,
+  'L4 claims `{}` + authenticated 롤 → 남의 멤버십 조회 false(모르는 컨텍스트는 닫힘)');
 RESET ROLE;
 
 -- ------------------------------------------------------------

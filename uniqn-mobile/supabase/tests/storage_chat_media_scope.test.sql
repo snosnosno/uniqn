@@ -17,15 +17,15 @@
 -- 안전: BEGIN/ROLLBACK. 선행: npm run test:db:helpers
 -- ============================================================
 BEGIN;
-SELECT plan(23);
+SELECT plan(26);
 
 -- ------------------------------------------------------------
 -- B. 버킷 · 정책 형상
 -- ------------------------------------------------------------
 SELECT is(
   (SELECT row(public, file_size_limit, allowed_mime_types)::text FROM storage.buckets WHERE id = 'chat-media'),
-  '(f,5242880,"{image/jpeg,image/png,image/webp}")',
-  'B1 chat-media = 비공개 · 5MB · jpeg/png/webp 만(SVG·GIF 제외)');
+  '(f,1572864,"{image/jpeg,image/png,image/webp}")',
+  'B1 chat-media = 비공개 · 1.5MB(1600px JPEG 재인코딩 기준) · jpeg/png/webp 만(SVG·GIF 제외)');
 
 SELECT is(
   (SELECT string_agg(policyname || ':' || cmd || ':' || permissive || ':' || roles::text, ' | ' ORDER BY policyname)
@@ -36,13 +36,14 @@ SELECT is(
 SELECT is(
   (SELECT count(*)::int FROM pg_policies
     WHERE schemaname = 'storage' AND tablename = 'objects' AND permissive = 'PERMISSIVE'
-      AND coalesce(qual, '') || coalesce(with_check, '') NOT LIKE '%bucket_id%'),
-  0, 'B3 버킷 조건 없는 PERMISSIVE storage 정책 0 (L5 — OR 결합으로 새로 열리는 경로 없음)');
+      AND coalesce(qual, '') || coalesce(with_check, '') !~ 'bucket_id = ''[^'']+''::text'),
+  0, 'B3 버킷 리터럴 조건(bucket_id = ''…'') 없는 PERMISSIVE storage 정책 0 (L5 — `bucket_id IS NOT NULL` 같은 형태도 잡는다)');
 
 -- ------------------------------------------------------------
 -- 시드
 -- ------------------------------------------------------------
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT jpc_chat_put('conv', chat_open_conversation(jpc_chat_id('jp')));
 RESET ROLE;
@@ -139,6 +140,32 @@ SELECT throws_ok(
   '42501', NULL, 'U11 21번째 → 거부(M6 — 무료 1GB 고갈 방어)');
 RESET ROLE;
 
+-- 하루 60장 누적 한도(보안 H-1) — 10분 창을 비운 뒤에도 24시간 합계로 막힌다
+SELECT jpc_test_clear_user();
+UPDATE storage.objects SET created_at = now() - interval '2 hours'
+ WHERE bucket_id = 'chat-media' AND split_part(name, '/', 2) = jpc_chat_id('seeker')::text;
+INSERT INTO storage.objects (bucket_id, name, created_at)
+SELECT 'chat-media', format('%s/%s/%s.jpg', jpc_chat_id('conv'), jpc_chat_id('seeker'), gen_random_uuid()), now() - interval '1 hour'
+  FROM generate_series(1, 40);
+SELECT throws_ok(
+  $$ SELECT jpc_test_set_user(jpc_chat_id('seeker'));
+     INSERT INTO storage.objects (bucket_id, name)
+     VALUES ('chat-media', format('%s/%s/%s.jpg', jpc_chat_id('conv'), jpc_chat_id('seeker'), gen_random_uuid())); $$,
+  '42501', NULL, 'U12 24시간 안 60장 → 10분 창이 비어도 거부');
+RESET ROLE;
+SELECT jpc_test_clear_user();
+UPDATE storage.objects SET created_at = now() - interval '2 days'
+ WHERE id = (SELECT id FROM storage.objects
+              WHERE bucket_id = 'chat-media' AND split_part(name, '/', 2) = jpc_chat_id('seeker')::text
+                AND name <> current_setting('chat.obj1')
+              ORDER BY created_at LIMIT 1);
+SELECT lives_ok(
+  $$ SELECT jpc_test_set_user(jpc_chat_id('seeker'));
+     INSERT INTO storage.objects (bucket_id, name)
+     VALUES ('chat-media', format('%s/%s/%s.jpg', jpc_chat_id('conv'), jpc_chat_id('seeker'), gen_random_uuid())); $$,
+  'U13 대조군: 하나가 24시간 밖으로 나가 59장이 되면 다시 올라간다');
+RESET ROLE;
+
 -- ------------------------------------------------------------
 -- R. 읽기(SELECT = 목록·다운로드·서명 URL 의 전제)
 -- ------------------------------------------------------------
@@ -172,12 +199,21 @@ SELECT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'chat-med
   0, 'R6 viewer 협업자는 못 본다');
 RESET ROLE;
 
--- 삭제(익명화)된 메시지의 사진은 더 이상 상대에게 보이지 않는다
+-- 삭제된 메시지의 사진은 더 이상 상대에게 보이지 않는다(H1). 두 상태를 따로 본다:
+--   R7a deleted_at 만 찍히고 image_path 는 남은 상태(CHECK 가 허용) — deleted_at 조건이 막는다
+--   R7b 익명화(image_path NULL) — 참조 자체가 사라진다
+-- R7a 가 없으면 chat_media_can_read 의 `deleted_at IS NULL` 을 지워도 초록이다(DB 리뷰 L-7b)
 SELECT jpc_test_clear_user();
-UPDATE public.chat_messages SET deleted_at = now(), body = '', image_path = NULL WHERE id = jpc_chat_id('img_msg');
+UPDATE public.chat_messages SET deleted_at = now() WHERE id = jpc_chat_id('img_msg');
 SELECT jpc_test_set_user(jpc_chat_id('owner'));
 SELECT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'chat-media' AND name = current_setting('chat.obj1')),
-  0, 'R7 삭제된 메시지의 사진은 상대가 못 본다(H1)');
+  0, 'R7a 삭제 표시(deleted_at)만 된 사진도 상대가 못 본다');
+RESET ROLE;
+SELECT jpc_test_clear_user();
+UPDATE public.chat_messages SET body = '', image_path = NULL WHERE id = jpc_chat_id('img_msg');
+SELECT jpc_test_set_user(jpc_chat_id('owner'));
+SELECT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'chat-media' AND name = current_setting('chat.obj1')),
+  0, 'R7b 익명화(image_path NULL)된 메시지의 사진도 상대가 못 본다');
 RESET ROLE;
 
 SELECT jpc_test_set_user(jpc_chat_id('owner'));

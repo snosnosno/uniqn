@@ -14,9 +14,10 @@
 -- 안전: BEGIN/ROLLBACK. 선행: npm run test:db:helpers
 -- ============================================================
 BEGIN;
-SELECT plan(36);
+SELECT plan(37);
 
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT jpc_chat_put('conv', chat_open_conversation(jpc_chat_id('jp')));
@@ -165,6 +166,17 @@ SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT is(
   (SELECT unread_count || ' / ' || last_message_preview FROM chat_list_conversations() WHERE conversation_id = jpc_chat_id('conv')),
   '1 / 네 가능합니다', 'H5 상대가 새 메시지를 보내면 다시 나타난다(미읽음 1 · 미리보기)');
+
+-- 구인자 측 발신자 표시(M5 대칭) — editor 는 닉네임 없음, 실명 'jpc test'
+SELECT jpc_test_set_user(jpc_chat_id('editor'));
+SELECT jpc_chat_put('m_editor', (chat_send_message(jpc_chat_id('conv'), 'text', '담당자 답변', NULL, NULL, NULL, gen_random_uuid()) ->> 'messageId')::uuid);
+RESET ROLE;
+SELECT is((SELECT sender_display_name FROM public.chat_messages WHERE id = jpc_chat_id('m_editor')), 'jpc test ws 담당자',
+  'H6 닉네임 없는 구인자 측 발신자는 실명이 아니라 "<업장명> 담당자"');
+SELECT jpc_test_set_user(jpc_chat_id('owner'));
+SELECT jpc_chat_put('m_owner', (chat_send_message(jpc_chat_id('conv'), 'text', '다시 확인드려요', NULL, NULL, NULL, gen_random_uuid()) ->> 'messageId')::uuid);
+RESET ROLE;
+SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 
 -- ------------------------------------------------------------
 -- R. 읽음 커서

@@ -17,6 +17,7 @@ BEGIN;
 SELECT plan(26);
 
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 
 -- 스파이: 알림 INSERT 문장마다 new_rows 중 chat_message 행 수를 기록
 CREATE TABLE public.jpc_chat_spy (seq bigserial PRIMARY KEY, n int NOT NULL);

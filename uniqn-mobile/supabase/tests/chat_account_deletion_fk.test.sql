@@ -33,6 +33,7 @@ SELECT is(
 -- D. 행동 — 채팅 이력 있는 구직자·구인자를 실제로 DELETE
 -- ------------------------------------------------------------
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 -- 다른 FK(지원서·워크스페이스 등)에 묶이지 않은 새 사용자 2명
 SELECT jpc_chat_put('gone_seeker', jpc_test_create_user('staff'));
 SELECT jpc_chat_put('gone_editor', jpc_test_create_user('employer'));

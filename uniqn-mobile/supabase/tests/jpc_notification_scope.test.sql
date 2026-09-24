@@ -143,7 +143,11 @@ BEGIN
      AND p.proname NOT IN (
        'is_posting_collaborator',       -- 이미 role = 'manager' 로 좁다
        'is_posting_collaborator_any',   -- 읽기 가시성 전용(의도적으로 tier 무관)
-       'is_workspace_jpc_member'        -- workspaces 가시성 — viewer 도 보여야 한다
+       'is_workspace_jpc_member',       -- workspaces 가시성 — viewer 도 보여야 한다
+       'chat_my_conversation_ids'       -- 채팅 방 후보 수집만(전 role). 최종 판정은 같은 함수 안의
+                                        -- chat_is_employer_side → is_posting_collaborator(manager).
+                                        -- 후보를 넓게 두어야 헬퍼를 _any 로 바꾸는 회귀를
+                                        -- chat_rls_matrix M7 이 잡는다(2026-09-25 판정)
      );
 
   IF v_leaky IS NOT NULL THEN

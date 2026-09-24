@@ -241,7 +241,8 @@
 --     정책 102 불변(event CHECK 교체·인덱스 추가만, RLS 미변경).
 --
 --   2026-09-25 앱 내 채팅 S1(마이그 20260925100000, 기준 커밋 936620d3e):
---     함수 237 = 226 + 11 — chat_is_employer_side · chat_is_member · chat_media_can_read ·
+--     함수 238 = 226 + 12 — chat_is_employer_side · chat_is_member · chat_my_conversation_ids ·
+--       chat_media_can_read ·
 --       chat_media_can_write · chat_open_conversation · chat_send_message · chat_mark_read ·
 --       chat_hide_conversation · chat_list_conversations · chat_unread_total ·
 --       fn_job_posting_first_published(트리거).
@@ -269,7 +270,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=237
+-- PARITY_EXPECT_FUNCS=238
 -- PARITY_EXPECT_POLICIES=105
 -- ============================================================
 BEGIN;
@@ -289,8 +290,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  237,
-  'public function count (237 = 226 + 채팅 S1 11, 2026-09-25 — 출처는 상단 장부 참조)');
+  238,
+  'public function count (238 = 226 + 채팅 S1 12, 2026-09-25 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

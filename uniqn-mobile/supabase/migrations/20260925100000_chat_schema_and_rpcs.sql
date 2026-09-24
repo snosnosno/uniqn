@@ -7,7 +7,18 @@
 -- 한 줄: 공고 × 구직자 1:1 방. 구인자 측 참여자는 방에 명부를 두지 않고 **매번 기존 권한
 --        헬퍼로 판정**한다(협업자 해제가 즉시 반영 · fail-closed). 쓰기는 전부 SECDEF RPC.
 --
--- 파리티: 함수 +11 · 정책 +3 → 237 / 105 (storage 정책 2개는 public 밖이라 카운트 밖)
+-- 파리티: 함수 +12 · 정책 +3 → 238 / 105 (storage 정책 2개는 public 밖이라 카운트 밖)
+--   설계 §10 의 +11 에 chat_my_conversation_ids 1개가 더해졌다(리뷰 반영 — 아래 3).
+--
+-- 🔒 서버 다크 착지(2026-09-25 사용자 결정 — 보안 리뷰 H-2)
+--   플래그 chat_enabled OFF 는 UI 만 숨긴다. 차단·신고(S4) 없이 RPC 가 열리면 누구나 사장 측에
+--   UNIQN 공식 푸시를 보낼 수 있다(로컬 재현). 그래서 **쓰기 진입점 2개(open·send)의
+--   authenticated EXECUTE 를 부여하지 않은 채** 착지한다 = 설계 D6 킬스위치를 '꺼진 위치'에서
+--   시작. 방을 못 열면 storage 업로드(멤버 조건)도 막힌다. 공개 ON 은 GRANT 전용 마이그 1건:
+--     GRANT EXECUTE ON FUNCTION public.chat_open_conversation(uuid, uuid),
+--       public.chat_send_message(uuid, text, text, text, int, int, uuid) TO authenticated;
+--   (prod-migrate 는 verify_function 을 비운다). pgTAP 은 트랜잭션 안에서 이 GRANT 를
+--   시뮬레이션하고(jpc_chat_simulate_on), 다크 상태 자체는 chat_security_grants A4b 가 고정한다.
 --
 -- 설계 대비 조정(PR 본문에 기록)
 --   1) first_published_at 백필 UPDATE 를 하지 않는다. job_postings 에 UPDATE 트리거가 13개라
@@ -17,6 +28,15 @@
 --      행은 0건(2026-09-24 실측)이라 누락 대상이 없다.
 --   2) 경로 정규식은 설계 L1 의 `[0-9a-f-]{36}` 대신 **정규 uuid 형식**으로 좁힌다 —
 --      `------…` 같은 36자가 통과하면 ::uuid 캐스트 예외가 storage 정책에서 터진다.
+--   3) (리뷰 반영) RLS 가 행마다 plpgsql 헬퍼를 부르면 필터 없는 SELECT 가 테이블 전체 ×
+--      쿼리 4개가 된다(보안 M-2 · DB M-3 실측 23µs/행). 내 방 id 집합을 쿼리당 1회 계산하는
+--      chat_my_conversation_ids() 로 바꾸고 목록·배지 RPC 도 같은 집합을 쓴다(DB M-1).
+--      후보는 인덱스 경로로 넓게 뽑고 **최종 판정은 chat_is_employer_side** — 권한 의미의
+--      진실원은 헬퍼 하나로 유지한다.
+--   4) (리뷰 반영) 사진 한도: 버킷 5MB → 1.5MB(클라가 1600px JPEG 재인코딩) + 하루 60장
+--      누적 한도. 10분 20장만으로는 약 102분에 무료 1GB 가 찬다(보안 H-1).
+--   5) (리뷰 반영) 구인자 측 발신자 표시: 닉네임 없으면 실명이 아니라 '<업장명> 담당자'
+--      (M5 대칭 — 보안 M-1 · DB M-5).
 --
 -- 🚨 storage 정책은 CREATE POLICY 만 쓰고 **예외를 삼키지 않는다**(설계 L5 — baseline 은
 --    insufficient_privilege 를 삼켜 정책 미생성을 숨긴다. 20260809130000:82-83 원칙).
@@ -117,7 +137,9 @@ CREATE UNIQUE INDEX chat_msg_image_path_uq ON public.chat_messages (image_path) 
 CREATE INDEX chat_msg_conv_time_idx        ON public.chat_messages (conversation_id, created_at DESC, id DESC);
 CREATE INDEX chat_msg_sender_idx           ON public.chat_messages (sender_id);   -- 탈퇴 익명화 스캔
 
-CREATE TRIGGER chat_messages_xss_check BEFORE INSERT OR UPDATE ON public.chat_messages
+-- UPDATE OF body 로 좁힌다: 탈퇴 크론의 ON DELETE SET NULL 연쇄도 행 UPDATE 트리거를 발화시키므로,
+-- 나중에 패턴이 엄격해지면 과거 본문 재검사(P0001)가 탈퇴를 무음 실패시킬 수 있다(DB 리뷰 L-1)
+CREATE TRIGGER chat_messages_xss_check BEFORE INSERT OR UPDATE OF body ON public.chat_messages
   FOR EACH ROW EXECUTE FUNCTION public.check_xss_fields('body');         -- 범용 함수 재사용, 함수 +0
 
 CREATE TABLE public.chat_read_states (
@@ -156,10 +178,12 @@ BEGIN
   IF p_posting_id IS NULL OR p_user_id IS NULL THEN
     RETURN false;
   END IF;
-  -- L4: 남의 멤버십 탐문 금지 — 두 번째 인자는 호출자 본인. JWT 가 전혀 없는 신뢰 컨텍스트
-  --     (postgres·service_role 직결)만 예외.
+  -- L4: 남의 멤버십 탐문 금지 — 두 번째 인자는 호출자 본인. 예외는 허용 목록뿐:
+  --     service_role JWT, 또는 JWT 가 아예 없고 PostgREST 접속 롤(authenticator)이 아닌 직결
+  --     (postgres 마이그·크론·pgTAP). role claim 이 빠진 JWT(`{}`)는 신뢰하지 않는다(보안 L1).
   IF p_user_id IS DISTINCT FROM v_uid
-     AND (v_uid IS NOT NULL OR coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated')) THEN
+     AND NOT (coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+              OR (auth.jwt() IS NULL AND session_user <> 'authenticator')) THEN
     RETURN false;
   END IF;
 
@@ -194,8 +218,9 @@ BEGIN
     RETURN false;
   END IF;
   IF p_user_id IS DISTINCT FROM v_uid
-     AND (v_uid IS NOT NULL OR coalesce(auth.jwt() ->> 'role', '') IN ('anon', 'authenticated')) THEN
-    RETURN false;   -- L4
+     AND NOT (coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+              OR (auth.jwt() IS NULL AND session_user <> 'authenticator')) THEN
+    RETURN false;   -- L4 (허용 목록 — chat_is_employer_side 와 같은 규칙)
   END IF;
 
   SELECT job_posting_id, seeker_id INTO v_posting, v_seeker
@@ -206,6 +231,46 @@ BEGIN
 
   RETURN (v_seeker IS NOT NULL AND v_seeker = p_user_id)
       OR public.chat_is_employer_side(v_posting, p_user_id);
+END;
+$$;
+
+-- 내 방 id 집합 — RLS·목록·배지가 쿼리당 1회만 계산한다(행당 헬퍼 호출 제거).
+--   구직자 갈래: seeker_id 인덱스. 구인자 갈래: 내 공고(owner · ws owner · ws 멤버 · 협업자 **전
+--   role**)의 방을 posting 인덱스로 모은 뒤 chat_is_employer_side 로 최종 판정 — viewer 제외 같은
+--   권한 의미는 헬퍼에만 둔다(후보를 좁게 뽑으면 헬퍼를 고쳐도 테스트가 못 잡는다).
+--   구인자 측에는 메시지 없는 방을 숨긴다(구직자가 "채팅하기"만 누른 흔적 — 보안 L3).
+CREATE FUNCTION public.chat_my_conversation_ids()
+RETURNS SETOF uuid
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT c.id FROM public.chat_conversations c WHERE c.seeker_id = v_uid
+  UNION
+  SELECT c.id
+    FROM (
+      SELECT jp.id FROM public.job_postings jp WHERE jp.owner_id = v_uid
+      UNION
+      SELECT jp.id FROM public.workspaces w
+        JOIN public.job_postings jp ON jp.workspace_id = w.id WHERE w.owner_id = v_uid
+      UNION
+      SELECT jp.id FROM public.workspace_members wm
+        JOIN public.job_postings jp ON jp.workspace_id = wm.workspace_id WHERE wm.user_id = v_uid
+      UNION
+      SELECT jpc.job_posting_id FROM public.job_posting_collaborators jpc WHERE jpc.user_id = v_uid
+    ) mp
+    JOIN public.chat_conversations c ON c.job_posting_id = mp.id
+   WHERE (c.last_message_at IS NOT NULL OR c.created_by = v_uid)
+     AND public.chat_is_employer_side(mp.id, v_uid);
 END;
 $$;
 
@@ -241,7 +306,12 @@ BEGIN
 END;
 $$;
 
--- 쓰기(M6) = 형식 · 2세그먼트=본인 · 방 멤버 · 상대 탈퇴 아님 · 활성 사용자 · 최근 10분 < 20
+-- 쓰기(M6) = 형식 · 2세그먼트=본인 · 방 멤버 · 상대 탈퇴 아님 · 활성 사용자
+--            · 최근 10분 < 20 · 최근 24시간 < 60 (속도만으로는 총량이 무한 — 보안 H-1)
+-- ⚠️ 카운트는 bucket_id 인덱스 뒤 Filter 스캔이다(storage.objects 에 created_at 인덱스를 둘 권한
+--    없음 — 소유자 supabase_storage_admin). chat-media 객체가 수만 개에 이르면 업로드 티켓 방식으로
+--    재설계한다(DB 리뷰 M-2). 또 이 카운트는 소유자 postgres 의 BYPASSRLS 에 기댄다 —
+--    빠지면 0 이 되어 한도가 조용히 꺼지므로 pgTAP 이 소유자 속성을 단언한다(보안 L7).
 CREATE FUNCTION public.chat_media_can_write(p_object_name text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -254,6 +324,7 @@ DECLARE
   v_conv   uuid;
   v_seeker uuid;
   v_recent int;
+  v_day    int;
 BEGIN
   IF v_uid IS NULL OR p_object_name IS NULL
      OR p_object_name !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$' THEN
@@ -275,12 +346,14 @@ BEGIN
     RETURN false;   -- L6
   END IF;
 
-  SELECT count(*) INTO v_recent
+  SELECT count(*) FILTER (WHERE o.created_at > now() - interval '10 minutes'),
+         count(*)
+    INTO v_recent, v_day
     FROM storage.objects o
    WHERE o.bucket_id = 'chat-media'
      AND split_part(o.name, '/', 2) = v_uid::text
-     AND o.created_at > now() - interval '10 minutes';
-  RETURN v_recent < 20;
+     AND o.created_at > now() - interval '1 day';
+  RETURN v_recent < 20 AND v_day < 60;
 END;
 $$;
 
@@ -368,6 +441,18 @@ BEGIN
   SELECT nullif(btrim(nickname), '') INTO v_nick FROM public.users WHERE id = v_seeker;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'CHAT_COUNTERPART_GONE: 대화 상대가 없습니다';
+  END IF;
+
+  -- 스냅샷 원천(workspaces.name · job_postings.owner_name · users.nickname)은 XSS 트리거 밖이다.
+  -- 이 값들이 방 제목·푸시 title 로 퍼지므로 패턴이 보이면 중립값으로 바꾼다(보안 L2).
+  IF v_nick ~* '<\s*script|javascript\s*:|on\w+\s*=|<\s*iframe|<\s*object|<\s*embed' THEN
+    v_nick := NULL;
+  END IF;
+  IF v_ws_name ~* '<\s*script|javascript\s*:|on\w+\s*=|<\s*iframe|<\s*object|<\s*embed' THEN
+    v_ws_name := NULL;
+  END IF;
+  IF v_owner_name ~* '<\s*script|javascript\s*:|on\w+\s*=|<\s*iframe|<\s*object|<\s*embed' THEN
+    v_owner_name := NULL;
   END IF;
 
   INSERT INTO public.chat_conversations (
@@ -481,6 +566,18 @@ BEGIN
     RAISE EXCEPTION 'CHAT_COUNTERPART_GONE: 대화 상대가 탈퇴했습니다';
   END IF;
 
+  -- ⑤-b 멱등 사전 조회(잠금 없이) — 재전송이 rate limit 토큰을 쓰지 않게(DB 리뷰 L-2).
+  --      확정 판정은 잠금 뒤 ⑧ 이 한다.
+  SELECT id, sender_id, created_at INTO v_existing
+    FROM public.chat_messages
+   WHERE conversation_id = v_conv.id AND client_message_id = p_client_message_id;
+  IF FOUND THEN
+    IF v_existing.sender_id IS DISTINCT FROM v_uid THEN
+      RAISE EXCEPTION 'INVALID_INPUT: 이미 사용된 메시지 식별자입니다';
+    END IF;
+    RETURN jsonb_build_object('messageId', v_existing.id, 'createdAt', v_existing.created_at, 'deduped', true);
+  END IF;
+
   -- ⑥ 속도 제한(분당 30)
   v_rl := public.check_user_rate_limit(v_uid, 'chat_send', 30, 60);
   IF NOT coalesce((v_rl ->> 'allowed')::boolean, false) THEN
@@ -503,12 +600,18 @@ BEGIN
   END IF;
 
   v_now := clock_timestamp();
-  v_is_first := v_conv.last_message_id IS NULL;
+  -- 잠금 뒤 다시 읽는다 — 동시에 온 첫 메시지 둘이 모두 "새 채팅 문의"가 되지 않게(DB 리뷰 L-3)
+  SELECT last_message_id IS NULL INTO v_is_first
+    FROM public.chat_conversations WHERE id = v_conv.id;
 
   IF v_side = 'seeker' THEN
     v_sender_name := v_conv.seeker_display_name;
   ELSE
-    SELECT coalesce(nullif(btrim(nickname), ''), nullif(btrim(name), ''), '구인자')
+    -- M5 대칭: 닉네임 없으면 실명이 아니라 '<업장명> 담당자'(보안 M-1 · DB M-5)
+    SELECT coalesce(
+             CASE WHEN nullif(btrim(nickname), '') ~* '<\s*script|javascript\s*:|on\w+\s*=|<\s*iframe|<\s*object|<\s*embed' THEN NULL
+                  ELSE nullif(btrim(nickname), '') END,
+             v_conv.employer_display_name || ' 담당자')
       INTO v_sender_name FROM public.users WHERE id = v_uid;
   END IF;
 
@@ -666,6 +769,9 @@ BEGIN
   IF NOT public.chat_is_member(p_conversation_id, v_uid) THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 채팅방에 참여하고 있지 않습니다';
   END IF;
+  -- 전송과 같은 방 잠금 — 읽는 순간과 hidden_at 사이에 커밋된 메시지가 "숨겨졌는데 배지 1"로
+  -- 남지 않게(DB 리뷰 L-4)
+  PERFORM pg_advisory_xact_lock(hashtextextended('chat_conversation:' || p_conversation_id::text, 0));
   SELECT last_message_at, last_message_id INTO v_last_at, v_last_id
     FROM public.chat_conversations WHERE id = p_conversation_id;
 
@@ -688,7 +794,7 @@ BEGIN
 END;
 $$;
 
--- 내 방 목록(최신순). 구인자 측 후보는 인덱스로 좁힌 뒤 헬퍼로 최종 판정(의미 단일화)
+-- 내 방 목록(최신순). 후보 = chat_my_conversation_ids()(인덱스 경로 + 헬퍼 최종 판정)
 CREATE FUNCTION public.chat_list_conversations(p_limit int DEFAULT 30, p_before timestamptz DEFAULT NULL)
 RETURNS TABLE (
   conversation_id      uuid,
@@ -715,55 +821,39 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  WITH my_postings AS (
-    SELECT jp.id FROM public.job_postings jp WHERE jp.owner_id = v_uid
-    UNION
-    SELECT jp.id FROM public.job_postings jp
-      JOIN public.workspaces w ON w.id = jp.workspace_id WHERE w.owner_id = v_uid
-    UNION
-    SELECT jp.id FROM public.job_postings jp
-      JOIN public.workspace_members wm ON wm.workspace_id = jp.workspace_id WHERE wm.user_id = v_uid
-    UNION
-    SELECT jpc.job_posting_id FROM public.job_posting_collaborators jpc
-     WHERE jpc.user_id = v_uid AND jpc.role = 'manager'
-  ),
-  mine AS (
-    SELECT c.*, (c.seeker_id = v_uid) AS is_seeker
-      FROM public.chat_conversations c
-     WHERE c.last_message_at IS NOT NULL
-       AND (p_before IS NULL OR c.last_message_at < p_before)
-       AND (c.seeker_id = v_uid
-            OR (c.job_posting_id IN (SELECT id FROM my_postings)
-                AND public.chat_is_employer_side(c.job_posting_id, v_uid)))
-  )
-  SELECT m.id,
-         m.job_posting_id,
-         m.posting_title,
+  SELECT c.id,
+         c.job_posting_id,
+         c.posting_title,
          jp.status::text,
-         CASE WHEN m.is_seeker THEN m.employer_display_name ELSE m.seeker_display_name END,
-         CASE WHEN m.is_seeker THEN 'seeker' ELSE 'employer' END,
-         m.last_message_at,
+         CASE WHEN c.seeker_id = v_uid THEN c.employer_display_name ELSE c.seeker_display_name END,
+         CASE WHEN c.seeker_id = v_uid THEN 'seeker' ELSE 'employer' END,
+         c.last_message_at,
          CASE WHEN lm.deleted_at IS NOT NULL THEN '삭제된 메시지'
               WHEN lm.kind = 'image' THEN '사진'
               ELSE left(lm.body, 100) END,
-         LEAST(99, (SELECT count(*) FROM public.chat_messages x
-                     WHERE x.conversation_id = m.id
-                       AND x.created_at > coalesce(rs.last_read_at, '-infinity')
-                       AND x.sender_id IS DISTINCT FROM v_uid
-                       AND x.deleted_at IS NULL))::int,
+         (SELECT count(*)::int FROM (
+            SELECT 1 FROM public.chat_messages x
+             WHERE x.conversation_id = c.id
+               AND x.created_at > coalesce(rs.last_read_at, '-infinity')
+               AND x.sender_id IS DISTINCT FROM v_uid
+               AND x.deleted_at IS NULL
+             LIMIT 99) u),                                   -- 99 에서 멈춘다(캡 이상 세지 않음)
          false
-    FROM mine m
-    LEFT JOIN public.job_postings jp ON jp.id = m.job_posting_id
-    LEFT JOIN public.chat_read_states rs ON rs.conversation_id = m.id AND rs.user_id = v_uid
+    FROM public.chat_conversations c
+    LEFT JOIN public.job_postings jp ON jp.id = c.job_posting_id
+    LEFT JOIN public.chat_read_states rs ON rs.conversation_id = c.id AND rs.user_id = v_uid
     LEFT JOIN LATERAL (SELECT x.kind, x.body, x.deleted_at FROM public.chat_messages x
-                        WHERE x.id = m.last_message_id) lm ON true
-   WHERE rs.hidden_at IS NULL OR m.last_message_at > rs.hidden_at
-   ORDER BY m.last_message_at DESC, m.id DESC
+                        WHERE x.id = c.last_message_id) lm ON true
+   WHERE c.id IN (SELECT public.chat_my_conversation_ids())
+     AND c.last_message_at IS NOT NULL
+     AND (p_before IS NULL OR c.last_message_at < p_before)
+     AND (rs.hidden_at IS NULL OR c.last_message_at > rs.hidden_at)
+   ORDER BY c.last_message_at DESC, c.id DESC
    LIMIT LEAST(GREATEST(coalesce(p_limit, 30), 1), 100);
 END;
 $$;
 
--- 헤더 배지용 전체 미읽음(99 캡). 목록과 같은 후보 · 같은 커서 규칙
+-- 헤더 배지용 전체 미읽음(99 캡). 목록과 같은 후보 · 같은 커서 규칙. 99행에서 스캔을 멈춘다
 CREATE FUNCTION public.chat_unread_total()
 RETURNS integer
 LANGUAGE plpgsql
@@ -773,46 +863,32 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_uid   uuid := auth.uid();
-  v_total bigint;
+  v_total int;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 인증이 필요합니다';
   END IF;
 
-  WITH my_postings AS (
-    SELECT jp.id FROM public.job_postings jp WHERE jp.owner_id = v_uid
-    UNION
-    SELECT jp.id FROM public.job_postings jp
-      JOIN public.workspaces w ON w.id = jp.workspace_id WHERE w.owner_id = v_uid
-    UNION
-    SELECT jp.id FROM public.job_postings jp
-      JOIN public.workspace_members wm ON wm.workspace_id = jp.workspace_id WHERE wm.user_id = v_uid
-    UNION
-    SELECT jpc.job_posting_id FROM public.job_posting_collaborators jpc
-     WHERE jpc.user_id = v_uid AND jpc.role = 'manager'
-  ),
-  mine AS (
-    SELECT c.id
-      FROM public.chat_conversations c
-     WHERE c.last_message_at IS NOT NULL
-       AND (c.seeker_id = v_uid
-            OR (c.job_posting_id IN (SELECT id FROM my_postings)
-                AND public.chat_is_employer_side(c.job_posting_id, v_uid)))
-  )
-  SELECT count(*) INTO v_total
-    FROM mine m
-    LEFT JOIN public.chat_read_states rs ON rs.conversation_id = m.id AND rs.user_id = v_uid
-    JOIN public.chat_messages x ON x.conversation_id = m.id
-   WHERE x.created_at > coalesce(rs.last_read_at, '-infinity')
-     AND x.sender_id IS DISTINCT FROM v_uid
-     AND x.deleted_at IS NULL;
+  SELECT count(*)::int INTO v_total
+    FROM (
+      SELECT 1
+        FROM public.chat_conversations c
+        LEFT JOIN public.chat_read_states rs ON rs.conversation_id = c.id AND rs.user_id = v_uid
+        JOIN public.chat_messages x ON x.conversation_id = c.id
+       WHERE c.id IN (SELECT public.chat_my_conversation_ids())
+         AND x.created_at > coalesce(rs.last_read_at, '-infinity')
+         AND x.sender_id IS DISTINCT FROM v_uid
+         AND x.deleted_at IS NULL
+       LIMIT 99
+    ) u;
 
-  RETURN LEAST(99, v_total)::int;
+  RETURN v_total;
 END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- 5. RLS — 전부 SELECT 만, TO authenticated, 멤버십은 SECDEF 헬퍼 경유(재귀 없음)
+-- 5. RLS — 전부 SELECT 만, TO authenticated. 멤버십은 SECDEF 집합 함수로 쿼리당 1회 계산
+--    (자기 테이블 inline SELECT 없음 → 재귀 없음. 함수는 SECDEF 라 RLS 를 우회해 읽는다)
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.chat_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages      ENABLE ROW LEVEL SECURITY;
@@ -820,12 +896,11 @@ ALTER TABLE public.chat_read_states   ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY chat_conversations_select_member ON public.chat_conversations
   FOR SELECT TO authenticated
-  USING (seeker_id = (SELECT auth.uid())
-         OR public.chat_is_employer_side(job_posting_id, (SELECT auth.uid())));
+  USING (id IN (SELECT public.chat_my_conversation_ids()));
 
 CREATE POLICY chat_messages_select_member ON public.chat_messages
   FOR SELECT TO authenticated
-  USING (public.chat_is_member(conversation_id, (SELECT auth.uid())));
+  USING (conversation_id IN (SELECT public.chat_my_conversation_ids()));
 
 CREATE POLICY chat_read_states_select_own ON public.chat_read_states
   FOR SELECT TO authenticated
@@ -837,11 +912,12 @@ GRANT SELECT ON public.chat_conversations, public.chat_messages, public.chat_rea
 GRANT ALL ON public.chat_conversations, public.chat_messages, public.chat_read_states TO service_role;
 
 -- ----------------------------------------------------------------------------
--- 6. 함수 권한 — SECDEF 규칙 1(anon/PUBLIC 회수)
+-- 6. 함수 권한 — SECDEF 규칙 1(anon/PUBLIC 회수) + 서버 다크 착지(open·send 는 authenticated 미부여)
 -- ----------------------------------------------------------------------------
 REVOKE ALL ON FUNCTION
   public.chat_is_employer_side(uuid, uuid),
   public.chat_is_member(uuid, uuid),
+  public.chat_my_conversation_ids(),
   public.chat_media_can_read(text),
   public.chat_media_can_write(text),
   public.chat_open_conversation(uuid, uuid),
@@ -850,20 +926,26 @@ REVOKE ALL ON FUNCTION
   public.chat_hide_conversation(uuid),
   public.chat_list_conversations(int, timestamptz),
   public.chat_unread_total()
-FROM PUBLIC, anon;
+FROM PUBLIC, anon, authenticated;
 
+-- 읽기·헬퍼(RLS·storage 정책 평가에 필요)와 방이 없으면 무해한 읽음/나가기는 연다
 GRANT EXECUTE ON FUNCTION
   public.chat_is_employer_side(uuid, uuid),
   public.chat_is_member(uuid, uuid),
+  public.chat_my_conversation_ids(),
   public.chat_media_can_read(text),
   public.chat_media_can_write(text),
-  public.chat_open_conversation(uuid, uuid),
-  public.chat_send_message(uuid, text, text, text, int, int, uuid),
   public.chat_mark_read(uuid, uuid),
   public.chat_hide_conversation(uuid),
   public.chat_list_conversations(int, timestamptz),
   public.chat_unread_total()
 TO authenticated, service_role;
+
+-- 🔒 쓰기 진입점은 service_role 만. 공개 ON = authenticated 에 GRANT 하는 별도 마이그(헤더 참조)
+GRANT EXECUTE ON FUNCTION
+  public.chat_open_conversation(uuid, uuid),
+  public.chat_send_message(uuid, text, text, text, int, int, uuid)
+TO service_role;
 
 -- ----------------------------------------------------------------------------
 -- 7. Realtime — 방 화면이 postgres_changes 로 구독(RLS 가 구독자별로 걸러 보낸다)
@@ -873,10 +955,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
 -- ----------------------------------------------------------------------------
 -- 8. 사진 버킷 + storage 정책 (storage 스키마 — parity 가드 밖, 전용 pgTAP 로 행동 관측)
 -- ----------------------------------------------------------------------------
+-- 1.5MB: 클라가 긴 변 1600px · JPEG 0.8 로 재인코딩하므로 충분하다(보안 H-1 — 5MB 는 과함).
 -- SVG·GIF 제외(SVG 는 서빙 시 XSS 벡터 — 20260809130000 temp 버킷 선례). 기존 'chat' 버킷은
 -- 소유자 전용 RESTRICTIVE 가 SQL 로 안 지워져 재사용하지 않는다(설계 §0-2).
+-- ON CONFLICT: 누가 대시보드로 먼저 만들어 둬도 적용이 막히지 않고 설정을 정본으로 맞춘다
+-- (선례 20260802150000:33-36 · DB 리뷰 L-6).
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('chat-media', 'chat-media', false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp']);
+VALUES ('chat-media', 'chat-media', false, 1572864, ARRAY['image/jpeg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO UPDATE
+  SET public = false,
+      file_size_limit = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- CREATE POLICY 만. 실패하면 마이그 전체가 실패해야 한다(예외를 삼키지 않는다 — L5)
 CREATE POLICY chat_media_select_member ON storage.objects
@@ -886,3 +975,31 @@ CREATE POLICY chat_media_select_member ON storage.objects
 CREATE POLICY chat_media_insert_member ON storage.objects
   FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'chat-media' AND public.chat_media_can_write(name));
+
+-- ----------------------------------------------------------------------------
+-- 9. 적용 시점 자체 검증 — 테스트 픽스처의 블랭킷 GRANT 보다 **먼저** 돈다(CI·prod 모두).
+--    pgTAP 은 픽스처가 relacl 을 덮어 테이블 GRANT 를 볼 수 없다(DB 리뷰 참고 절).
+-- ----------------------------------------------------------------------------
+DO $verify$
+DECLARE
+  v_bad text;
+BEGIN
+  SELECT string_agg(format('%s:%s:%s', r, t, pr), ', ') INTO v_bad
+    FROM unnest(ARRAY['anon', 'authenticated']) r,
+         unnest(ARRAY['public.chat_conversations', 'public.chat_messages', 'public.chat_read_states']) t,
+         unnest(ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE']) pr
+   WHERE has_table_privilege(r, t, pr);
+  IF v_bad IS NOT NULL THEN
+    RAISE EXCEPTION '채팅 테이블 쓰기 권한이 남아 있다: %', v_bad;
+  END IF;
+
+  IF has_table_privilege('anon', 'public.chat_messages', 'SELECT') THEN
+    RAISE EXCEPTION '채팅 테이블에 anon SELECT 가 남아 있다';
+  END IF;
+
+  IF has_function_privilege('authenticated', 'public.chat_open_conversation(uuid, uuid)', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.chat_send_message(uuid, text, text, text, int, int, uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION '서버 다크 착지 위반: authenticated 가 open/send 를 실행할 수 있다';
+  END IF;
+END
+$verify$;

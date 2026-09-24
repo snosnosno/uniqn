@@ -12,9 +12,10 @@
 -- 안전: BEGIN/ROLLBACK. 선행: npm run test:db:helpers
 -- ============================================================
 BEGIN;
-SELECT plan(28);
+SELECT plan(32);
 
 SELECT jpc_chat_seed_guc();
+SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
 
 -- 상태별 공고 (INSERT 시점 status — 전이 트리거는 UPDATE 전용)
 SELECT jpc_chat_put('jp_draft',     jpc_chat_posting(jpc_chat_id('ws'), jpc_chat_id('owner'), 'draft'));
@@ -40,6 +41,15 @@ SELECT ok((SELECT first_published_at IS NULL FROM public.job_postings WHERE id =
   'F3 직접 UPDATE 로 first_published_at 을 심을 수 없다(트리거가 되돌린다)');
 SELECT ok((SELECT first_published_at IS NOT NULL FROM public.job_postings WHERE id = jpc_chat_id('jp_pub_cancel')),
   'F4 공개 후 삭제된 공고는 기록이 남는다');
+
+-- 마이그 이전부터 공개 상태였던 레거시 행(first_published_at NULL)이 공개 밖으로 나가는 경로 —
+-- 백필 대신 트리거의 OLD.status 분기가 기록한다(DB 리뷰 L-7a: 이 분기를 지워도 F1~F4 는 초록)
+ALTER TABLE public.job_postings DISABLE TRIGGER trg_jp_first_published_at;
+SELECT jpc_chat_put('jp_legacy', jpc_chat_posting(jpc_chat_id('ws'), jpc_chat_id('owner'), 'closed'));
+ALTER TABLE public.job_postings ENABLE TRIGGER trg_jp_first_published_at;
+UPDATE public.job_postings SET status = 'cancelled' WHERE id = jpc_chat_id('jp_legacy');
+SELECT ok((SELECT first_published_at IS NOT NULL FROM public.job_postings WHERE id = jpc_chat_id('jp_legacy')),
+  'F5 레거시 공개 행(기록 NULL)이 삭제되면 그 순간 기록된다(OLD.status 분기)');
 
 -- ------------------------------------------------------------
 -- O. 개설 — 구직자 쪽
@@ -84,13 +94,19 @@ SELECT jpc_test_set_user(jpc_chat_id('applicant'));
 SELECT is(chat_open_conversation(jpc_chat_id('jp')), jpc_chat_id('conv_app'), 'O15 지원자가 열면 구인자가 연 같은 방으로 들어온다');
 RESET ROLE;
 
--- M2 — 제3자가 남의 명의로 방 생성
+-- M2 — 제3자가 남의 명의로 방 생성. 피해자는 **이 공고 지원자**여야 한다: 비지원자를 고르면
+-- 뒤의 "지원자에게만" 검사가 대신 막아 M2 줄을 지워도 초록이 된다(DB 리뷰 M-4). 메시지 본문까지
+-- 맞춰 어느 게이트가 막았는지 특정한다.
+SELECT jpc_test_clear_user();
+SELECT jpc_chat_put('jp_m2', jpc_chat_posting(jpc_chat_id('ws'), jpc_chat_id('owner'), 'active'));
+INSERT INTO public.applications (job_posting_id, applicant_id, applicant_name, status, created_at, updated_at)
+VALUES (jpc_chat_id('jp_m2'), jpc_chat_id('applicant'), 'm2 victim', 'applied', now(), now());
 SELECT jpc_test_set_user(jpc_chat_id('third'));
-SELECT throws_like($$ SELECT chat_open_conversation(jpc_chat_id('jp'), jpc_chat_id('admin')) $$,
-  'PERMISSION_DENIED%', 'O16 제3자가 p_seeker_id 에 남의 uid → 거부(M2)');
+SELECT throws_like($$ SELECT chat_open_conversation(jpc_chat_id('jp_m2'), jpc_chat_id('applicant')) $$,
+  'PERMISSION_DENIED: 채팅방을 열 권한%', 'O16 제3자가 p_seeker_id 에 실제 지원자 uid → M2 게이트가 거부');
 RESET ROLE;
-SELECT is((SELECT count(*)::int FROM public.chat_conversations WHERE seeker_id = jpc_chat_id('admin')), 0,
-  'O17 피해자 명의 방이 생기지 않았다');
+SELECT is((SELECT count(*)::int FROM public.chat_conversations WHERE job_posting_id = jpc_chat_id('jp_m2')), 0,
+  'O17 피해자(지원자) 명의 방이 생기지 않았다');
 
 -- L6 — 정지 사용자
 UPDATE public.users SET status = 'suspended' WHERE id = jpc_chat_id('third');
@@ -114,6 +130,28 @@ SELECT is((SELECT seeker_display_name FROM public.chat_conversations WHERE id = 
   'S2 닉네임 있으면 닉네임');
 SELECT is((SELECT employer_display_name || ' / ' || posting_title FROM public.chat_conversations WHERE id = jpc_chat_id('conv')),
   'jpc test ws / jpc test posting', 'S3 업장명 = 워크스페이스 이름 · 공고 제목 스냅샷');
+
+-- 메시지 없는 방은 구인자 측에 보이지 않는다(구직자가 "채팅하기"만 누른 흔적 — 보안 L3)
+SELECT jpc_test_set_user(jpc_chat_id('owner'));
+SELECT is((SELECT count(*)::int FROM public.chat_conversations WHERE id = jpc_chat_id('conv')), 0,
+  'S4 메시지 없는 방: 구인자 측 raw SELECT 0');
+RESET ROLE;
+SELECT jpc_test_set_user(jpc_chat_id('seeker'));
+SELECT is((SELECT count(*)::int FROM public.chat_conversations WHERE id = jpc_chat_id('conv')), 1,
+  'S5 대조군: 연 구직자 본인은 1');
+RESET ROLE;
+
+-- 스냅샷 원천(workspaces.name)은 XSS 트리거 밖 → 패턴이면 중립값으로 폴백(보안 L2)
+SELECT jpc_test_clear_user();
+SELECT jpc_chat_put('ws_x', gen_random_uuid());
+INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
+VALUES (jpc_chat_id('ws_x'), '<script>alert(1)</script>', jpc_chat_id('owner'), now(), now());
+SELECT jpc_chat_put('jp_x', jpc_chat_posting(jpc_chat_id('ws_x'), jpc_chat_id('owner'), 'active'));
+SELECT jpc_test_set_user(jpc_chat_id('seeker'));
+SELECT jpc_chat_put('conv_x', chat_open_conversation(jpc_chat_id('jp_x')));
+RESET ROLE;
+SELECT is((SELECT employer_display_name FROM public.chat_conversations WHERE id = jpc_chat_id('conv_x')), 'jpc owner',
+  'S6 XSS 패턴 업장명은 스냅샷에 싣지 않고 다음 후보(owner_name)로');
 
 -- ------------------------------------------------------------
 -- R. 새 방 하루 20개 — 21번째 신규는 거부, 기존 방 재진입은 세지 않는다

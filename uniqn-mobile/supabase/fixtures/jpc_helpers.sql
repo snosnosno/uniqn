@@ -618,6 +618,17 @@ AS $$
   SELECT set_config('chat.' || p_key, p_val::text, true)::uuid;
 $$;
 
+-- 서버 다크 착지(마이그 20260925100000 — open·send 의 authenticated EXECUTE 미부여)를
+-- **이 트랜잭션 안에서만** 공개 ON 상태로 바꾼다. 공개 ON 마이그가 할 GRANT 와 같은 문장이다.
+-- 다크 상태 자체는 chat_security_grants A4b 가 이 함수를 부르기 전에 고정한다.
+CREATE OR REPLACE FUNCTION jpc_chat_simulate_on()
+RETURNS void
+LANGUAGE sql
+AS $$
+  GRANT EXECUTE ON FUNCTION public.chat_open_conversation(uuid, uuid),
+    public.chat_send_message(uuid, text, text, text, int, int, uuid) TO authenticated;
+$$;
+
 -- jpc_chat_seed() 결과를 chat.<키> GUC 로 심는다: owner·editor·manager·viewer·applicant·
 -- seeker·third·admin·ws·jp
 CREATE OR REPLACE FUNCTION jpc_chat_seed_guc()
