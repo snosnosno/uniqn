@@ -7,3 +7,4 @@ export { ChatRoomView, type ChatRoomViewProps } from './ChatRoomView';
 export { ChatTimelineRow, withUnreadDivider, type ChatRow } from './ChatTimelineRow';
 export { ChatStartButton } from './ChatStartButton';
 export { ChatUnavailable } from './ChatUnavailable';
+export { ChatRoomScreen, type ChatRoomScreenProps } from './ChatRoomScreen';
