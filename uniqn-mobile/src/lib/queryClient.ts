@@ -551,6 +551,26 @@ export const queryKeys = {
     all: ['appConfig'] as const,
     workScheduleEnabled: () => [...queryKeys.appConfig.all, 'workScheduleEnabled'] as const,
     opsHubEnabled: () => [...queryKeys.appConfig.all, 'opsHubEnabled'] as const,
+    chatEnabled: () => [...queryKeys.appConfig.all, 'chatEnabled'] as const,
+  },
+
+  // 앱 내 채팅 — per-user 데이터라 uid 를 키에 넣는다(로그아웃이 쿼리 캐시를 비우지 않아
+  // 기기에서 계정을 바꾸면 이전 사람의 목록이 보일 수 있다). realtime 콜백은
+  // messagesTailPrefix(id) 접두사 무효화만 한다(설계 D7=R1).
+  chat: {
+    all: ['chat'] as const,
+    list: (uid: string) => [...queryKeys.chat.all, 'list', uid] as const,
+    unread: (uid: string) => [...queryKeys.chat.all, 'unread', uid] as const,
+    conversation: (id: string, uid: string) =>
+      [...queryKeys.chat.all, 'conversation', id, uid] as const,
+    lookup: (uid: string, postingId: string, seekerId: string) =>
+      [...queryKeys.chat.all, 'lookup', uid, postingId, seekerId] as const,
+    readState: (id: string, uid: string) => [...queryKeys.chat.all, 'readState', id, uid] as const,
+    messagesPages: (id: string, uid: string) =>
+      [...queryKeys.chat.all, 'messages', id, 'pages', uid] as const,
+    messagesTailPrefix: (id: string) => [...queryKeys.chat.all, 'messages', id, 'tail'] as const,
+    messagesTail: (id: string, uid: string, anchor: string) =>
+      [...queryKeys.chat.messagesTailPrefix(id), uid, anchor] as const,
   },
 
   // 근무표(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯

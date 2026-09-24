@@ -70,7 +70,8 @@ export interface ChatOutboxItem {
   clientMessageId: string;
   kind: ChatSendKind;
   body: string;
-  status: 'sending' | 'failed';
+  /** sent = 서버가 받았지만 아직 꼬리 조회에 안 잡힘(타임라인 병합이 서버 행을 보면 뺀다) */
+  status: 'sending' | 'failed' | 'sent';
   errorMessage?: string;
   createdAtLocal: string;
 }
