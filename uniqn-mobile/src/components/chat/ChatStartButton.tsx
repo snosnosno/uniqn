@@ -15,12 +15,15 @@ interface ChatStartButtonProps extends OpenChatParams {
   /** compact = 아이콘+짧은 글자(행 안), full = 넓은 버튼 */
   variant?: 'compact' | 'full';
   testID?: string;
+  /** 바깥 여백 — 플래그 OFF 면 버튼과 함께 사라지므로 빈 여백이 남지 않는다 */
+  className?: string;
 }
 
 export const ChatStartButton = memo(function ChatStartButton({
   label = '채팅하기',
   variant = 'compact',
   testID = 'chat-start-button',
+  className = '',
   ...params
 }: ChatStartButtonProps) {
   const { enabled, openChat } = useChatEntry();
@@ -36,7 +39,7 @@ export const ChatStartButton = memo(function ChatStartButton({
       hitSlop={6}
       className={`flex-row items-center justify-center rounded-lg border border-primary-500 active:bg-primary-50 dark:border-primary-400 dark:active:bg-primary-900/20 ${
         isFull ? 'px-4 py-3' : 'px-3 py-1.5'
-      }`}
+      } ${className}`}
     >
       <ChatbubbleEllipsesOutlineIcon size={isFull ? 18 : 14} color={PRIMARY_COLORS[500]} />
       <Text

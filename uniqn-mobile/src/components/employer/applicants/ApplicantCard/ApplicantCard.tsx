@@ -25,6 +25,7 @@ import {
   StatusInfo,
 } from './components';
 import { resolveFixedStartTime } from './utils';
+import { ChatStartButton } from '@/components/chat/ChatStartButton';
 
 export const ApplicantCard = React.memo(function ApplicantCard({
   applicant,
@@ -211,6 +212,16 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               phone={userProfile?.phone || applicant.applicantPhone}
               message={applicant.message}
               preQuestionAnswers={applicant.preQuestionAnswers}
+            />
+
+            {/* 채팅 — 서버는 이 공고 지원자에게만 구인자가 먼저 걸 수 있게 한다(플래그 OFF 면 안 보임) */}
+            <ChatStartButton
+              postingId={applicant.jobPostingId}
+              seekerId={applicant.applicantId}
+              method="applicants"
+              label="지원자와 채팅"
+              className="mb-2 self-start"
+              testID={`applicant-chat-${applicant.applicantId}`}
             />
 
             <StatusInfo
