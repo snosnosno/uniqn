@@ -174,6 +174,30 @@ describe('JobDetailScreen', () => {
     });
   });
 
+  // job_view 는 analytics_events 에 영속되고 사용자당 시간당 240건 상한을 모든 이벤트가
+  // 나눠 쓴다 — 재조회(새 job 참조)마다 발화하면 상한을 헛되이 소모한다.
+  it('job_view 는 공고당 1회만 기록한다 — 재조회로 job 참조가 바뀌어도 늘지 않는다', () => {
+    const { trackJobView } = jest.requireMock('@/services/observability') as {
+      trackJobView: jest.Mock;
+    };
+
+    const screen = render(<JobDetailScreen />);
+    expect(trackJobView).toHaveBeenCalledTimes(1);
+    expect(trackJobView).toHaveBeenCalledWith('job-1', 'Night Shift');
+
+    // PTR·실시간 무효화 = 같은 id 의 새 객체
+    mockJob = { ...baseJob };
+    screen.rerender(<JobDetailScreen />);
+    mockJob = { ...baseJob };
+    screen.rerender(<JobDetailScreen />);
+    expect(trackJobView).toHaveBeenCalledTimes(1);
+
+    // 다른 공고로 넘어가면 새로 센다
+    mockJob = { ...baseJob, id: 'job-2' };
+    screen.rerender(<JobDetailScreen />);
+    expect(trackJobView).toHaveBeenCalledTimes(2);
+  });
+
   // P0#4 승인 게이트 — admin 예외 (fix/admin-tournament-detail-gate)
   describe('미승인 대회공고 승인 게이트', () => {
     it('일반 유저는 차단 화면을 본다', () => {

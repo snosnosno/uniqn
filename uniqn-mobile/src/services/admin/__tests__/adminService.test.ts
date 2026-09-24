@@ -365,6 +365,10 @@ describe('AdminService', () => {
           { date: '2025-01-15', count: 20 },
           { date: '2025-01-16', count: 15 },
         ],
+        dailyActiveUsers: [
+          { date: '2025-01-15', count: 31 },
+          { date: '2025-01-16', count: 27 },
+        ],
         isHealthy: true,
       });
 
@@ -373,16 +377,32 @@ describe('AdminService', () => {
       expect(result.systemStatus).toBe('healthy');
       expect(result.dailySignups).toHaveLength(2);
       expect(result.dailyApplications).toHaveLength(2);
-      expect(result.dailyActiveUsers).toHaveLength(2);
-      // DAU is currently unimplemented, should be 0
-      expect(result.dailyActiveUsers[0].count).toBe(0);
+      // DAU 는 서버 집계값을 그대로 전달한다 (예전엔 날짜만 채우고 0 으로 박았다)
+      expect(result.dailyActiveUsers).toEqual([
+        { date: '2025-01-15', count: 31 },
+        { date: '2025-01-16', count: 27 },
+      ]);
       expect(result.fetchedAt).toBeInstanceOf(Date);
+    });
+
+    it('DAU 측정 실패(null)는 0 으로 바꾸지 않고 null 로 전달한다', async () => {
+      mockRepo.getSystemMetrics.mockResolvedValue({
+        dailySignups: [{ date: '2025-01-15', count: 10 }],
+        dailyApplications: [{ date: '2025-01-15', count: 20 }],
+        dailyActiveUsers: null,
+        isHealthy: true,
+      });
+
+      const result = await getSystemMetrics();
+
+      expect(result.dailyActiveUsers).toBeNull();
     });
 
     it('should return degraded status when not healthy', async () => {
       mockRepo.getSystemMetrics.mockResolvedValue({
         dailySignups: [],
         dailyApplications: [],
+        dailyActiveUsers: [],
         isHealthy: false,
       });
 

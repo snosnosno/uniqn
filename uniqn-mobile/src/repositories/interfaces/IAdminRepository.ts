@@ -45,6 +45,12 @@ export interface DailyCount {
 export interface SystemMetricsData {
   dailySignups: DailyCount[];
   dailyApplications: DailyCount[];
+  /**
+   * 일별 활성 사용자(DAU). **조회 실패 시 null** — 0 으로 채우지 않는다.
+   * 0 은 "아무도 안 왔다"는 측정값이고, null 은 "측정하지 못했다"다. 둘을 섞으면
+   * 집계가 깨져도 화면은 그럴듯한 0 을 그린다(20260923100000 이 고친 결함이 그 형태였다).
+   */
+  dailyActiveUsers: DailyCount[] | null;
   isHealthy: boolean;
 }
 
@@ -133,7 +139,7 @@ export interface IAdminRepository {
   /**
    * 시스템 메트릭스 조회
    *
-   * @description 최근 7일간의 가입자/지원 수 추이 및 시스템 상태
+   * @description 최근 7일간의 가입자/지원/활성 사용자 수 추이 및 시스템 상태
    * @returns 시스템 메트릭스 원시 데이터
    */
   getSystemMetrics(): Promise<SystemMetricsData>;

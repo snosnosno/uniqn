@@ -236,6 +236,10 @@
 --     · 20260918105900(QR 퇴근 후보 하한) — process_posting_qr_attendance 재정의만
 --     · 20260918110000(댓글 트리거 순서) — 트리거 재등록만(함수 미변경)
 --
+--   2026-09-23 핵심 퍼널 영속화 + 관리자 DAU(마이그 20260923100000):
+--     함수 226 = 225 + get_admin_daily_active_users 1(SECDEF admin 게이트, anon REVOKE).
+--     정책 102 불변(event CHECK 교체·인덱스 추가만, RLS 미변경).
+--
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
 --   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
 --   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
@@ -256,7 +260,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=225
+-- PARITY_EXPECT_FUNCS=226
 -- PARITY_EXPECT_POLICIES=102
 -- ============================================================
 BEGIN;
@@ -276,8 +280,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  225,
-  'public function count (225 = 216 + 9월 QR·게시판 마이그 5건 신설분 9종, 2026-09-18 — 출처는 상단 장부 참조)');
+  226,
+  'public function count (226 = 225 + get_admin_daily_active_users 1, 2026-09-23 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

@@ -149,3 +149,76 @@ describe('reportAppSessionStart — 롤아웃 계기판', () => {
     expect(() => reportAppSessionStart()).not.toThrow();
   });
 });
+
+describe('핵심 퍼널 영속 레일 (마이그 20260923100000)', () => {
+  it('핵심 퍼널 이벤트는 브레드크럼과 함께 서버에도 기록된다', async () => {
+    await trackEvent('job_apply', { job_id: 'job-1', job_role: 'dealer' });
+
+    expect(mockLeaveBreadcrumb).toHaveBeenCalledWith('analytics:job_apply', {
+      job_id: 'job-1',
+      job_role: 'dealer',
+    });
+    expect(mockInsert).toHaveBeenCalledWith('job_apply', { job_id: 'job-1', job_role: 'dealer' });
+  });
+
+  it('서버에는 화이트리스트 키만 싣는다 — 제목·금액 같은 자유 텍스트/개인 값은 빠진다', async () => {
+    await trackEvent('settlement_complete', {
+      settlement_amount: 150000,
+      settlement_count: 3,
+      job_title: '주말 딜러',
+    });
+
+    // 브레드크럼(에러 맥락)에는 그대로 남는다
+    expect(mockLeaveBreadcrumb).toHaveBeenCalledWith('analytics:settlement_complete', {
+      settlement_amount: 150000,
+      settlement_count: 3,
+      job_title: '주말 딜러',
+    });
+    // 서버(보존 기한 없는 계측 테이블)에는 건수만
+    expect(mockInsert).toHaveBeenCalledWith('settlement_complete', { settlement_count: 3 });
+  });
+
+  it('핵심 퍼널 8종 전부가 서버 레일을 탄다 (서버 CHECK 화이트리스트와 1:1)', async () => {
+    const events = [
+      'signup',
+      'login',
+      'job_view',
+      'job_apply',
+      'job_create',
+      'check_in',
+      'check_out',
+      'settlement_complete',
+    ];
+    for (const event of events) {
+      await trackEvent(event);
+    }
+
+    expect(mockInsert.mock.calls.map(([event]) => event)).toEqual(events);
+  });
+
+  it('핵심 퍼널 밖 이벤트는 서버로 보내지 않는다 (서버가 거부할 값을 쏘지 않는다)', async () => {
+    await trackEvent('search', { search_term: '홀덤펍' });
+    await trackEvent('notification_click', { type: 'x' });
+    await trackEvent('job_shared', { job_id: 'job-1' });
+
+    expect(mockLeaveBreadcrumb).toHaveBeenCalledTimes(3);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('분석이 꺼져 있으면 서버에도 보내지 않는다', async () => {
+    setAnalyticsEnabled(false);
+    try {
+      await trackEvent('login', { method: 'email' });
+    } finally {
+      setAnalyticsEnabled(true);
+    }
+
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('서버 기록이 실패해도 trackEvent 는 던지지 않는다', async () => {
+    mockInsert.mockImplementation(() => Promise.reject(new Error('offline')));
+
+    await expect(trackEvent('login', { method: 'email' })).resolves.toBeUndefined();
+  });
+});

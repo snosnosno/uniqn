@@ -70,6 +70,7 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      packages: read # GHCR 인증 pull (아래 Log in to GHCR)
 
     steps:
       - name: Checkout
@@ -83,8 +84,24 @@ jobs:
           version: 2.107.0
           github-token: ${{ github.token }}
 
+      # 🔴 ghcr 익명 pull 레이트리밋 대응 — 사유는 db-tests.yml 의 같은 스텝 주석 참조
+      #    (2026-09-23 PR#512 3회 연속 `toomanyrequests`, Playwright 미실행).
+      - name: Log in to GHCR
+        continue-on-error: true
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
       - name: Start local Supabase
-        run: supabase start
+        run: |
+          for i in 1 2 3 4; do
+            if supabase start; then exit 0; fi
+            [ "$i" -eq 4 ] && break
+            wait=$((i * 30))
+            echo "::warning::supabase start 실패 (${i}/4) — ${wait}s 후 재시도"
+            supabase stop --no-backup || true
+            sleep "$wait"
+          done
+          echo "::error::supabase start 4회 모두 실패"
+          exit 1
 
       - name: Export Supabase env vars
         shell: bash

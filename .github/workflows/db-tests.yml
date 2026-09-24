@@ -21,6 +21,9 @@ jobs:
     name: DB Tests (pg_prove)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read # GHCR 인증 pull (아래 Log in to GHCR)
 
     steps:
       - name: Checkout
@@ -35,8 +38,28 @@ jobs:
           version: 2.107.0
           github-token: ${{ github.token }}
 
+      # 🔴 ghcr 익명 pull 은 레이트리밋이 낮다 — postgres 이미지(레이어 29개)에서 `toomanyrequests`
+      #    로 `supabase start` 가 죽어 pgTAP 이 한 줄도 안 돈 채 red 가 된다(2026-09-23 PR#512,
+      #    1시간 45분 간격 3회 연속, 다른 이미지는 정상). GITHUB_TOKEN 인증 pull 로 한도를 올린다.
+      #    로그인 실패는 치명이 아니다 — 익명으로 계속 시도한다.
+      - name: Log in to GHCR
+        continue-on-error: true
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # CLI 내장 재시도(4s→8s, 약 12초)는 분 단위로 풀리는 레이트리밋을 넘기지 못한다.
+      # 30/60/90초 간격으로 최대 4회 시도한다(최악 +3분, timeout 20분 안).
       - name: Start local Supabase
-        run: supabase start
+        run: |
+          for i in 1 2 3 4; do
+            if supabase start; then exit 0; fi
+            [ "$i" -eq 4 ] && break
+            wait=$((i * 30))
+            echo "::warning::supabase start 실패 (${i}/4) — ${wait}s 후 재시도"
+            supabase stop --no-backup || true
+            sleep "$wait"
+          done
+          echo "::error::supabase start 4회 모두 실패"
+          exit 1
 
       - name: Register pgTAP helpers
         # cross-platform 패턴 (Windows PowerShell 의 stdin redirect `<` 비호환 회피).
