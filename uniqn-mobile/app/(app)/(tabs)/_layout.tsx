@@ -10,6 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, MessageIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 import { LAYOUT } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
+import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
+import { CHAT_UNREAD_CAP } from '@/constants/chat';
 import { getLayoutColor, PRIMARY_COLORS, SURFACE_COLORS } from '@/constants/colors';
 
 // `/(app)/(tabs)` 진입 시 기본 탭을 home-jobs로 해석.
@@ -49,6 +51,15 @@ export default function TabLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // 채팅 안 읽음 — 소통 탭 배지(결정 D-c). 플래그 OFF 면 조회도 안 한다
+  const { enabled: chatEnabled } = useChatEnabled();
+  const chatUnread = useChatUnreadTotal(chatEnabled);
+  const boardBadge =
+    chatUnread > 0
+      ? chatUnread >= CHAT_UNREAD_CAP
+        ? `${CHAT_UNREAD_CAP}+`
+        : chatUnread
+      : undefined;
 
   // 웹에서 탭 전환 시 aria-hidden 포커스 충돌 방지
   useEffect(() => {
@@ -105,6 +116,7 @@ export default function TabLayout() {
         options={{
           title: '소통',
           tabBarIcon: renderTabBarIcon(MessageIcon),
+          tabBarBadge: boardBadge,
         }}
       />
       <Tabs.Screen

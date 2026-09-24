@@ -10,3 +10,4 @@ export {
 } from './useSendChatMessage';
 export { useChatRoomActions } from './useChatRoomActions';
 export { useChatEntry, type OpenChatParams } from './useChatEntry';
+export { useChatLookup } from './useChatLookup';

@@ -1,25 +1,31 @@
 import { Pressable, ScrollView, Text } from 'react-native';
 import type { CommunicationBoardType } from '@/types/board';
 
-export type BoardTabKey = CommunicationBoardType;
+/** 게시판 두 칸 + 앱 내 채팅 칸(플래그 ON 일 때만) */
+export type BoardTabKey = CommunicationBoardType | 'chat';
 
 interface TabItem {
   key: BoardTabKey;
   label: string;
 }
 
-const TABS: TabItem[] = [
+const BOARD_TABS: TabItem[] = [
   { key: 'schedule', label: '일정' },
   { key: 'notice', label: '공지' },
 ];
 
+const CHAT_TAB: TabItem = { key: 'chat', label: '채팅' };
+
 interface BoardTabBarProps {
   activeTab: BoardTabKey;
   onTabPress: (tab: BoardTabKey) => void;
+  /** 채팅 칸 노출 — 칸이 flex-1 이라 3칸이 돼도 높이는 그대로다 */
+  showChat?: boolean;
 }
 
-/** 소통 화면의 일정/공지 전환 탭 */
-export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
+/** 소통 화면의 일정/공지(/채팅) 전환 탭 */
+export function BoardTabBar({ activeTab, onTabPress, showChat = false }: BoardTabBarProps) {
+  const tabs = showChat ? [...BOARD_TABS, CHAT_TAB] : BOARD_TABS;
   return (
     <ScrollView
       horizontal={false}
@@ -27,7 +33,7 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
       className="border-b border-secondary-200 dark:border-surface-overlay"
       style={{ flexGrow: 0, flexShrink: 0 }}
     >
-      {TABS.map(({ key, label }) => {
+      {tabs.map(({ key, label }) => {
         const isActive = activeTab === key;
         return (
           <Pressable
