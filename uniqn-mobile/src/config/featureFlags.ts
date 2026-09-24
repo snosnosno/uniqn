@@ -24,4 +24,12 @@ export const featureFlags = {
    * false 이면 진입 표면(발견 동선) 전부 미노출(직접 라우트는 유지).
    */
   ops_hub_enabled: false,
+  /**
+   * 앱 내 채팅 진입점·화면 활성화. 빌드타임 fallback(원격 app_config.chat_enabled 부재·오류 시 사용).
+   *
+   * false 여야 하는 이유: 서버는 open·send RPC 에 authenticated EXECUTE 를 주지 않은 채(다크)
+   * 착지했다. 원격 조회가 실패했을 때 진입점이 열리면 사용자는 누를 때마다 권한 오류를 본다.
+   * 공개 ON 은 GRANT 마이그 → 원격 플래그 ON 순서로만 한다.
+   */
+  chat_enabled: false,
 } as const;
