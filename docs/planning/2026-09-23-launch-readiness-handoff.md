@@ -4,7 +4,7 @@
 
 ## 1. 착지한 것
 
-- **핵심 퍼널 영속화 + 관리자 DAU** — 브랜치 `claude/uniqn-launch-readiness-j9330d` → master squash 머지.
+- **핵심 퍼널 영속화 + 관리자 DAU** — 브랜치 `claude/uniqn-launch-readiness-j9330d` → master squash 머지 (PR #512, **`89eff192b`**).
   - 마이그 `uniqn-mobile/supabase/migrations/20260923100000_analytics_core_funnel_events_and_dau.sql`
   - pgTAP `uniqn-mobile/supabase/tests/analytics_core_funnel_dau.test.sql`
   - 파리티 기대값 225 → **226** (`parity_baseline_guard.test.sql` 단언 + `PARITY_EXPECT_FUNCS` 마커 동시 갱신)
@@ -14,9 +14,9 @@
 
 | # | 할 일 | 누가 | 왜 |
 |---|---|---|---|
-| G1 | **prod 에 마이그 `20260923100000` 적용** (Supabase MCP `apply_migration` 또는 `/deploy`) | 운영자 | 이 세션 컨테이너는 Supabase MCP 연결 실패(ERR_PROXY_TUNNEL)로 prod 에 붙지 못했다. **적용 전까지 주간 parity-smoke 가 함수 수 1 차이(225≠226)로 red.** |
-| G2 | G1 **다음에** 클라 OTA | 운영자 | #441 교훈 — 서버 먼저. 역순이어도 앱은 정상(이벤트가 CHECK 로 조용히 거부, DAU 는 '집계 불가' 표시)이지만 그동안 계측이 비어 버린다. |
-| G3 | G1 후 실측: `SELECT event, count(*) FROM analytics_events WHERE created_at > now() - interval '1 day' GROUP BY 1;` 에 `login`/`job_view` 가 보이는지, 관리자 통계 화면에 DAU 차트가 뜨는지 | 운영자 | 로컬은 PG16 스텁 검증뿐 — 실 Supabase(PG17)·실 JWT 경로는 prod 에서 처음 확인된다. |
+| G1 ✅ prod 적용 2026-09-24 | **prod 에 마이그 `20260923100000` 적용** (Supabase MCP `apply_migration` 또는 `/deploy`) | 운영자 | 이 세션 컨테이너는 Supabase MCP 연결 실패(ERR_PROXY_TUNNEL)로 prod 에 붙지 못했다. **적용 전까지 주간 parity-smoke 가 함수 수 1 차이(225≠226)로 red.** → `prod-migrate` run 35986584185 로 적용. 실측: 기록 1행 · 함수 1 · CHECK 1개(신규 8종 포함) · anon EXECUTE false · 인덱스 1 · public 함수 **226**. |
+| G2 ✅ 2026-09-24 | G1 **다음에** 클라 OTA | 운영자 | #441 교훈 — 서버 먼저. 역순이어도 앱은 정상(이벤트가 CHECK 로 조용히 거부, DAU 는 '집계 불가' 표시)이지만 그동안 계측이 비어 버린다. → production OTA group `5267408f-98d2-4a71-81ea-0c4dda5fab5b`(runtime 1.0.7, commit `89eff192b`) · 웹 CF `a1da8810`(uniqn.app 새 index 해시 서빙 확인). |
+| G3 ⏳ | G1 후 실측: `SELECT event, count(*) FROM analytics_events WHERE created_at > now() - interval '1 day' GROUP BY 1;` 에 `login`/`job_view` 가 보이는지, 관리자 통계 화면에 DAU 차트가 뜨는지 | 운영자 | 로컬은 PG16 스텁 검증뿐 — 실 Supabase(PG17)·실 JWT 경로는 prod 에서 처음 확인된다. 배포 직후(09-24 10:2x UTC)엔 `app_session_start` 만 있고 퍼널 이벤트 0 — 새 번들 로그인 대기. |
 
 ⚠️ **재적용 금지 표기**: G1 을 수행한 세션은 이 표에 `✅ prod 적용 <날짜>` 를 적을 것. 표기가 없으면 다음 세션이 다시 적용하려 한다(마이그 자체는 CHECK 를 정의로 찾아 1개만 교체하므로 재실행해도 안전하지만, 기록 혼선을 막기 위해).
 
