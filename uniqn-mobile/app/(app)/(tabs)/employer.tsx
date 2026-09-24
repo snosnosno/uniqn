@@ -74,6 +74,13 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
       {FILTER_OPTIONS.map((option) => {
         const isSelected = selected === option.value;
         const count = counts[option.value] || 0;
+        const labelColor = isSelected
+          ? isDarkMode
+            ? '#D4AF37'
+            : '#8A7228'
+          : isDarkMode
+            ? SECONDARY_PALETTE[400]
+            : SECONDARY_PALETTE[600];
 
         return (
           <Pressable
@@ -91,20 +98,25 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
           >
-            <Text
-              className="text-sm font-sans-medium"
-              style={{
-                color: isSelected
-                  ? isDarkMode
-                    ? '#D4AF37'
-                    : '#8A7228'
-                  : isDarkMode
-                    ? SECONDARY_PALETTE[400]
-                    : SECONDARY_PALETTE[600],
-              }}
-            >
-              {option.label} ({count})
-            </Text>
+            {/* 필터 행 끝에 '새 공고' 버튼이 붙어 칸이 좁다(360dp 에서 ~71px). 한 줄로 고정하되
+                잘리는 쪽은 라벨이어야 한다 — 개수가 말줄임되면 사장이 보던 숫자가 사라진다.
+                그래서 라벨만 줄어들고(flexShrink) 개수는 제 폭을 지킨다. */}
+            <View className="max-w-full flex-row items-center">
+              <Text
+                className="text-sm font-sans-medium"
+                numberOfLines={1}
+                style={{ color: labelColor, flexShrink: 1 }}
+              >
+                {option.label}
+              </Text>
+              <Text
+                className="ml-1 text-sm font-sans-medium"
+                numberOfLines={1}
+                style={{ color: labelColor }}
+              >
+                {`(${count})`}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -374,18 +386,20 @@ function EmployerView() {
 
     return (
       <>
-        <View className="px-4 py-3">
+        {/* 새 공고 작성은 풀폭 버튼(72px)이 아니라 필터 행 끝에 둔다(디자인 룰 34-3 순서 1).
+            아이콘만 두면 #490 근무표처럼 기능이 발견되지 않는다 — 글자 라벨은 반드시 남긴다. */}
+        <View className="mx-4 mb-2 mt-2 flex-row items-center gap-2">
+          <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
           <Button
             variant="primary"
+            size="sm"
             onPress={handleCreatePosting}
-            icon={<PlusIcon size={20} color={TEXT_COLORS.onGold} />}
+            accessibilityLabel="새 공고 작성"
+            testID="employer-create-posting"
+            icon={<PlusIcon size={16} color={TEXT_COLORS.onGold} />}
           >
-            <Text className="ml-2 font-sans-semibold text-content-onGold">새 공고 작성</Text>
+            <Text className="ml-1 font-sans-semibold text-sm text-content-onGold">새 공고</Text>
           </Button>
-        </View>
-
-        <View className="mx-4 mb-2 flex-row items-center">
-          <FilterTabs selected={filter} onChange={setFilter} counts={filterCounts} />
         </View>
 
         {sharedPostings.length > 0 ? (
@@ -432,6 +446,10 @@ function EmployerView() {
                 : `${FILTER_OPTIONS.find((option) => option.value === filter)?.label} 공고가 없습니다`
             }
             message="새 공고를 작성해 보세요."
+            // 필터 행의 작은 버튼만으로는 첫 공고를 올릴 사장이 놓칠 수 있다 — 빈 화면에 큰 행동을 둔다.
+            // 라벨은 E2E 의 /공고 작성/ 매칭과 겹치지 않게 다르게 쓴다(같은 이름 버튼 2개 = strict 위반).
+            actionLabel={filter === 'all' ? '첫 공고 올리기' : undefined}
+            onAction={filter === 'all' ? handleCreatePosting : undefined}
           />
         ) : (
           <AppFlashList
@@ -493,7 +511,7 @@ function EmployerView() {
       {/* 근무표는 헤더 아이콘이 아니라 이름표가 붙은 세그먼트로 둔다 — 아이콘만으로는 기능의 존재
           자체가 발견되지 않는다(#488 헤더 이동을 되돌린 이유). */}
       {workScheduleEnabled ? (
-        <View className="mx-4 mt-3">
+        <View className="mx-4 mt-2">
           <EmployerTabSegment value={segment} onChange={handleSegmentChange} />
         </View>
       ) : null}
