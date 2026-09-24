@@ -1,6 +1,6 @@
 # 앱 내 채팅(메시지) 설계 — 출시 과제 #2
 
-> 상태: **설계 초안 — 사용자 승인 대기** (코드 0줄). 출처: `docs/planning/2026-09-23-launch-readiness-handoff.md` §4-2.
+> 상태: **설계 확정 — 결정 D1~D12 기록 완료(D9 법무만 잔여)** (코드 0줄). 출처: `docs/planning/2026-09-23-launch-readiness-handoff.md` §4-2.
 > 작성: 2026-09-24 · 워크트리 `T-HOLDEM-chat` / 브랜치 `docs/in-app-chat-design` (base `89eff192b`)
 > 설계 판정: architect(fable) 위임 → 메인 세션이 미확인 항목 4건 직접 검증(§0-2).
 > **개정 1 (2026-09-24, 사용자 결정)**: ① **당근식 자유 채팅** — 지원 여부와 무관하게 로그인 사용자 누구나 공고에서 "채팅하기", 양쪽 모두 아무 때나 발신, 기간 제한 없음 ② **사진 전송 MVP 포함** ③ 공고 **마감·삭제(soft, `cancelled`) 후에도 대화 계속** ④ 1.0.6 함대는 고려하지 않음.
@@ -58,7 +58,17 @@
 
 **추천: MVP=A, 2단계(S4)에 C.** C 는 `send_job_posting_announcement` 를 `20260813140000` 기준으로 재정의해 같은 트랜잭션에서 각 확정자 1:1 방에 `kind='announcement'` 메시지를 **한 문장 `INSERT…SELECT`** 로 추가한다. 알림은 기존 `posting_announcement` 1건만(채팅 알림 이중 발송 금지).
 
-> 🧑 **결정 D1**: 스태프 간 노출 단체방을 **영구 비채택**할지 · C 를 MVP 에 넣을지(추천: 넣지 않음).
+**단체방 수요는 이미 있는 게시판이 맡는다.** 게시판의 **"일정 소통"**(`board_type='schedule'`)은 서버(`sync_schedule_board`)가 **공고마다 글 1개를 자동 생성**하고, `visibility='participants_only'` + `board_memberships`(author·confirmed·admin)로 **사장과 확정 스태프만** 보고 댓글(사진 3장·리액션)을 단다(`src/types/board.ts:14-20,173-176` · `20260910002240_harden_communication_board.sql:38-57`). 즉 "이번 대회 확정자 전원" 단체 대화방이 이미 있다.
+
+| 도구 | 용도 | 참여자 |
+|---|---|---|
+| **1:1 채팅(신규)** | 개인 문의·조율(지원 전 질문, 개인 사정, 사진) | 구직자 1명 ↔ 구인자 측 |
+| **게시판 "일정 소통"(기존)** | 확정자 전원 공지·질의응답 | 사장 + 확정 스태프 |
+| **확정자 일괄 공지(기존)** | 푸시로 꼭 알려야 하는 변경 공지 | 확정 스태프 전원 |
+
+S2 에서 방 상단 공고 카드에 **"일정 소통 게시판 가기"** 링크를 둬(확정 스태프일 때만) 두 도구를 잇는다. 게시판을 채팅방처럼 실시간으로 바꾸는 것은 이번 범위 밖(필요하면 후속 과제).
+
+> ✅ **결정 D1 (확정, 2026-09-25)**: 신규 단체 채팅방은 만들지 않는다 — 단체 소통은 기존 "일정 소통" 게시판 + 일괄 공지. 공지를 1:1 방에 팬아웃(C)은 S4.
 
 ---
 
@@ -161,7 +171,7 @@ END $$;
 - 테이블 GRANT 는 `SELECT` 만 `authenticated` 에 **명시**(wiki test-db-grants).
 - 재귀 방지: 정책은 자기 테이블을 inline SELECT 하지 않는다 — 멤버십은 전부 plpgsql SECDEF 헬퍼 경유(함정 2·3).
 
-> 🧑 **결정 D3**: viewer 제외 · admin 원문 열람 불가(신고 스냅샷만) · 발신자 표시(업장명+보낸 사람 이름).
+> ✅ **결정 D3 (확정, 2026-09-25)**: viewer 제외 · admin 원문 열람 불가(신고 스냅샷만) · 발신자 표시(업장명+보낸 사람 이름, 닉네임 우선).
 
 ---
 
@@ -270,6 +280,30 @@ CREATE TABLE public.chat_blocks (
 | S4: `chat_set_muted` · `chat_block` · `chat_unblock` · `chat_report_message` | `(p_conversation_id uuid, …)` | 멤버 확인 후 |
 
 - 개정 1 에서 `chat_write_state`(쓰기 창)는 **삭제**, `chat_open_conversation`·`chat_hide_conversation`·`chat_media_can_read` 추가.
+
+### 4-2. 보안 리뷰 반영 (개정 2 — security-reviewer·fable, 2026-09-24)
+
+리뷰 결과: CRITICAL 0 · **HIGH 1** · MEDIUM 7 · LOW 6. 전부 설계에 반영한다. 레포 기준 storage 정책 35개는 모두 `bucket_id =` 조건을 갖고 있어 **OR 결합으로 새로 열리는 경로는 없다**(`baseline_platform_glue:89-120`) — prod 는 L5 가드로 확인.
+
+| # | 결함 | 반영한 설계 |
+|---|---|---|
+| **H1** | 방 멤버라는 이유로 상대가 **올렸지만 보내지 않은 사진·삭제된 메시지의 사진**까지 목록 조회+서명 URL 로 볼 수 있다 | `chat_media_can_read(name)` = **(경로 2세그먼트 = 본인) OR (삭제 안 된 메시지 중 `image_path = name` 이 있고 호출자가 그 방 멤버)**. 관리자 신고 사진도 "참조된 사진만" 원칙 |
+| M1 | "공개된 적 있는 공고"를 현재 status 로 판정 → 초안에서 바로 삭제된(`cancelled`) 공고에 방을 열어 제목·업장명이 새고, 에러 차이가 공고 상태 oracle 이 된다 | `job_postings.first_published_at` 컬럼 + 트리거(공개 status 최초 진입 시 기록). 개설 조건 = NOT NULL. 백필: 기존 공개 status 는 `created_at`, 기존 cancelled/expired 는 NULL(지원서가 있으면 개설 허용). **없는 id·비공개 공고는 같은 에러 코드** |
+| M2 | 제3자가 `p_seeker_id` 에 남의 uid 를 넣어 피해자 명의 문의방 생성 | 첫 게이트: `p_seeker_id IS NOT NULL AND p_seeker_id <> uid AND NOT chat_is_employer_side(...)` → 거부 |
+| M3 | owner = 워크스페이스 owner 인 흔한 경우 수신자가 중복돼 `ON CONFLICT DO UPDATE` 가 21000 으로 **전송 자체 실패** | 수신자 배열을 `SELECT DISTINCT` 로 만든다 |
+| M4 | `chat_mark_read`·`chat_hide_conversation` 이 방 알림 전체를 읽음 처리 → 구인자 측 한 명이 읽으면 다른 사람 배지까지 꺼짐 | 두 RPC 모두 `AND recipient_id = (SELECT auth.uid())` |
+| M5 | 닉네임이 NULL 이면 "이름" 폴백으로 **문의만으로 실명 노출** | 닉네임 없으면 중립 표시("구직자" + 짧은 식별자). 구인자 측 발신자 표시도 닉네임 우선 명문화 |
+| M6 | 업로드에 한도가 없어 1GB 무료 스토리지를 24시간 안에 고갈 가능 | storage INSERT 정책을 헬퍼 `chat_media_can_write(name)` 로: 경로 형식 · 멤버 · 2세그먼트=본인 · 차단/상대 탈퇴 아님 · **내 최근 10분 업로드 < 20** |
+| M7 | 탈퇴 익명화가 `sender_id` 를 NULL 로 만든 **뒤** EF 가 돌아 파일을 못 찾고, 실패해도 재시도 없음 → 사진 영구 잔존 | 익명화 RPC 가 **먼저** `storage.objects`(bucket=`chat-media`, 2세그먼트=uid) 목록을 `chat_media_deletion_queue` 에 적재 → EF 가 성공까지 멱등 재시도. D5 와 무관하게 탈퇴자 `image_path` 는 NULL. 신고 증거 사진은 신고 처리 후 1년 보존(D12) |
+| L1 | 경로 비정규형(대문자·중괄호·3세그먼트)·경로 재사용 → purge 누락, 삭제 후에도 다른 메시지로 노출 | 정규식 `^[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}\.(jpg|png|webp)$` + foldername 길이 2 · RPC 는 `format('%s/%s/%s.<ext>', conv, uid, client_message_id)` **완전 일치**만 · `image_path` 부분 UNIQUE |
+| L2 | 실재 확인에 버킷 조건 누락 시 다른 버킷 동명 파일로 통과 | `WHERE bucket_id = 'chat-media' AND name = …` |
+| L3 | 이미지 가로·세로 무검증 | `CHECK (image_width BETWEEN 1 AND 10000 …)` |
+| L4 | `chat_is_member(conv, 임의uid)` 로 제3자 멤버십 탐문 | 두 번째 인자 ≠ `auth.uid()` 이고 service_role 이 아니면 false |
+| L5 | baseline 은 storage 정책 생성 실패(`insufficient_privilege`)를 삼킨다 — 복사하면 정책 미생성을 모른다 | 예외를 삼키지 않는다(`20260809130000:82-83` 원칙) + 가드 단언: 버킷 조건 없는 PERMISSIVE storage 정책 = 0 · chat-media 정책 2개 |
+| L6 | 정지·탈퇴유예 사용자가 채팅 가능(세션 차단 여부 미확인) | open·send 에서 `users.status = 'active'` 확인 |
+
+pgTAP 수정: "5MB 초과·svg 거부"를 SQL INSERT 로 단언하면 **항상 통과(공허)** — 용량·MIME 은 Storage API 계층에서만 적용된다 → `storage.buckets` 행(`public=false`·`file_size_limit`·`allowed_mime_types`) 정확 일치로 단언. collapse 에 **타입 격리 대조군** 추가(같은 수신자의 5분 지난 미읽음 `posting_announcement` 가 보존되는지).
+미확인: prod storage 정책의 08-09 이후 상태 · Storage API 의 `..` 정규화 · `storage.objects.owner` FK 와 탈퇴 · 정지 사용자 세션 차단.
 - 구인자 측이 **먼저** 방을 여는 대상은 **이 공고 지원자**로 한정한다(당근도 판매자가 먼저 채팅을 걸 수 없다). 구직자는 지원 없이 자유롭게 연다.
 
 - `check_user_rate_limit` 은 service_role EXECUTE 전용이라 SECDEF 안에서만 호출 가능, 호출 RPC 는 **VOLATILE 필수**(STABLE 이면 카운트가 조용히 누락 — `20260719061931:25-27`).
@@ -291,7 +325,7 @@ CREATE TABLE public.chat_blocks (
 - 읽음 표시 의미: 구직자 화면의 "읽음" = **구인자 측 누군가 읽음**(동적 멤버십의 파생 의미).
 - **오프라인 큐 없음**("큐잉은 존재하지 않는 기능" 원칙 유지): 실패 말풍선은 메모리 상태 + "재전송" 버튼, 재전송은 **같은 `client_message_id`** 로 중복 불가. 오프라인이면 입력창 비활성 + 기존 `OfflineStatusBar`.
 
-> 🧑 **결정 D7**: R1(규칙 유지) 채택 확인.
+> ✅ **결정 D7 (확정, 2026-09-25)**: R1 — "콜백은 invalidateQueries 만" 규칙 유지.
 
 ---
 
@@ -321,13 +355,15 @@ DO UPDATE SET body = EXCLUDED.body, data = EXCLUDED.data;
 - ⚠️ **pgTAP 으로 고정할 가정**: `INSERT … ON CONFLICT DO UPDATE` 에서 INSERT STATEMENT 트리거의 transition table(`new_rows`)에는 **실제 삽입된 행만** 들어간다(PG 문서상 갱신 행은 UPDATE 트리거 쪽). "UPDATE 경로 EF 호출 0회"를 `push_batching.test.sql` 형태로 단언.
 - 수신자 = §3-2 집합 − 보낸 사람 − 뮤트. 한 문장 → EF 1회(STATEMENT 트리거). 구직자가 보내면 구인자 측 전원, 구인자 측이 보내면 구직자 1명.
 - 사진 메시지 본문은 항상 **"사진을 보냈어요"**(D4 와 무관, 이미지 URL 을 푸시에 싣지 않는다).
+- 알림 `data` = `{conversationId, jobPostingId, senderId, messageId}` — `senderId` 는 탈퇴 시 상대 알림의 미리보기를 지우는 키(D4·D5).
 - 지원 전 문의는 구인자 입장에서 **새 문의**다 — 첫 메시지 알림 제목을 "새 채팅 문의"로 구분(방 개설 직후 첫 메시지).
 - **category**: enum ADD VALUE 금지(불가역). 행 category=**`application`**, `TYPE_CATEGORY_MAP` 에 `chat_message → application`(클라 SSOT + EF 사본 동시). 트레이드오프: '지원/확정' 푸시를 끈 사람은 채팅 푸시도 못 받는다(`job` 은 더 나쁨).
 - **라우팅**: `NOTIFICATION_ROUTE_MAP` 에 `chat_message → { name: 'chat', params: { conversationId } }` 추가 + **`ROUTE_MAP_PRIORITY_TYPES` 에 등록**(link 와 파라미터 수가 같으면 link 가 이긴다, `deepLinkNavigationExecutor.ts:190`). `link` 는 `/chat/{conversationId}` 로 두고 `deepLinkRouteParser` 에 `chat` 세그먼트를 추가한다(웹 URL·외부 딥링크 겸용).
 - 조용한 시간: 죽은 회로(`quiet_hours`)는 살리지 않는다. 방별 뮤트(`muted_until`)를 RPC 가 **INSERT 단계에서 거른다**(EF 무수정).
 - 보고 있는 방 억제: `resolveForegroundPresentation` 에 `activeConversationId` 입력 추가 → SUPPRESSED(`foregroundPresentationGate.ts:40-68`, 순수 함수).
 
-> 🧑 **결정 D4**: 묶음 창 5분 · 푸시 본문 = **미리보기 60자** vs **중립 문구**("새 메시지가 있어요") · category=`application`.
+> ✅ **결정 D4 (확정, 2026-09-25)**: 묶음 창 5분 · 푸시 본문 = **미리보기 60자**(사진은 "사진을 보냈어요") · category=`application`.
+> 따라서 notifications 행에 미리보기 사본이 남는다 → 탈퇴 익명화(S4)가 **상대 수신 알림의 미리보기 body 도 비운다**(`type='chat_message' AND data->>'senderId' = uid`), 보존은 기존 purge(읽은 90일/안읽은 365일)를 따른다.
 > 트레이드오프: 미리보기는 잠금화면에서 바로 내용을 볼 수 있어 조율 속도가 빠르다. 중립 문구는 notifications 에 PII 사본이 안 남고 탈퇴 후 잔존도 없다.
 
 ---
@@ -389,9 +425,9 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 | 단계 | 함수 | 정책 | 누적 |
 |---|---|---|---|
-| S1 스키마+RPC | +9: `chat_is_employer_side` · `chat_is_member` · `chat_media_can_read` · `chat_open_conversation` · `chat_send_message` · `chat_mark_read` · `chat_hide_conversation` · `chat_list_conversations` · `chat_unread_total` | +3 (conv·msg·read_states SELECT) | **235 / 105** |
-| S4 안전 | +4: `chat_set_muted` · `chat_block` · `chat_unblock` · `chat_report_message` (`permanently_delete_user`·`send_job_posting_announcement` 재정의는 0) | +1 (`chat_blocks` SELECT) | **239 / 106** |
-| S5 보존 | +1 purge | 0 | **240 / 106** |
+| S1 스키마+RPC | +11: `chat_is_employer_side` · `chat_is_member` · `chat_media_can_read` · `chat_media_can_write` · `chat_open_conversation` · `chat_send_message` · `chat_mark_read` · `chat_hide_conversation` · `chat_list_conversations` · `chat_unread_total` · `fn_job_posting_first_published`(트리거, §4-2 M1) | +3 (conv·msg·read_states SELECT) | **237 / 105** |
+| S4 안전 | +4: `chat_set_muted` · `chat_block` · `chat_unblock` · `chat_report_message` (`permanently_delete_user`·`send_job_posting_announcement` 재정의는 0) · `chat_media_deletion_queue` 는 정책 없음(deny-all) | +1 (`chat_blocks` SELECT) | **241 / 106** |
+| S5 보존 | +1 purge | 0 | **242 / 106** |
 
 - storage `chat-media` 정책(SELECT·INSERT, S4 에서 admin 신고 사진 SELECT)은 **storage 스키마라 이 카운트 밖** — 전용 pgTAP 으로 행동 관측.
 
@@ -459,12 +495,12 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 | PR | 내용 | 마이그 | 파리티 | 배포 | 플래그 | 규모 |
 |---|---|---|---|---|---|---|
-| **S1** | 스키마·헬퍼·RPC 9종·RLS·알림 collapse · **`chat-media` 버킷+storage 정책** + 클라 enum + EF 맵 | 1 | 226/102 → **235/105** | prod-migrate + EF 자동 | — | L |
+| **S1** | 스키마·헬퍼·RPC·트리거 11종·RLS·알림 collapse · **`chat-media` 버킷+storage 정책** · `first_published_at`(+백필) + 클라 enum + EF 맵 | 1 | 226/102 → **237/105** | prod-migrate + EF 자동 | — | L |
 | **S2** | 목록·방 UI(텍스트+**사진**) · 공고 상세 "채팅하기" · 진입점 · 오류 매핑 · 개인정보 경고 · `chat_open` 계측 | 1 (CHECK 17→18) | 불변 | OTA 1.0.7 + 웹 | OFF(다크 착지) | **XL** — 필요 시 S2a 텍스트 / S2b 사진으로 분할 |
 | **S3** | 푸시 라우팅 · 읽음 · 포그라운드 억제 · 배지 | 0 | 불변 | OTA + 웹 | OFF | M |
-| **S4** | 차단 · 뮤트 · 신고 스냅샷(사진 포함) · 탈퇴 익명화 + **탈퇴자 사진 삭제(EF `process-scheduled-deletions` 확장)** · 관리자 사진 삭제 · (D1-C) 공지 팬아웃 | 3 | → **239/106** | prod-migrate ×3 + EF + OTA + 웹 | OFF → **공개 ON 게이트** | L |
+| **S4** | 차단 · 뮤트 · 신고 스냅샷(사진 포함) · 탈퇴 익명화 + **탈퇴자 사진 삭제(EF `process-scheduled-deletions` 확장)** · 관리자 사진 삭제 · (D1-C) 공지 팬아웃 | 3 | → **241/106** | prod-migrate ×3 + EF + OTA + 웹 | OFF → **공개 ON 게이트** | L |
 | **S5-a** | 개인정보처리방침 개정(`src/constants/legal/`) — 채팅 **텍스트·사진** 수집 | 0 | 불변 | OTA + 웹 | ON 선행조건 | S |
-| **S5-b** | 보존 purge 크론 + **고아 사진 정리 EF**(Storage API) | 1 | → **240/106** | prod-migrate + EF | — | M |
+| **S5-b** | 보존 purge 크론 + **고아 사진 정리 EF**(Storage API) | 1 | → **242/106** | prod-migrate + EF | — | M |
 
 의존: `S1 prod → S2 → S3 → S4 prod → S5-a → 공개 ON`. 개정 1 로 기간 제한이 없어져 "대화 종료" 시점이 없으므로 **보존 기준 = 마지막 메시지 후 N일**(D5, 추천 1년 — 당근처럼 대화를 계속 볼 수 있어야 하므로 180일보다 길게). 고아 사진 정리는 ON 과 함께 필요하다(업로드 후 전송 실패 누적).
 
@@ -483,7 +519,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 | 축 | 단언 | Red-Green |
 |---|---|---|
-| 함수 권한 | 9개 각각 `has_function_privilege` anon=false · authenticated=true · service_role=true · `prosecdef` · `proconfig` 에 `pg_temp` · `provolatile`(open/send=`v`, list/unread=`s`) | anon REVOKE 한 줄 제거 → 실패 |
+| 함수 권한 | 11개 각각(트리거 함수 `fn_job_posting_first_published` 는 PUBLIC·anon·authenticated 전부 회수 — SECDEF 규칙 4) `has_function_privilege` anon=false · authenticated=true · service_role=true · `prosecdef` · `proconfig` 에 `pg_temp` · `provolatile`(open/send=`v`, list/unread=`s`) | anon REVOKE 한 줄 제거 → 실패 |
 | 테이블 GRANT | authenticated SELECT 만 · anon 없음 — **`relacl` 로 단언**(픽스처 일괄 GRANT 가 `has_table_privilege` 를 덮는 함정) | GRANT INSERT 추가 → 실패 |
 | RLS 매트릭스 | 3 테이블 × 주체(anon · 구직자(지원·비지원) · 공고 owner · ws owner · ws editor · manager · viewer · 제3자 · admin) 가시 행 수, anon 42501 | viewer 판정을 `_any` 로 → 0→1 실패 |
 | 동적 해제 | manager 협업자 행 삭제 **직후** 같은 트랜잭션에서 0행 | — |
@@ -491,7 +527,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 | 재귀 | 3 테이블 authenticated `lives_ok` SELECT, 42P17 없음 | — |
 | 방 개설 게이트 | 지원 **안 한** 사용자도 개설 성공 · 같은 쌍 2회 → 같은 id · draft/pending/rejected/**container** → `CHAT_POSTING_UNAVAILABLE` · closed/cancelled(삭제) 공고 → 성공 · 자기 공고(구인자 측) 문의 → 거부 · 구인자 측이 **비지원자**에게 개설 → 거부 / 지원자에게 → 성공 · 하루 21번째 신규 개설 → `CHAT_OPEN_LIMITED`(기존 방 재진입은 카운트 안 됨) | 지원자 검사 제거 → 비지원자 개설 성공으로 실패 |
 | 전송 게이트 | uid NULL · 비멤버 · viewer · trim 빈값 · 1001자 · client id NULL · 공고 마감/삭제 후에도 **성공** · 상대 탈퇴(seeker NULL) → `CHAT_COUNTERPART_GONE` | — |
-| 사진 | 경로 접두사가 `<방>/<나>/` 아님 → `CHAT_IMAGE_INVALID` · 객체 미실재 → 거부 · 정상 경로+실재 → 성공 · storage: 비멤버 SELECT 0행 · 멤버 SELECT 성공 · 남의 uid 경로 INSERT 42501 · 비멤버 방 경로 INSERT 42501 · 형식 틀린 1세그먼트(uuid 아님) → 예외 없이 거부 · 5MB 초과·svg 거부 | 접두사 검사 제거 → 남의 사진 사칭 성공으로 실패 |
+| 사진 | 경로 접두사가 `<방>/<나>/` 아님 → `CHAT_IMAGE_INVALID` · 객체 미실재 → 거부 · 정상 경로+실재 → 성공 · storage: 비멤버 SELECT 0행 · 멤버 SELECT 성공 · 남의 uid 경로 INSERT 42501 · 비멤버 방 경로 INSERT 42501 · 형식 틀린 1세그먼트(uuid 아님) → 예외 없이 거부 · `storage.buckets` 행 정확 일치(용량·MIME 은 Storage API 계층이라 SQL INSERT 단언은 공허) | 접두사 검사 제거 → 남의 사진 사칭 성공으로 실패 |
 | 나가기 | 숨긴 방은 목록 제외 · 상대 새 메시지 후 다시 표시 · 나간 뒤에도 방·메시지 행은 그대로 | — |
 | 멱등 | 같은 client id 2회 → 1행 · `deduped=true` · 알림 불변 · **다른 발신자**의 같은 client id → 거부 | sender 확인 제거 → 실패 |
 | 시간 순서 | 한 트랜잭션 연속 2회 `created_at` 엄격 증가 · `prosrc` 에서 advisory lock 이 `clock_timestamp` 앞 | `now()` 로 바꾸면 동일값 → 실패 |
@@ -501,7 +537,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 | **transition table 가정** | 테스트 안에 **스파이 STATEMENT 트리거**(`REFERENCING NEW TABLE`, 행 수 기록): 첫 전송=수신자 수(대조군) · collapse 전송=**0행** | 대조군 0이면 테스트 무효. ⚠️ 로컬엔 vault 시크릿이 없어 `trigger_send_push_notification` 이 `net.http_post` **전에 반환**(`baseline:9504`) → `net` 큐로 세면 **항상 0 = 공허한 검증** |
 | 읽음 | 비멤버 거부 · 과거 id 로 커서 역행 없음 · 방 알림 `is_read=true` · 카운터 감소 · 99 캡 | — |
 | 탈퇴 FK | 채팅 이력 구직자·구인자 `DELETE FROM users` 성공 · `sender_id`/`seeker_id` NULL · read_states CASCADE | FK 하나 NO ACTION → 23503 실패 |
-| 기타 | XSS 트리거 `<script>` 거부 · publication 18 · 파리티 235/105 | — |
+| 기타 | XSS 트리거 `<script>` 거부 · publication 18 · 파리티 237/105 · §4-2 H1~L6 단언 전부 | — |
 
 ⚠️ `jpc_test_set_user` 뒤 role=authenticated — `notifications` 를 세기 전 **`RESET ROLE`**(안 하면 RLS 로 항상 0 = 거짓 실패).
 
@@ -509,7 +545,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 **prod 배포**
 1. 머지 후 사람 실행: `gh workflow run prod-migrate.yml --ref master -f migration=<파일> -f confirm=<파일> -f verify_function=chat_send_message` (신규 함수라 md5 `(none)`→해시로 통과).
-2. 실측(관측 시각 기록): `list_migrations` · `pg_proc` chat_ 9개 · 파리티 **235/105** · 인덱스·publication · `storage.buckets` 에 `chat-media` · `pg_policies`(schemaname=storage) 에 chat-media 정책 2개.
+2. 실측(관측 시각 기록): `list_migrations` · `pg_proc` 신규 11개 · 파리티 **237/105** · 인덱스·publication · `storage.buckets` 에 `chat-media` · `pg_policies`(schemaname=storage) 에 chat-media 정책 2개.
 3. EF 자동배포(순서 어긋나도 미매핑=허용). OTA 불필요(UI 없음).
 
 **롤백**: prod-migrate 는 재적용 거부 → **정방향 마이그**. 긴급: ① `REVOKE EXECUTE ON chat_send_message FROM authenticated`(`verify_function` 비움) ② 데이터 0건 시점이면 DROP 마이그. 롤백 SQL 초안을 PR 본문에 첨부.
@@ -549,7 +585,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 | `<ts2>_chat_permanently_delete_user_anonymize.sql` | CREATE OR REPLACE 로 [5] 에 익명화(D5). **DROP+CREATE 금지** | `permanently_delete_user` |
 | `<ts3>_chat_announcement_fanout.sql` (D1-C 시) | `send_job_posting_announcement` 재정의 · 확정자 방마다 한 문장 INSERT…SELECT | `send_job_posting_announcement` |
 
-**선행**: D5 확정 · 착수 시 `permanently_delete_user` 최신 정의가 여전히 `20260807150000` 인지 재확인(`20260915133500` GRANT 복구가 본문을 건드렸는지 미확인). 파리티 239/106. 탈퇴자 사진은 SQL 이 아니라 **EF `process-scheduled-deletions` 가 Storage API 로** `chat-media/*/<uid>/` 를 지운다(RPC 성공 후 단계, 실패해도 탈퇴는 진행하고 로그).
+**선행**: D5 확정 · 착수 시 `permanently_delete_user` 최신 정의가 여전히 `20260807150000` 인지 재확인(`20260915133500` GRANT 복구가 본문을 건드렸는지 미확인). 파리티 241/106. 탈퇴자 사진: 익명화 RPC 가 **먼저** 대상 객체 목록을 `chat_media_deletion_queue` 에 적재 → EF `process-scheduled-deletions` 가 Storage API 로 **성공할 때까지 멱등 재시도**(§4-2 M7). 상대 수신 알림의 미리보기 body 도 비운다(D4).
 **pgTAP**: 차단 양방향 읽기 전용 + 지원·근무 무영향 · 해제 · 뮤트 수신자 알림 0 · 신고 스냅샷은 **RPC 가 채움**(클라 본문 무시) · admin 은 스냅샷만, `chat_messages` 0행 · 익명화(`'[탈퇴한 사용자]'`·`body=''`·`deleted_at`, CHECK 통과) · `anon_rpc_security_hardening.test.sql` 가드 문구 정확 비교 유지 · anon EXECUTE 비부활 · 팬아웃: 확정자 수만큼 `kind='announcement'`, `chat_message` 알림 **0건**(`posting_announcement` 1건만) · 60초 연타 방어·manager 포함 유지.
 **Red-Green**: 익명화 UPDATE 제거 → 실패 · 팬아웃에 알림 INSERT 섞기 → 0건 단언 실패.
 **클라**: 차단·신고·뮤트 UI, 관리자 신고 상세 스냅샷. e2e `admin-report-resolution.spec.ts` 확장(로컬 겨냥 규칙 동일). **게이트**: D5 · security-reviewer · `/guard`.
@@ -557,7 +593,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 ### 14-6. S5 — 방침 · 보존
 
 - **S5-a (ON 선행)**: 처리방침에 채팅 수집 항목(**텍스트·사진**)·보존 기간·탈퇴 처리 추가 — `src/constants/legal/` 만 수정. 문구 사용자 승인. 개정 고지 기간 법적 요건 **미확인 → 법무 확인**.
-- **S5-b**: purge 함수 +1(240/106) + pg_cron 등록(마지막 메시지 후 N일 지난 방) · 사진 파일은 purge 가 표시한 경로를 **EF 가 Storage API 로 삭제** · 고아 사진(메시지 미참조 24시간 경과) 정리. 경계 테스트는 `clock_timestamp()` 기준, Red-Green 경계 하루 이동. `cron.job` 실측.
+- **S5-b**: purge 함수 +1(242/106) + pg_cron 등록(마지막 메시지 후 N일 지난 방) · 사진 파일은 purge 가 표시한 경로를 **EF 가 Storage API 로 삭제** · 고아 사진(메시지 미참조 24시간 경과) 정리. 경계 테스트는 `clock_timestamp()` 기준, Red-Green 경계 하루 이동. `cron.job` 실측.
 
 ### 14-7. 공개 ON 절차 (사람 실행)
 
@@ -596,7 +632,7 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 ### 14-10. Exit criteria — "채팅 출시 완료"
 
-- [ ] 마이그 7건 prod 기록 · `pg_proc`/정책 **240/106** · `chat-media` 버킷·storage 정책 실재 · parity-smoke green(관측 시각)
+- [ ] 마이그 7건 prod 기록 · `pg_proc`/정책 **242/106** · `chat-media` 버킷·storage 정책 실재 · parity-smoke green(관측 시각)
 - [ ] master DB Tests·E2E Gate·CI green · 채팅 pgTAP 전부 Red-Green 기록이 PR 본문에
 - [ ] OTA(1.0.7)·웹 배포 ID 기록 + 번들 grep 확인
 - [ ] 실기기 QA(iOS·Android) 전 항목 통과 — 한글/이모지 계정, 기기 2대
@@ -609,18 +645,21 @@ S2 착수 전 `/emil-design-eng`·`lazyweb` 레퍼런스(1건씩 — rate limit)
 
 ---
 
-## 15. 사람이 결정할 것 (모음)
+## 15. 결정 기록
 
-| # | 결정 | 추천 |
+> 2026-09-25 사용자 확정: "푸시 알림에 미리보기, 나머지는 추천대로". **남은 사람 게이트는 D9(법무)뿐** — S1 착수 조건(D1·D2·D3·D4·D7) 전부 충족.
+
+| # | 결정 | 확정 내용 |
 |---|---|---|
-| D1 | 단체방 영구 비채택 · 공지 팬아웃(C) MVP 포함 여부 | 비채택 · C 는 S4 |
-| D2 ✅ | 개설·발신·기간 규칙 | **확정(개정 1): 당근식** — 누구나 문의 · 양쪽 자유 발신 · 기간 무제한 · 마감/삭제 후에도 대화. 남은 값: 새 방 하루 20개 · 구인자 선제 개설은 지원자 한정 |
-| D3 | viewer 제외 · admin 원문 열람 불가 · 발신자 표시 | 제외 · 불가(신고 스냅샷만) · 업장명+보낸 사람 |
-| D4 | 푸시 묶음 창 · 본문 미리보기 vs 중립 문구 · category | 5분 · (사용자 판단) · `application` |
-| D5 | 탈퇴자 메시지·사진 삭제 vs 보존 · 보존 기간 · 방침 개정 | 삭제 · **마지막 메시지 후 1년** · 개정 |
-| D6 ✅ | 1.0.6 고려 여부 · 서버 킬스위치 | **확정: 1.0.6 은 고려하지 않음**(09-24) · EXECUTE 회수 마이그 방식(§14-0 A4) |
-| D8 | 공개 ON 시점 = S4·S5-a prod 반영 후 (§14-0 A2) | 채택 |
-| D9 | 처리방침 개정 문구·고지 기간 | 법무 확인 |
-| D10 | 차단 범위: 방 단위 vs 업장 단위(같은 업장 다른 공고로 우회 차단) | 방 단위로 시작, 우회 신고가 생기면 확장 |
-| D11 ✅ | 사진 전송 MVP 포함 | **확정(개정 1)** — 1장씩 · 5MB · jpeg/png/webp · EXIF 제거 |
-| D7 | realtime 규칙 R1 유지 | R1 |
+| D1 ✅ | 단체방 | 신규 단체 채팅방 없음 — 기존 게시판 "일정 소통" + 확정자 일괄 공지가 담당(§1). 공지를 1:1 방에 팬아웃(C)은 S4 |
+| D2 ✅ | 개설·발신·기간 | 당근식 — 누구나 문의 · 양쪽 자유 발신 · 기간 무제한 · 마감/삭제 후에도 대화 · 새 방 하루 20개 · 구인자 선제 개설은 지원자 한정 |
+| D3 ✅ | 권한·표시 | viewer 제외 · admin 원문 열람 불가(신고 스냅샷만) · 업장명+보낸 사람(닉네임 우선) |
+| D4 ✅ | 푸시 | 5분 묶음 · **미리보기 60자** · 사진은 "사진을 보냈어요" · category `application` |
+| D5 ✅ | 탈퇴·보존 | 탈퇴자 메시지·사진·알림 미리보기 삭제 · 마지막 메시지 후 1년 purge · 처리방침 개정 |
+| D6 ✅ | 1.0.6 · 킬스위치 | 1.0.6 고려 안 함 · EXECUTE 회수 마이그 |
+| D7 ✅ | realtime 규칙 | R1 — 콜백은 invalidateQueries 만 |
+| D8 ✅ | 공개 ON 시점 | S4·S5-a prod 반영 후 |
+| D9 🧑 | 처리방침 문구·고지 기간 | **법무 확인 필요**(S5-a 전까지) |
+| D10 ✅ | 차단 범위 | 방 단위로 시작, 우회 신고가 생기면 업장 단위 확장 |
+| D11 ✅ | 사진 | MVP 포함 — 1장씩 · 5MB · jpeg/png/webp · EXIF 제거 |
+| D12 ✅ | 신고 증거(사진 포함) 보존 | 신고 처리 완료 후 1년(탈퇴와 무관하게 분쟁 대응용) — 처리방침에 명시 |
