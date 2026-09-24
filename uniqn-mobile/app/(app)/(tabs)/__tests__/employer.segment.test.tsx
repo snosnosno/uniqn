@@ -61,12 +61,37 @@ jest.mock('@/features/employer/tab/EmployerMoreMenu', () => ({ EmployerMoreMenu:
 jest.mock('@/components', () => {
   const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
   return {
-    Button: ({ children, onPress }: { children: React.ReactNode; onPress: () => void }) => (
-      <ReactNative.Pressable onPress={onPress}>{children}</ReactNative.Pressable>
+    Button: ({
+      children,
+      onPress,
+      accessibilityLabel,
+    }: {
+      children: React.ReactNode;
+      onPress: () => void;
+      accessibilityLabel?: string;
+    }) => (
+      <ReactNative.Pressable onPress={onPress} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </ReactNative.Pressable>
     ),
     ConfirmModal: () => null,
-    PostingSurfaceState: ({ mode }: { mode: string }) => (
-      <ReactNative.Text>{`공고 상태:${mode}`}</ReactNative.Text>
+    PostingSurfaceState: ({
+      mode,
+      actionLabel,
+      onAction,
+    }: {
+      mode: string;
+      actionLabel?: string;
+      onAction?: () => void;
+    }) => (
+      <ReactNative.View>
+        <ReactNative.Text>{`공고 상태:${mode}`}</ReactNative.Text>
+        {actionLabel && onAction ? (
+          <ReactNative.Pressable onPress={onAction}>
+            <ReactNative.Text>{actionLabel}</ReactNative.Text>
+          </ReactNative.Pressable>
+        ) : null}
+      </ReactNative.View>
     ),
   };
 });
@@ -156,33 +181,56 @@ describe('내 공고 탭 — 세그먼트', () => {
   beforeEach(resetMocks);
 
   it('기본값은 [공고] — 공고 본문이 보이고 근무표 본문은 없다', () => {
-    const { getByText, queryByText, getByTestId } = render(<EmployerTabScreen />);
+    const { queryByText, getByTestId, getByLabelText } = render(<EmployerTabScreen />);
 
     expect(getByTestId('employer-segment-postings')).toBeTruthy();
     expect(getByTestId('employer-segment-schedule')).toBeTruthy();
-    expect(getByText('새 공고 작성')).toBeTruthy();
+    expect(getByLabelText('새 공고 작성')).toBeTruthy();
     expect(queryByText('근무표 본문')).toBeNull();
   });
 
   it('[근무표] 를 누르면 근무표 본문으로 바뀌고, [공고] 로 돌아올 수 있다', () => {
-    const { getByText, queryByText, getByTestId } = render(<EmployerTabScreen />);
+    const { getByText, queryByText, getByTestId, getByLabelText, queryByLabelText } = render(
+      <EmployerTabScreen />
+    );
 
     fireEvent.press(getByTestId('employer-segment-schedule'));
     expect(getByText('근무표 본문')).toBeTruthy();
-    expect(queryByText('새 공고 작성')).toBeNull();
+    expect(queryByLabelText('새 공고 작성')).toBeNull();
 
     fireEvent.press(getByTestId('employer-segment-postings'));
-    expect(getByText('새 공고 작성')).toBeTruthy();
+    expect(getByLabelText('새 공고 작성')).toBeTruthy();
     expect(queryByText('근무표 본문')).toBeNull();
   });
 
   it('근무표 플래그가 꺼져 있으면 세그먼트가 없다', () => {
     mockWorkScheduleEnabled = false;
-    const { getByText, queryByTestId } = render(<EmployerTabScreen />);
+    const { queryByTestId, getByLabelText } = render(<EmployerTabScreen />);
 
-    expect(getByText('새 공고 작성')).toBeTruthy();
+    expect(getByLabelText('새 공고 작성')).toBeTruthy();
     expect(queryByTestId('employer-segment-schedule')).toBeNull();
     expect(queryByTestId('employer-segment-postings')).toBeNull();
+  });
+
+  it('새 공고 작성은 필터 행의 라벨 버튼으로 남고, 빈 화면에는 첫 공고 행동이 있다', () => {
+    const { getByLabelText, getByText } = render(<EmployerTabScreen />);
+
+    // 아이콘만 남으면 #490 근무표처럼 기능이 발견되지 않는다 — 보이는 글자를 단언한다.
+    expect(getByText('새 공고')).toBeTruthy();
+    fireEvent.press(getByLabelText('새 공고 작성'));
+    expect(router.push).toHaveBeenLastCalledWith('/(employer)/my-postings/create');
+
+    fireEvent.press(getByText('첫 공고 올리기'));
+    expect(router.push).toHaveBeenCalledTimes(2);
+    expect(router.push).toHaveBeenLastCalledWith('/(employer)/my-postings/create');
+  });
+
+  it('전체가 아닌 필터의 빈 화면에는 첫 공고 행동이 없다', () => {
+    const { getByLabelText, getByText, queryByText } = render(<EmployerTabScreen />);
+
+    expect(getByText('첫 공고 올리기')).toBeTruthy();
+    fireEvent.press(getByLabelText('마감 공고 0건'));
+    expect(queryByText('첫 공고 올리기')).toBeNull();
   });
 
   it('근무표 본문 버튼(구 진입점)은 세그먼트로 대체되어 없다', () => {
@@ -221,9 +269,9 @@ describe('내 공고 탭 — 오늘 한 줄', () => {
   beforeEach(resetMocks);
 
   it('0건이면 렌더하지 않는다', () => {
-    const { queryByTestId, getByText } = render(<EmployerTabScreen />);
+    const { queryByTestId, getByLabelText } = render(<EmployerTabScreen />);
 
-    expect(getByText('새 공고 작성')).toBeTruthy();
+    expect(getByLabelText('새 공고 작성')).toBeTruthy();
     expect(queryByTestId('today-attention-line')).toBeNull();
   });
 
@@ -275,7 +323,7 @@ describe('내 공고 탭 — 오늘 한 줄', () => {
       missingCheckoutCount: 0,
       target: { kind: 'schedule', date: '2026-07-31' },
     };
-    const { getByTestId, queryByText, getByText } = render(<EmployerTabScreen />);
+    const { getByTestId, queryByText, getByLabelText } = render(<EmployerTabScreen />);
 
     const line = getByTestId('today-attention-line');
     // 갈 곳(근무표 세그먼트)이 없으므로 버튼이 아니라 요약이다.
@@ -286,7 +334,7 @@ describe('내 공고 탭 — 오늘 한 줄', () => {
 
     expect(router.push).not.toHaveBeenCalled();
     expect(queryByText('근무표 본문')).toBeNull();
-    expect(getByText('새 공고 작성')).toBeTruthy();
+    expect(getByLabelText('새 공고 작성')).toBeTruthy();
   });
 
   it('근무표가 꺼져 있어도 신호가 공고 하나면 그 [근무] 로는 갈 수 있다', () => {
