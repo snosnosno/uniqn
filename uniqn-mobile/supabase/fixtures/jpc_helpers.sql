@@ -527,3 +527,126 @@ AS $$
      AND type = p_type
      AND data->>'jobPostingId' = p_jp_id::text;
 $$;
+
+-- ============================================================================
+-- 앱 내 채팅(S1) 페르소나 시드 — 2026-09-25 (마이그 20260925100000)
+-- ============================================================================
+-- jpc_test_seed() 위에 채팅 권한 매트릭스가 필요로 하는 페르소나를 더한다.
+--   owner    = 공고 owner 이자 워크스페이스 owner (흔한 경우 — 알림 수신자 중복 M3 재현용)
+--   editor   = 워크스페이스 editor
+--   manager  = 공고 협업자 manager (jpc_test_seed 의 collaborator, 기본 role)
+--   viewer   = 공고 협업자 viewer (채팅 읽기·쓰기 모두 불가 — 설계 D3)
+--   applicant= 이 공고 지원자(staff, 닉네임 있음)
+--   seeker   = 지원 안 한 구직자(staff, 닉네임 NULL — 표시 이름 중립 폴백 M5 재현용)
+--   third    = 제3자 staff · admin = 앱 관리자(원문 열람 불가)
+-- 트랜잭션 안에서만 호출(ROLLBACK 로 정리).
+CREATE OR REPLACE FUNCTION jpc_chat_seed()
+RETURNS TABLE (
+  owner_id uuid, editor_id uuid, manager_id uuid, viewer_id uuid,
+  applicant_id uuid, seeker_id uuid, third_id uuid, admin_id uuid,
+  workspace_id uuid, job_posting_id uuid
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+  s record;
+  v_viewer uuid;
+  v_seeker uuid;
+  v_third  uuid;
+  v_admin  uuid;
+BEGIN
+  SELECT * INTO s FROM jpc_test_seed();
+  v_viewer := jpc_test_create_user('employer');
+  v_seeker := jpc_test_create_user('staff');
+  v_third  := jpc_test_create_user('staff');
+  v_admin  := jpc_test_create_user('admin');
+
+  INSERT INTO public.job_posting_collaborators (job_posting_id, user_id, added_by, role)
+  VALUES (s.job_posting_id, v_viewer, s.owner_id, 'viewer');
+
+  UPDATE public.users SET nickname = '지원자닉' WHERE id = s.outsider_id;
+  UPDATE public.users SET nickname = '사장닉'   WHERE id = s.owner_id;
+  UPDATE public.users SET nickname = NULL, name = '실명노출금지' WHERE id = v_seeker;
+
+  RETURN QUERY SELECT s.owner_id, s.ws_editor_id, s.collaborator_id, v_viewer,
+                      s.outsider_id, v_seeker, v_third, v_admin,
+                      s.workspace_id, s.job_posting_id;
+END;
+$$;
+
+-- 지정 status 의 공고를 하나 더 만든다(status 는 INSERT 시점 값 — 전이 트리거는 UPDATE 전용).
+CREATE OR REPLACE FUNCTION jpc_chat_posting(p_ws_id uuid, p_owner_id uuid, p_status text)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_jp uuid := gen_random_uuid();
+  v_work_date date := current_date + 20;
+BEGIN
+  INSERT INTO public.job_postings (
+    id, owner_id, owner_name, workspace_id, title, status, posting_type,
+    work_date, work_dates, total_positions, filled_positions, view_count,
+    schema_version, contact_phone, created_at, updated_at
+  )
+  VALUES (
+    v_jp, p_owner_id, 'jpc owner', p_ws_id, 'jpc chat posting ' || p_status,
+    p_status::posting_status, 'regular',
+    v_work_date::text, ARRAY[v_work_date::text], 2, 0, 0, 3, '+82103333333', now(), now()
+  );
+  RETURN v_jp;
+END;
+$$;
+
+-- 채팅 테스트용 id 보관함 — `$$ … $$` 안에서는 psql 변수가 보간되지 않으므로 GUC 로 넘긴다.
+-- jpc_chat_id('conv') = current_setting('chat.conv')::uuid (없으면 NULL)
+CREATE OR REPLACE FUNCTION jpc_chat_id(p_key text)
+RETURNS uuid
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT nullif(current_setting('chat.' || p_key, true), '')::uuid;
+$$;
+
+CREATE OR REPLACE FUNCTION jpc_chat_put(p_key text, p_val uuid)
+RETURNS uuid
+LANGUAGE sql
+AS $$
+  SELECT set_config('chat.' || p_key, p_val::text, true)::uuid;
+$$;
+
+-- 서버 다크 착지(마이그 20260925100000 — open·send 의 authenticated EXECUTE 미부여)를
+-- **이 트랜잭션 안에서만** 공개 ON 상태로 바꾼다. 공개 ON 마이그가 할 GRANT 와 같은 문장이다.
+-- 다크 상태 자체는 chat_security_grants A4b 가 이 함수를 부르기 전에 고정한다.
+CREATE OR REPLACE FUNCTION jpc_chat_simulate_on()
+RETURNS void
+LANGUAGE sql
+AS $$
+  GRANT EXECUTE ON FUNCTION public.chat_open_conversation(uuid, uuid),
+    public.chat_send_message(uuid, text, text, text, int, int, uuid) TO authenticated;
+$$;
+
+-- jpc_chat_seed() 결과를 chat.<키> GUC 로 심는다: owner·editor·manager·viewer·applicant·
+-- seeker·third·admin·ws·jp
+CREATE OR REPLACE FUNCTION jpc_chat_seed_guc()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE s record;
+BEGIN
+  SELECT * INTO s FROM jpc_chat_seed();
+  PERFORM jpc_chat_put('owner', s.owner_id);
+  PERFORM jpc_chat_put('editor', s.editor_id);
+  PERFORM jpc_chat_put('manager', s.manager_id);
+  PERFORM jpc_chat_put('viewer', s.viewer_id);
+  PERFORM jpc_chat_put('applicant', s.applicant_id);
+  PERFORM jpc_chat_put('seeker', s.seeker_id);
+  PERFORM jpc_chat_put('third', s.third_id);
+  PERFORM jpc_chat_put('admin', s.admin_id);
+  PERFORM jpc_chat_put('ws', s.workspace_id);
+  PERFORM jpc_chat_put('jp', s.job_posting_id);
+END;
+$$;

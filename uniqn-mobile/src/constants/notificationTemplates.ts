@@ -95,6 +95,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
 
   // =========================================================================
+  // 채팅
+  // =========================================================================
+
+  // ⚠️ 서버 RPC chat_send_message 가 직접 INSERT 한다(클라 발신 경로 없음). 실제 제목은
+  //    "새 채팅 문의"·업장명·구직자 표시 이름, 본문은 미리보기 60자 — 정본은 마이그다.
+  //    여기는 exhaustive Record 를 만족시키는 폴백이다. link 는 RPC 와 같은 /chat/{id}.
+  [NotificationType.CHAT_MESSAGE]: {
+    title: '새 메시지',
+    body: '새 채팅 메시지가 도착했습니다.',
+    link: (d) => (d.conversationId ? `/chat/${d.conversationId}` : '/notifications'),
+    icon: '💬',
+  },
+
+  // =========================================================================
   // 출퇴근 관련
   // =========================================================================
 

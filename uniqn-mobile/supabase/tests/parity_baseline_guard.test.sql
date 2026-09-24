@@ -240,6 +240,16 @@
 --     함수 226 = 225 + get_admin_daily_active_users 1(SECDEF admin 게이트, anon REVOKE).
 --     정책 102 불변(event CHECK 교체·인덱스 추가만, RLS 미변경).
 --
+--   2026-09-25 앱 내 채팅 S1(마이그 20260925100000, 기준 커밋 936620d3e):
+--     함수 238 = 226 + 12 — chat_is_employer_side · chat_is_member · chat_my_conversation_ids ·
+--       chat_media_can_read ·
+--       chat_media_can_write · chat_open_conversation · chat_send_message · chat_mark_read ·
+--       chat_hide_conversation · chat_list_conversations · chat_unread_total ·
+--       fn_job_posting_first_published(트리거).
+--     정책 105 = 102 + 3 — chat_conversations/chat_messages/chat_read_states SELECT.
+--     storage.objects 의 chat-media 정책 2개는 public 밖이라 이 카운트에 없다
+--       (storage_chat_media_scope.test.sql 이 행동으로 감시).
+--
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
 --   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
 --   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
@@ -260,8 +270,8 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=226
--- PARITY_EXPECT_POLICIES=102
+-- PARITY_EXPECT_FUNCS=238
+-- PARITY_EXPECT_POLICIES=105
 -- ============================================================
 BEGIN;
 SELECT plan(7);
@@ -280,14 +290,14 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  226,
-  'public function count (226 = 225 + get_admin_daily_active_users 1, 2026-09-23 — 출처는 상단 장부 참조)');
+  238,
+  'public function count (238 = 226 + 채팅 S1 12, 2026-09-25 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
   (SELECT count(*)::int FROM pg_policies WHERE schemaname = 'public'),
-  102,
-  'public RLS policy count (102 = 113 − 게시판 폐지 정책 순감 7 − board_votes 테이블 폐기 4, 2026-09-18)');
+  105,
+  'public RLS policy count (105 = 102 + 채팅 S1 SELECT 3, 2026-09-25 — 출처는 상단 장부 참조)');
 
 -- 4~6. gen-1 재빌드 보안퇴행 3종 부재 (prod=deny, 레포 전용 부활 금지)
 SELECT is(
