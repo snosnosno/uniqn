@@ -40,6 +40,8 @@ const REPLY = `네 반갑습니다 ${JOB_ID.slice(0, 4)}`;
 let admin: NonNullable<ReturnType<typeof getAdminClient>>;
 let employerPage: Page;
 let conversationId = '';
+/** 8) 에서 올린 사진 — afterAll 에서 지운다(로컬 사진 한도 하루 60장이 반복 실행으로 차지 않게) */
+let uploadedImagePath = '';
 
 function fail(message: string): never {
   throw new Error(`[chat-basic] ${message}`);
@@ -143,6 +145,8 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  if (admin && uploadedImagePath)
+    await admin.storage.from('chat-media').remove([uploadedImagePath]);
   if (admin) await admin.from('job_postings').delete().eq('id', JOB_ID); // 방·메시지 CASCADE
   await employerPage?.context().close();
 });
@@ -348,6 +352,7 @@ test('8) 사진: 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음
   });
   expect(imagePath).toMatch(new RegExp(`^${conversationId}/${SUPABASE_QA_ACCOUNTS.staff.id}/`));
 
+  uploadedImagePath = imagePath;
   const { data: blob, error } = await admin.storage.from('chat-media').download(imagePath);
   if (error || !blob) fail(`업로드 객체 다운로드 실패: ${error?.message ?? 'empty'}`);
   const uploaded = Buffer.from(await blob.arrayBuffer());

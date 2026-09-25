@@ -12,6 +12,7 @@ import { useCallback, useReducer, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import {
+  buildChatImagePath,
   chatService,
   prepareChatImage,
   uploadChatImage,
@@ -20,7 +21,8 @@ import {
 } from '@/services/chat';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { chatOutboxReducer } from '@/domains/chat';
-import { extractUserMessage } from '@/errors';
+import { extractUserMessage, isAppError } from '@/errors';
+import { CHAT_ERROR_CODES } from '@/errors/chat';
 import { useAuthStore } from '@/stores/authStore';
 import { generateUUID } from '@/utils/generateId';
 import { logger } from '@/utils/logger';
@@ -51,6 +53,25 @@ type ImagePending = {
   uploadedPath?: string;
 };
 type Pending = { kind: 'text'; body: string } | ImagePending;
+
+/**
+ * 업로드. 한도(storage 정책 거부 E6157)에 막히면 **이미 올라간 객체일 수 있다** — 업로드는 됐는데
+ * 응답만 잃은 재전송이 한도 경계에 걸리면, RLS WITH CHECK 가 unique 검사보다 먼저라 409 가 아니라
+ * 403 이 온다. 그때는 경로와 한도 에러를 함께 돌려주고, 보내기 RPC 의 storage 실재 검증이 판정한다.
+ */
+async function uploadOrAssumeExisting(
+  input: Parameters<typeof uploadChatImage>[0]
+): Promise<{ path: string; limitError: unknown }> {
+  try {
+    return { path: await uploadChatImage(input), limitError: null };
+  } catch (error) {
+    if (!isAppError(error) || error.code !== CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT) throw error;
+    return {
+      path: buildChatImagePath(input.conversationId, input.uid, input.clientMessageId),
+      limitError: error,
+    };
+  }
+}
 
 export function useSendChatMessage(params: UseSendChatMessageParams): UseSendChatMessageReturn {
   const { jobPostingId, seekerId, onSent } = params;
@@ -112,26 +133,34 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
       }
 
       const conversationId = await ensureConversation();
-      if (!current.uploadedPath) {
+      let imagePath = current.uploadedPath;
+      let limitError: unknown = null;
+      if (!imagePath) {
         dispatch({ type: 'setStage', clientMessageId, stage: 'uploading' });
-        const uploadedPath = await uploadChatImage({
+        const uploaded = await uploadOrAssumeExisting({
           conversationId,
           uid,
           clientMessageId,
           image: prepared,
         });
-        current = { ...current, uploadedPath };
-        remember(current);
+        imagePath = uploaded.path;
+        limitError = uploaded.limitError;
+        if (!limitError) remember({ ...current, uploadedPath: imagePath });
       }
 
       dispatch({ type: 'setStage', clientMessageId, stage: 'sending' });
-      await chatService.sendImage({
-        conversationId,
-        clientMessageId,
-        imagePath: current.uploadedPath ?? '',
-        width: prepared.width,
-        height: prepared.height,
-      });
+      try {
+        await chatService.sendImage({
+          conversationId,
+          clientMessageId,
+          imagePath,
+          width: prepared.width,
+          height: prepared.height,
+        });
+      } catch (error) {
+        // 한도에 막힌 뒤의 시도였다면 사용자에게는 원래 원인(한도)을 보여 준다
+        throw limitError ?? error;
+      }
       return conversationId;
     },
     [uid, ensureConversation]

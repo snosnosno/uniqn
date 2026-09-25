@@ -7,6 +7,8 @@
 import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BusinessError } from '@/errors/AppError';
+import { CHAT_ERROR_CODES } from '@/errors/chat';
 import { useSendChatMessage } from '../useSendChatMessage';
 
 jest.mock('@tanstack/react-query', () => jest.requireActual('@tanstack/react-query'));
@@ -23,6 +25,7 @@ jest.mock('@/services/chat', () => ({
     sendImage: (...a: unknown[]) => mockSendImage(...a),
   },
   prepareChatImage: (...a: unknown[]) => mockPrepare(...a),
+  buildChatImagePath: (c: string, u: string, m: string) => `${c}/${u}/${m}.jpg`.toLowerCase(),
   uploadChatImage: (...a: unknown[]) => mockUpload(...a),
 }));
 
@@ -191,5 +194,46 @@ describe('useSendChatMessage — 사진', () => {
     expect(result.current.outbox[0]?.status).toBe('failed');
     expect(mockUpload).not.toHaveBeenCalled();
     expect(mockSendImage).not.toHaveBeenCalled();
+  });
+
+  it('업로드가 한도(E6157)로 막혀도 이미 올라간 객체일 수 있으니 보내기를 한 번 시도한다', async () => {
+    // 첫 시도: 업로드는 됐는데 응답 유실 → 재전송 시 정책(10분 20장) 경계에서 403
+    const limit = new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, {
+      userMessage: '지금은 사진을 더 보낼 수 없어요.',
+      isRetryable: true,
+    });
+    mockUpload.mockRejectedValueOnce(limit);
+    const { result } = renderRoom();
+
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+
+    const id = (mockSendImage.mock.calls[0]?.[0] as { clientMessageId: string }).clientMessageId;
+    expect(mockSendImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imagePath: `${CONV}/a3bb189e-8bf9-3888-9912-ace4e6543002/${id}.jpg`,
+      })
+    );
+    expect(result.current.outbox[0]?.status).toBe('sent');
+  });
+
+  it('한도에 막히고 보내기도 실패하면(객체 없음) 원래 한도 문구로 실패한다', async () => {
+    const limit = new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, {
+      userMessage: '지금은 사진을 더 보낼 수 없어요.',
+      isRetryable: true,
+    });
+    mockUpload.mockRejectedValueOnce(limit);
+    mockSendImage.mockRejectedValueOnce(new Error('CHAT_IMAGE_INVALID'));
+    const { result } = renderRoom();
+
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+
+    expect(result.current.outbox[0]).toMatchObject({
+      status: 'failed',
+      errorMessage: '지금은 사진을 더 보낼 수 없어요.',
+    });
   });
 });
