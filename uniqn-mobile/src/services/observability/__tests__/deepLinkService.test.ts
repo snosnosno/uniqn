@@ -619,6 +619,56 @@ describe('deepLinkService', () => {
       jest.useRealTimers();
     });
 
+    describe('web initial URL (page load)', () => {
+      const originalLocation = (globalThis as { location?: unknown }).location;
+      const setLocation = (pathname: string, search = '') => {
+        Object.defineProperty(globalThis, 'location', {
+          value: { pathname, search },
+          configurable: true,
+          writable: true,
+        });
+      };
+
+      afterEach(() => {
+        Object.defineProperty(globalThis, 'location', {
+          value: originalLocation,
+          configurable: true,
+          writable: true,
+        });
+        jest.useRealTimers();
+      });
+
+      it('does not re-push the initial URL once the user has navigated away (bounce bug)', async () => {
+        jest.useFakeTimers();
+        Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
+        const onDeepLink = jest.fn();
+        mockGetInitialURL.mockResolvedValue('https://uniqn.app/board/schedule');
+        setLocation('/board/schedule');
+
+        deepLinkService.setupDeepLinkListener(onDeepLink);
+        await Promise.resolve();
+        // 런타임 청크·인증 초기화 대기 동안 사용자가 알림 화면으로 이동했다
+        setLocation('/notifications');
+        jest.advanceTimersByTime(5_000);
+
+        expect(onDeepLink).not.toHaveBeenCalled();
+      });
+
+      it('still dispatches when the user is on the initial URL (legacy alias remap is kept)', async () => {
+        jest.useFakeTimers();
+        Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
+        const onDeepLink = jest.fn();
+        mockGetInitialURL.mockResolvedValue('https://uniqn.app/my-applications?tab=1');
+        setLocation('/my-applications', '?tab=1');
+
+        deepLinkService.setupDeepLinkListener(onDeepLink);
+        await Promise.resolve();
+        jest.advanceTimersByTime(5_000);
+
+        expect(onDeepLink).toHaveBeenCalledWith('https://uniqn.app/my-applications?tab=1');
+      });
+    });
+
     it('cancels pending initial URL navigation when the listener is cleaned up', async () => {
       jest.useFakeTimers();
       const remove = jest.fn();
