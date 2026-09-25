@@ -81,7 +81,7 @@ RLS/권한/위험 변경 전→`/guard` 먼저
 
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**
-- **모델 3계층 라우팅**: 읽기·탐색=haiku/sonnet · 구현·작성=opus · 설계/계획/검증/판정=fable — 서브에이전트 디스패치 시 `model` 명시. 주 세션 모델과 무관하게 판정은 fable 위임 (전역 agents-v2 + orchestration.md)
+- **모델 3계층 라우팅**: 읽기·탐색=haiku/sonnet · 구현·작성=opus · 설계/계획/검증/판정=opus — 서브에이전트 디스패치 시 `model` 명시. 주 세션 모델과 무관하게 판정은 opus 위임 (전역 agents-v2 + orchestration.md)
 - 프로젝트 rules: `.claude/rules/` — orchestration · skills-guide · supabase-patterns · nativewind-patterns · impeccable-design (paths 조건부 자동 첨부)
 - 신규 기능 3+ 파일=설계 먼저 | 코드 직후=code-reviewer | 완료 주장 전=실행 증거 (fablize 게이트 훅이 기계 강제)
 
