@@ -137,6 +137,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 🔒 앱 내 채팅은 서버 다크로 착지했다(open·send 에 authenticated EXECUTE 없음).
+      #    이 E2E 스택에서만 잠금을 풀고 플래그를 켠다 — 마이그·seed 에 넣으면 prod 공개 ON 이거나
+      #    DB Tests 잡의 다크 단언(chat_security_grants A4b)이 red 가 된다. 두 잡은 다른 스택이다.
+      - name: Enable chat (local E2E stack only)
+        run: npm run e2e:chat-enable
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 

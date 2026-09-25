@@ -21,6 +21,8 @@
     "test:coverage": "jest --coverage",
     "test:db:helpers": "docker cp supabase/fixtures/jpc_helpers.sql supabase_db_uniqn:/tmp/jpc_helpers.sql && docker exec supabase_db_uniqn psql -U postgres -d postgres -f /tmp/jpc_helpers.sql && docker cp supabase/fixtures/ops_helpers.sql supabase_db_uniqn:/tmp/ops_helpers.sql && docker exec supabase_db_uniqn psql -U postgres -d postgres -f /tmp/ops_helpers.sql",
     "test:db": "npm run test:db:helpers && npx supabase test db",
+    "e2e:chat-enable": "docker cp supabase/fixtures/e2e_chat_enable.sql supabase_db_uniqn:/tmp/e2e_chat_enable.sql && docker exec supabase_db_uniqn psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/e2e_chat_enable.sql",
+    "e2e:chat-disable": "docker cp supabase/fixtures/e2e_chat_disable.sql supabase_db_uniqn:/tmp/e2e_chat_disable.sql && docker exec supabase_db_uniqn psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/e2e_chat_disable.sql",
     "db:start": "npx supabase start",
     "db:stop": "npx supabase stop",
     "db:status": "npx supabase status",
