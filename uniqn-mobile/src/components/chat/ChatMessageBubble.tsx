@@ -4,7 +4,7 @@
  * - 내 것: 오른쪽·골드. 상대: 왼쪽·회색. 시스템/공지: 가운데 작은 안내.
  * - 구직자 화면에서 구인자 측 발신자가 여럿일 수 있어 상대 말풍선 위에 발신자 이름을 작게 단다.
  * - 실패: 모양 전환 없이 아이콘+색만 바꾸고 "재전송"·"삭제"를 붙인다(자주 보는 요소라 움직임 없음).
- * - 사진(kind=image)은 S2b 에서 ChatImageBubble 로 그린다. 여기서는 "사진" 자리표시만.
+ * - 사진(kind=image)은 ChatImageBubble 로 그린다(S2b). 삭제된 사진은 일반 삭제 문구.
  */
 import React, { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -12,7 +12,8 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { RefreshIcon } from '@/components/icons';
 import { STATUS_COLORS } from '@/constants/colors';
-import type { ChatMessage, ChatOutboxItem } from '@/types/chat';
+import type { ChatMessage, ChatOutboxItem, ChatOutboxStage } from '@/types/chat';
+import { ChatImageBubble } from './ChatImageBubble';
 
 function timeLabel(iso: string): string {
   const d = new Date(iso);
@@ -45,7 +46,8 @@ export const ChatServerBubble = memo(function ChatServerBubble({
   }
 
   const deleted = message.deletedAt !== null;
-  const body = deleted ? '삭제된 메시지예요' : message.kind === 'image' ? '사진' : message.body;
+  const isImage = message.kind === 'image' && !deleted && !!message.imagePath;
+  const body = deleted ? '삭제된 메시지예요' : message.body;
 
   return (
     <View className={`my-1 px-4 ${isMine ? 'items-end' : 'items-start'}`}>
@@ -55,26 +57,35 @@ export const ChatServerBubble = memo(function ChatServerBubble({
         </Text>
       ) : null}
       <View className={`max-w-[80%] flex-row items-end ${isMine ? 'flex-row-reverse' : ''}`}>
-        <View
-          className={`rounded-2xl px-3 py-2 ${
-            isMine
-              ? 'rounded-br-sm bg-primary-500 dark:bg-primary-400'
-              : 'rounded-bl-sm bg-secondary-100 dark:bg-surface-elevated'
-          }`}
-        >
-          <Text
-            selectable
-            className={`text-base ${
-              deleted
-                ? 'italic text-content-muted dark:text-secondary-400'
-                : isMine
-                  ? 'text-content-onGold'
-                  : 'text-content-primary dark:text-secondary-100'
+        {isImage ? (
+          <ChatImageBubble
+            imagePath={message.imagePath}
+            width={message.imageWidth}
+            height={message.imageHeight}
+            isMine={isMine}
+          />
+        ) : (
+          <View
+            className={`rounded-2xl px-3 py-2 ${
+              isMine
+                ? 'rounded-br-sm bg-primary-500 dark:bg-primary-400'
+                : 'rounded-bl-sm bg-secondary-100 dark:bg-surface-elevated'
             }`}
           >
-            {body}
-          </Text>
-        </View>
+            <Text
+              selectable
+              className={`text-base ${
+                deleted
+                  ? 'italic text-content-muted dark:text-secondary-400'
+                  : isMine
+                    ? 'text-content-onGold'
+                    : 'text-content-primary dark:text-secondary-100'
+              }`}
+            >
+              {body}
+            </Text>
+          </View>
+        )}
         <Text className="mx-1.5 mb-0.5 text-[11px] text-content-muted dark:text-secondary-400">
           {timeLabel(message.createdAt)}
         </Text>
@@ -82,6 +93,12 @@ export const ChatServerBubble = memo(function ChatServerBubble({
     </View>
   );
 });
+
+const STAGE_LABELS: Record<ChatOutboxStage, string> = {
+  preparing: '사진 준비 중',
+  uploading: '사진 올리는 중',
+  sending: '보내는 중',
+};
 
 interface OutboxBubbleProps {
   item: ChatOutboxItem;
@@ -99,22 +116,34 @@ export const ChatOutboxBubble = memo(function ChatOutboxBubble({
   return (
     <View className="my-1 items-end px-4">
       <View className="max-w-[80%] flex-row-reverse items-end">
-        <View
-          className={`rounded-2xl rounded-br-sm px-3 py-2 ${
-            failed
-              ? 'border border-error-500 bg-error-50 dark:border-error-500 dark:bg-error-900/20'
-              : 'bg-primary-500 opacity-70 dark:bg-primary-400'
-          }`}
-        >
-          <Text
-            className={`text-base ${
-              failed ? 'text-content-primary dark:text-secondary-100' : 'text-content-onGold'
+        {item.image ? (
+          <ChatImageBubble
+            localUri={item.image.localUri}
+            width={item.image.width}
+            height={item.image.height}
+            isMine
+            pendingLabel={
+              item.status === 'sending' ? STAGE_LABELS[item.stage ?? 'sending'] : undefined
+            }
+          />
+        ) : (
+          <View
+            className={`rounded-2xl rounded-br-sm px-3 py-2 ${
+              failed
+                ? 'border border-error-500 bg-error-50 dark:border-error-500 dark:bg-error-900/20'
+                : 'bg-primary-500 opacity-70 dark:bg-primary-400'
             }`}
           >
-            {item.body}
-          </Text>
-        </View>
-        {item.status === 'sending' ? (
+            <Text
+              className={`text-base ${
+                failed ? 'text-content-primary dark:text-secondary-100' : 'text-content-onGold'
+              }`}
+            >
+              {item.body}
+            </Text>
+          </View>
+        )}
+        {item.status === 'sending' && !item.image ? (
           <Text className="mx-1.5 mb-0.5 text-[11px] text-content-muted dark:text-secondary-400">
             보내는 중
           </Text>

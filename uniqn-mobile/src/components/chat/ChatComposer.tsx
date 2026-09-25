@@ -12,6 +12,8 @@ import { detectPrivacyRisk, PRIVACY_WARNING_MESSAGES } from '@/domains/chat';
 import { CHAT_MESSAGE_MAX_LENGTH } from '@/constants/chat';
 import { SECONDARY_PALETTE, TEXT_COLORS } from '@/constants/colors';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import type { ChatImageSource } from '@/services/chat';
+import { ChatAttachButton } from './ChatAttachButton';
 
 /** 카운터는 한도 근처에서만 보인다 */
 const COUNTER_THRESHOLD = CHAT_MESSAGE_MAX_LENGTH - 100;
@@ -21,12 +23,15 @@ interface ChatComposerProps {
   /** 오프라인·상대 탈퇴 등 — 입력 자체를 막는다 */
   disabled?: boolean;
   disabledReason?: string;
+  /** (S2b) 사진 첨부 — 없으면 `+` 버튼을 그리지 않는다 */
+  onAttach?: (source: ChatImageSource) => void;
 }
 
 export const ChatComposer = memo(function ChatComposer({
   onSend,
   disabled = false,
   disabledReason,
+  onAttach,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const reduceMotion = useReduceMotion();
@@ -56,6 +61,7 @@ export const ChatComposer = memo(function ChatComposer({
         </Text>
       ) : null}
       <View className="flex-row items-end">
+        {onAttach ? <ChatAttachButton onPick={onAttach} disabled={disabled} /> : null}
         <TextInput
           value={text}
           onChangeText={setText}

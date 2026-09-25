@@ -571,6 +571,9 @@ export const queryKeys = {
     messagesTailPrefix: (id: string) => [...queryKeys.chat.all, 'messages', id, 'tail'] as const,
     messagesTail: (id: string, uid: string, anchor: string) =>
       [...queryKeys.chat.messagesTailPrefix(id), uid, anchor] as const,
+    /** (S2b) 사진 서명 URL */
+    media: (imagePath: string, uid: string) =>
+      [...queryKeys.chat.all, 'media', imagePath, uid] as const,
   },
 
   // 근무표(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯

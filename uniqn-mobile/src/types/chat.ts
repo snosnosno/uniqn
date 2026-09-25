@@ -74,7 +74,13 @@ export interface ChatOutboxItem {
   status: 'sending' | 'failed' | 'sent';
   errorMessage?: string;
   createdAtLocal: string;
+  /** (S2b) 사진 — 원본 로컬 uri 와 크기(말풍선 비율용). 서버에 올라가는 것은 재인코딩본이다 */
+  image?: { localUri: string; width: number; height: number };
+  /** (S2b) 사진 진행 단계 — status 가 sending 일 때만 의미 있음 */
+  stage?: ChatOutboxStage;
 }
+
+export type ChatOutboxStage = 'preparing' | 'uploading' | 'sending';
 
 /** 타임라인 한 줄 — 서버 메시지 또는 아웃박스 항목 */
 export type ChatTimelineItem =

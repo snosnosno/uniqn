@@ -50,4 +50,18 @@ describe('chatOutboxReducer', () => {
     });
     expect(state.map((i) => i.clientMessageId)).toEqual(['c2']);
   });
+
+  it('setStage 는 사진 진행 단계만 바꾸고 나머지는 보존한다', () => {
+    const photo = {
+      ...item,
+      kind: 'image' as const,
+      image: { localUri: 'file:///a', width: 1, height: 1 },
+    };
+    const state = chatOutboxReducer([photo], {
+      type: 'setStage',
+      clientMessageId: 'c1',
+      stage: 'uploading',
+    });
+    expect(state[0]).toMatchObject({ stage: 'uploading', status: 'sending', image: photo.image });
+  });
 });
