@@ -73,6 +73,8 @@ export interface ChatOutboxItem {
   /** sent = 서버가 받았지만 아직 꼬리 조회에 안 잡힘(타임라인 병합이 서버 행을 보면 뺀다) */
   status: 'sending' | 'failed' | 'sent';
   errorMessage?: string;
+  /** false = 다시 해도 같은 결과(사진 거부·상대 탈퇴 등) — 재전송 버튼을 숨긴다 */
+  retryable?: boolean;
   createdAtLocal: string;
   /** (S2b) 사진 — 원본 로컬 uri 와 크기(말풍선 비율용). 서버에 올라가는 것은 재인코딩본이다 */
   image?: { localUri: string; width: number; height: number };

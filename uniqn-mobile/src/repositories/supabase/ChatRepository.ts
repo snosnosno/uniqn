@@ -202,7 +202,13 @@ export class SupabaseChatRepository implements IChatRepository {
     const { data, error } = await supabase.storage
       .from(CHAT_MEDIA_BUCKET)
       .createSignedUrl(path, expiresInSec);
-    if (error || !data?.signedUrl) failStorage(error, 'createSignedImageUrl');
+    // 읽기 실패는 업로드 한도 매핑(E6157)을 타면 코드 의미가 틀린다 — 일반 매핑으로 보낸다
+    if (error || !data?.signedUrl) {
+      handleSupabaseError(error ?? new Error('createSignedImageUrl: 응답이 비었습니다'), {
+        operation: 'createSignedImageUrl',
+        table: 'storage.chat-media',
+      });
+    }
     return data.signedUrl;
   }
 }

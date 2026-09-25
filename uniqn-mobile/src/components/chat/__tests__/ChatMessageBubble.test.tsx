@@ -165,4 +165,16 @@ describe('ChatOutboxBubble — 사진', () => {
       })
     );
   });
+
+  it('재시도해도 같은 실패면 재전송 버튼 없이 삭제만 보인다', () => {
+    const { queryByLabelText, getByLabelText } = render(
+      <ChatOutboxBubble
+        item={{ ...failed, retryable: false }}
+        onRetry={jest.fn()}
+        onDiscard={jest.fn()}
+      />
+    );
+    expect(queryByLabelText('메시지 다시 보내기')).toBeNull();
+    expect(getByLabelText('보내지 못한 메시지 삭제')).toBeTruthy();
+  });
 });

@@ -181,3 +181,28 @@ describe('uploadChatImage', () => {
     );
   });
 });
+
+describe('encode 자원 해제 (리뷰 MEDIUM-2)', () => {
+  it('성공·실패 모두 ImageRef 와 context 를 release 한다', async () => {
+    const releaseRef = jest.fn();
+    const releaseContext = jest.fn();
+    const context = {
+      resize: jest.fn(),
+      release: releaseContext,
+      renderAsync: () =>
+        Promise.resolve({
+          release: releaseRef,
+          saveAsync: jest
+            .fn()
+            .mockResolvedValue({ uri: 'file:///o.jpg', base64: '', width: 1, height: 1 }),
+        }),
+    };
+    mockManipulate.mockReturnValue(context);
+
+    await expect(
+      prepareChatImage({ uri: 'file:///x.jpg', width: 10, height: 10 })
+    ).rejects.toBeDefined();
+    expect(releaseRef).toHaveBeenCalledTimes(1);
+    expect(releaseContext).toHaveBeenCalledTimes(1);
+  });
+});

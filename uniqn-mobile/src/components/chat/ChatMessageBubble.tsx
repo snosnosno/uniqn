@@ -154,18 +154,20 @@ export const ChatOutboxBubble = memo(function ChatOutboxBubble({
           <Text className="mr-2 text-xs text-error-600 dark:text-error-400">
             {item.errorMessage ?? '보내지 못했어요'}
           </Text>
-          <Pressable
-            onPress={() => onRetry(item.clientMessageId)}
-            accessibilityRole="button"
-            accessibilityLabel="메시지 다시 보내기"
-            hitSlop={8}
-            className="mr-2 flex-row items-center"
-          >
-            <RefreshIcon size={14} color={STATUS_COLORS.error} />
-            <Text className="ml-1 text-xs font-sans-semibold text-error-600 dark:text-error-400">
-              재전송
-            </Text>
-          </Pressable>
+          {item.retryable === false ? null : (
+            <Pressable
+              onPress={() => onRetry(item.clientMessageId)}
+              accessibilityRole="button"
+              accessibilityLabel="메시지 다시 보내기"
+              hitSlop={8}
+              className="mr-2 flex-row items-center"
+            >
+              <RefreshIcon size={14} color={STATUS_COLORS.error} />
+              <Text className="ml-1 text-xs font-sans-semibold text-error-600 dark:text-error-400">
+                재전송
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => onDiscard(item.clientMessageId)}
             accessibilityRole="button"

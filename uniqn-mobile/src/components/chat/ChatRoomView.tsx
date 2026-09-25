@@ -108,6 +108,10 @@ export function ChatRoomView(props: ChatRoomViewProps) {
     },
     [sendImage]
   );
+  const handleAttachPress = useCallback(
+    (source: ChatImageSource) => void handleAttach(source),
+    [handleAttach]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: ChatRow }) => (
@@ -166,7 +170,7 @@ export function ChatRoomView(props: ChatRoomViewProps) {
       </View>
       <ChatComposer
         onSend={handleSend}
-        onAttach={(source) => void handleAttach(source)}
+        onAttach={handleAttachPress}
         disabled={!isOnline}
         disabledReason={isOnline ? undefined : '오프라인에서는 메시지를 보낼 수 없어요'}
       />

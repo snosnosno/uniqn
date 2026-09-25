@@ -9,6 +9,7 @@
  * 🔑 경로는 서버가 `format('%s/%s/%s.jpg', 방, uid, clientMessageId)` 과 **완전 일치**로 대조한다
  *    → 전부 소문자.
  */
+import { Platform } from 'react-native';
 import { toByteArray } from 'base64-js';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -53,19 +54,42 @@ export function chatImageResizeTarget(
   return width >= height ? { width: CHAT_IMAGE_LONG_EDGE } : { height: CHAT_IMAGE_LONG_EDGE };
 }
 
+/** 웹 구현은 renderAsync·saveAsync 마다 blob URL 을 만들고 해제하지 않는다 — 여기서 해제한다 */
+function revokeWebUri(uri: unknown): void {
+  if (Platform.OS !== 'web' || typeof uri !== 'string' || !uri.startsWith('blob:')) return;
+  URL.revokeObjectURL(uri);
+}
+
+/** 네이티브 SharedObject 는 GC 를 기다리지 않고 바로 놓는다(웹에는 release 가 없을 수 있다) */
+function releaseShared(obj: unknown): void {
+  const release = (obj as { release?: () => void } | null)?.release;
+  if (typeof release === 'function') release.call(obj);
+}
+
 async function encodeJpeg(picked: PickedChatImage, compress: number): Promise<PreparedChatImage> {
   const context = ImageManipulator.manipulate(picked.uri);
-  const target = chatImageResizeTarget(picked.width, picked.height);
-  if (target) context.resize(target);
-  const rendered = await context.renderAsync();
-  const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress, base64: true });
-  if (!saved.base64) throw imageRejected('재인코딩 결과 base64 가 비었습니다');
-  const bytes = toByteArray(saved.base64);
-  return {
-    bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-    width: saved.width,
-    height: saved.height,
-  };
+  let rendered: Awaited<ReturnType<typeof context.renderAsync>> | null = null;
+  try {
+    const target = chatImageResizeTarget(picked.width, picked.height);
+    if (target) context.resize(target);
+    rendered = await context.renderAsync();
+    const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress, base64: true });
+    revokeWebUri(saved.uri);
+    if (!saved.base64) throw imageRejected('재인코딩 결과 base64 가 비었습니다');
+    const bytes = toByteArray(saved.base64);
+    return {
+      bytes: bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength
+      ) as ArrayBuffer,
+      width: saved.width,
+      height: saved.height,
+    };
+  } finally {
+    revokeWebUri((rendered as { uri?: unknown } | null)?.uri);
+    releaseShared(rendered);
+    releaseShared(context);
+  }
 }
 
 /** 긴 변 1600 · JPEG 0.8 로 다시 그린다. 1.5MB 를 넘으면 0.6 으로 한 번 더, 그래도 넘으면 거부 */

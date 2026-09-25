@@ -8,7 +8,7 @@ import type { ChatOutboxItem, ChatOutboxStage } from '@/types/chat';
 
 export type ChatOutboxAction =
   | { type: 'enqueue'; item: ChatOutboxItem }
-  | { type: 'markFailed'; clientMessageId: string; errorMessage: string }
+  | { type: 'markFailed'; clientMessageId: string; errorMessage: string; retryable?: boolean }
   | { type: 'markSent'; clientMessageId: string }
   | { type: 'retry'; clientMessageId: string }
   | { type: 'setStage'; clientMessageId: string; stage: ChatOutboxStage }
@@ -36,11 +36,16 @@ export function chatOutboxReducer(
       return update(state, action.clientMessageId, {
         status: 'failed',
         errorMessage: action.errorMessage,
+        retryable: action.retryable ?? true,
       });
     case 'markSent':
       return update(state, action.clientMessageId, { status: 'sent', errorMessage: undefined });
     case 'retry':
-      return update(state, action.clientMessageId, { status: 'sending', errorMessage: undefined });
+      return update(state, action.clientMessageId, {
+        status: 'sending',
+        errorMessage: undefined,
+        retryable: undefined,
+      });
     case 'setStage':
       return update(state, action.clientMessageId, { stage: action.stage });
     case 'remove':

@@ -21,7 +21,7 @@ import {
 } from '@/services/chat';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { chatOutboxReducer } from '@/domains/chat';
-import { extractUserMessage, isAppError } from '@/errors';
+import { ERROR_CODES, extractUserMessage, isAppError } from '@/errors';
 import { CHAT_ERROR_CODES } from '@/errors/chat';
 import { useAuthStore } from '@/stores/authStore';
 import { generateUUID } from '@/utils/generateId';
@@ -73,6 +73,19 @@ async function uploadOrAssumeExisting(
   }
 }
 
+/** 다시 보내도 결과가 같은 실패 — 재전송 버튼 대신 삭제만 보인다 */
+const NON_RETRYABLE_CODES: ReadonlySet<string> = new Set([
+  CHAT_ERROR_CODES.CHAT_IMAGE_INVALID,
+  CHAT_ERROR_CODES.CHAT_COUNTERPART_GONE,
+  CHAT_ERROR_CODES.CHAT_POSTING_UNAVAILABLE,
+  CHAT_ERROR_CODES.CHAT_BLOCKED,
+  ERROR_CODES.VALIDATION_SCHEMA,
+]);
+
+function isRetryableFailure(error: unknown): boolean {
+  return !(isAppError(error) && NON_RETRYABLE_CODES.has(error.code));
+}
+
 export function useSendChatMessage(params: UseSendChatMessageParams): UseSendChatMessageReturn {
   const { jobPostingId, seekerId, onSent } = params;
   const queryClient = useQueryClient();
@@ -80,6 +93,8 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
   const [outbox, dispatch] = useReducer(chatOutboxReducer, []);
   const conversationRef = useRef<string | null>(params.conversationId);
   const pendingRef = useRef<Map<string, Pending>>(new Map());
+  // 재전송 연타 방어 — 같은 id 가 진행 중이면 두 번째 호출은 무시한다(재인코딩·업로드 중복 방지)
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   if (params.conversationId && conversationRef.current !== params.conversationId) {
     conversationRef.current = params.conversationId;
@@ -106,6 +121,8 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
 
   const afterSent = useCallback(
     (conversationId: string, clientMessageId: string) => {
+      // 보낸 뒤에는 재전송 재료(사진 바이트 최대 1.5MB)를 들고 있을 이유가 없다
+      pendingRef.current.delete(clientMessageId);
       dispatch({ type: 'markSent', clientMessageId });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.chat.messagesTailPrefix(conversationId),
@@ -121,7 +138,10 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
   const deliverImage = useCallback(
     async (clientMessageId: string, pending: ImagePending) => {
       if (!uid) throw new Error('로그인 정보가 없습니다');
-      const remember = (next: ImagePending) => pendingRef.current.set(clientMessageId, next);
+      // 진행 중에 삭제(discard)됐으면 되살리지 않는다
+      const remember = (next: ImagePending) => {
+        if (pendingRef.current.has(clientMessageId)) pendingRef.current.set(clientMessageId, next);
+      };
 
       let current = pending;
       let prepared = current.prepared;
@@ -169,7 +189,8 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
   const deliver = useCallback(
     async (clientMessageId: string) => {
       const pending = pendingRef.current.get(clientMessageId);
-      if (!pending) return;
+      if (!pending || inFlightRef.current.has(clientMessageId)) return;
+      inFlightRef.current.add(clientMessageId);
       try {
         requireOnlineForMutation('채팅 보내기');
         let conversationId: string;
@@ -186,7 +207,10 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
           type: 'markFailed',
           clientMessageId,
           errorMessage: extractUserMessage(error) || '보내지 못했어요',
+          retryable: isRetryableFailure(error),
         });
+      } finally {
+        inFlightRef.current.delete(clientMessageId);
       }
     },
     [deliverImage, ensureConversation, afterSent]
@@ -239,7 +263,9 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
 
   const retry = useCallback(
     async (clientMessageId: string) => {
-      if (!pendingRef.current.has(clientMessageId)) return;
+      if (!pendingRef.current.has(clientMessageId) || inFlightRef.current.has(clientMessageId)) {
+        return;
+      }
       dispatch({ type: 'retry', clientMessageId });
       await deliver(clientMessageId);
     },

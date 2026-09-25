@@ -236,4 +236,50 @@ describe('useSendChatMessage — 사진', () => {
       errorMessage: '지금은 사진을 더 보낼 수 없어요.',
     });
   });
+
+  it('성공한 사진은 재전송 재료(바이트)를 들고 있지 않는다 — 재전송을 불러도 아무 호출 없음', async () => {
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    const id = result.current.outbox[0]?.clientMessageId ?? '';
+    jest.clearAllMocks();
+
+    await act(async () => {
+      await result.current.retry(id);
+    });
+
+    expect(mockPrepare).not.toHaveBeenCalled();
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockSendImage).not.toHaveBeenCalled();
+  });
+
+  it('재전송을 연타해도 같은 id 로 한 번만 진행한다', async () => {
+    mockSendImage.mockRejectedValueOnce(new Error('network'));
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    const id = result.current.outbox[0]?.clientMessageId ?? '';
+    mockSendImage.mockClear();
+
+    await act(async () => {
+      await Promise.all([result.current.retry(id), result.current.retry(id)]);
+    });
+
+    expect(mockSendImage).toHaveBeenCalledTimes(1);
+  });
+
+  it('다시 해도 같은 실패(재시도 불가 에러)는 retryable=false 로 표시한다', async () => {
+    mockPrepare.mockRejectedValueOnce(
+      new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_INVALID, {
+        userMessage: '사진 용량이 너무 커요. 다른 사진을 골라 주세요.',
+      })
+    );
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    expect(result.current.outbox[0]).toMatchObject({ status: 'failed', retryable: false });
+  });
 });
