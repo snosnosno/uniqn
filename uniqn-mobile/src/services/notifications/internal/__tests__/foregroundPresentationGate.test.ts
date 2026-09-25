@@ -78,3 +78,63 @@ describe('resolveForegroundPresentation', () => {
     );
   });
 });
+
+describe('resolveForegroundPresentation — 보고 있는 채팅방 (S3)', () => {
+  const CONV = '11111111-1111-4111-8111-111111111111';
+  const OTHER = '33333333-3333-4333-8333-333333333333';
+  const viewing = (id: string) => id.toLowerCase() === CONV;
+
+  it('지금 보고 있는 방의 채팅 푸시는 배너·소리·목록·배지 모두 끈다', () => {
+    const result = resolveForegroundPresentation('chat_message', makeSettings(), {
+      conversationId: CONV,
+      isViewingConversation: viewing,
+    });
+    expect(result).toEqual({
+      shouldShowAlert: false,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: false,
+      shouldShowList: false,
+    });
+  });
+
+  it('대소문자만 다른 같은 방도 삼킨다(술어가 정규화)', () => {
+    expect(
+      resolveForegroundPresentation('chat_message', makeSettings(), {
+        conversationId: CONV.toUpperCase(),
+        isViewingConversation: viewing,
+      }).shouldShowBanner
+    ).toBe(false);
+  });
+
+  it('다른 방의 채팅 푸시는 표시한다', () => {
+    expect(
+      resolveForegroundPresentation('chat_message', makeSettings(), {
+        conversationId: OTHER,
+        isViewingConversation: viewing,
+      }).shouldShowBanner
+    ).toBe(true);
+  });
+
+  it('방 id 가 없거나 술어가 없으면 표시한다(fail-open)', () => {
+    expect(
+      resolveForegroundPresentation('chat_message', makeSettings(), {
+        conversationId: undefined,
+        isViewingConversation: viewing,
+      }).shouldShowBanner
+    ).toBe(true);
+    expect(
+      resolveForegroundPresentation('chat_message', makeSettings(), { conversationId: CONV })
+        .shouldShowBanner
+    ).toBe(true);
+  });
+
+  it('채팅이 아닌 알림은 방 id 가 같아도 삼키지 않는다', () => {
+    expect(
+      resolveForegroundPresentation('new_application', makeSettings(), {
+        conversationId: CONV,
+        isViewingConversation: viewing,
+      }).shouldShowBanner
+    ).toBe(true);
+  });
+});

@@ -21,7 +21,9 @@ jest.mock('@/hooks/chat', () => ({
   useChatMessages: () => mockMessages,
   useChatRoomActions: () => ({ markRead: mockMarkRead }),
   useSendChatMessage: () => ({ outbox: [], send: jest.fn(), retry: jest.fn(), discard: jest.fn() }),
+  useActiveConversation: (id: string | null) => mockUseActiveConversation(id),
 }));
+const mockUseActiveConversation = jest.fn();
 const mockFocus = { focused: true, active: true };
 jest.mock('expo-router', () => ({ useIsFocused: () => mockFocus.focused }));
 jest.mock('@/hooks/chat/useIsAppActive', () => ({ useIsAppActive: () => mockFocus.active }));
@@ -86,6 +88,20 @@ describe('ChatRoomView 읽음 처리', () => {
     mockFocus.active = false;
     renderView();
     expect(mockMarkRead).not.toHaveBeenCalled();
+  });
+});
+
+// S3: 포그라운드 채팅 푸시 억제는 '맨 위에 떠 있는 방'에만 걸린다
+describe('ChatRoomView 보고 있는 방 등록', () => {
+  it('포커스된 방은 보고 있는 방으로 등록한다', () => {
+    renderView();
+    expect(mockUseActiveConversation).toHaveBeenLastCalledWith('c');
+  });
+
+  it('포커스가 없으면(공고 상세가 위에 있음) 등록하지 않는다', () => {
+    mockFocus.focused = false;
+    renderView();
+    expect(mockUseActiveConversation).toHaveBeenLastCalledWith(null);
   });
 });
 

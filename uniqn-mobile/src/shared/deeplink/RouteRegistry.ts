@@ -27,6 +27,10 @@ export const EXPO_ROUTES = {
   notices: '/(app)/(tabs)/board/notice',
   noticeDetail: '/(app)/(tabs)/board/post/[postId]',
 
+  // 앱 내 채팅 — 목록은 소통 탭 '채팅' 칸, 방은 탭바 밖 스택(컴포저가 탭바와 겹치지 않게)
+  chatList: '/(app)/(tabs)/board/chat',
+  chatRoom: '/(app)/chat/[conversationId]',
+
   support: '/(app)/support',
   supportFaq: '/(app)/support/faq',
   supportCreateInquiry: '/(app)/support/create-inquiry',
@@ -103,6 +107,8 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'supportInquiryDetail',
   'notices',
   'noticeDetail',
+  'chatList',
+  'chatRoom',
   'jobApply',
   'applicationCancel',
   'employerRegister',

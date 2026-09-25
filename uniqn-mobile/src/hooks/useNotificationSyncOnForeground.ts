@@ -22,6 +22,21 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { logger } from '@/utils/logger';
 
 const LOCAL_UPDATE_GRACE_PERIOD_MS = 3000;
+
+/** 채팅 목록·안 읽음 합계 — 키 끝의 uid 를 빼고 접두사로 무효화한다(없는 쿼리=플래그 OFF 는 no-op) */
+const CHAT_SUMMARY_KEY_PREFIXES = [
+  [...queryKeys.chat.all, 'list'],
+  [...queryKeys.chat.all, 'unread'],
+] as const;
+
+function invalidateChatSummaries(): void {
+  for (const queryKey of CHAT_SUMMARY_KEY_PREFIXES) {
+    queryClient
+      .invalidateQueries({ queryKey })
+      .catch((error) => logger.warn('채팅 요약 무효화 실패', { error: String(error) }));
+  }
+}
+
 const MAX_RETRY_COUNT = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 30_000;
@@ -128,6 +143,9 @@ export function useNotificationSyncOnForeground(
           if (!isMounted) return;
 
           retryCount = 0;
+          // 채팅 메시지는 수신자 notifications 행을 만들거나 갱신한다(방 단위 collapse) — 채팅 전역
+          // 채널을 따로 열지 않고 이 구독에 편승해 목록·배지를 갱신한다(설계 §5, 콜백=무효화만).
+          invalidateChatSummaries();
 
           const lastLocalUpdate = useNotificationStore.getState().lastCounterLocalUpdate;
           const timeSinceLastLocal = Date.now() - lastLocalUpdate;

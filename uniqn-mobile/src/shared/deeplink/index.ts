@@ -18,6 +18,9 @@ export {
   type ExpoRouteName,
 } from './RouteRegistry';
 
+// Chat Route (파서·알림 매핑 공용 규칙)
+export { toChatRoute } from './chatRoute';
+
 // Route Mapper
 export { RouteMapper } from './RouteMapper';
 

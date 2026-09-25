@@ -14,7 +14,12 @@ import { FlashList } from '@shopify/flash-list';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ErrorState } from '@/components/ui';
 import { mergeChatTimeline } from '@/domains/chat';
-import { useChatMessages, useChatRoomActions, useSendChatMessage } from '@/hooks/chat';
+import {
+  useActiveConversation,
+  useChatMessages,
+  useChatRoomActions,
+  useSendChatMessage,
+} from '@/hooks/chat';
 import { useIsAppActive } from '@/hooks/chat/useIsAppActive';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
@@ -66,6 +71,8 @@ export function ChatRoomView(props: ChatRoomViewProps) {
     onSent: props.onSent,
   });
   const { markRead } = useChatRoomActions(conversationId);
+  // 이 방이 화면 맨 위에 있을 때만 '보고 있는 방' — 공고 상세 등이 위에 쌓이면 푸시를 다시 띄운다
+  useActiveConversation(isFocused ? conversationId : null);
 
   const rows: ChatRow[] = useMemo(
     () => withUnreadDivider(mergeChatTimeline([messages], [], outbox), readCursor, uid),

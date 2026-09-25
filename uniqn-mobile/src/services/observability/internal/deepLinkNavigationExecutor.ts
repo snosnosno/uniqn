@@ -17,6 +17,7 @@ import {
 } from './deepLinkConstants';
 import { validateNotificationLink } from './deepLinkLinkValidator';
 import { getCurrentWebRoute, parseDeepLink } from './deepLinkRouteParser';
+import { useChatPresenceStore } from '@/stores/chatPresenceStore';
 
 function routesAreEqual(left: DeepLinkRoute, right: DeepLinkRoute): boolean {
   if (left.name !== right.name) {
@@ -51,10 +52,23 @@ function shouldSkipWebNavigation(route: DeepLinkRoute): boolean {
   return currentRoute !== null && routesAreEqual(currentRoute, route);
 }
 
+/** 지금 포커스된 바로 그 채팅방으로 가라는 요청 — 같은 방을 스택에 한 번 더 쌓지 않는다 */
+function isAlreadyInChatRoom(route: DeepLinkRoute): boolean {
+  return (
+    route.name === 'chat' &&
+    useChatPresenceStore.getState().isViewingConversation(route.params.conversationId)
+  );
+}
+
 async function executeNavigation(
   route: DeepLinkRoute,
   context: NavigationContext
 ): Promise<boolean> {
+  if (isAlreadyInChatRoom(route)) {
+    logger.info('이미 보고 있는 채팅방이라 이동을 건너뜀', { source: context.source });
+    return true;
+  }
+
   if (shouldSkipWebNavigation(route)) {
     logger.info('현재 웹 라우트와 동일하여 딥링크 이동을 건너뜀', {
       route: route.name,
@@ -144,11 +158,14 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
  * - ROLE_CHANGED: DB RPC 가 link 에 '/settings' 를 심는데 설정 화면에는 역할 표기가
  *   한 곳도 없다. 역할 배지는 프로필 탭에 있다. 이미 발송된 알림의 link 는 되돌릴 수
  *   없으므로 클라이언트에서 흡수한다.
+ * - CHAT_MESSAGE: 목적지는 data.conversationId 의 방 하나뿐이다. link 와 매핑의 파라미터 수가
+ *   같으면 link 가 이기므로, link 가 방이 아닌 곳(공고 등)을 가리켜도 방으로 가도록 매핑을 강제한다.
  */
 const ROUTE_MAP_PRIORITY_TYPES: NotificationType[] = [
   NotificationType.REVIEW_REQUEST,
   NotificationType.REVIEW_REMINDER,
   NotificationType.ROLE_CHANGED,
+  NotificationType.CHAT_MESSAGE,
 ];
 
 /** 라우트가 얼마나 구체적인지 — 파라미터 개수로 근사한다. */

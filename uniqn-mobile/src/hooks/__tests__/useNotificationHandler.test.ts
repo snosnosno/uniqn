@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AppState, Platform, type AppStateStatus } from 'react-native';
 import { useNotificationHandler } from '../useNotificationHandler';
+import { queryClient } from '@/lib/queryClient';
 
 const mockInitialize = jest.fn();
 const mockCheckPermission = jest.fn();
@@ -165,5 +166,23 @@ describe('useNotificationHandler', () => {
     await waitFor(() => {
       expect(mockRegisterToken).toHaveBeenCalledTimes(1);
     });
+  });
+  // S3: 채팅 메시지는 수신자 notifications 행을 만들거나 갱신한다 — 전역 알림 구독에 편승해
+  // 채팅 목록·소통 탭 배지를 갱신해야 한다(채팅 전역 채널을 따로 열지 않는다).
+  it('알림 realtime 변경이 오면 채팅 목록·안 읽음 합계 쿼리를 무효화한다', async () => {
+    const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue();
+    renderHook(() => useNotificationHandler());
+
+    await waitFor(() => {
+      expect(mockSubscribeToUnreadCount).toHaveBeenCalled();
+    });
+    const onCount = mockSubscribeToUnreadCount.mock.calls[0][1] as (count: number) => void;
+
+    act(() => {
+      onCount(2);
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['chat', 'list'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['chat', 'unread'] });
   });
 });

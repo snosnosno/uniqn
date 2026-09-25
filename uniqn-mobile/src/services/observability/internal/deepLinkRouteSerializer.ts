@@ -25,6 +25,10 @@ function toExternalPath(route: DeepLinkRoute): string {
       return 'board';
     case 'board/post':
       return `board/post/${route.params.postId}`;
+    case 'chat':
+      return `chat/${route.params.conversationId}`;
+    case 'chat/list':
+      return 'chat';
     case 'profile':
       return 'profile';
     case 'settings':

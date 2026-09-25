@@ -10,8 +10,8 @@
  *              (게이트 버그로 알림이 통째로 사라지는 사고 방지).
  */
 
-import { NOTIFICATION_TYPE_TO_CATEGORY } from '@/types/notification';
-import type { NotificationSettings, NotificationType } from '@/types/notification';
+import { NOTIFICATION_TYPE_TO_CATEGORY, NotificationType } from '@/types/notification';
+import type { NotificationSettings } from '@/types/notification';
 
 export interface ForegroundPresentation {
   shouldShowAlert: boolean;
@@ -37,10 +37,41 @@ const SUPPRESSED: ForegroundPresentation = {
   shouldShowList: true,
 };
 
+/**
+ * 보고 있는 채팅방에서 온 채팅 푸시는 **통째로 삼킨다** — 배너·소리뿐 아니라 알림센터 목록·배지도.
+ * 방 화면이 이미 실시간으로 보여 주고 곧바로 읽음 처리하므로 어디에 남겨도 중복이다
+ * (알림센터에 남으면 탭할 때 같은 방이 한 번 더 쌓인다 — S3 리뷰 M).
+ */
+const VIEWING: ForegroundPresentation = {
+  shouldShowAlert: false,
+  shouldPlaySound: false,
+  shouldSetBadge: false,
+  shouldShowBanner: false,
+  shouldShowList: false,
+};
+
+/** 채팅 푸시 판단용 — 푸시 payload 의 방 id 와 "지금 포커스된 방인가" 술어 */
+export interface ForegroundChatContext {
+  conversationId?: unknown;
+  isViewingConversation?: (conversationId: string) => boolean;
+}
+
+/** 지금 보고 있는 채팅방의 채팅 푸시인가 */
+export function isViewingChatPush(typeValue: unknown, chat?: ForegroundChatContext): boolean {
+  if (typeValue !== NotificationType.CHAT_MESSAGE || !chat?.isViewingConversation) return false;
+  if (typeof chat.conversationId !== 'string' || chat.conversationId === '') return false;
+  return chat.isViewingConversation(chat.conversationId);
+}
+
 export function resolveForegroundPresentation(
   typeValue: unknown,
-  settings: NotificationSettings | null | undefined
+  settings: NotificationSettings | null | undefined,
+  chat?: ForegroundChatContext
 ): ForegroundPresentation {
+  if (isViewingChatPush(typeValue, chat)) {
+    return VIEWING;
+  }
+
   if (!settings) {
     return PRESENT; // 설정 미로딩 = fail-open
   }
