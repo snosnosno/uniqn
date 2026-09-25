@@ -6,6 +6,8 @@ import { toError } from '@/errors';
 import { SCHEME_PREFIX, WEB_PREFIX } from './deepLinkConstants';
 import { isSupportedWebUrl } from './deepLinkLinkValidator';
 
+const CHAT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function pathToRoute(path: string, params: Record<string, string>): DeepLinkRoute | null {
   const normalizedPath = path.replace(/^\/|\/$/g, '');
   const segments = normalizedPath ? normalizedPath.split('/') : [''];
@@ -58,6 +60,13 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       }
 
       return { name: 'board' };
+
+    // 서버가 채팅 알림에 심는 link('/chat/{id}'). 방 id 는 서버가 소문자 uuid 로 쓰므로
+    // 쿼리 키·realtime 필터와 맞게 소문자로 정규화하고, uuid 가 아니면 목록으로 보낸다.
+    case 'chat':
+      return second && CHAT_ID_PATTERN.test(second)
+        ? { name: 'chat', params: { conversationId: second.toLowerCase() } }
+        : { name: 'chat/list' };
 
     case 'my-applications':
     case 'my-settlements':

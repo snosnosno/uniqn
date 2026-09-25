@@ -9,6 +9,9 @@ export type DeepLinkRoute =
   | { name: 'schedule'; params?: { applicationId?: string; cancelApplicationId?: string } }
   | { name: 'board' }
   | { name: 'board/post'; params: { postId: string } }
+  // 앱 내 채팅 (S3 — 알림 탭·웹 URL `/chat/{id}`)
+  | { name: 'chat'; params: { conversationId: string } }
+  | { name: 'chat/list' }
   | { name: 'profile' }
   | { name: 'settings' }
   | { name: 'settings/profile' }

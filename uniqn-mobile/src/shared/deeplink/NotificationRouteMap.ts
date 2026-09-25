@@ -38,9 +38,12 @@ export const NOTIFICATION_ROUTE_MAP: Record<
       ? { name: 'employer/cancellation-requests', params: { jobId: data.jobPostingId } }
       : { name: 'employer/my-postings' },
 
-  // 채팅방 화면·라우트는 S3 에서 들어온다(설계 §14-4 — 'chat' 라우트 + ROUTE_MAP_PRIORITY_TYPES).
-  // 그 전까지는 알림함으로 보낸다: 서버는 S1 부터 이 타입을 발송할 수 있지만 UI 는 플래그 OFF 다.
-  [NotificationType.CHAT_MESSAGE]: () => ({ name: 'notifications' }),
+  // 채팅 알림은 그 방으로 간다. link('/chat/{id}')와 목적지가 같지만 ROUTE_MAP_PRIORITY_TYPES 에
+  // 등록해 data 를 우선한다(설계 §6). 플래그 OFF 면 채팅 스택 레이아웃이 안내 화면을 보여 준다.
+  [NotificationType.CHAT_MESSAGE]: (data) =>
+    data?.conversationId
+      ? { name: 'chat', params: { conversationId: data.conversationId.toLowerCase() } }
+      : { name: 'chat/list' },
 
   [NotificationType.STAFF_CHECKED_IN]: (data) =>
     data?.jobPostingId

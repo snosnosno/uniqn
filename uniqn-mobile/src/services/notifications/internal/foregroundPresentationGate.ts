@@ -10,8 +10,8 @@
  *              (게이트 버그로 알림이 통째로 사라지는 사고 방지).
  */
 
-import { NOTIFICATION_TYPE_TO_CATEGORY } from '@/types/notification';
-import type { NotificationSettings, NotificationType } from '@/types/notification';
+import { NOTIFICATION_TYPE_TO_CATEGORY, NotificationType } from '@/types/notification';
+import type { NotificationSettings } from '@/types/notification';
 
 export interface ForegroundPresentation {
   shouldShowAlert: boolean;
@@ -37,10 +37,28 @@ const SUPPRESSED: ForegroundPresentation = {
   shouldShowList: true,
 };
 
+/** 채팅 푸시 억제 판단용 — 푸시 payload 의 방 id 와 지금 화면에 떠 있는 방 id */
+export interface ForegroundChatContext {
+  conversationId?: unknown;
+  activeConversationId?: string | null;
+}
+
+/** 지금 보고 있는 채팅방의 푸시인가 — 방 화면이 이미 실시간으로 보여 주므로 배너가 중복이다 */
+function isViewingConversation(typeValue: unknown, chat?: ForegroundChatContext): boolean {
+  if (typeValue !== NotificationType.CHAT_MESSAGE || !chat?.activeConversationId) return false;
+  if (typeof chat.conversationId !== 'string') return false;
+  return chat.conversationId.toLowerCase() === chat.activeConversationId.toLowerCase();
+}
+
 export function resolveForegroundPresentation(
   typeValue: unknown,
-  settings: NotificationSettings | null | undefined
+  settings: NotificationSettings | null | undefined,
+  chat?: ForegroundChatContext
 ): ForegroundPresentation {
+  if (isViewingConversation(typeValue, chat)) {
+    return SUPPRESSED;
+  }
+
   if (!settings) {
     return PRESENT; // 설정 미로딩 = fail-open
   }

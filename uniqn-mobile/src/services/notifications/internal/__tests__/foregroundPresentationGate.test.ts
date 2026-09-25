@@ -78,3 +78,52 @@ describe('resolveForegroundPresentation', () => {
     );
   });
 });
+
+describe('resolveForegroundPresentation — 보고 있는 채팅방 억제 (S3)', () => {
+  const CONV = '11111111-1111-4111-8111-111111111111';
+  const OTHER = '33333333-3333-4333-8333-333333333333';
+
+  it('지금 보고 있는 방의 채팅 푸시는 배너·소리를 억제한다', () => {
+    const result = resolveForegroundPresentation('chat_message', makeSettings(), {
+      conversationId: CONV,
+      activeConversationId: CONV,
+    });
+    expect(result.shouldShowBanner).toBe(false);
+    expect(result.shouldPlaySound).toBe(false);
+    expect(result.shouldShowList).toBe(true);
+  });
+
+  it('대소문자만 다른 같은 방도 억제한다', () => {
+    const result = resolveForegroundPresentation('chat_message', makeSettings(), {
+      conversationId: CONV.toUpperCase(),
+      activeConversationId: CONV,
+    });
+    expect(result.shouldShowBanner).toBe(false);
+  });
+
+  it('다른 방의 채팅 푸시는 표시한다', () => {
+    const result = resolveForegroundPresentation('chat_message', makeSettings(), {
+      conversationId: OTHER,
+      activeConversationId: CONV,
+    });
+    expect(result.shouldShowBanner).toBe(true);
+  });
+
+  it('방을 보고 있지 않으면 표시한다', () => {
+    expect(
+      resolveForegroundPresentation('chat_message', makeSettings(), {
+        conversationId: CONV,
+        activeConversationId: null,
+      }).shouldShowBanner
+    ).toBe(true);
+  });
+
+  it('채팅이 아닌 알림은 방 id 가 같아도 억제하지 않는다', () => {
+    expect(
+      resolveForegroundPresentation('new_application', makeSettings(), {
+        conversationId: CONV,
+        activeConversationId: CONV,
+      }).shouldShowBanner
+    ).toBe(true);
+  });
+});

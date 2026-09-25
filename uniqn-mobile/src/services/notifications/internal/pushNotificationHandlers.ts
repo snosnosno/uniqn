@@ -20,6 +20,7 @@ import { DEFAULT_CHANNELS } from './pushNotificationConstants';
 import { getNotifications, loadNotificationsModule, pushState } from './pushNotificationState';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { resolveForegroundPresentation } from './foregroundPresentationGate';
+import { useChatPresenceStore } from '@/stores/chatPresenceStore';
 
 // ============================================================================
 // Initialization
@@ -132,9 +133,14 @@ function setupNotificationHandlers(): void {
 
       // 포그라운드 표시 여부 — 전체/카테고리 설정 게이트(M3).
       // 꺼진 카테고리는 배너/사운드만 억제하고 알림센터 목록·뱃지는 유지한다.
+      // 지금 보고 있는 채팅방의 채팅 푸시도 억제한다(S3 — 방 화면이 이미 보여 준다).
       return resolveForegroundPresentation(
         payload.data?.type,
-        useNotificationStore.getState().settings
+        useNotificationStore.getState().settings,
+        {
+          conversationId: payload.data?.conversationId,
+          activeConversationId: useChatPresenceStore.getState().activeConversationId,
+        }
       );
     },
   });

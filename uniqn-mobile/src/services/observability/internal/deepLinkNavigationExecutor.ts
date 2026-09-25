@@ -144,11 +144,14 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
  * - ROLE_CHANGED: DB RPC 가 link 에 '/settings' 를 심는데 설정 화면에는 역할 표기가
  *   한 곳도 없다. 역할 배지는 프로필 탭에 있다. 이미 발송된 알림의 link 는 되돌릴 수
  *   없으므로 클라이언트에서 흡수한다.
+ * - CHAT_MESSAGE: 목적지는 data.conversationId 의 방 하나뿐이다. link 와 매핑의 파라미터 수가
+ *   같으면 link 가 이기므로, link 가 방이 아닌 곳(공고 등)을 가리켜도 방으로 가도록 매핑을 강제한다.
  */
 const ROUTE_MAP_PRIORITY_TYPES: NotificationType[] = [
   NotificationType.REVIEW_REQUEST,
   NotificationType.REVIEW_REMINDER,
   NotificationType.ROLE_CHANGED,
+  NotificationType.CHAT_MESSAGE,
 ];
 
 /** 라우트가 얼마나 구체적인지 — 파라미터 개수로 근사한다. */

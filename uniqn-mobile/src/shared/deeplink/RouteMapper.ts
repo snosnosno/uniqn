@@ -43,6 +43,10 @@ export class RouteMapper {
         return EXPO_ROUTES.board;
       case 'board/post':
         return EXPO_ROUTES.noticeDetail.replace('[postId]', route.params.postId);
+      case 'chat':
+        return EXPO_ROUTES.chatRoom.replace('[conversationId]', route.params.conversationId);
+      case 'chat/list':
+        return EXPO_ROUTES.chatList;
       case 'profile':
         return EXPO_ROUTES.profile;
       case 'settings':

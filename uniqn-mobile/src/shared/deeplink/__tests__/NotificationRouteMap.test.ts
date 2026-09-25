@@ -33,15 +33,19 @@ describe('NotificationRouteMap', () => {
     });
   });
 
-  // 채팅방 화면은 S3 에서 들어온다. 그 전까지(S1·S2, 플래그 OFF) 서버가 보낸 채팅 알림을
-  // 탭하면 존재하지 않는 화면이 아니라 알림함에 착지해야 한다. S3 에서 'chat' 라우트로 바꾸며
-  // 이 단언도 함께 고친다(설계 §14-4 — ROUTE_MAP_PRIORITY_TYPES 등록 포함).
-  it('CHAT_MESSAGE는 채팅 화면이 생기기 전까지 알림함으로 라우팅된다', () => {
+  // S3: 채팅 알림은 해당 채팅방으로 간다. conversationId 가 없으면(방어) 채팅 목록으로.
+  it('CHAT_MESSAGE는 conversationId 가 있으면 채팅방으로 라우팅된다', () => {
     expect(
       getRouteForNotificationType(NotificationType.CHAT_MESSAGE, {
         conversationId: '11111111-1111-4111-8111-111111111111',
       })
-    ).toEqual({ name: 'notifications' });
+    ).toEqual({
+      name: 'chat',
+      params: { conversationId: '11111111-1111-4111-8111-111111111111' },
+    });
+    expect(getRouteForNotificationType(NotificationType.CHAT_MESSAGE)).toEqual({
+      name: 'chat/list',
+    });
   });
 
   // 설정 화면에는 역할 표기가 한 곳도 없어 "무엇이 바뀌었는지" 확인 불가능한 도착지였다.
