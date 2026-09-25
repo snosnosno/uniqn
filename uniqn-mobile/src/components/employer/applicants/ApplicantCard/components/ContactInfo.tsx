@@ -6,7 +6,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { View, Text } from 'react-native';
 
 import { MessageIcon, DocumentIcon } from '@/components/icons';
@@ -28,6 +28,8 @@ export interface ContactInfoProps {
   message?: string;
   /** 사전질문 답변 */
   preQuestionAnswers?: PreQuestionAnswer[];
+  /** 전화·문자 옆에 나란히 둘 연락 액션(채팅) — 번호가 없으면 단독 줄로 */
+  extraAction?: ReactNode;
 }
 
 // ============================================================================
@@ -38,8 +40,10 @@ export const ContactInfo = React.memo(function ContactInfo({
   phone,
   message,
   preQuestionAnswers,
+  extraAction,
 }: ContactInfoProps) {
-  const hasContent = phone || message || (preQuestionAnswers && preQuestionAnswers.length > 0);
+  const hasContent =
+    phone || extraAction || message || (preQuestionAnswers && preQuestionAnswers.length > 0);
 
   if (!hasContent) {
     return null;
@@ -51,9 +55,12 @@ export const ContactInfo = React.memo(function ContactInfo({
           반대 방향(스태프→구인자)에는 이미 같은 컴포넌트로 전화·문자 버튼이 있었다. */}
       {phone && (
         <View className="mb-2">
-          <ContactActions phone={phone} component="ApplicantCard.ContactInfo" />
+          <ContactActions phone={phone} component="ApplicantCard.ContactInfo" counterpart="지원자">
+            {extraAction}
+          </ContactActions>
         </View>
       )}
+      {!phone && extraAction ? <View className="mb-2 flex-row">{extraAction}</View> : null}
 
       {/* 지원 메시지 */}
       {message && (

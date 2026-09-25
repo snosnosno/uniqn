@@ -129,7 +129,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-2">
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-          선택된 일정
+          확정할 일정 선택
         </Text>
         <Text className="text-xs text-primary-500 dark:text-primary-400 font-sans-medium">
           {selectedCount}/{totalCount}개 선택
