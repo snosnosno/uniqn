@@ -36,6 +36,8 @@ interface ChatImageBubbleProps {
   isMine: boolean;
   /** "사진 올리는 중" 등 진행 표시 */
   pendingLabel?: string;
+  /** (S4) 신고 — 사진은 자체 Pressable 이 터치를 잡으므로 말풍선 줄 대신 여기서 받는다 */
+  onLongPress?: () => void;
 }
 
 export const ChatImageBubble = memo(function ChatImageBubble({
@@ -45,6 +47,7 @@ export const ChatImageBubble = memo(function ChatImageBubble({
   height,
   isMine,
   pendingLabel,
+  onLongPress,
 }: ChatImageBubbleProps) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const { url, isError } = useChatMediaUrl(localUri ? null : imagePath);
@@ -59,7 +62,8 @@ export const ChatImageBubble = memo(function ChatImageBubble({
     <>
       <Pressable
         onPress={() => setViewerOpen(true)}
-        disabled={!source}
+        onLongPress={onLongPress}
+        disabled={!source && !onLongPress}
         accessibilityRole="imagebutton"
         accessibilityLabel="사진 크게 보기"
         style={box}

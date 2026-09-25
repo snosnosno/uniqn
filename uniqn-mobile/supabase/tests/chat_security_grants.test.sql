@@ -123,8 +123,8 @@ SELECT is(
 SELECT is(
   (SELECT string_agg(tablename || ':' || cmd || ':' || roles::text || ':' || permissive, ' | ' ORDER BY tablename)
      FROM pg_policies WHERE schemaname = 'public' AND tablename LIKE 'chat\_%'),
-  'chat_conversations:SELECT:{authenticated}:PERMISSIVE | chat_messages:SELECT:{authenticated}:PERMISSIVE | chat_read_states:SELECT:{authenticated}:PERMISSIVE',
-  'B2 채팅 정책은 테이블당 SELECT 1개 · TO authenticated 뿐(쓰기 정책 0 = RPC 전용)');
+  'chat_blocks:SELECT:{authenticated}:PERMISSIVE | chat_conversations:SELECT:{authenticated}:PERMISSIVE | chat_messages:SELECT:{authenticated}:PERMISSIVE | chat_read_states:SELECT:{authenticated}:PERMISSIVE',
+  'B2 채팅 정책은 테이블당 SELECT 1개 · TO authenticated 뿐(쓰기 정책 0 = RPC 전용 · S4 chat_blocks 포함 · 삭제 큐는 정책 0)');
 
 SELECT throws_ok(
   $$ SELECT jpc_test_set_user(gen_random_uuid());

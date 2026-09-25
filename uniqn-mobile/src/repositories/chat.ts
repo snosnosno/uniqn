@@ -8,6 +8,7 @@ export type {
   IChatRepository,
   ChatSendInput,
   ChatMessageCursor,
+  ChatReportInput,
 } from './interfaces/IChatRepository';
 export { SupabaseChatRepository } from './supabase/ChatRepository';
 

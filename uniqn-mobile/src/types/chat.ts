@@ -26,7 +26,7 @@ export interface ChatConversationSummary {
   lastMessagePreview: string | null;
   /** 99 캡 */
   unreadCount: number;
-  /** S4 차단 자리 — S1 은 항상 false */
+  /** (S4) 이 방이 차단 상태인가(어느 쪽이 막았든) */
   blocked: boolean;
 }
 
@@ -97,3 +97,18 @@ export type ChatOpenMethod =
   | 'posting_tile'
   | 'board_tab'
   | 'list';
+
+/** (S4) 방 안전 상태 — `chat_blocks` 행 + 내 `chat_read_states.muted_until` */
+export interface ChatSafetyState {
+  /** 막은 쪽들 — 서버는 쪽별 1행(보안 리뷰 M1). 차단이 없으면 빈 배열 */
+  blockedBySides: readonly ChatSide[];
+  /** PostgREST 원문('infinity' 포함). 뮤트가 아니면 null */
+  mutedUntil: string | null;
+}
+
+/** (S4 M1) 정화 EF 성공 응답 — 전송 RPC 에는 이 width/height 를 쓴다 */
+export interface ChatSanitizedImage {
+  path: string;
+  width: number;
+  height: number;
+}

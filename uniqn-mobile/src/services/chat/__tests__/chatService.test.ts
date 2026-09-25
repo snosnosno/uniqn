@@ -13,9 +13,17 @@ const mockOpen = jest.fn();
 const mockSend = jest.fn();
 const mockMarkRead = jest.fn();
 const mockHide = jest.fn();
+const mockSetMuted = jest.fn();
+const mockBlock = jest.fn();
+const mockUnblock = jest.fn();
+const mockReport = jest.fn();
 
 jest.mock('@/repositories/chat', () => ({
   chatRepository: {
+    setMuted: (...a: unknown[]) => mockSetMuted(...a),
+    block: (...a: unknown[]) => mockBlock(...a),
+    unblock: (...a: unknown[]) => mockUnblock(...a),
+    reportMessage: (...a: unknown[]) => mockReport(...a),
     openConversation: (...a: unknown[]) => mockOpen(...a),
     sendMessage: (...a: unknown[]) => mockSend(...a),
     markRead: (...a: unknown[]) => mockMarkRead(...a),
@@ -122,5 +130,65 @@ describe('sendImage (S2b)', () => {
       imageHeight: 1200,
     });
     expect(mockOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe('chatService — (S4) 안전', () => {
+  const MSG = '9b2d6f3e-1c4a-4e8b-9f1a-2b3c4d5e6f70';
+
+  it('setMuted / block / unblock 은 Repository 로 그대로 넘긴다', async () => {
+    await chatService.setMuted(CONV, true);
+    await chatService.block(CONV);
+    await chatService.unblock(CONV);
+    expect(mockSetMuted).toHaveBeenCalledWith(CONV, true);
+    expect(mockBlock).toHaveBeenCalledWith(CONV);
+    expect(mockUnblock).toHaveBeenCalledWith(CONV);
+  });
+
+  it('reportMessage — 설명은 다듬고, 비었으면 null 로 보낸다', async () => {
+    mockReport.mockResolvedValue('r1');
+    await expect(
+      chatService.reportMessage({ messageId: MSG, reason: 'abuse', detail: '   ' })
+    ).resolves.toBe('r1');
+    expect(mockReport).toHaveBeenCalledWith({ messageId: MSG, reason: 'abuse', detail: null });
+
+    await chatService.reportMessage({ messageId: MSG, reason: 'other', detail: '  돈을 요구함 ' });
+    expect(mockReport).toHaveBeenLastCalledWith({
+      messageId: MSG,
+      reason: 'other',
+      detail: '돈을 요구함',
+    });
+  });
+
+  it('reportMessage — 모르는 사유는 RPC 없이 거부', async () => {
+    await expect(
+      chatService.reportMessage({ messageId: MSG, reason: 'hate' as never, detail: null })
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockReport).not.toHaveBeenCalled();
+  });
+
+  it('reportMessage — 설명 500자 초과는 RPC 없이 거부', async () => {
+    await expect(
+      chatService.reportMessage({ messageId: MSG, reason: 'spam', detail: '가'.repeat(501) })
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockReport).not.toHaveBeenCalled();
+  });
+
+  it('reportMessage — 스크립트 형태 설명(XSS)은 RPC 없이 거부', async () => {
+    await expect(
+      chatService.reportMessage({
+        messageId: MSG,
+        reason: 'spam',
+        detail: '<script>alert(1)</script>',
+      })
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockReport).not.toHaveBeenCalled();
+  });
+
+  it('reportMessage — 메시지 id 가 uuid 가 아니면 RPC 없이 거부', async () => {
+    await expect(
+      chatService.reportMessage({ messageId: 'outbox-1', reason: 'spam', detail: null })
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(mockReport).not.toHaveBeenCalled();
   });
 });

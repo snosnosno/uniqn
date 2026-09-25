@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { ChatOutboxBubble, ChatServerBubble, ChatUnreadDivider } from './ChatMessageBubble';
-import type { ChatTimelineItem } from '@/types/chat';
+import type { ChatMessage, ChatTimelineItem } from '@/types/chat';
 
 export type ChatRow = ChatTimelineItem | { type: 'divider'; key: 'divider' };
 
@@ -13,6 +13,9 @@ interface ChatTimelineRowProps {
   showSenderName: boolean;
   onRetry: (clientMessageId: string) => void;
   onDiscard: (clientMessageId: string) => void;
+  /** (S4) 이 메시지를 신고할 수 있으면 길게 누를 때 부른다 — 판정은 호출자 */
+  onLongPressMessage?: (message: ChatMessage) => void;
+  canReport?: (message: ChatMessage) => boolean;
 }
 
 export function ChatTimelineRow({
@@ -21,6 +24,8 @@ export function ChatTimelineRow({
   showSenderName,
   onRetry,
   onDiscard,
+  onLongPressMessage,
+  canReport,
 }: ChatTimelineRowProps) {
   if (row.type === 'divider') return <ChatUnreadDivider />;
   if (row.type === 'outbox') {
@@ -31,6 +36,7 @@ export function ChatTimelineRow({
       message={row.message}
       isMine={!!myUid && row.message.senderId === myUid}
       showSenderName={showSenderName}
+      onLongPress={onLongPressMessage && canReport?.(row.message) ? onLongPressMessage : undefined}
     />
   );
 }

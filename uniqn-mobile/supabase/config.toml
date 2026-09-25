@@ -123,6 +123,11 @@ verify_jwt = false
 [functions.geocode-address]
 verify_jwt = false
 
+# 채팅 사진 서버 정화(보안 M1) — 사용자 JWT 호출. geocode-address 와 같은 ES256 사유로
+# 게이트웨이 검증을 끄고 함수 내부에서 auth.getUser() + 경로 소유(2세그먼트 = 호출자)를 확인한다.
+[functions.chat-media-sanitize]
+verify_jwt = false
+
 # 명시적으로 verify_jwt = true 유지 (게이트웨이 검증)
 # - sync-schedule-board-outbox: pg_cron이 service_role JWT로 호출
 # - send-job-posting-announcement, send-system-announcement: 관리자 user JWT 호출

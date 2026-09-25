@@ -6,6 +6,8 @@
  *    생략하고 재인코딩은 거친다. (웹은 E2E 가 EXIF 부재를 단언, 네이티브는 실기기 체크리스트)
  * 🔑 업로드 바이트는 base64 → ArrayBuffer. RN 에서 fetch(file://)→Blob 을 넘기면 0바이트가
  *    저장된다(storageService.ts 머리말 — 2026-07-24 실사고).
+ * 🔒 (S4 M1) 업로드는 `chat-media-inbox` 로만 간다. 정화 EF 가 EXIF 등을 한 번 더 떼고 `chat-media` 로
+ *    옮겨야 전송할 수 있다(sanitizeChatImage).
  * 🔑 경로는 서버가 `format('%s/%s/%s.jpg', 방, uid, clientMessageId)` 과 **완전 일치**로 대조한다
  *    → 전부 소문자.
  */
@@ -18,6 +20,7 @@ import { CHAT_ERROR_CODES } from '@/errors/chat';
 import { chatRepository } from '@/repositories/chat';
 import { CHAT_IMAGE_LONG_EDGE, CHAT_JPEG_QUALITY, CHAT_MAX_UPLOAD_BYTES } from '@/constants/chat';
 import { logger } from '@/utils/logger';
+import type { ChatSanitizedImage } from '@/types/chat';
 
 /** 한도를 넘었을 때 한 번 더 시도하는 품질 */
 const CHAT_JPEG_RETRY_QUALITY = 0.6;
@@ -126,11 +129,22 @@ export interface UploadChatImageInput {
   image: PreparedChatImage;
 }
 
-/** 재인코딩된 바이트를 올리고 경로를 돌려준다(이미 있으면 성공 — 재전송) */
+/** 재인코딩된 바이트를 접수 창구(inbox)에 올리고 경로를 돌려준다(이미 있으면 성공 — 재전송) */
 export async function uploadChatImage(input: UploadChatImageInput): Promise<string> {
   const path = buildChatImagePath(input.conversationId, input.uid, input.clientMessageId);
   await chatRepository.uploadImage(path, input.image.bytes);
   return path;
+}
+
+/**
+ * (S4 M1) inbox 에 올린 사진을 서버가 걸러 chat-media 로 옮긴다. 전송에는 **서버가 잰 크기**를 쓴다.
+ * EF 는 멱등(이미 정화됐으면 200)이라 재전송은 다시 올리지 않고 여기서부터 다시 부르면 된다.
+ */
+export async function sanitizeChatImage(path: string): Promise<ChatSanitizedImage> {
+  const result = await chatRepository.sanitizeImage(path);
+  // 전송 RPC 는 경로를 완전 일치로 대조한다 — 다른 경로가 오면 보내지 않는다
+  if (result.path !== path) throw imageRejected('정화 EF 가 다른 경로를 돌려줌');
+  return result;
 }
 
 /**

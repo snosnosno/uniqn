@@ -31,6 +31,7 @@ import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
 import { StackHeader } from '@/components/headers';
 import { EmptyState, Loading, Button } from '@/components/ui';
 import { ReportEvidenceGallery } from '@/components/admin/ReportEvidenceGallery';
+import { ChatReportEvidenceSection } from '@/components/admin/ChatReportEvidenceSection';
 import {
   AlertTriangleIcon,
   UserIcon,
@@ -415,6 +416,11 @@ export default function AdminReportDetailPage() {
 
           {/* 신고 내용 */}
           <ReportContentSection report={report} />
+
+          {/* (S4) 채팅 신고 증거 — 아는 모양의 스냅샷일 때만(경계에서 zod 검증) */}
+          {report.evidenceSnapshot ? (
+            <ChatReportEvidenceSection snapshot={report.evidenceSnapshot} />
+          ) : null}
 
           {/* 처리 이력 (이미 처리된 경우) */}
           <ReviewHistorySection report={report} />

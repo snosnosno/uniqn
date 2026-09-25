@@ -8,17 +8,24 @@
  *    아웃박스 말풍선은 서버 행이 보이는 순간 타임라인 병합이 걸러 내 깜빡임이 없다.
  */
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
-import { useChatLookup, useChatRoom, useChatRoomActions, useTrackChatOpen } from '@/hooks/chat';
+import {
+  useChatLookup,
+  useChatRoom,
+  useChatRoomActions,
+  useChatSafety,
+  useTrackChatOpen,
+} from '@/hooks/chat';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { confirmAction } from '@/utils/confirmAction';
 import { loadFailed, notFound } from '@/constants/messages';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { chatUuidSchema } from '@/schemas/chat.schema';
+import { ChatRoomMenu } from './ChatRoomMenu';
 import { ChatRoomView } from './ChatRoomView';
 
 export interface ChatRoomScreenProps {
@@ -50,6 +57,11 @@ export function ChatRoomScreen(props: ChatRoomScreenProps) {
 
   const { meta, summary, mySide, readCursor, isLoading, error } = useChatRoom(id);
   const { hide, isHiding } = useChatRoomActions(id);
+  const safety = useChatSafety(id, mySide);
+  const { setMuted, block, unblock } = safety;
+  const handleToggleMute = useCallback((next: boolean) => void setMuted(next), [setMuted]);
+  const handleBlock = useCallback(() => void block(), [block]);
+  const handleUnblock = useCallback(() => void unblock(), [unblock]);
 
   const jobPostingId = meta?.jobPostingId ?? (invalidSeeker ? null : postingParam);
   // 방 메타가 없을 때(새 방)만 공고를 따로 읽어 카드 제목·상태를 채운다
@@ -83,15 +95,15 @@ export function ChatRoomScreen(props: ChatRoomScreenProps) {
       fallbackHref="/(app)/(tabs)/board/chat"
       rightAction={
         meta ? (
-          <Pressable
-            onPress={handleLeave}
-            disabled={isHiding}
-            accessibilityRole="button"
-            accessibilityLabel="채팅방 나가기"
-            hitSlop={8}
-          >
-            <Text className="text-sm text-content-secondary dark:text-secondary-300">나가기</Text>
-          </Pressable>
+          <ChatRoomMenu
+            muted={safety.muted}
+            blockState={safety.blockState}
+            disabled={isHiding || safety.isMutating}
+            onToggleMute={handleToggleMute}
+            onBlock={handleBlock}
+            onUnblock={handleUnblock}
+            onLeave={handleLeave}
+          />
         ) : undefined
       }
     />
@@ -127,6 +139,9 @@ export function ChatRoomScreen(props: ChatRoomScreenProps) {
           readCursor={readCursor}
           onPressPosting={() => router.push(`/(app)/jobs/${jobPostingId}`)}
           onSent={isNew ? setOpenedId : undefined}
+          blockState={safety.blockState}
+          onUnblock={handleUnblock}
+          isSafetyBusy={safety.isMutating}
         />
       </SafeAreaView>
     );

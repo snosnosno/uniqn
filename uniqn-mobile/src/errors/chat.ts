@@ -8,7 +8,15 @@
  * 쓰는 범용 토큰이라 전역에 매핑하면 그쪽 문구까지 바뀐다. `ChatRepository` 가 이 매퍼를 먼저 부르고,
  * null 이면 `handleSupabaseError` 로 넘긴다(선례 `src/repositories/supabase/opsRpcError.ts`).
  */
-import { AppError, BusinessError, ERROR_CODES, PermissionError, ValidationError } from './AppError';
+import {
+  AppError,
+  AuthError,
+  BusinessError,
+  ERROR_CODES,
+  NetworkError,
+  PermissionError,
+  ValidationError,
+} from './AppError';
 
 /** 채팅 도메인 에러 코드 (E6150~) */
 export const CHAT_ERROR_CODES = {
@@ -17,12 +25,18 @@ export const CHAT_ERROR_CODES = {
   CHAT_RATE_LIMITED: 'E6152',
   CHAT_IMAGE_INVALID: 'E6153',
   CHAT_COUNTERPART_GONE: 'E6154',
-  /** S4 차단 자리 — S1 서버는 아직 던지지 않는다 */
+  /** (S4) 차단된 대화에 보내기 */
   CHAT_BLOCKED: 'E6155',
   /** 서버 다크(authenticated EXECUTE 미부여) 상태에서 호출됨 — 42501 */
   CHAT_UNAVAILABLE: 'E6156',
   /** (S2b) 사진 업로드가 storage 정책에 막힘 — 10분 20장·하루 60장 초과 또는 비참여자 */
   CHAT_IMAGE_LIMIT: 'E6157',
+  /** (S4) 같은 메시지를 다시 신고 */
+  CHAT_REPORT_DUPLICATE: 'E6158',
+  /** (S4) 하루 신고 한도(20건) 초과 */
+  CHAT_REPORT_LIMITED: 'E6159',
+  /** (S4 M1) 정화 EF 가 inbox 객체를 못 찾음 — 다시 올리면 된다(재전송 가능) */
+  CHAT_IMAGE_MISSING: 'E6160',
 } as const;
 
 type ChatTokenRule = {
@@ -68,6 +82,18 @@ const CHAT_TOKEN_RULES: readonly ChatTokenRule[] = [
     token: 'CHAT_BLOCKED',
     code: CHAT_ERROR_CODES.CHAT_BLOCKED,
     userMessage: '대화할 수 없는 상태예요.',
+    isRetryable: false,
+  },
+  {
+    token: 'DUPLICATE_REPORT',
+    code: CHAT_ERROR_CODES.CHAT_REPORT_DUPLICATE,
+    userMessage: '이미 신고한 메시지예요.',
+    isRetryable: false,
+  },
+  {
+    token: 'CHAT_REPORT_LIMITED',
+    code: CHAT_ERROR_CODES.CHAT_REPORT_LIMITED,
+    userMessage: '오늘은 더 이상 신고할 수 없어요.',
     isRetryable: false,
   },
 ];
@@ -133,6 +159,51 @@ export function mapChatStorageError(error: unknown): AppError | null {
     });
   }
   return null;
+}
+
+// ----------------------------------------------------------------------------
+// (S4 M1) 사진 정화 EF `chat-media-sanitize` 실패 응답 — { error, code }
+// ----------------------------------------------------------------------------
+
+/** EF 실패 본문(파싱 못 하면 null) */
+export interface ChatSanitizeErrorBody {
+  code?: string;
+  error?: string;
+}
+
+const IMAGE_REJECTED_MESSAGE = '사진을 보낼 수 없어요. 다시 선택해 주세요.';
+
+/**
+ * 정화 EF 실패 → AppError. 모르는 코드·본문 없음(5xx·네트워크)은 재시도 가능한 요청 실패로 본다 —
+ * EF 는 멱등이라 다시 불러도 안전하다.
+ */
+export function mapChatSanitizeError(
+  body: ChatSanitizeErrorBody | null,
+  status: number | undefined
+): AppError {
+  const message = `chat-media-sanitize 실패 (${status ?? '?'}): ${body?.code ?? '-'}`;
+  switch (body?.code) {
+    case 'CHAT_IMAGE_INVALID':
+    case 'CHAT_IMAGE_TOO_LARGE':
+      return new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_INVALID, {
+        message,
+        userMessage: IMAGE_REJECTED_MESSAGE,
+      });
+    case 'CHAT_IMAGE_NOT_FOUND':
+      return new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_MISSING, {
+        message,
+        userMessage: '사진을 보내지 못했어요. 다시 시도해 주세요.',
+        isRetryable: true,
+      });
+    case 'CHAT_IMAGE_UNAUTHENTICATED':
+      return new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, { message });
+    default:
+      return new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+        message,
+        userMessage: '사진을 보내지 못했어요. 다시 시도해 주세요.',
+        isRetryable: true,
+      });
+  }
 }
 
 export function mapChatRpcError(error: unknown): AppError | null {

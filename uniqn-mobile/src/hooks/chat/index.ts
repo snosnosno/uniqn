@@ -14,3 +14,5 @@ export { useChatLookup } from './useChatLookup';
 export { useTrackChatOpen, toChatOpenMethod } from './useTrackChatOpen';
 export { useActiveConversation } from './useActiveConversation';
 export { useChatMediaUrl, type UseChatMediaUrlResult } from './useChatMediaUrl';
+export { useChatSafety, type UseChatSafetyReturn } from './useChatSafety';
+export { useReportChatMessage, CHAT_REPORT_DONE_MESSAGE } from './useReportChatMessage';

@@ -22,6 +22,11 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
+const mockInvoke = jest.fn();
+jest.mock('@/lib/supabaseFunctions', () => ({
+  invokeEdgeFunction: (...args: unknown[]) => mockInvoke(...args),
+}));
+
 jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
@@ -289,7 +294,7 @@ describe('사진 storage (S2b)', () => {
     return api;
   }
 
-  it('uploadImage — chat-media 버킷에 JPEG · upsert:false 로 올린다', async () => {
+  it('uploadImage — (M1) chat-media-inbox 버킷에 JPEG · upsert:false 로 올린다', async () => {
     const api = bucket({
       upload: jest.fn().mockResolvedValue({ data: { path: PATH }, error: null }),
     });
@@ -297,7 +302,9 @@ describe('사진 storage (S2b)', () => {
 
     await chatRepository.uploadImage(PATH, bytes);
 
-    expect(mockStorageFrom).toHaveBeenCalledWith('chat-media');
+    // chat-media 는 직접 쓰기가 봉쇄됐다 — 접수 창구(inbox)에만 올린다
+    expect(mockStorageFrom).toHaveBeenCalledWith('chat-media-inbox');
+    expect(mockStorageFrom).not.toHaveBeenCalledWith('chat-media');
     expect(api.upload).toHaveBeenCalledWith(PATH, bytes, {
       contentType: 'image/jpeg',
       upsert: false,
@@ -366,5 +373,164 @@ describe('사진 storage (S2b)', () => {
       }),
     });
     await expect(chatRepository.createSignedImageUrl(PATH, 300)).rejects.toBeDefined();
+  });
+});
+
+describe('(S4 M1) 사진 정화 EF', () => {
+  const PATH = `${CONV}/${USER}/${CLIENT}.jpg`;
+
+  function httpError(status: number, body: unknown) {
+    const response = {
+      status,
+      json: jest.fn().mockResolvedValue(body),
+      clone() {
+        return this;
+      },
+    };
+    return Object.assign(new Error('Edge Function returned a non-2xx status code'), {
+      context: response,
+    });
+  }
+
+  it('sanitizeImage — chat-media-sanitize 에 { path } 를 POST 하고 서버 width/height 를 돌려준다', async () => {
+    mockInvoke.mockResolvedValue({ data: { path: PATH, width: 1600, height: 1200 }, error: null });
+
+    await expect(chatRepository.sanitizeImage(PATH)).resolves.toEqual({
+      path: PATH,
+      width: 1600,
+      height: 1200,
+    });
+    expect(mockInvoke).toHaveBeenCalledWith('chat-media-sanitize', { body: { path: PATH } });
+  });
+
+  it('sanitizeImage — 응답 모양이 틀리면 조용히 넘기지 않는다', async () => {
+    mockInvoke.mockResolvedValue({ data: { path: PATH }, error: null });
+    await expect(chatRepository.sanitizeImage(PATH)).rejects.toBeDefined();
+  });
+
+  it('sanitizeImage — 실패 본문의 code 로 매핑한다(INVALID → E6153)', async () => {
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: httpError(400, { error: 'bad jpeg', code: 'CHAT_IMAGE_INVALID' }),
+    });
+    await expect(chatRepository.sanitizeImage(PATH)).rejects.toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_IMAGE_INVALID,
+    });
+  });
+
+  it('sanitizeImage — NOT_FOUND 는 다시 올려야 함(E6160)', async () => {
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: httpError(404, { error: 'no object', code: 'CHAT_IMAGE_NOT_FOUND' }),
+    });
+    await expect(chatRepository.sanitizeImage(PATH)).rejects.toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_IMAGE_MISSING,
+    });
+  });
+
+  it('sanitizeImage — 본문을 못 읽는 실패(네트워크)는 재시도 가능한 요청 실패', async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: new Error('Failed to fetch') });
+    await expect(chatRepository.sanitizeImage(PATH)).rejects.toMatchObject({
+      code: ERROR_CODES.NETWORK_REQUEST_FAILED,
+      isRetryable: true,
+    });
+  });
+});
+
+describe('(S4) 안전 — 뮤트·차단·신고', () => {
+  const MSG = '9b2d6f3e-1c4a-4e8b-9f1a-2b3c4d5e6f70';
+
+  it('setMuted — chat_set_muted(p_conversation_id, p_muted)', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    await chatRepository.setMuted(CONV.toUpperCase(), true);
+    expect(mockRpc).toHaveBeenCalledWith('chat_set_muted', {
+      p_conversation_id: CONV,
+      p_muted: true,
+    });
+  });
+
+  it('block / unblock — p_conversation_id 하나', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    await chatRepository.block(CONV);
+    expect(mockRpc).toHaveBeenLastCalledWith('chat_block', { p_conversation_id: CONV });
+    await chatRepository.unblock(CONV);
+    expect(mockRpc).toHaveBeenLastCalledWith('chat_unblock', { p_conversation_id: CONV });
+  });
+
+  it('unblock — 반대쪽 해제 시도(PERMISSION_DENIED)는 서버 문구로 던진다', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: {
+        message: 'PERMISSION_DENIED: 상대가 차단한 대화는 해제할 수 없습니다',
+        code: 'P0001',
+      },
+    });
+    await expect(chatRepository.unblock(CONV)).rejects.toMatchObject({
+      code: ERROR_CODES.INFRA_PERMISSION_DENIED,
+      userMessage: '상대가 차단한 대화는 해제할 수 없습니다',
+    });
+  });
+
+  it('reportMessage — chat_report_message(p_message_id, p_reason, p_detail) → report id', async () => {
+    const REPORT = 'c56a4180-65aa-42ec-a945-5fd21dec0538';
+    mockRpc.mockResolvedValue({ data: REPORT, error: null });
+
+    await expect(
+      chatRepository.reportMessage({ messageId: MSG.toUpperCase(), reason: 'scam', detail: null })
+    ).resolves.toBe(REPORT);
+    expect(mockRpc).toHaveBeenCalledWith('chat_report_message', {
+      p_message_id: MSG,
+      p_reason: 'scam',
+      p_detail: null,
+    });
+  });
+
+  it('reportMessage — 중복 신고는 E6158', async () => {
+    mockRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'DUPLICATE_REPORT: 이미 신고한 메시지입니다', code: 'P0001' },
+    });
+    await expect(
+      chatRepository.reportMessage({ messageId: MSG, reason: 'abuse', detail: null })
+    ).rejects.toMatchObject({ code: CHAT_ERROR_CODES.CHAT_REPORT_DUPLICATE });
+  });
+
+  it('getSafetyState — chat_blocks 의 쪽별 행 전부 + 내 muted_until', async () => {
+    const blocks = queryBuilder({
+      data: [{ blocked_by_side: 'employer' }, { blocked_by_side: 'seeker' }],
+      error: null,
+    });
+    const reads = queryBuilder({ data: { muted_until: 'infinity' }, error: null });
+    mockFrom.mockImplementation((table: string) =>
+      table === 'chat_blocks' ? blocks.builder : reads.builder
+    );
+
+    await expect(chatRepository.getSafetyState(CONV.toUpperCase())).resolves.toEqual({
+      blockedBySides: ['employer', 'seeker'],
+      mutedUntil: 'infinity',
+    });
+    expect(blocks.calls).toEqual(
+      expect.arrayContaining([
+        ['select', ['blocked_by_side']],
+        ['eq', ['conversation_id', CONV]],
+      ])
+    );
+    expect(reads.calls).toEqual(
+      expect.arrayContaining([
+        ['select', ['muted_until']],
+        ['eq', ['conversation_id', CONV]],
+      ])
+    );
+    mockFrom.mockReset();
+  });
+
+  it('getSafetyState — 행이 없으면 차단 없음·뮤트 없음', async () => {
+    const empty = queryBuilder({ data: null, error: null });
+    mockFrom.mockImplementation(() => empty.builder);
+    await expect(chatRepository.getSafetyState(CONV)).resolves.toEqual({
+      blockedBySides: [],
+      mutedUntil: null,
+    });
+    mockFrom.mockReset();
   });
 });

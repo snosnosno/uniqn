@@ -5,12 +5,16 @@
  *   1. admin 로그인 상태에서 신고 관리 메뉴 접근 확인
  *   2. 테스트 신고 시드 → 관리자 신고 상세 접근 → 처리 폼 확인
  *   3. 비관리자(staff)가 admin 라우트에 접근 시 차단
+ *   4. (채팅 S4) 구직자가 방에서 상대 메시지를 신고 → 관리자 상세에 증거 스냅샷 본문이 보인다
+ *      — 로컬 스택 + e2e:chat-enable 전제(helpers/chat-seed.ts). CI 에서 전제가 없으면 fail.
  */
 
 import { test, expect, type Page } from '@playwright/test';
 import path from 'path';
 import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
 import { E2E_TEST_WORKSPACE_NAME } from '../../helpers/workspace-seed';
+import { prepareChatE2E, seedChatPosting } from '../../helpers/chat-seed';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 import { AdminDashboardPage } from '../../pages/admin/dashboard.page';
 import { AdminReportsPage } from '../../pages/admin/reports.page';
 
@@ -20,6 +24,7 @@ import { AdminReportsPage } from '../../pages/admin/reports.page';
 
 const adminState = path.join(__dirname, '../../fixtures/storage-states/admin.json');
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
+const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
 
 // ---------------------------------------------------------------------------
 // 헬퍼
@@ -371,6 +376,139 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       await expect(page.getByText('관리자 대시보드')).not.toBeVisible({ timeout: 5_000 });
 
       await context.close();
+    });
+  });
+
+  // ── 시나리오 4: 채팅 메시지 신고 → 관리자 증거 스냅샷 ─────────────────────
+
+  test.describe('시나리오 4: 채팅 신고 증거 스냅샷', () => {
+    const TAG = 'admin-report-chat';
+    const JOB_ID = crypto.randomUUID();
+    const JOB_TITLE = `채팅 신고 E2E ${JOB_ID.slice(0, 6)}`;
+    const FIRST = `안녕하세요 신고 테스트 ${JOB_ID.slice(0, 4)}`;
+    const SUSPICIOUS = `선입금 10만원 먼저 보내주세요 ${JOB_ID.slice(0, 4)}`;
+    let admin: Awaited<ReturnType<typeof prepareChatE2E>> = null;
+
+    test.beforeAll(async () => {
+      admin = await prepareChatE2E(TAG);
+      test.skip(
+        !admin,
+        '로컬 스택 + 채팅 GRANT/플래그 전제가 없어 건너뜀(npm run e2e:chat-enable)'
+      );
+      if (admin) await seedChatPosting(admin, JOB_ID, JOB_TITLE, TAG);
+    });
+
+    test.afterAll(async () => {
+      if (!admin) return;
+      await admin.from('reports').delete().eq('job_posting_id', JOB_ID);
+      await admin.from('job_postings').delete().eq('id', JOB_ID); // 방·메시지 CASCADE
+    });
+
+    test('구직자가 상대 메시지를 길게 눌러 신고하면 관리자 상세에 스냅샷 본문이 보인다', async ({
+      browser,
+    }) => {
+      test.setTimeout(150_000);
+      if (!admin) return;
+      const db = admin;
+
+      // 1) 구직자: 공고 상세 → 채팅 → 첫 전송(방 개설)
+      const staffContext = await browser.newContext({ storageState: staffState });
+      const staffPage = await staffContext.newPage();
+      await staffPage.goto(`/jobs/${JOB_ID}`);
+      await waitForAppReady(staffPage);
+      await staffPage.getByTestId('chat-start-button').click();
+      await staffPage.getByTestId('chat-composer-input').fill(FIRST);
+      await staffPage.getByTestId('chat-composer-send').click();
+
+      let conversationId = '';
+      await expect
+        .poll(async () => {
+          const { data } = await db
+            .from('chat_conversations')
+            .select('id')
+            .eq('job_posting_id', JOB_ID)
+            .maybeSingle();
+          conversationId = (data as { id?: string } | null)?.id ?? '';
+          return conversationId;
+        })
+        .not.toBe('');
+
+      // 2) 구인자: 목록 → 방 → 신고당할 메시지 전송
+      const employerContext = await browser.newContext({ storageState: employerState });
+      const employerPage = await employerContext.newPage();
+      await employerPage.goto(`/chat/${conversationId}`);
+      await waitForAppReady(employerPage);
+      await employerPage.getByTestId('chat-composer-input').fill(SUSPICIOUS);
+      await employerPage.getByTestId('chat-composer-send').click();
+
+      let messageId = '';
+      await expect
+        .poll(async () => {
+          const { data } = await db
+            .from('chat_messages')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .eq('body', SUSPICIOUS)
+            .maybeSingle();
+          messageId = (data as { id?: string } | null)?.id ?? '';
+          return messageId;
+        })
+        .not.toBe('');
+
+      // 3) 구직자: 상대 말풍선 길게 누르기 → 신고하기 → 사유·설명 → 제출
+      await staffPage.goto(`/chat/${conversationId}`);
+      await waitForAppReady(staffPage);
+      const bubble = staffPage.getByTestId(`chat-bubble-${messageId}`);
+      await expect(bubble).toBeVisible({ timeout: 20_000 });
+      await bubble.click({ delay: 900 }); // RN-web Pressable onLongPress(350ms) — 누른 채 유지
+      await staffPage.getByRole('button', { name: '신고하기' }).click();
+      await staffPage.getByRole('radio', { name: '사기·금전 요구' }).click();
+      await staffPage.getByTestId('chat-report-detail').fill('입금을 먼저 요구했어요');
+      await staffPage.getByRole('button', { name: '신고 제출' }).click();
+      await expect(staffPage.getByText('신고가 접수됐어요. 운영팀이 확인할게요.')).toBeVisible({
+        timeout: 10_000,
+      });
+
+      // 서버가 DB 에서 채운 스냅샷 — 클라가 본문을 보내지 않았는데도 본문이 들어 있어야 한다
+      let reportId = '';
+      await expect
+        .poll(async () => {
+          const { data } = await db
+            .from('reports')
+            .select('id')
+            .eq('reporter_id', SUPABASE_QA_ACCOUNTS.staff.id)
+            .eq('job_posting_id', JOB_ID)
+            .maybeSingle();
+          reportId = (data as { id?: string } | null)?.id ?? '';
+          return reportId;
+        })
+        .not.toBe('');
+      // 스냅샷은 reports 가 아니라 deny-all 테이블 chat_report_evidence 에 있다(service role 로만 보인다)
+      const { data: evidence } = await db
+        .from('chat_report_evidence')
+        .select('snapshot')
+        .eq('report_id', reportId)
+        .maybeSingle();
+      expect(
+        JSON.stringify((evidence as { snapshot?: unknown } | null)?.snapshot ?? null)
+      ).toContain(SUSPICIOUS);
+
+      // 4) 관리자: 신고 상세 → 채팅 신고 증거 섹션
+      const adminContext = await browser.newContext({ storageState: adminState });
+      const adminPage = await adminContext.newPage();
+      const reportsPage = new AdminReportsPage(adminPage);
+      await reportsPage.gotoReportDetail(reportId);
+      await waitForAppInit(adminPage);
+
+      await expect(adminPage.getByText('채팅 신고 증거')).toBeVisible({ timeout: 15_000 });
+      // 설명 문장('[채팅 신고] 사기·금전 요구…')에도 들어 있어 정확 일치로 라벨만 집는다(CI strict mode 실측)
+      await expect(adminPage.getByText('사기·금전 요구', { exact: true })).toBeVisible();
+      await expect(adminPage.getByText(JOB_TITLE).first()).toBeVisible();
+      await expect(adminPage.getByText(SUSPICIOUS)).toBeVisible();
+      await expect(adminPage.getByText(FIRST)).toBeVisible(); // 직전 메시지(문맥)도 들어 있다
+      await expect(adminPage.getByText('신고된 메시지')).toHaveCount(1);
+
+      await Promise.all([staffContext.close(), employerContext.close(), adminContext.close()]);
     });
   });
 });

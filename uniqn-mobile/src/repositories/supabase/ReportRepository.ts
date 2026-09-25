@@ -23,6 +23,7 @@ import {
 } from '@/errors';
 import { handleSupabaseError, toCamelCase, paginatedQuery, runRpc } from '@/utils/supabase';
 import { getReportSeverity } from '@/types/report';
+import { chatReportEvidenceSchema } from '@/schemas/report.schema';
 import { generateId } from '@/utils/generateId';
 import type {
   IReportRepository,
@@ -35,6 +36,7 @@ import type {
   CreateReportInput,
   ReviewReportInput,
   LocalReportEvidence,
+  ChatReportEvidence,
 } from '@/types/report';
 import { loadFailed, notFound } from '@/constants/messages';
 
@@ -97,6 +99,42 @@ function rowToReport(row: Record<string, unknown>): Report {
 }
 
 /**
+ * (S4) 채팅 신고 증거 — 스냅샷은 reports 가 아니라 deny-all 테이블 `chat_report_evidence` 에 있다
+ * (위조 차단·신고자가 탈퇴자 원문을 계속 읽지 못하게 — 보안 H1·DB M1·D5). 관리자는 SECDEF RPC
+ * `admin_get_report_evidence` 로만 받는다.
+ * 실패해도 신고 상세는 보여야 하므로 섹션만 빠진다.
+ */
+async function fetchChatEvidence(reportId: string): Promise<ChatReportEvidence | null> {
+  const { data, error } = await supabase.rpc('admin_get_report_evidence', {
+    p_report_id: reportId,
+  });
+  if (error) {
+    logger.warn('채팅 신고 증거 조회 실패 — 표시 생략', {
+      component: COMPONENT,
+      reportId,
+      code: (error as { code?: string }).code,
+    });
+    return null;
+  }
+  return parseEvidenceSnapshot(data, reportId);
+}
+
+/**
+ * (S4) 채팅 신고 증거 스냅샷 — 서버가 채우는 jsonb 라 경계에서 검증한다.
+ * 모르는 모양이면 싣지 않는다(관리자 화면이 섹션을 숨긴다 — 크래시 금지).
+ */
+function parseEvidenceSnapshot(value: unknown, reportId: unknown): ChatReportEvidence | null {
+  if (value === null || value === undefined) return null;
+  const parsed = chatReportEvidenceSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  logger.warn('신고 증거 스냅샷 모양을 알 수 없음 — 표시 생략', {
+    component: COMPONENT,
+    reportId: typeof reportId === 'string' ? reportId : undefined,
+  });
+  return null;
+}
+
+/**
  * 증빙 Storage 경로 생성 — `{업로더uid}/{제출id}/{timestamp}-{random}.{ext}`
  *
  * 첫 세그먼트가 업로더 uid 여야 Storage RLS(`storage.foldername(name)[1] = auth.uid()`)를 통과한다.
@@ -133,7 +171,9 @@ export class SupabaseReportRepository implements IReportRepository {
 
       if (!data) return null;
 
-      return rowToReport(data as Record<string, unknown>);
+      const report = rowToReport(data as Record<string, unknown>);
+      const evidence = await fetchChatEvidence(reportId);
+      return evidence ? { ...report, evidenceSnapshot: evidence } : report;
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '신고 상세 조회', table: TABLES.REPORTS });

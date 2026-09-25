@@ -8,15 +8,28 @@
  * 🔑 에러: 채팅 매퍼(`mapChatRpcError`) 먼저 → 못 잡으면 `handleSupabaseError`.
  */
 import { supabase } from '@/lib/supabase';
-import { CHAT_MEDIA_BUCKET } from '@/constants/chat';
-import { isChatStorageDuplicate, mapChatRpcError, mapChatStorageError } from '@/errors/chat';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
+import {
+  CHAT_MEDIA_BUCKET,
+  CHAT_MEDIA_INBOX_BUCKET,
+  CHAT_MEDIA_SANITIZE_FUNCTION,
+} from '@/constants/chat';
+import {
+  isChatStorageDuplicate,
+  mapChatRpcError,
+  mapChatSanitizeError,
+  mapChatStorageError,
+  type ChatSanitizeErrorBody,
+} from '@/errors/chat';
 import { handleSupabaseError } from '@/utils/supabase';
 import {
   CHAT_CONVERSATION_COLUMNS,
   CHAT_MESSAGE_COLUMNS,
+  chatBlockRowSchema,
   chatConversationRowSchema,
   chatListRowSchema,
   chatMessageRowSchema,
+  chatSanitizedImageSchema,
   chatSendResultSchema,
   chatUuidSchema,
 } from '@/schemas/chat.schema';
@@ -24,10 +37,13 @@ import type {
   ChatConversationMeta,
   ChatConversationSummary,
   ChatMessage,
+  ChatSafetyState,
+  ChatSanitizedImage,
   ChatSendResult,
 } from '@/types/chat';
 import type {
   ChatMessageCursor,
+  ChatReportInput,
   ChatSendInput,
   IChatRepository,
 } from '../interfaces/IChatRepository';
@@ -43,8 +59,36 @@ function failStorage(error: unknown, operation: string): never {
   if (mapped) throw mapped;
   handleSupabaseError(error ?? new Error(`${operation}: 응답이 비었습니다`), {
     operation,
-    table: 'storage.chat-media',
+    table: 'storage.chat-media-inbox',
   });
+}
+
+/** FunctionsHttpError.context(fetch Response)에서 `{ error, code }` 를 꺼낸다. 못 읽으면 null */
+async function readFunctionError(
+  error: unknown
+): Promise<{ body: ChatSanitizeErrorBody | null; status: number | undefined }> {
+  const ctx = (error as { context?: unknown } | null)?.context as
+    | { status?: unknown; json?: () => Promise<unknown>; clone?: () => unknown }
+    | undefined;
+  const status = typeof ctx?.status === 'number' ? ctx.status : undefined;
+  if (!ctx || typeof ctx.json !== 'function') return { body: null, status };
+  try {
+    // 본문은 한 번만 읽힌다 — clone 이 있으면 그쪽을 읽는다
+    const target = (typeof ctx.clone === 'function' ? ctx.clone() : ctx) as {
+      json: () => Promise<unknown>;
+    };
+    const raw = (await target.json()) as Record<string, unknown> | null;
+    if (!raw || typeof raw !== 'object') return { body: null, status };
+    return {
+      body: {
+        code: typeof raw.code === 'string' ? raw.code : undefined,
+        error: typeof raw.error === 'string' ? raw.error : undefined,
+      },
+      status,
+    };
+  } catch {
+    return { body: null, status };
+  }
 }
 
 const lower = (id: string) => chatUuidSchema.parse(id);
@@ -190,12 +234,24 @@ export class SupabaseChatRepository implements IChatRepository {
   }
 
   async uploadImage(path: string, bytes: ArrayBuffer): Promise<void> {
+    // (M1) chat-media 직접 쓰기는 서버가 봉쇄했다 — 접수 창구(inbox)에만 올리고 EF 가 옮긴다.
     // upsert:false — 덮어쓰기를 허용하면 이미 보낸 사진을 같은 경로로 바꿔치기할 수 있다
     const { error } = await supabase.storage
-      .from(CHAT_MEDIA_BUCKET)
+      .from(CHAT_MEDIA_INBOX_BUCKET)
       .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
     if (!error || isChatStorageDuplicate(error)) return;
     failStorage(error, 'uploadImage');
+  }
+
+  async sanitizeImage(path: string): Promise<ChatSanitizedImage> {
+    const { data, error } = await invokeEdgeFunction<unknown>(CHAT_MEDIA_SANITIZE_FUNCTION, {
+      body: { path },
+    });
+    if (error) {
+      const { body, status } = await readFunctionError(error);
+      throw mapChatSanitizeError(body, status);
+    }
+    return chatSanitizedImageSchema.parse(data);
   }
 
   async createSignedImageUrl(path: string, expiresInSec: number): Promise<string> {
@@ -210,5 +266,60 @@ export class SupabaseChatRepository implements IChatRepository {
       });
     }
     return data.signedUrl;
+  }
+
+  async setMuted(conversationId: string, muted: boolean): Promise<void> {
+    const { error } = await supabase.rpc('chat_set_muted', {
+      p_conversation_id: lower(conversationId),
+      p_muted: muted,
+    });
+    if (error) fail(error, 'chat_set_muted');
+  }
+
+  async block(conversationId: string): Promise<void> {
+    const { error } = await supabase.rpc('chat_block', {
+      p_conversation_id: lower(conversationId),
+    });
+    if (error) fail(error, 'chat_block');
+  }
+
+  async unblock(conversationId: string): Promise<void> {
+    const { error } = await supabase.rpc('chat_unblock', {
+      p_conversation_id: lower(conversationId),
+    });
+    if (error) fail(error, 'chat_unblock');
+  }
+
+  async reportMessage(input: ChatReportInput): Promise<string> {
+    const { data, error } = await supabase.rpc('chat_report_message', {
+      p_message_id: lower(input.messageId),
+      p_reason: input.reason,
+      p_detail: input.detail,
+    });
+    if (error) fail(error, 'chat_report_message');
+    return chatUuidSchema.parse(data);
+  }
+
+  async getSafetyState(conversationId: string): Promise<ChatSafetyState> {
+    const id = lower(conversationId);
+    // 두 테이블 모두 RLS 가 방 멤버(읽음 상태는 본인 행)만 보여 준다
+    const [blocks, reads] = await Promise.all([
+      supabase.from('chat_blocks').select('blocked_by_side').eq('conversation_id', id),
+      supabase
+        .from('chat_read_states')
+        .select('muted_until')
+        .eq('conversation_id', id)
+        .maybeSingle(),
+    ]);
+    if (blocks.error) fail(blocks.error, 'getSafetyState', 'chat_blocks');
+    if (reads.error) fail(reads.error, 'getSafetyState', 'chat_read_states');
+    const mutedUntil = (reads.data as { muted_until?: unknown } | null)?.muted_until;
+    return {
+      // 쪽별 1행 → 최대 2행(maybeSingle 이면 두 쪽이 다 막은 방에서 오류가 난다)
+      blockedBySides: ((blocks.data ?? []) as unknown[]).map(
+        (row) => chatBlockRowSchema.parse(row).blocked_by_side
+      ),
+      mutedUntil: typeof mutedUntil === 'string' ? mutedUntil : null,
+    };
   }
 }
