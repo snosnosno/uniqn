@@ -6,8 +6,8 @@
 -- 고정하려는 계약
 --   A. 신규 함수 12개 — SECDEF 4규칙(wiki decisions/secdef-hardening)
 --      · 호출 함수 11개: anon EXECUTE 없음 · service_role 있음 · SECDEF · pg_temp
---      · 🔒 서버 다크 착지: open·send 는 authenticated 도 실행 불가(공개 ON 마이그 전까지),
---        나머지 9개(RLS·storage 헬퍼, 읽기, 방이 없으면 무해한 읽음/나가기)는 authenticated 가능
+--      · 공개 ON(20260926110000, 09-26): open·send 포함 11개 모두 authenticated 가능, anon 불가
+--        (그 전까지는 서버 다크 착지 — open·send 미부여)
 --      · 트리거 함수 1개: PUBLIC·anon·authenticated 전부 회수(규칙 4)
 --      · volatility: rate limit 을 부르는 open/send 와 쓰기 RPC 는 VOLATILE
 --        (STABLE 이면 플래너가 접어 카운트가 조용히 누락 — 20260719061931:25-27)
@@ -60,18 +60,20 @@ SELECT is(
 SELECT is(
   (SELECT coalesce(string_agg(sig, ', ' ORDER BY sig), '') FROM chat_fns
     WHERE NOT has_function_privilege('authenticated', to_regprocedure(sig), 'EXECUTE')),
-  'public.chat_open_conversation(uuid,uuid), public.chat_send_message(uuid,text,text,text,integer,integer,uuid)',
-  'A4 authenticated 가 실행 못 하는 것은 쓰기 진입점 open·send 둘뿐(나머지 9개는 RLS·읽기에 필요)');
+  '',
+  'A4 공개 ON(20260926110000) 후 authenticated 는 채팅 함수 11개를 모두 실행한다');
 
 SELECT ok(
-  NOT has_function_privilege('authenticated', 'public.chat_open_conversation(uuid,uuid)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.chat_send_message(uuid,text,text,text,integer,integer,uuid)', 'EXECUTE'),
-  'A4b 🔒 서버 다크 착지 — 공개 ON 전에는 인증 사용자도 방을 열거나 보낼 수 없다(보안 리뷰 H-2)');
+  has_function_privilege('authenticated', 'public.chat_open_conversation(uuid,uuid)', 'EXECUTE')
+  AND has_function_privilege('authenticated', 'public.chat_send_message(uuid,text,text,text,integer,integer,uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.chat_open_conversation(uuid,uuid)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.chat_send_message(uuid,text,text,text,integer,integer,uuid)', 'EXECUTE'),
+  'A4b 공개 ON — 인증 사용자는 방을 열고 보낼 수 있고, anon 은 여전히 불가');
 
-SELECT throws_ok(
+SELECT throws_like(
   $$ SELECT jpc_test_set_user(gen_random_uuid());
      SELECT public.chat_open_conversation(gen_random_uuid()); $$,
-  '42501', NULL, 'A4c 다크 상태에서 authenticated 의 개설 호출은 권한 오류(행동 확인)');
+  'PERMISSION_DENIED%', 'A4c 공개 ON 후 개설 호출은 권한 오류(42501)가 아니라 함수 본문 게이트에서 거부(행동 확인)');
 RESET ROLE;
 
 SELECT is(
