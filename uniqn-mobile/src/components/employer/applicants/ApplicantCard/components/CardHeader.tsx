@@ -90,14 +90,24 @@ export const CardHeader = React.memo(function CardHeader({
           className="mr-3"
           blurhash={profilePhotoURLBlurhash}
         />
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
+        {/*
+          두 줄 구성 — 1줄: 이름(+새 지원 점), 2줄: 점수·리뷰·노쇼·상태.
+          한 줄에 전부 두면 이름이 길거나 칩이 늘 때 "리뷰 N건"이 상태 배지 밑으로 파고들어
+          겹쳐 보였다(실기기 캡처). 2줄은 flex-wrap 이라 칩이 늘어도 넘치지 않고 줄바꿈한다.
+        */}
+        <View className="min-w-0 flex-1">
+          <View className="flex-row items-center gap-1.5">
+            <Text
+              numberOfLines={1}
+              className="shrink text-base font-sans-semibold text-content-primary dark:text-off-white"
+            >
               {displayName}
             </Text>
             {!isRead && (
               <View className="h-2 w-2 rounded-sm bg-primary-500" accessibilityLabel="새 지원자" />
             )}
+          </View>
+          <View className="mt-1 flex-row flex-wrap items-center gap-x-2 gap-y-1">
             {typeof bubbleScore === 'number' ? (
               <BubbleScoreBadge score={bubbleScore} size="sm" />
             ) : null}
@@ -124,11 +134,11 @@ export const CardHeader = React.memo(function CardHeader({
                 </Text>
               </View>
             ) : null}
+            <Badge variant="chip" size="sm" dot>
+              {APPLICATION_STATUS_LABELS[status]}
+            </Badge>
           </View>
         </View>
-        <Badge variant="chip" size="sm" dot>
-          {APPLICATION_STATUS_LABELS[status]}
-        </Badge>
       </Pressable>
 
       {/* 펼침/접힘 버튼 */}
@@ -137,7 +147,7 @@ export const CardHeader = React.memo(function CardHeader({
         accessibilityRole="button"
         accessibilityLabel={isExpanded ? '지원 상세 접기' : '지원 상세 열기'}
         accessibilityState={{ expanded: isExpanded }}
-        className="ml-2 px-3 py-1 rounded-sm bg-surface-card dark:bg-surface active:opacity-60 flex-row items-center"
+        className="ml-2 min-h-[44px] px-3 rounded-sm bg-surface-card dark:bg-surface active:opacity-60 flex-row items-center"
         hitSlop={8}
       >
         <Text className="text-xs font-sans-medium text-content-muted dark:text-secondary-300">
