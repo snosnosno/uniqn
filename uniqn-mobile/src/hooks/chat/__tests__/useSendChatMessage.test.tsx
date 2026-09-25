@@ -123,6 +123,27 @@ describe('useSendChatMessage', () => {
     expect(onSent).toHaveBeenCalledWith(CONV);
   });
 
+  it('새 방에서 첫 open 이 끝나기 전 두 번 보내도 open 은 한 번(새 방 한도 토큰 보호)', async () => {
+    let resolveOpen: (id: string) => void = () => undefined;
+    mockOpen.mockReturnValue(new Promise<string>((r) => (resolveOpen = r)));
+    mockSendText.mockResolvedValue({ messageId: 'm', createdAt: 'x', deduped: false });
+    const { result } = renderHook(
+      () => useSendChatMessage({ conversationId: null, jobPostingId: 'p1', seekerId: null }),
+      { wrapper: wrapper() }
+    );
+
+    await act(async () => {
+      const a = result.current.send('하나');
+      const b = result.current.send('둘');
+      resolveOpen(CONV);
+      await Promise.all([a, b]);
+    });
+
+    expect(mockOpen).toHaveBeenCalledTimes(1);
+    expect(mockSendText).toHaveBeenCalledTimes(2);
+    expect(mockSendText.mock.calls.every((c) => c[0].conversationId === CONV)).toBe(true);
+  });
+
   it('방 열기가 실패해도 말풍선은 failed 로 남는다', async () => {
     mockOpen.mockRejectedValue(new Error('CHAT_OPEN_LIMITED'));
     const { result } = renderHook(

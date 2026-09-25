@@ -7,5 +7,6 @@ import { ChatRoomScreen } from '@/components/chat';
 
 export default function ChatRoomRoute() {
   const { conversationId, src } = useLocalSearchParams<{ conversationId: string; src?: string }>();
-  return <ChatRoomScreen conversationId={conversationId ?? null} src={src} />;
+  // 쿼리 키·realtime 필터·요약 대조가 서버의 소문자 uuid 와 맞도록 정규화
+  return <ChatRoomScreen conversationId={conversationId?.toLowerCase() ?? null} src={src} />;
 }

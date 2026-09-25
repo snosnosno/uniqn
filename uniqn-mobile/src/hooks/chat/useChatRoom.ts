@@ -5,6 +5,7 @@
  * 목록 캐시에 없으면(깊은 링크 등) 상태는 null → 카드는 상태 배지 없이 보인다.
  * 읽음 커서는 "여기까지 읽었어요" 구분선 기준이라 진입 때 한 번만 받는다.
  */
+import { useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { chatRepository } from '@/repositories/chat';
@@ -54,10 +55,13 @@ export function useChatRoom(conversationId: string | null): UseChatRoomReturn {
     refetchOnMount: 'always',
   });
 
-  const summary = findSummary(
-    queryClient.getQueryData<InfiniteData<ChatConversationSummary[]>>(queryKeys.chat.list(user)),
-    id
+  // getQueryData 는 구독이 아니다 — 목록 캐시가 나중에 채워지거나 바뀌면 다시 그리도록 캐시를 구독한다
+  const listData = useSyncExternalStore(
+    (onChange) => queryClient.getQueryCache().subscribe(onChange),
+    () =>
+      queryClient.getQueryData<InfiniteData<ChatConversationSummary[]>>(queryKeys.chat.list(user))
   );
+  const summary = findSummary(listData, id);
   const meta = metaQuery.data ?? null;
   const mySide: ChatSide | null =
     summary?.mySide ?? (meta && uid ? (meta.seekerId === uid ? 'seeker' : 'employer') : null);

@@ -18,6 +18,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useShare } from '@/hooks/useShare';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { ChatStartButton } from '@/components/chat';
+import { useCanStartChat } from '@/hooks/chat/useCanStartChat';
 import { incrementViewCount } from '@/services/jobs/jobService';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores/themeStore';
@@ -32,9 +33,6 @@ import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { notFound } from '@/constants/messages';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
-
-/** 채팅방을 열 수 있는 공고 상태 — 서버 chat_open_conversation 의 허용 목록과 같다 */
-const CHAT_OPENABLE_STATUSES = new Set<string>(['approved', 'active', 'capacity_full', 'closed']);
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -54,6 +52,8 @@ export default function JobDetailScreen() {
   } = useHasAppliedToJob(id);
   const { shareJob, isSharing } = useShare();
   const { job, isLoading, error, refresh } = useJobDetail(id ?? '');
+  // 구인자 측(소유자·워크스페이스 멤버·협업자)·비게시 상태면 숨김 — 조기 return 전에 호출
+  const chatAllowed = useCanStartChat(job ?? null, sessionUserId ?? null);
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
   // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
@@ -225,12 +225,7 @@ export default function JobDetailScreen() {
   }
 
   const isFixed = job.schedule.kind === 'fixed';
-  // 채팅 가능: 로그인 · 내 공고 아님 · 서버가 방 열기를 허용하는 게시 상태(S1 chat_open_conversation)
-  const canStartChat =
-    !!sessionUserId &&
-    job.ownerId !== sessionUserId &&
-    !isApprovalBlocked &&
-    CHAT_OPENABLE_STATUSES.has(job.status);
+  const canStartChat = chatAllowed && !isApprovalBlocked;
   const alreadyApplied = !!sessionUserId && (hasApplied(job.id) || hasAppliedDirect);
   const applicationStatus = getApplicationStatus(job.id);
   const canRequestCancel =
@@ -284,15 +279,15 @@ export default function JobDetailScreen() {
         <SafeAreaView edges={['bottom']}>
           {/* 채팅 진입(플래그 OFF 면 ChatStartButton 이 null) — CTA 옆에 나란히 두어 하단 높이를 늘리지 않는다 */}
           <View className="flex-row items-end">
+            {/* 여백은 버튼 자신이 가진다 — 플래그 OFF 면 버튼과 함께 사라져 CTA 가 밀리지 않는다 */}
             {canStartChat ? (
-              <View className="mr-2">
-                <ChatStartButton
-                  postingId={job.id}
-                  method="job_detail"
-                  variant="full"
-                  label="채팅"
-                />
-              </View>
+              <ChatStartButton
+                postingId={job.id}
+                method="job_detail"
+                variant="full"
+                label="채팅"
+                className="mr-2"
+              />
             ) : null}
             <View className="flex-1">
               {isApprovalBlocked ? (

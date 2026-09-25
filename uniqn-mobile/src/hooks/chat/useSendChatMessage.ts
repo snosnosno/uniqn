@@ -43,11 +43,23 @@ export function useSendChatMessage(params: UseSendChatMessageParams): UseSendCha
     conversationRef.current = params.conversationId;
   }
 
+  // 첫 open 이 끝나기 전에 두 번째 전송이 오면 같은 Promise 를 기다린다 — open 을 두 번 부르면
+  // 서버의 새 방 한도 토큰(하루 20개)이 두 개 빠진다
+  const openingRef = useRef<Promise<string> | null>(null);
   const ensureConversation = useCallback(async (): Promise<string> => {
     if (conversationRef.current) return conversationRef.current;
-    const opened = await chatService.openConversation({ jobPostingId, seekerId });
-    conversationRef.current = opened;
-    return opened;
+    if (!openingRef.current) {
+      openingRef.current = chatService
+        .openConversation({ jobPostingId, seekerId })
+        .then((opened) => {
+          conversationRef.current = opened;
+          return opened;
+        })
+        .finally(() => {
+          openingRef.current = null;
+        });
+    }
+    return openingRef.current;
   }, [jobPostingId, seekerId]);
 
   const deliver = useCallback(

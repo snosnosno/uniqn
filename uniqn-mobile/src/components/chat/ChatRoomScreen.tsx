@@ -18,6 +18,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { confirmAction } from '@/utils/confirmAction';
 import { loadFailed, notFound } from '@/constants/messages';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { chatUuidSchema } from '@/schemas/chat.schema';
 import { ChatRoomView } from './ChatRoomView';
 
 export interface ChatRoomScreenProps {
@@ -31,18 +32,30 @@ export interface ChatRoomScreenProps {
   src?: string;
 }
 
+/** 라우트 파라미터는 신뢰 불가 경계 — uuid 가 아니면 없는 것으로 본다(계측·RPC 로 흘려보내지 않는다) */
+function toUuidOrNull(value: string | null | undefined): string | null {
+  const parsed = chatUuidSchema.safeParse(value ?? '');
+  return parsed.success ? parsed.data : null;
+}
+
 export function ChatRoomScreen(props: ChatRoomScreenProps) {
   const isNew = props.conversationId === null;
   const [openedId, setOpenedId] = useState<string | null>(null);
-  const lookup = useChatLookup(isNew ? (props.postingId ?? null) : null, props.seekerId ?? null);
+  const postingParam = toUuidOrNull(props.postingId);
+  const seekerParam = props.seekerId ? toUuidOrNull(props.seekerId) : null;
+  // seekerId 를 줬는데 형식이 틀리면(조작된 링크) 구직자 모드로 새지 않게 방을 열지 않는다
+  const invalidSeeker = !!props.seekerId && !seekerParam;
+  const lookup = useChatLookup(isNew && !invalidSeeker ? postingParam : null, seekerParam);
   const id = props.conversationId ?? openedId ?? lookup.conversationId;
 
   const { meta, summary, mySide, readCursor, isLoading, error } = useChatRoom(id);
   const { hide, isHiding } = useChatRoomActions(id);
 
-  const jobPostingId = meta?.jobPostingId ?? props.postingId ?? null;
+  const jobPostingId = meta?.jobPostingId ?? (invalidSeeker ? null : postingParam);
   // 방 메타가 없을 때(새 방)만 공고를 따로 읽어 카드 제목·상태를 채운다
-  const { job } = useJobDetail(jobPostingId ?? '', { enabled: !!jobPostingId && !meta });
+  // 목록 요약(공고 상태·상대 이름)이 없을 때만 공고를 따로 읽는다 — 목록을 거치지 않고 기존 방에
+  // 들어와도 마감 배지가 나오게(구직자는 cancelled/expired 를 RLS 로 못 읽어 그땐 배지 없음)
+  const { job } = useJobDetail(jobPostingId ?? '', { enabled: !!jobPostingId && !summary });
   useTrackChatOpen(lookup.isLoading || isLoading ? null : jobPostingId, props.src);
 
   const title =
@@ -57,7 +70,9 @@ export function ChatRoomScreen(props: ChatRoomScreenProps) {
       destructive: true,
       onConfirm: async () => {
         await hide();
-        router.back();
+        // 딥링크·URL 직접 진입이면 돌아갈 화면이 없다 — 숨긴 방에 갇히지 않게 목록으로
+        if (router.canGoBack()) router.back();
+        else router.replace('/(app)/(tabs)/board/chat');
       },
     });
   }, [hide]);
@@ -105,10 +120,10 @@ export function ChatRoomScreen(props: ChatRoomScreenProps) {
         <ChatRoomView
           conversationId={id}
           jobPostingId={jobPostingId}
-          seekerId={props.seekerId ?? null}
+          seekerId={seekerParam}
           postingTitle={meta?.postingTitle ?? job?.title ?? '공고'}
           postingStatus={summary ? summary.postingStatus : job ? job.status : undefined}
-          mySide={mySide ?? (props.seekerId ? 'employer' : 'seeker')}
+          mySide={mySide ?? (seekerParam ? 'employer' : 'seeker')}
           readCursor={readCursor}
           onPressPosting={() => router.push(`/(app)/jobs/${jobPostingId}`)}
           onSent={isNew ? setOpenedId : undefined}

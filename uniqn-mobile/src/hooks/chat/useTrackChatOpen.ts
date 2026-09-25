@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { trackEvent } from '@/services/observability/analyticsService';
+import { chatUuidSchema } from '@/schemas/chat.schema';
 import type { ChatOpenMethod } from '@/types/chat';
 
 const METHODS: ReadonlySet<string> = new Set<ChatOpenMethod>([
@@ -26,6 +27,8 @@ export function useTrackChatOpen(jobPostingId: string | null, src: string | unde
 
   useEffect(() => {
     if (!jobPostingId || trackedRef.current === jobPostingId) return;
+    // 계측 테이블은 보존 기한이 없다 — uuid 가 아닌 값(조작된 딥링크의 자유 텍스트)은 싣지 않는다
+    if (!chatUuidSchema.safeParse(jobPostingId).success) return;
     trackedRef.current = jobPostingId;
     void trackEvent('chat_open', { job_id: jobPostingId, method: toChatOpenMethod(src) });
   }, [jobPostingId, src]);

@@ -8,12 +8,14 @@
  * - 읽음: 화면에 들어온 가장 최신 **상대** 메시지까지 mark_read(같은 id 는 한 번).
  */
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ErrorState } from '@/components/ui';
 import { mergeChatTimeline } from '@/domains/chat';
 import { useChatMessages, useChatRoomActions, useSendChatMessage } from '@/hooks/chat';
+import { useIsAppActive } from '@/hooks/chat/useIsAppActive';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
 import { loadFailed } from '@/constants/messages';
@@ -43,7 +45,16 @@ export function ChatRoomView(props: ChatRoomViewProps) {
   const { conversationId, jobPostingId, seekerId, mySide, readCursor } = props;
   const uid = useAuthStore((s) => s.user?.uid);
   const { isOnline } = useNetworkStatus();
-  const { messages, isLoading, error, fetchOlder } = useChatMessages(conversationId);
+  const {
+    messages,
+    isLoading,
+    error,
+    tailError,
+    retry: retryLoad,
+    fetchOlder,
+  } = useChatMessages(conversationId);
+  const isFocused = useIsFocused();
+  const isAppActive = useIsAppActive();
   const { outbox, send, retry, discard } = useSendChatMessage({
     conversationId,
     jobPostingId,
@@ -65,9 +76,13 @@ export function ChatRoomView(props: ChatRoomViewProps) {
     return null;
   }, [messages, uid]);
 
+  // 사용자가 실제로 보고 있을 때만 읽음 — 공고 카드로 공고 상세를 열어 방이 스택 아래에 있거나
+  // 앱이 백그라운드인 동안 realtime 이 꼬리를 당겨도 읽음·알림 읽음 처리가 되면 안 된다
+  const canMarkRead = isFocused && isAppActive;
   useEffect(() => {
+    if (!canMarkRead) return;
     void markRead(latestIncomingId);
-  }, [latestIncomingId, markRead]);
+  }, [canMarkRead, latestIncomingId, markRead]);
 
   const handleSend = useCallback((body: string) => void send(body), [send]);
   const handleRetry = useCallback((id: string) => void retry(id), [retry]);
@@ -92,10 +107,22 @@ export function ChatRoomView(props: ChatRoomViewProps) {
         status={props.postingStatus}
         onPress={props.onPressPosting}
       />
+      {tailError ? (
+        <Pressable
+          onPress={retryLoad}
+          accessibilityRole="button"
+          accessibilityLabel="새 메시지를 불러오지 못했어요. 다시 시도"
+          className="bg-warning-100 px-4 py-2 dark:bg-warning-900/30"
+        >
+          <Text className="text-xs text-warning-700 dark:text-warning-400">
+            새 메시지를 불러오지 못했어요 · 눌러서 다시 시도
+          </Text>
+        </Pressable>
+      ) : null}
       <View className="flex-1 bg-surface-page dark:bg-surface">
-        {error ? (
-          <ErrorState title={loadFailed('메시지')} error={error} />
-        ) : isLoading ? (
+        {error && messages.length === 0 ? (
+          <ErrorState title={loadFailed('메시지')} error={error} onRetry={retryLoad} />
+        ) : isLoading && outbox.length === 0 ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color={SECONDARY_PALETTE[400]} />
           </View>

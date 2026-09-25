@@ -19,11 +19,18 @@ import type { ChatMessage } from '@/types/chat';
 /** 빈 방의 꼬리 기준 — 어떤 메시지보다도 이르다 */
 const EMPTY_ANCHOR = '1970-01-01T00:00:00.000Z';
 
+/** 구독 직후 따라잡기 재조회 지연 */
+const SUBSCRIBE_CATCH_UP_MS = 1500;
+
 export interface UseChatMessagesReturn {
   /** 오래된 → 최신 오름차순 */
   messages: ChatMessage[];
   isLoading: boolean;
+  /** 과거 페이지 오류(받은 메시지가 없을 때만 전체 화면 오류로 쓴다) */
   error: Error | null;
+  /** 꼬리 조회 오류 — 이미 받은 메시지는 그대로 두고 배너로 알린다 */
+  tailError: Error | null;
+  retry: () => void;
   hasOlder: boolean;
   isFetchingOlder: boolean;
   fetchOlder: () => void;
@@ -73,7 +80,7 @@ export function useChatMessages(conversationId: string | null): UseChatMessagesR
         queryKey: queryKeys.chat.messagesTailPrefix(conversationId),
       });
     };
-    return createRealtimeSubscription(
+    const unsubscribe = createRealtimeSubscription(
       'chat_messages',
       `conversation_id=eq.${conversationId}`,
       invalidateTail,
@@ -81,6 +88,12 @@ export function useChatMessages(conversationId: string | null): UseChatMessagesR
         if (status === 'RECOVERED') invalidateTail();
       }
     );
+    // 꼬리 조회 ~ 첫 구독 완료 사이에 들어온 메시지를 놓치지 않도록 한 번 더 당긴다
+    const catchUp = setTimeout(invalidateTail, SUBSCRIBE_CATCH_UP_MS);
+    return () => {
+      clearTimeout(catchUp);
+      unsubscribe();
+    };
   }, [conversationId, queryClient]);
 
   const messages = useMemo(
@@ -94,7 +107,12 @@ export function useChatMessages(conversationId: string | null): UseChatMessagesR
   return {
     messages,
     isLoading: enabled && pagesQuery.isLoading,
-    error: (pagesQuery.error as Error | null) ?? (tailQuery.error as Error | null) ?? null,
+    error: (pagesQuery.error as Error | null) ?? null,
+    tailError: (tailQuery.error as Error | null) ?? null,
+    retry: () => {
+      if (pagesQuery.error) void pagesQuery.refetch();
+      else void tailQuery.refetch();
+    },
     hasOlder: !!pagesQuery.hasNextPage,
     isFetchingOlder: pagesQuery.isFetchingNextPage,
     fetchOlder: () => {
