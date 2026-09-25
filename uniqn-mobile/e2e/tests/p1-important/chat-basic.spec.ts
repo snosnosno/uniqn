@@ -1,5 +1,5 @@
 /**
- * 앱 내 채팅 S2a — 기본 흐름 E2E (텍스트)
+ * 앱 내 채팅 S2a·S2b — 기본 흐름 E2E (텍스트 + 사진)
  *
  * 구직자(staff storageState) ↔ 구인자(employer 컨텍스트) 1:1 방:
  *   1) 공고 상세 '채팅' → 새 방 → 첫 전송 → 방 화면으로 바뀜
@@ -8,12 +8,14 @@
  *   4) 공고 마감 후에도 대화는 이어지고, 방 카드에 '마감' 배지
  *   5) 구인자 '나가기' → 목록에서 사라짐 / 6) 구직자 새 메시지 → 다시 나타남
  *   7) 전송 실패 → '재전송' → 같은 p_client_message_id, 서버 행은 정확히 1개
+ *   8) 사진 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음, 긴 변 1600, 1.5MB 이하)
  *
  * 🔒 서버는 다크로 착지했다. 이 스펙은 e2e.yml 의 `npm run e2e:chat-enable` 스텝(로컬 스택 전용
  *    GRANT + 플래그 ON)을 전제로 한다.
  * 🚨 가드: 로컬 스택이 아니면 skip(prod 오염 방지). **CI 에서 전제가 없으면 skip 이 아니라 fail** —
  *    skip 으로 두면 GRANT 스텝이 빠져도 초록이 된다(미실행 성공).
  */
+import fs from 'fs';
 import path from 'path';
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { E2E_CONFIG } from '../../config';
@@ -24,6 +26,9 @@ import { ensureE2EWorkspace } from '../../helpers/workspace-seed';
 test.describe.configure({ mode: 'serial' });
 
 const EMPLOYER_STATE = path.join(__dirname, '../../fixtures/storage-states/employer.json');
+/** GPS EXIF 가 들어 있는 2400x1800 JPEG — 업로드본에서 사라져야 한다 */
+const EXIF_SAMPLE = path.join(__dirname, '../../fixtures/chat-exif-sample.jpg');
+const CHAT_MAX_UPLOAD_BYTES = 1572864;
 const IS_CI = process.env['CI'] === 'true';
 const IS_LOCAL_STACK = /127\.0\.0\.1|localhost/.test(E2E_CONFIG.supabase.url);
 
@@ -276,4 +281,86 @@ test('7) 전송 실패 → 재전송은 같은 client_message_id, 서버 행은 
     .eq('conversation_id', conversationId)
     .eq('client_message_id', ids[0]);
   expect(count).toBe(1);
+});
+
+/** JPEG APP1 EXIF 블록 표식 — 'Exif' + NUL 2바이트 */
+const EXIF_MARKER = Buffer.from([0x45, 0x78, 0x69, 0x66, 0x00, 0x00]);
+
+function hasExif(bytes: Buffer): boolean {
+  return bytes.includes(EXIF_MARKER);
+}
+
+/** JPEG SOF0/SOF2 에서 (너비, 높이) */
+function jpegSize(bytes: Buffer): { width: number; height: number } | null {
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xff) return null;
+    const marker = bytes[i + 1] ?? 0;
+    const length = bytes.readUInt16BE(i + 2);
+    if (marker === 0xc0 || marker === 0xc2) {
+      return { height: bytes.readUInt16BE(i + 5), width: bytes.readUInt16BE(i + 7) };
+    }
+    i += 2 + length;
+  }
+  return null;
+}
+
+test('8) 사진: 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음 · 긴 변 1600 · 1.5MB 이하)', async ({
+  page,
+}) => {
+  // 단언이 공허하지 않게: 원본에는 EXIF(GPS) 가 있다
+  const original = fs.readFileSync(EXIF_SAMPLE);
+  expect(hasExif(original)).toBe(true);
+  expect(original.includes(Buffer.from('GPS-Leak-Test'))).toBe(true);
+
+  await page.goto(`/chat/${conversationId}`);
+  await waitForAppReady(page);
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByTestId('chat-attach-button').click();
+  await (await chooser).setFiles(EXIF_SAMPLE);
+
+  let imagePath = '';
+  await expect
+    .poll(
+      async () => {
+        const { data } = await admin
+          .from('chat_messages')
+          .select('image_path, image_width, image_height')
+          .eq('conversation_id', conversationId)
+          .eq('kind', 'image')
+          .maybeSingle();
+        imagePath = (data as { image_path?: string } | null)?.image_path ?? '';
+        return imagePath;
+      },
+      { timeout: 30_000 }
+    )
+    .not.toBe('');
+
+  const { data: row } = await admin
+    .from('chat_messages')
+    .select('image_width, image_height, sender_id')
+    .eq('image_path', imagePath)
+    .single();
+  expect(row).toMatchObject({
+    image_width: 1600,
+    image_height: 1200,
+    sender_id: SUPABASE_QA_ACCOUNTS.staff.id,
+  });
+  expect(imagePath).toMatch(new RegExp(`^${conversationId}/${SUPABASE_QA_ACCOUNTS.staff.id}/`));
+
+  const { data: blob, error } = await admin.storage.from('chat-media').download(imagePath);
+  if (error || !blob) fail(`업로드 객체 다운로드 실패: ${error?.message ?? 'empty'}`);
+  const uploaded = Buffer.from(await blob.arrayBuffer());
+  expect(uploaded.subarray(0, 2).toString('hex')).toBe('ffd8'); // JPEG
+  expect(hasExif(uploaded)).toBe(false);
+  expect(uploaded.includes(Buffer.from('GPS-Leak-Test'))).toBe(false);
+  expect(uploaded.length).toBeLessThanOrEqual(CHAT_MAX_UPLOAD_BYTES);
+  expect(jpegSize(uploaded)).toEqual({ width: 1600, height: 1200 });
+
+  // 화면: 방 안에 사진 말풍선(서명 URL 로 로드)
+  await expect(page.getByTestId('chat-message-list').getByTestId('chat-image').first()).toBeVisible(
+    {
+      timeout: 20_000,
+    }
+  );
 });
