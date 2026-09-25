@@ -1,5 +1,5 @@
 /**
- * chatPresenceStore — '보고 있는 채팅방' 등록·해제 (S3 포그라운드 푸시 억제)
+ * chatPresenceStore — '보고 있는 채팅방' 참조 카운트 (S3 포그라운드 푸시 삼킴)
  */
 import { useChatPresenceStore } from '../chatPresenceStore';
 
@@ -7,23 +7,33 @@ const A = 'AAAAAAAA-1111-4111-8111-111111111111';
 const B = 'bbbbbbbb-2222-4222-8222-222222222222';
 
 beforeEach(() => {
-  useChatPresenceStore.setState({ activeConversationId: null });
+  useChatPresenceStore.setState({ viewCounts: {} });
 });
 
 describe('chatPresenceStore', () => {
-  it('등록한 방 id 를 소문자로 보관한다', () => {
-    useChatPresenceStore.getState().setActiveConversationId(A);
-    expect(useChatPresenceStore.getState().activeConversationId).toBe(A.toLowerCase());
+  it('등록한 방은 대소문자와 무관하게 보고 있는 방이다', () => {
+    useChatPresenceStore.getState().enterConversation(A);
+    expect(useChatPresenceStore.getState().isViewingConversation(A.toLowerCase())).toBe(true);
+    expect(useChatPresenceStore.getState().isViewingConversation(B)).toBe(false);
   });
 
-  it('나가는 방이 여전히 활성일 때만 비운다 — 방→방 전환에서 새 방 등록을 지우지 않는다', () => {
-    const { setActiveConversationId, clearActiveConversationId } = useChatPresenceStore.getState();
-    setActiveConversationId(A);
-    setActiveConversationId(B); // 새 방 마운트가 먼저 등록
-    clearActiveConversationId(A); // 옛 방 언마운트 정리가 뒤늦게 옴
-    expect(useChatPresenceStore.getState().activeConversationId).toBe(B);
+  it('방→방 전환: 옛 방 정리가 늦게 와도 새 방 등록은 유지된다', () => {
+    const s = useChatPresenceStore.getState();
+    s.enterConversation(A);
+    s.enterConversation(B);
+    s.leaveConversation(A);
+    expect(useChatPresenceStore.getState().isViewingConversation(B)).toBe(true);
+    expect(useChatPresenceStore.getState().isViewingConversation(A)).toBe(false);
+  });
 
-    clearActiveConversationId(B);
-    expect(useChatPresenceStore.getState().activeConversationId).toBeNull();
+  it('같은 방 두 인스턴스: 새 인스턴스 등록 뒤 옛 인스턴스 정리가 와도 여전히 보고 있다', () => {
+    const s = useChatPresenceStore.getState();
+    s.enterConversation(A); // 옛 인스턴스
+    s.enterConversation(A); // 알림 탭으로 쌓인 새 인스턴스
+    s.leaveConversation(A); // 옛 인스턴스 blur 정리(순서 보장 없음)
+    expect(useChatPresenceStore.getState().isViewingConversation(A)).toBe(true);
+    s.leaveConversation(A);
+    expect(useChatPresenceStore.getState().isViewingConversation(A)).toBe(false);
+    expect(useChatPresenceStore.getState().viewCounts).toEqual({});
   });
 });

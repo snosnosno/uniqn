@@ -29,7 +29,7 @@ const CHAT_SUMMARY_KEY_PREFIXES = [
   [...queryKeys.chat.all, 'unread'],
 ] as const;
 
-export function invalidateChatSummaries(): void {
+function invalidateChatSummaries(): void {
   for (const queryKey of CHAT_SUMMARY_KEY_PREFIXES) {
     queryClient
       .invalidateQueries({ queryKey })

@@ -1,12 +1,10 @@
 import { Platform } from 'react-native';
 import { extractAnnouncementIdFromBoardPostId, isBoardNoticePostId } from '@/shared/board/boardIds';
-import type { DeepLinkRoute, ParsedDeepLink } from '@/shared/deeplink';
+import { toChatRoute, type DeepLinkRoute, type ParsedDeepLink } from '@/shared/deeplink';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { SCHEME_PREFIX, WEB_PREFIX } from './deepLinkConstants';
 import { isSupportedWebUrl } from './deepLinkLinkValidator';
-
-const CHAT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function pathToRoute(path: string, params: Record<string, string>): DeepLinkRoute | null {
   const normalizedPath = path.replace(/^\/|\/$/g, '');
@@ -45,6 +43,11 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
         return { name: 'notices' };
       }
 
+      // 채팅 목록은 소통 탭의 '채팅' 칸이다(앱 경로 /board/chat)
+      if (second === 'chat') {
+        return { name: 'chat/list' };
+      }
+
       if (second === 'post' && third && isBoardNoticePostId(third)) {
         return {
           name: 'notice',
@@ -64,9 +67,7 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
     // 서버가 채팅 알림에 심는 link('/chat/{id}'). 방 id 는 서버가 소문자 uuid 로 쓰므로
     // 쿼리 키·realtime 필터와 맞게 소문자로 정규화하고, uuid 가 아니면 목록으로 보낸다.
     case 'chat':
-      return second && CHAT_ID_PATTERN.test(second)
-        ? { name: 'chat', params: { conversationId: second.toLowerCase() } }
-        : { name: 'chat/list' };
+      return toChatRoute(second);
 
     case 'my-applications':
     case 'my-settlements':

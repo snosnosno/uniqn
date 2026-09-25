@@ -1,5 +1,6 @@
 import { NotificationType } from '@/types/notification';
 import type { DeepLinkRoute } from './types';
+import { toChatRoute } from './chatRoute';
 
 export const NOTIFICATION_ROUTE_MAP: Record<
   NotificationType,
@@ -40,10 +41,7 @@ export const NOTIFICATION_ROUTE_MAP: Record<
 
   // 채팅 알림은 그 방으로 간다. link('/chat/{id}')와 목적지가 같지만 ROUTE_MAP_PRIORITY_TYPES 에
   // 등록해 data 를 우선한다(설계 §6). 플래그 OFF 면 채팅 스택 레이아웃이 안내 화면을 보여 준다.
-  [NotificationType.CHAT_MESSAGE]: (data) =>
-    data?.conversationId
-      ? { name: 'chat', params: { conversationId: data.conversationId.toLowerCase() } }
-      : { name: 'chat/list' },
+  [NotificationType.CHAT_MESSAGE]: (data) => toChatRoute(data?.conversationId),
 
   [NotificationType.STAFF_CHECKED_IN]: (data) =>
     data?.jobPostingId

@@ -79,3 +79,23 @@ describe('채팅 딥링크 파싱·경로 변환', () => {
     expect(RouteMapper.toExpoPath({ name: 'chat/list' })).toBe('/(app)/(tabs)/board/chat');
   });
 });
+
+describe('채팅 라우팅 — 리뷰 반영', () => {
+  it('/board/chat 은 채팅 목록으로 파싱된다(소통 탭 채팅 칸)', () => {
+    expect(parseDeepLink('/board/chat').route).toEqual({ name: 'chat/list' });
+  });
+
+  it('알림 data 의 방 id 가 uuid 가 아니면 목록으로 간다(파서와 같은 규칙)', () => {
+    expect(
+      getRouteFromNotification(NotificationType.CHAT_MESSAGE, { conversationId: 'not-a-uuid' })
+    ).toEqual({ name: 'chat/list' });
+  });
+
+  it('알림 data 의 방 id 는 소문자로 정규화된다', () => {
+    expect(
+      getRouteFromNotification(NotificationType.CHAT_MESSAGE, {
+        conversationId: CONV.toUpperCase(),
+      })
+    ).toEqual({ name: 'chat', params: { conversationId: CONV } });
+  });
+});

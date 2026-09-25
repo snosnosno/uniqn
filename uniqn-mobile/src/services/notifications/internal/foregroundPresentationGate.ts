@@ -37,17 +37,30 @@ const SUPPRESSED: ForegroundPresentation = {
   shouldShowList: true,
 };
 
-/** 채팅 푸시 억제 판단용 — 푸시 payload 의 방 id 와 지금 화면에 떠 있는 방 id */
+/**
+ * 보고 있는 채팅방에서 온 채팅 푸시는 **통째로 삼킨다** — 배너·소리뿐 아니라 알림센터 목록·배지도.
+ * 방 화면이 이미 실시간으로 보여 주고 곧바로 읽음 처리하므로 어디에 남겨도 중복이다
+ * (알림센터에 남으면 탭할 때 같은 방이 한 번 더 쌓인다 — S3 리뷰 M).
+ */
+const VIEWING: ForegroundPresentation = {
+  shouldShowAlert: false,
+  shouldPlaySound: false,
+  shouldSetBadge: false,
+  shouldShowBanner: false,
+  shouldShowList: false,
+};
+
+/** 채팅 푸시 판단용 — 푸시 payload 의 방 id 와 "지금 포커스된 방인가" 술어 */
 export interface ForegroundChatContext {
   conversationId?: unknown;
-  activeConversationId?: string | null;
+  isViewingConversation?: (conversationId: string) => boolean;
 }
 
-/** 지금 보고 있는 채팅방의 푸시인가 — 방 화면이 이미 실시간으로 보여 주므로 배너가 중복이다 */
-function isViewingConversation(typeValue: unknown, chat?: ForegroundChatContext): boolean {
-  if (typeValue !== NotificationType.CHAT_MESSAGE || !chat?.activeConversationId) return false;
-  if (typeof chat.conversationId !== 'string') return false;
-  return chat.conversationId.toLowerCase() === chat.activeConversationId.toLowerCase();
+/** 지금 보고 있는 채팅방의 채팅 푸시인가 */
+export function isViewingChatPush(typeValue: unknown, chat?: ForegroundChatContext): boolean {
+  if (typeValue !== NotificationType.CHAT_MESSAGE || !chat?.isViewingConversation) return false;
+  if (typeof chat.conversationId !== 'string' || chat.conversationId === '') return false;
+  return chat.isViewingConversation(chat.conversationId);
 }
 
 export function resolveForegroundPresentation(
@@ -55,8 +68,8 @@ export function resolveForegroundPresentation(
   settings: NotificationSettings | null | undefined,
   chat?: ForegroundChatContext
 ): ForegroundPresentation {
-  if (isViewingConversation(typeValue, chat)) {
-    return SUPPRESSED;
+  if (isViewingChatPush(typeValue, chat)) {
+    return VIEWING;
   }
 
   if (!settings) {

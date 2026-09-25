@@ -321,6 +321,7 @@ pgTAP 수정: "5MB 초과·svg 거부"를 SQL INSERT 로 단언하면 **항상 �
 - 방 화면에서만 `('chat_messages', 'conversation_id=eq.<id>')` 구독. `chat_messages` 를 publication 에 **명시 등록**(17→18).
 - **"콜백은 invalidateQueries 만" 규칙 유지(R1 추천)**: 쿼리를 `['chat','messages',id,'tail']`(내 최신 메시지 이후분만) 과 과거 페이지 infinite query 로 분리, 콜백은 tail 키만 무효화. R2(`setQueryData` 예외)는 규칙 개정이 필요해 비추천.
 - 목록·배지: 채팅 전역 채널을 새로 열지 않는다 — 전송 RPC 가 수신자 `notifications` 행을 INSERT/UPDATE 하므로 **기존 notifications 구독**의 무효화 대상에 `['chat','list']`·`['chat','unread']` 추가.
+  - ⚠️ **한계(S3 리뷰, 2026-09-25)**: 알림 행이 생기지 않는 수신은 이 편승에 안 걸린다 — ① 내가 **뮤트한 방**의 새 메시지 ② 구인자 측 동료(예: manager)의 답장은 다른 구인자 측 멤버에게 알림이 없다. 둘 다 `chat_unread_total` 에는 잡히므로 소통 탭 배지·목록 미리보기가 **다음 알림 이벤트나 화면 재조회까지** 늦는다. 규모상 수용, 불편이 보고되면 채팅 전역 채널을 재검토한다.
 - 안 읽은 수: **커서 방식**(`last_read_at` + `(created_at,id)` 비교). 카운터 컬럼은 §3-1 D 에서 구인자 측에 증가시킬 행이 없어 성립 불가. `notification_counters`·unread EF 3종과 **분리** — 채팅 unread 진실원은 `chat_unread_total`, 종 아이콘 배지는 방 단위로 묶인 알림 1행만 센다.
 - 읽음 표시 의미: 구직자 화면의 "읽음" = **구인자 측 누군가 읽음**(동적 멤버십의 파생 의미).
 - **오프라인 큐 없음**("큐잉은 존재하지 않는 기능" 원칙 유지): 실패 말풍선은 메모리 상태 + "재전송" 버튼, 재전송은 **같은 `client_message_id`** 로 중복 불가. 오프라인이면 입력창 비활성 + 기존 `OfflineStatusBar`.

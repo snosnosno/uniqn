@@ -17,6 +17,7 @@ import {
 } from './deepLinkConstants';
 import { validateNotificationLink } from './deepLinkLinkValidator';
 import { getCurrentWebRoute, parseDeepLink } from './deepLinkRouteParser';
+import { useChatPresenceStore } from '@/stores/chatPresenceStore';
 
 function routesAreEqual(left: DeepLinkRoute, right: DeepLinkRoute): boolean {
   if (left.name !== right.name) {
@@ -51,10 +52,23 @@ function shouldSkipWebNavigation(route: DeepLinkRoute): boolean {
   return currentRoute !== null && routesAreEqual(currentRoute, route);
 }
 
+/** 지금 포커스된 바로 그 채팅방으로 가라는 요청 — 같은 방을 스택에 한 번 더 쌓지 않는다 */
+function isAlreadyInChatRoom(route: DeepLinkRoute): boolean {
+  return (
+    route.name === 'chat' &&
+    useChatPresenceStore.getState().isViewingConversation(route.params.conversationId)
+  );
+}
+
 async function executeNavigation(
   route: DeepLinkRoute,
   context: NavigationContext
 ): Promise<boolean> {
+  if (isAlreadyInChatRoom(route)) {
+    logger.info('이미 보고 있는 채팅방이라 이동을 건너뜀', { source: context.source });
+    return true;
+  }
+
   if (shouldSkipWebNavigation(route)) {
     logger.info('현재 웹 라우트와 동일하여 딥링크 이동을 건너뜀', {
       route: route.name,
