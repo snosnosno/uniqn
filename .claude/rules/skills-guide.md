@@ -80,7 +80,7 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 | "세션 정리해줘" / 회고성 탐지 | `/session-wrap` |
 | "이 도구 써볼까" / OSS·MCP 도입 검토 | `/oss-vet` 먼저 → 도입 |
 
-에이전트 분담·병렬 디스패치·모델 3계층 라우팅·훅 규칙은 `.claude/rules/orchestration.md` 참조. 스킬이 서브에이전트를 디스패치할 때도 모델 라우팅(읽기=haiku/sonnet·구현=opus·판정=fable) 준수.
+에이전트 분담·병렬 디스패치·모델 3계층 라우팅·훅 규칙은 `.claude/rules/orchestration.md` 참조. 스킬이 서브에이전트를 디스패치할 때도 모델 라우팅(읽기=haiku/sonnet·구현=opus·판정=opus) 준수.
 
 ## 도구 현황과 규칙 (이력은 wiki 졸업)
 

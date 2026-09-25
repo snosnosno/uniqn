@@ -32,10 +32,10 @@ paths:
 |---|---|---|
 | 읽기·탐색·수집 | haiku(단순 나열) / sonnet(광역·규약 추론) | Explore·general-purpose에 `model` 명시 |
 | 구현·작성 | opus | tdd-guide·refactor-cleaner·메인 구현 |
-| 설계·계획·검증·판정 | fable | planner·architect·Plan·code/security/database-reviewer·verify-agent |
+| 설계·계획·검증·판정 | opus | planner·architect·Plan·code/security/database-reviewer·verify-agent |
 
-- **모델 패리티**: 주 세션이 opus/sonnet/haiku여도 설계·계획·검증 판단은 `model: "fable"` 에이전트로 위임 — fable 수준 판정 확보
-- **한도 폴백**: 429/한도/스폰 실패 시 fable→opus→sonnet 한 단계씩 하향 재디스패치, 보고에 다운그레이드 명시
+- **모델 패리티**: 주 세션이 opus/sonnet/haiku여도 설계·계획·검증 판단은 `model: "opus"` 에이전트로 위임 — opus 수준 판정 확보
+- **한도 폴백**: 429/한도/스폰 실패 시 opus→sonnet 한 단계씩 하향 재디스패치, 보고에 다운그레이드 명시
 - **절차 강제(fablize)**: 전역 게이트 훅이 deep 작업의 검증증거 없는 완료를 차단하고 조기중단("하겠다"만 말하고 종료)을 재가동 — 차단 시 우회 금지, 가장 좁은 검증 명령을 실제 실행. 규율 전문: 전역 `fablize-mode` 규칙
 
 ## 대규모 오케스트레이션 (Workflow 도구)
