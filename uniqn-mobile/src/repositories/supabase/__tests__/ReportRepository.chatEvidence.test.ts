@@ -1,9 +1,8 @@
 /**
  * SupabaseReportRepository — (S4) 채팅 신고 증거 스냅샷 경계
  *
- * `reports.evidence_snapshot` 은 서버 RPC 가 채우는 jsonb 다. 신고자가 탈퇴자 원문을 계속 읽지 못하게
- * (DB 리뷰 M1 — D5) 컬럼은 authenticated 에 **가려져** 있고, 관리자만 `admin_get_report_evidence`
- * RPC 로 받는다. 경계에서 zod 로 검증한다: 아는 모양이면 evidenceSnapshot 으로 싣고,
+ * 스냅샷은 서버 RPC 가 채워 deny-all 테이블 `chat_report_evidence` 에 둔다. 신고자가 탈퇴자 원문을 계속
+ * 읽지 못하게(DB 리뷰 M1 — D5) 관리자만 `admin_get_report_evidence` RPC 로 받는다. 경계에서 zod 로 검증한다: 아는 모양이면 evidenceSnapshot 으로 싣고,
  * 모르는 모양·null·RPC 실패면 **싣지 않는다**(섹션 숨김 — 신고 상세 자체는 뜬다).
  */
 import { supabase } from '@/lib/supabase';
@@ -85,7 +84,7 @@ describe('SupabaseReportRepository — 채팅 신고 증거 스냅샷', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('행 조회 컬럼에 evidence_snapshot 이 없다 — 컬럼 권한으로 가려져 있어 넣으면 42501', async () => {
+  it('행 조회 컬럼에 evidence_snapshot 이 없다 — 스냅샷은 reports 에 없고 RPC 로만 받는다', async () => {
     installRowMock({ ...BASE_ROW });
     await repository.getById('report-1');
     expect(String(selectSpy.mock.calls[0]?.[0]).split(',')).not.toContain('evidence_snapshot');

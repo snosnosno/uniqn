@@ -99,8 +99,9 @@ function rowToReport(row: Record<string, unknown>): Report {
 }
 
 /**
- * (S4) 채팅 신고 증거 — `evidence_snapshot` 컬럼은 authenticated 에 가려져 있다(신고자가 탈퇴자 원문을
- * 계속 읽지 못하게 — DB 리뷰 M1·D5). 관리자는 SECDEF RPC `admin_get_report_evidence` 로만 받는다.
+ * (S4) 채팅 신고 증거 — 스냅샷은 reports 가 아니라 deny-all 테이블 `chat_report_evidence` 에 있다
+ * (위조 차단·신고자가 탈퇴자 원문을 계속 읽지 못하게 — 보안 H1·DB M1·D5). 관리자는 SECDEF RPC
+ * `admin_get_report_evidence` 로만 받는다.
  * 실패해도 신고 상세는 보여야 하므로 섹션만 빠진다.
  */
 async function fetchChatEvidence(reportId: string): Promise<ChatReportEvidence | null> {

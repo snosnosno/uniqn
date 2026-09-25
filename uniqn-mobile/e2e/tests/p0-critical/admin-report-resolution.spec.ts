@@ -475,7 +475,7 @@ test.describe('WF-17: 관리자 신고 처리', () => {
         .poll(async () => {
           const { data } = await db
             .from('reports')
-            .select('id, evidence_snapshot')
+            .select('id')
             .eq('reporter_id', SUPABASE_QA_ACCOUNTS.staff.id)
             .eq('job_posting_id', JOB_ID)
             .maybeSingle();
@@ -483,6 +483,15 @@ test.describe('WF-17: 관리자 신고 처리', () => {
           return reportId;
         })
         .not.toBe('');
+      // 스냅샷은 reports 가 아니라 deny-all 테이블 chat_report_evidence 에 있다(service role 로만 보인다)
+      const { data: evidence } = await db
+        .from('chat_report_evidence')
+        .select('snapshot')
+        .eq('report_id', reportId)
+        .maybeSingle();
+      expect(
+        JSON.stringify((evidence as { snapshot?: unknown } | null)?.snapshot ?? null)
+      ).toContain(SUSPICIOUS);
 
       // 4) 관리자: 신고 상세 → 채팅 신고 증거 섹션
       const adminContext = await browser.newContext({ storageState: adminState });
@@ -492,7 +501,8 @@ test.describe('WF-17: 관리자 신고 처리', () => {
       await waitForAppInit(adminPage);
 
       await expect(adminPage.getByText('채팅 신고 증거')).toBeVisible({ timeout: 15_000 });
-      await expect(adminPage.getByText('사기·금전 요구')).toBeVisible();
+      // 설명 문장('[채팅 신고] 사기·금전 요구…')에도 들어 있어 정확 일치로 라벨만 집는다(CI strict mode 실측)
+      await expect(adminPage.getByText('사기·금전 요구', { exact: true })).toBeVisible();
       await expect(adminPage.getByText(JOB_TITLE).first()).toBeVisible();
       await expect(adminPage.getByText(SUSPICIOUS)).toBeVisible();
       await expect(adminPage.getByText(FIRST)).toBeVisible(); // 직전 메시지(문맥)도 들어 있다

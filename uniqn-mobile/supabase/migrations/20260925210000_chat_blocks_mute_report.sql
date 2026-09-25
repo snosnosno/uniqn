@@ -7,9 +7,9 @@
 -- 한 줄: 방 단위 차단(양방향 전송 불가) · 방별 알림 끄기 · 메시지 신고(스냅샷은 **서버가 DB 에서
 --        채운다** — 클라가 보낸 본문을 믿지 않는다). 관리자는 스냅샷과 그 안의 사진만 본다.
 --
--- 파리티: 함수 +6(chat_set_muted · chat_block · chat_unblock · chat_report_message ·
---         fn_reports_pin_evidence_snapshot 트리거 · admin_get_report_evidence) · 정책 +1(chat_blocks SELECT)
---         → 244 / 106
+-- 파리티: 함수 +5(chat_set_muted · chat_block · chat_unblock · chat_report_message ·
+--         admin_get_report_evidence) · 정책 +1(chat_blocks SELECT) → 243 / 106
+--   chat_report_evidence 는 RLS on · 정책 0(deny-all)이라 정책 카운트 불변.
 --   재정의(+0): chat_send_message(차단 게이트) · chat_list_conversations(blocked 실값) ·
 --               chat_media_can_read(관리자 = 신고 증거 사진만)
 --   → 본문은 S1(20260925100000) 원문을 그대로 옮기고 표시한 줄만 바꿨다.
@@ -48,49 +48,36 @@ GRANT ALL ON public.chat_blocks TO service_role;
 -- ----------------------------------------------------------------------------
 -- 2. 신고 증거 스냅샷 (D12 — 신고 처리 후 1년 보존, 탈퇴와 무관)
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.reports ADD COLUMN evidence_snapshot jsonb;
+-- 🔒 reports 컬럼이 아니라 **별도 deny-all 테이블**에 둔다(보안 리뷰 H1 · DB 리뷰 M1).
+--   · reports 는 baseline 의 rep_insert(reporter_id = 본인)와 authenticated INSERT/UPDATE 가 열려 있어
+--     (prod 실측 09-25) 컬럼이면 클라가 가짜 스냅샷을 넣을 수 있고(→ 관리자에게 위조 증거·관리자 사진
+--     열람 확대·삭제 예외 남용), rep_select 로 신고자가 상대(탈퇴자 포함) 원문을 계속 읽는다.
+--   · 컬럼 권한으로 가리면 기존 앱의 `select('*')`(관리자 신고 목록)가 42501 로 깨진다(CI E2E 실측) —
+--     1.0.6 함대는 OTA 를 못 받으므로 영구히. 그래서 테이블을 분리한다.
+--   쓰기 = chat_report_message(SECDEF)·크론뿐 · 읽기 = admin_get_report_evidence(관리자 게이트)뿐.
+CREATE TABLE public.chat_report_evidence (
+  report_id           uuid PRIMARY KEY REFERENCES public.reports(id) ON DELETE CASCADE,
+  -- 탈퇴 크론(DELETE FROM users)이 막히지 않게 SET NULL
+  reporter_id         uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  reported_message_id uuid NOT NULL,
+  snapshot            jsonb NOT NULL,
+  created_at          timestamptz NOT NULL DEFAULT now()
+);
+-- 같은 신고자가 같은 메시지를 두 번 신고할 수 없다(RPC 사전 확인의 경합을 닫는 최종 판정 — 보안 LOW-5)
+CREATE UNIQUE INDEX chat_report_evidence_once
+  ON public.chat_report_evidence (reporter_id, reported_message_id);
+-- 증거 사진 판정(`snapshot -> 'imagePaths' ? name`)이 객체마다 전체를 훑지 않게(DB 리뷰 L1)
+CREATE INDEX chat_report_evidence_image_paths_gin
+  ON public.chat_report_evidence USING gin ((snapshot -> 'imagePaths'));
 
-COMMENT ON COLUMN public.reports.evidence_snapshot IS
-  '채팅 신고 증거(chat_report_message 가 DB 에서 채움). {source:chat, version, conversationId, '
-  'jobPostingId, postingTitle, reason, reportedMessageId, messages[], imagePaths[]}. '
-  'imagePaths 의 사진은 관리자만 chat_media_can_read 로 읽는다.';
+ALTER TABLE public.chat_report_evidence ENABLE ROW LEVEL SECURITY;   -- 정책 0 = deny-all
+REVOKE ALL ON public.chat_report_evidence FROM anon, authenticated;
+GRANT ALL ON public.chat_report_evidence TO service_role;
 
--- 🔒 (보안 리뷰 H1) 스냅샷은 **서버만** 쓴다. reports 는 baseline 의 rep_insert 정책
---    (reporter_id = 본인)과 authenticated INSERT/UPDATE 권한이 열려 있어(prod 실측 09-25),
---    PostgREST 직접 INSERT 로 가짜 스냅샷을 넣으면 ① 관리자에게 위조 증거 ② imagePaths 로 관리자
---    사진 열람 확대 ③ 탈퇴·보존 삭제 예외 남용이 가능했다. 클라이언트 롤이 쓰거나 바꾸면 거부한다
---    (관리자 raw PATCH 포함 — 스냅샷 변경의 정당한 writer 는 SECDEF RPC·크론뿐).
-CREATE FUNCTION public.fn_reports_pin_evidence_snapshot()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  IF current_user IN ('authenticated', 'anon')
-     AND ((TG_OP = 'INSERT' AND NEW.evidence_snapshot IS NOT NULL)
-          OR (TG_OP = 'UPDATE' AND NEW.evidence_snapshot IS DISTINCT FROM OLD.evidence_snapshot)) THEN
-    RAISE EXCEPTION 'REPORT_EVIDENCE_IMMUTABLE: 증거 스냅샷은 서버만 기록합니다'
-      USING ERRCODE = '42501';
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.fn_reports_pin_evidence_snapshot() FROM PUBLIC, anon, authenticated;
-
-CREATE TRIGGER tr_reports_pin_evidence_snapshot
-  BEFORE INSERT OR UPDATE ON public.reports
-  FOR EACH ROW EXECUTE FUNCTION public.fn_reports_pin_evidence_snapshot();
-
--- 🔒 (DB 리뷰 M1 — D5) 스냅샷에는 상대 원문이 들어 있다. rep_select 는 신고자에게 자기 신고 행을
---    보여 주므로 컬럼째 열어 두면, 상대가 탈퇴해 메시지를 익명화해도 신고자는 스냅샷으로 원문을 계속
---    읽는다. 테이블 SELECT 를 컬럼 목록으로 바꿔 evidence_snapshot 만 뺀다. 관리자는 아래 RPC 로 읽는다.
---    ⚠️ 이후 reports 에 컬럼을 추가하면 이 목록에 함께 GRANT 해야 클라이언트가 읽을 수 있다.
-REVOKE SELECT ON public.reports FROM anon, authenticated;
-GRANT SELECT (id, type, reporter_type, reporter_id, reporter_name, target_id, target_name,
-              job_posting_id, job_posting_title, work_log_id, work_date, description, evidence_urls,
-              status, severity, reviewer_id, reviewer_notes, reviewed_at, created_at, updated_at)
-  ON public.reports TO authenticated;
+COMMENT ON TABLE public.chat_report_evidence IS
+  '채팅 신고 증거 스냅샷(chat_report_message 가 DB 에서 채움). snapshot = {source:chat, version, '
+  'conversationId, jobPostingId, postingTitle, reason, reportedMessageId, messages[], imagePaths[]}. '
+  'deny-all — 관리자는 admin_get_report_evidence 로만 읽고, imagePaths 사진만 chat_media_can_read 로 본다.';
 
 -- 관리자 전용 스냅샷 조회(D3 — 관리자는 원문이 아니라 스냅샷만 본다)
 CREATE FUNCTION public.admin_get_report_evidence(p_report_id uuid)
@@ -104,21 +91,12 @@ BEGIN
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 관리자만 신고 증거를 볼 수 있습니다';
   END IF;
-  RETURN (SELECT r.evidence_snapshot FROM public.reports r WHERE r.id = p_report_id);
+  RETURN (SELECT e.snapshot FROM public.chat_report_evidence e WHERE e.report_id = p_report_id);
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.admin_get_report_evidence(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_get_report_evidence(uuid) TO authenticated, service_role;
-
--- 증거 사진 판정(`evidence_snapshot -> 'imagePaths' ? name`)이 객체마다 reports 를 훑지 않게(DB 리뷰 L1)
-CREATE INDEX reports_evidence_image_paths_gin
-  ON public.reports USING gin ((evidence_snapshot -> 'imagePaths'));
-
--- 같은 신고자가 같은 메시지를 두 번 신고할 수 없다(RPC 사전 확인의 경합을 닫는 최종 판정)
-CREATE UNIQUE INDEX reports_chat_evidence_once
-  ON public.reports (reporter_id, ((evidence_snapshot ->> 'reportedMessageId')))
-  WHERE evidence_snapshot IS NOT NULL;
 
 -- ----------------------------------------------------------------------------
 -- 3. RPC
@@ -288,9 +266,8 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 신고할 수 없는 메시지입니다';
   END IF;
 
-  IF EXISTS (SELECT 1 FROM public.reports r
-              WHERE r.reporter_id = v_uid
-                AND r.evidence_snapshot ->> 'reportedMessageId' = v_msg.id::text) THEN
+  IF EXISTS (SELECT 1 FROM public.chat_report_evidence e
+              WHERE e.reporter_id = v_uid AND e.reported_message_id = v_msg.id) THEN
     RAISE EXCEPTION 'DUPLICATE_REPORT: 이미 신고한 메시지입니다';
   END IF;
 
@@ -330,7 +307,7 @@ BEGIN
 
   INSERT INTO public.reports (
     type, reporter_type, reporter_id, reporter_name, target_id, target_name,
-    job_posting_id, job_posting_title, description, evidence_urls, severity, status, evidence_snapshot
+    job_posting_id, job_posting_title, description, evidence_urls, severity, status
   )
   VALUES (
     'inappropriate_behavior',
@@ -340,14 +317,16 @@ BEGIN
     '[채팅 신고] ' || v_label || coalesce(E'\n' || v_detail, ''),
     ARRAY[]::text[],
     (CASE WHEN p_reason IN ('scam', 'sexual') THEN 'high' ELSE 'medium' END)::public.report_severity,
-    'pending',
-    jsonb_build_object(
-      'source', 'chat', 'version', 1,
-      'conversationId', v_conv.id, 'jobPostingId', v_conv.job_posting_id,
-      'postingTitle', v_conv.posting_title, 'reason', p_reason,
-      'reportedMessageId', v_msg.id, 'messages', v_messages, 'imagePaths', v_images)
+    'pending'
   )
   RETURNING id INTO v_report_id;
+
+  INSERT INTO public.chat_report_evidence (report_id, reporter_id, reported_message_id, snapshot)
+  VALUES (v_report_id, v_uid, v_msg.id, jsonb_build_object(
+    'source', 'chat', 'version', 1,
+    'conversationId', v_conv.id, 'jobPostingId', v_conv.job_posting_id,
+    'postingTitle', v_conv.posting_title, 'reason', p_reason,
+    'reportedMessageId', v_msg.id, 'messages', v_messages, 'imagePaths', v_images));
 
   RETURN v_report_id;
 EXCEPTION
@@ -684,8 +663,8 @@ BEGIN
   -- (S4) 관리자는 **신고 증거로 스냅샷에 담긴 사진만** 본다(D3 — 원문 열람 불가 원칙 유지).
   --      방 멤버가 아니므로 아래 멤버 절로는 절대 통과하지 않는다.
   IF public.is_admin() AND EXISTS (
-       SELECT 1 FROM public.reports r
-        WHERE r.evidence_snapshot -> 'imagePaths' ? p_object_name) THEN
+       SELECT 1 FROM public.chat_report_evidence e
+        WHERE e.snapshot -> 'imagePaths' ? p_object_name) THEN
     RETURN true;
   END IF;
 
@@ -730,9 +709,10 @@ BEGIN
   IF has_column_privilege('authenticated', 'public.chat_blocks', 'created_by', 'SELECT') THEN
     RAISE EXCEPTION 'chat_blocks.created_by 가 authenticated 에 노출된다';
   END IF;
-  IF has_column_privilege('authenticated', 'public.reports', 'evidence_snapshot', 'SELECT')
-     OR NOT has_column_privilege('authenticated', 'public.reports', 'description', 'SELECT') THEN
-    RAISE EXCEPTION 'reports 컬럼 권한이 의도와 다르다(스냅샷 노출 또는 기존 컬럼 상실)';
+  IF has_table_privilege('authenticated', 'public.chat_report_evidence', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.chat_report_evidence', 'INSERT')
+     OR has_table_privilege('anon', 'public.chat_report_evidence', 'SELECT') THEN
+    RAISE EXCEPTION 'chat_report_evidence 가 클라이언트 롤에 열려 있다';
   END IF;
   IF has_function_privilege('anon', 'public.admin_get_report_evidence(uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'admin_get_report_evidence 에 anon EXECUTE 가 남아 있다';

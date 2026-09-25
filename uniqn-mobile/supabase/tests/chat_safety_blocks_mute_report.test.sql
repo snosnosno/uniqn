@@ -7,6 +7,7 @@
 --   · chat_send_message 의 차단 게이트(⑤-c) 제거 → K5·K6·K7 이 성공으로 바뀌어 실패
 --   · chat_unblock 의 "막은 쪽만" 조건 제거 → K11·K14 가 성공으로 바뀌어 실패
 --   · 스냅샷을 클라 값으로 채우면(없음 — RPC 가 본문을 받지 않는다) R3 이 DB 본문과 달라 실패
+--   · 증거 테이블에 정책을 하나라도 열면 H1·H3·H3b 가 실패
 --   · chat_media_can_read 의 관리자 절에서 "신고 증거" 조건 제거 → R13 이 1 로 실패
 --
 -- ⚠️ chat_blocks.created_by 컬럼 비노출은 여기서 단언하지 않는다 — 픽스처 jpc_helpers.sql 의
@@ -16,7 +17,7 @@
 -- 안전: BEGIN/ROLLBACK. 선행: npm run test:db:helpers
 -- ============================================================
 BEGIN;
-SELECT plan(61);
+SELECT plan(62);
 
 SELECT jpc_chat_seed_guc();
 SELECT jpc_chat_simulate_on();   -- 서버 다크 착지를 이 트랜잭션에서만 공개 ON 으로
@@ -217,20 +218,21 @@ SELECT is(
   '(inappropriate_behavior,employee,t,t,t,medium,pending)',
   'R1 신고 행 — 대상 = 메시지 발신자 · 공고 · 구직자=employee · 욕설=medium');
 SELECT is(
-  (SELECT (evidence_snapshot ->> 'reportedMessageId')::uuid = jpc_chat_id('m_bad')
-          AND evidence_snapshot ->> 'source' = 'chat' AND evidence_snapshot ->> 'reason' = 'abuse'
-     FROM public.reports WHERE id = jpc_chat_id('rep1')),
+  (SELECT (snapshot ->> 'reportedMessageId')::uuid = jpc_chat_id('m_bad')
+          AND snapshot ->> 'source' = 'chat' AND snapshot ->> 'reason' = 'abuse'
+          AND reported_message_id = jpc_chat_id('m_bad') AND reporter_id = jpc_chat_id('seeker')
+     FROM public.chat_report_evidence WHERE report_id = jpc_chat_id('rep1')),
   true, 'R2 스냅샷 머리 — source·reason·reportedMessageId');
 SELECT is(
-  (SELECT (evidence_snapshot -> 'messages' -> -1 ->> 'body')
-     FROM public.reports WHERE id = jpc_chat_id('rep1')),
+  (SELECT (snapshot -> 'messages' -> -1 ->> 'body')
+     FROM public.chat_report_evidence WHERE report_id = jpc_chat_id('rep1')),
   (SELECT body FROM public.chat_messages WHERE id = jpc_chat_id('m_bad')),
   'R3 스냅샷 마지막 = 신고 메시지, 본문은 DB 값 그대로');
 SELECT is(
-  (SELECT jsonb_array_length(evidence_snapshot -> 'messages') FROM public.reports WHERE id = jpc_chat_id('rep1')),
+  (SELECT jsonb_array_length(snapshot -> 'messages') FROM public.chat_report_evidence WHERE report_id = jpc_chat_id('rep1')),
   11, 'R4 스냅샷 = 신고 메시지 + 직전 10개');
 SELECT is(
-  (SELECT (evidence_snapshot -> 'messages' -> 0 ->> 'body') FROM public.reports WHERE id = jpc_chat_id('rep1')),
+  (SELECT (snapshot -> 'messages' -> 0 ->> 'body') FROM public.chat_report_evidence WHERE report_id = jpc_chat_id('rep1')),
   '앞선 메시지 3', 'R4b 가장 오래된 것은 직전 10개의 첫째(12개 중 3번째) — 오래된 → 최신 순');
 SELECT is(
   (SELECT description FROM public.reports WHERE id = jpc_chat_id('rep1')),
@@ -262,8 +264,9 @@ RESET ROLE;
 
 SELECT jpc_test_clear_user();
 SELECT is(
-  (SELECT severity::text || ':' || (evidence_snapshot -> 'imagePaths' ? current_setting('chat.img'))::text
-     FROM public.reports WHERE id = jpc_chat_id('rep_img')),
+  (SELECT r.severity::text || ':' || (e.snapshot -> 'imagePaths' ? current_setting('chat.img'))::text
+     FROM public.reports r JOIN public.chat_report_evidence e ON e.report_id = r.id
+    WHERE r.id = jpc_chat_id('rep_img')),
   'high:true', 'R13a 사진 신고 — 음란=high · 증거 경로가 imagePaths 에');
 
 -- 관리자: 원문 0행 · 신고 증거 사진만 읽는다
@@ -284,24 +287,25 @@ RESET ROLE;
 -- ------------------------------------------------------------
 SELECT throws_ok(
   $$ SELECT jpc_test_set_user(jpc_chat_id('third'));
-     INSERT INTO public.reports (type, reporter_type, reporter_id, reporter_name, target_id, target_name,
-                                 job_posting_id, description, evidence_snapshot)
-     VALUES ('inappropriate_behavior', 'employee', jpc_chat_id('third'), 'x', jpc_chat_id('owner'), 'y',
-             jpc_chat_id('jp'), '가짜', jsonb_build_object('source', 'chat', 'imagePaths',
-             jsonb_build_array(current_setting('chat.img2')))); $$,
-  '42501', 'REPORT_EVIDENCE_IMMUTABLE: 증거 스냅샷은 서버만 기록합니다', 'H1 클라이언트가 직접 넣는 스냅샷 → 42501(가짜 증거·관리자 열람 확대·삭제 예외 남용 차단)');
+     INSERT INTO public.chat_report_evidence (report_id, reporter_id, reported_message_id, snapshot)
+     VALUES (jpc_chat_id('rep1'), jpc_chat_id('third'), gen_random_uuid(),
+             jsonb_build_object('source', 'chat', 'imagePaths', jsonb_build_array(current_setting('chat.img2')))); $$,
+  '42501', NULL, 'H1 클라이언트는 증거 테이블에 쓸 수 없다(RLS 정책 0 — 가짜 증거·관리자 열람 확대·삭제 예외 남용 차단)');
 RESET ROLE;
 SELECT lives_ok(
   $$ SELECT jpc_test_set_user(jpc_chat_id('third'));
      INSERT INTO public.reports (type, reporter_type, reporter_id, reporter_name, target_id, target_name,
                                  job_posting_id, description)
      VALUES ('other', 'employee', jpc_chat_id('third'), 'x', jpc_chat_id('owner'), 'y', jpc_chat_id('jp'), '일반 신고'); $$,
-  'H2 대조군: 스냅샷 없는 기존 직접 신고 경로는 그대로(H1 이 권한 오류 탓이 아님)');
+  'H2 대조군: 기존 직접 신고 경로(reports 권한)는 그대로 — S4 는 reports 권한을 바꾸지 않는다');
 RESET ROLE;
-SELECT throws_ok(
-  $$ SELECT jpc_test_set_user_with_role(jpc_chat_id('admin'), 'admin');
-     UPDATE public.reports SET evidence_snapshot = '{}'::jsonb WHERE id = jpc_chat_id('rep1'); $$,
-  '42501', 'REPORT_EVIDENCE_IMMUTABLE: 증거 스냅샷은 서버만 기록합니다', 'H3 관리자 raw PATCH 로도 스냅샷을 바꿀 수 없다');
+SELECT jpc_test_set_user_with_role(jpc_chat_id('admin'), 'admin');
+SELECT is((SELECT count(*)::int FROM public.chat_report_evidence), 0,
+  'H3 관리자도 증거 테이블을 직접 읽지 못한다(RPC 로만 — 쓰기·수정 경로 없음)');
+RESET ROLE;
+SELECT jpc_test_set_user(jpc_chat_id('seeker'));
+SELECT is((SELECT count(*)::int FROM public.chat_report_evidence), 0,
+  'H3b 신고자 본인도 직접 읽지 못한다(탈퇴자 원문 잔존 차단 — D5)');
 RESET ROLE;
 SELECT jpc_test_clear_user();
 SELECT jpc_chat_put('cm_png', gen_random_uuid());
@@ -323,11 +327,11 @@ SELECT lives_ok(
   'H5b 대조군: 같은 사진을 2048 로 보내면 성공(H5 가 경로 불일치 탓이 아님)');
 RESET ROLE;
 SELECT is(
-  (SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'reports_chat_evidence_once'),
-  'CREATE UNIQUE INDEX reports_chat_evidence_once ON public.reports USING btree (reporter_id, ((evidence_snapshot ->> ''reportedMessageId''::text))) WHERE (evidence_snapshot IS NOT NULL)',
-  'H6 같은 신고자·같은 메시지 부분 유니크 인덱스 — 식과 조건까지(동시 재신고 경합의 최종 판정)');
+  (SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'chat_report_evidence_once'),
+  'CREATE UNIQUE INDEX chat_report_evidence_once ON public.chat_report_evidence USING btree (reporter_id, reported_message_id)',
+  'H6 같은 신고자·같은 메시지 유니크 인덱스(동시 재신고 경합의 최종 판정)');
 
--- 관리자 스냅샷 조회 RPC(DB 리뷰 M1 — 컬럼은 authenticated 에 가려져 있다)
+-- 관리자 스냅샷 조회 RPC(DB 리뷰 M1 — 증거 테이블은 deny-all)
 SELECT jpc_test_set_user_with_role(jpc_chat_id('admin'), 'admin');
 SELECT is(admin_get_report_evidence(jpc_chat_id('rep1')) ->> 'reportedMessageId', jpc_chat_id('m_bad')::text,
   'H7 관리자는 RPC 로 스냅샷을 받는다');

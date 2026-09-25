@@ -251,11 +251,11 @@
 --       (storage_chat_media_scope.test.sql 이 행동으로 감시).
 --
 --   2026-09-25 앱 내 채팅 S4(마이그 20260925210000 · 220000 · 230000, 기준 커밋 0f07ba530):
---     함수 245 = 238 + 7 — chat_set_muted · chat_block · chat_unblock · chat_report_message ·
---       chat_media_can_stage · fn_reports_pin_evidence_snapshot(트리거 — 스냅샷 위조 차단) ·
---       admin_get_report_evidence(관리자 스냅샷 조회 — 컬럼은 authenticated 에 가려짐). (chat_send_message · chat_list_conversations · chat_media_can_read ·
+--     함수 244 = 238 + 6 — chat_set_muted · chat_block · chat_unblock · chat_report_message ·
+--       chat_media_can_stage · admin_get_report_evidence(관리자 스냅샷 조회).
+--     신고 스냅샷은 reports 컬럼이 아니라 deny-all 테이블 chat_report_evidence(정책 0). (chat_send_message · chat_list_conversations · chat_media_can_read ·
 --       chat_media_can_write · permanently_delete_user 는 CREATE OR REPLACE 재정의라 0)
---     정책 106 = 105 + 1 — chat_blocks SELECT. chat_media_deletion_queue 는 RLS on · 정책 0
+--     정책 106 = 105 + 1 — chat_blocks SELECT. chat_media_deletion_queue·chat_report_evidence 는 RLS on · 정책 0
 --       (deny-all, EF 전용). storage 의 chat-media-inbox INSERT 정책은 public 밖.
 --
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
@@ -278,7 +278,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=245
+-- PARITY_EXPECT_FUNCS=244
 -- PARITY_EXPECT_POLICIES=106
 -- ============================================================
 BEGIN;
@@ -298,8 +298,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  245,
-  'public function count (245 = 238 + 채팅 S4 7, 2026-09-25 — 출처는 상단 장부 참조)');
+  244,
+  'public function count (244 = 238 + 채팅 S4 6, 2026-09-25 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

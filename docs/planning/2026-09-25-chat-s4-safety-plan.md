@@ -26,8 +26,8 @@
 
 | 파일 | 내용 | 파리티 | `verify_function` |
 |---|---|---|---|
-| `20260925210000_chat_blocks_mute_report.sql` | `chat_blocks`+SELECT 정책 · `reports.evidence_snapshot` · RPC 4(`chat_set_muted`·`chat_block`·`chat_unblock`·`chat_report_message`) · `chat_send_message` 재정의(차단 게이트) · `chat_list_conversations` 재정의(`blocked` 실값) · `chat_media_can_read` 재정의(관리자 = 신고 증거 사진만) | +6 / +1 → **244 / 106** (리뷰 반영: 스냅샷 봉인 트리거 · 관리자 스냅샷 RPC) | `chat_send_message` |
-| `20260925220000_chat_media_inbox_sanitize.sql` | 버킷 `chat-media-inbox`(비공개·1.5MB·jpeg 만) + INSERT 정책 · `chat_media_can_stage`(S1 `can_write` 규칙 + 차단 + 두 버킷 합산 한도) · `chat_media_can_write` → **항상 false**(직접 업로드 봉쇄 — storage 정책 DROP 은 CI 42501 이력이라 함수로 끈다) | +1 → **245 / 106** | `chat_media_can_stage` |
+| `20260925210000_chat_blocks_mute_report.sql` | `chat_blocks`+SELECT 정책 · `reports.evidence_snapshot` · RPC 4(`chat_set_muted`·`chat_block`·`chat_unblock`·`chat_report_message`) · `chat_send_message` 재정의(차단 게이트) · `chat_list_conversations` 재정의(`blocked` 실값) · `chat_media_can_read` 재정의(관리자 = 신고 증거 사진만) | +5 / +1 → **243 / 106** (리뷰 반영: 스냅샷 = deny-all 테이블 · 관리자 스냅샷 RPC) | `chat_send_message` |
+| `20260925220000_chat_media_inbox_sanitize.sql` | 버킷 `chat-media-inbox`(비공개·1.5MB·jpeg 만) + INSERT 정책 · `chat_media_can_stage`(S1 `can_write` 규칙 + 차단 + 두 버킷 합산 한도) · `chat_media_can_write` → **항상 false**(직접 업로드 봉쇄 — storage 정책 DROP 은 CI 42501 이력이라 함수로 끈다) | +1 → **244 / 106** | `chat_media_can_stage` |
 | `20260925230000_chat_permanently_delete_user_anonymize.sql` | `chat_media_deletion_queue`(deny-all) · `permanently_delete_user` **CREATE OR REPLACE**(prod 본문 그대로 + [5] 에 채팅 블록) | 0 | `permanently_delete_user` |
 
 - `permanently_delete_user` 최신 정의 = prod `pg_proc`(md5 `273aed3a…`, 09-25 실측) = 레포 `20260807150000`.
@@ -91,7 +91,7 @@
 - `chat_media_inbox_sanitize.test.sql`: chat-media 직접 INSERT 42501 · inbox 멤버 INSERT 성공 · 비멤버/남의 경로/차단 42501 · 버킷 행 정확 일치.
 - `chat_account_deletion_anonymize.test.sql`: 익명화 4종 · 큐 적재(증거 사진 제외) · 가드 문구 불변 · anon EXECUTE 비부활.
 - S1 `storage_chat_media_scope` 의 "멤버 chat-media INSERT 성공" 단언은 M1 로 의미가 바뀐다 → 새 동작으로 갱신.
-- `parity_baseline_guard.test.sql` 3곳 = **245 / 106**.
+- `parity_baseline_guard.test.sql` 3곳 = **244 / 106**.
 
 Red-Green: 차단 게이트 제거 → 전송 성공으로 실패 · 익명화 UPDATE 제거 → 실패 · `can_write` false 제거 → 직접 INSERT 성공으로 실패 · 정화기 APP1 제거 단계 제거 → EXIF 잔존 단언 실패.
 
@@ -103,10 +103,10 @@ Red-Green: 차단 게이트 제거 → 전송 성공으로 실패 · 익명화 U
 관리자 메시지 삭제 RPC(설계 §7 사진 모더레이션) · 업장 단위 차단(D10 확장).
 
 ## 리뷰 반영 (2026-09-25, opus)
-- 보안 H1: `reports` 에 authenticated INSERT/UPDATE 가 열려 있어(prod 실측) 스냅샷 위조 가능 → 봉인 트리거 `fn_reports_pin_evidence_snapshot`.
+- 보안 H1 · DB M1: `reports` 에 authenticated INSERT/UPDATE 가 열려 있고(prod 실측) rep_select 로 신고자가 자기 행을 읽어, 컬럼이면 위조·탈퇴자 원문 열람이 가능 → 스냅샷을 **deny-all 테이블 `chat_report_evidence`** 로. 관리자는 `admin_get_report_evidence`.
+  - 1차 시도(컬럼 권한으로 가리기)는 기존 앱 관리자 신고 목록의 `select('*')` 를 42501 로 깨뜨렸다(CI E2E 실측 — 1.0.6 은 OTA 불가라 영구) → 폐기.
 - 보안 M1: 방당 1행 차단은 가해자가 먼저 막고 풀어 피해자 차단을 무력화 → **쪽별 1행**(PK `(conversation_id, blocked_by_side)`), 클라는 상대만 막은 방에서도 차단 가능.
 - 보안 M2: 정화기가 구조 필드를 안 봄 → 정밀도·샘플링·표 번호·길이·SOS 선택자 검증(`BAD_STRUCTURE`). 엔트로피 데이터 속 디코더 0-day 는 **수용한 잔여 위험**.
-- DB M1: 신고자가 스냅샷(탈퇴자 원문)을 계속 읽음 → reports SELECT 를 컬럼 목록으로, 관리자는 `admin_get_report_evidence`.
 - DB M2: `chat_block` 이 전송과 같은 방 잠금 · DB M3: 큐 삭제 묶음 20개.
 - LOW: 전송 `.jpg`·≤2048 · 잠금 뒤 차단 재확인 · 중복 신고 부분 유니크 · 탈퇴 알림 제목은 구직자일 때만 · EF 중복 시 저장본 크기 · GIN 인덱스 · 단언 문구 고정.
 - 기존 결함 동시 수정: `permanently_delete_user` 의 죽은 `board_votes` DELETE(09-10 DROP 이후 모든 탈퇴가 42P01).

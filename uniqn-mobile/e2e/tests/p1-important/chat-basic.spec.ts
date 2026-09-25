@@ -325,7 +325,14 @@ test('8) 사진: 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음
   let sanitizeCalls = 0;
   page.on('request', (request) => {
     const url = request.url();
-    if (request.method() === 'POST' && url.includes('/storage/v1/object/')) storageWrites.push(url);
+    // 업로드만 센다 — 서명 URL 발급(POST /object/sign/...)은 읽기다(CI 실측: 이걸 세면 chat-media 로 오인)
+    if (
+      request.method() === 'POST' &&
+      url.includes('/storage/v1/object/') &&
+      !url.includes('/storage/v1/object/sign/')
+    ) {
+      storageWrites.push(url);
+    }
     if (url.includes('/functions/v1/chat-media-sanitize')) sanitizeCalls += 1;
   });
 

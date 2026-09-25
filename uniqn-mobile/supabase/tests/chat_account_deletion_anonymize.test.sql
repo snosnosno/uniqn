@@ -126,7 +126,7 @@ SELECT is(
 
 -- ⑤ 신고 증거(D12)
 SELECT is(
-  (SELECT evidence_snapshot -> 'imagePaths' ? current_setting('chat.img_ev') FROM public.reports WHERE id = jpc_chat_id('rep')),
+  (SELECT snapshot -> 'imagePaths' ? current_setting('chat.img_ev') FROM public.chat_report_evidence WHERE report_id = jpc_chat_id('rep')),
   true, 'A10 신고 스냅샷의 증거 경로는 탈퇴 뒤에도 남는다');
 
 -- 권한 불변(CREATE OR REPLACE — DROP+CREATE 였다면 anon 이 부활)

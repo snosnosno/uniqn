@@ -28,7 +28,7 @@
 --    (md5 273aed3a…, 2026-09-25) = 20260807150000 원문. [5] 에 채팅 블록만 끼웠다.
 --    가드 문구·search_path 는 글자 그대로(anon_rpc_security_hardening.test.sql 가 행동으로 핀).
 --
--- 파리티: 불변(재정의 + 정책 없는 테이블) → 245 / 106
+-- 파리티: 불변(재정의 + 정책 없는 테이블) → 244 / 106
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -135,8 +135,8 @@ BEGIN
     FROM storage.objects o
    WHERE o.bucket_id IN ('chat-media', 'chat-media-inbox')
      AND split_part(o.name, '/', 2) = p_user_id::text
-     AND NOT EXISTS (SELECT 1 FROM public.reports r
-                      WHERE r.evidence_snapshot -> 'imagePaths' ? o.name)
+     AND NOT EXISTS (SELECT 1 FROM public.chat_report_evidence e
+                      WHERE e.snapshot -> 'imagePaths' ? o.name)
   ON CONFLICT (bucket_id, object_name) DO NOTHING;
   --   ② 탈퇴자 발신 메시지: 본문·사진 삭제 + 이름 익명화(chat_msg_shape_chk 의 삭제 형태)
   UPDATE public.chat_messages SET
