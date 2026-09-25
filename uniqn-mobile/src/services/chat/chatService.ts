@@ -44,6 +44,28 @@ async function sendText(input: SendTextInput): Promise<ChatSendResult> {
   });
 }
 
+export interface SendImageInput {
+  conversationId: string;
+  clientMessageId: string;
+  /** uploadChatImage 가 돌려준 경로 */
+  imagePath: string;
+  width: number;
+  height: number;
+}
+
+/** 이미 올린 사진을 메시지로 보낸다(순서: 방 열기 → 업로드 → 보내기 — 설계 §4) */
+async function sendImage(input: SendImageInput): Promise<ChatSendResult> {
+  return chatRepository.sendMessage({
+    conversationId: input.conversationId,
+    kind: 'image',
+    body: '',
+    clientMessageId: input.clientMessageId,
+    imagePath: input.imagePath,
+    imageWidth: input.width,
+    imageHeight: input.height,
+  });
+}
+
 function openConversation(input: OpenConversationInput): Promise<string> {
   return chatRepository.openConversation(input.jobPostingId, input.seekerId ?? null);
 }
@@ -58,6 +80,7 @@ function hide(conversationId: string): Promise<void> {
 
 export const chatService = {
   sendText,
+  sendImage,
   openConversation,
   markRead,
   hide,

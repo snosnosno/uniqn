@@ -6,6 +6,17 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { ChatOutboxBubble, ChatServerBubble } from '../ChatMessageBubble';
 import type { ChatMessage, ChatOutboxItem } from '@/types/chat';
 
+const mockImageBubble = jest.fn();
+jest.mock('../ChatImageBubble', () => {
+  const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+  return {
+    ChatImageBubble: (props: Record<string, unknown>) => {
+      mockImageBubble(props);
+      return <ReactNative.Text>[사진]</ReactNative.Text>;
+    },
+  };
+});
+
 const failed: ChatOutboxItem = {
   clientMessageId: 'c1',
   kind: 'text',
@@ -87,5 +98,83 @@ describe('ChatServerBubble', () => {
     );
     expect(getByText('삭제된 메시지예요')).toBeTruthy();
     expect(queryByText('네 확인했어요')).toBeNull();
+  });
+
+  it('사진 메시지는 경로·크기로 사진 말풍선을 그린다', () => {
+    const { getByText } = render(
+      <ChatServerBubble
+        message={message({
+          kind: 'image',
+          body: '',
+          imagePath: 'c/u/m.jpg',
+          imageWidth: 1600,
+          imageHeight: 1200,
+        })}
+        isMine={false}
+        showSenderName={false}
+      />
+    );
+    expect(getByText('[사진]')).toBeTruthy();
+    expect(mockImageBubble).toHaveBeenCalledWith(
+      expect.objectContaining({ imagePath: 'c/u/m.jpg', width: 1600, height: 1200, isMine: false })
+    );
+  });
+
+  it('삭제된 사진은 사진 대신 삭제 안내', () => {
+    mockImageBubble.mockClear();
+    const { getByText } = render(
+      <ChatServerBubble
+        message={message({
+          kind: 'image',
+          body: '',
+          imagePath: null,
+          deletedAt: '2026-09-25T10:00:00Z',
+        })}
+        isMine={false}
+        showSenderName={false}
+      />
+    );
+    expect(getByText('삭제된 메시지예요')).toBeTruthy();
+    expect(mockImageBubble).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatOutboxBubble — 사진', () => {
+  it('올리는 중이면 로컬 사진에 단계 문구를 얹는다', () => {
+    mockImageBubble.mockClear();
+    render(
+      <ChatOutboxBubble
+        item={{
+          ...failed,
+          kind: 'image',
+          body: '',
+          status: 'sending',
+          stage: 'uploading',
+          errorMessage: undefined,
+          image: { localUri: 'file:///a.jpg', width: 400, height: 300 },
+        }}
+        onRetry={jest.fn()}
+        onDiscard={jest.fn()}
+      />
+    );
+    expect(mockImageBubble).toHaveBeenCalledWith(
+      expect.objectContaining({
+        localUri: 'file:///a.jpg',
+        pendingLabel: '사진 올리는 중',
+        isMine: true,
+      })
+    );
+  });
+
+  it('재시도해도 같은 실패면 재전송 버튼 없이 삭제만 보인다', () => {
+    const { queryByLabelText, getByLabelText } = render(
+      <ChatOutboxBubble
+        item={{ ...failed, retryable: false }}
+        onRetry={jest.fn()}
+        onDiscard={jest.fn()}
+      />
+    );
+    expect(queryByLabelText('메시지 다시 보내기')).toBeNull();
+    expect(getByLabelText('보내지 못한 메시지 삭제')).toBeTruthy();
   });
 });

@@ -101,3 +101,26 @@ describe('chatService 읽음·나가기', () => {
     expect(mockHide).toHaveBeenCalledWith(CONV);
   });
 });
+
+describe('sendImage (S2b)', () => {
+  it('kind=image · 빈 본문 · 경로와 크기를 그대로 보낸다', async () => {
+    const path = `${CONV}/a3bb189e-8bf9-3888-9912-ace4e6543002/${CLIENT}.jpg`;
+    await chatService.sendImage({
+      conversationId: CONV,
+      clientMessageId: CLIENT,
+      imagePath: path,
+      width: 1600,
+      height: 1200,
+    });
+    expect(mockSend).toHaveBeenCalledWith({
+      conversationId: CONV,
+      kind: 'image',
+      body: '',
+      clientMessageId: CLIENT,
+      imagePath: path,
+      imageWidth: 1600,
+      imageHeight: 1200,
+    });
+    expect(mockOpen).not.toHaveBeenCalled();
+  });
+});

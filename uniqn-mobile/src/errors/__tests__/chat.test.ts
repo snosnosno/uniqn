@@ -11,7 +11,12 @@ import {
   ValidationError,
   isAppError,
 } from '@/errors/AppError';
-import { CHAT_ERROR_CODES, mapChatRpcError } from '@/errors/chat';
+import {
+  CHAT_ERROR_CODES,
+  isChatStorageDuplicate,
+  mapChatRpcError,
+  mapChatStorageError,
+} from '@/errors/chat';
 
 function pgError(message: string, code = 'P0001') {
   return { message, code, details: null, hint: null };
@@ -118,5 +123,31 @@ describe('mapChatRpcError — 매핑 없음', () => {
     const mapped = mapChatRpcError(original);
     expect(isAppError(mapped)).toBe(true);
     expect(mapped?.message).toContain('CHAT_RATE_LIMITED');
+  });
+});
+
+describe('storage 에러 (S2b)', () => {
+  it('중복(409·already exists)은 재전송으로 보고 성공 취급한다', () => {
+    expect(
+      isChatStorageDuplicate({ message: 'The resource already exists', statusCode: '409' })
+    ).toBe(true);
+    expect(isChatStorageDuplicate({ message: 'Duplicate', status: 400 })).toBe(true);
+    expect(isChatStorageDuplicate({ message: 'new row violates row-level security policy' })).toBe(
+      false
+    );
+  });
+
+  it('정책 거부 → E6157(재시도 가능) · 용량/형식 → E6153 · 그 외 null', () => {
+    expect(
+      mapChatStorageError({
+        message: 'new row violates row-level security policy',
+        statusCode: '403',
+      })
+    ).toMatchObject({ code: CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, isRetryable: true });
+    expect(mapChatStorageError({ message: 'too big', statusCode: '413' })).toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_IMAGE_INVALID,
+    });
+    expect(mapChatStorageError({ message: 'Object not found', statusCode: '404' })).toBeNull();
+    expect(mapChatStorageError(null)).toBeNull();
   });
 });

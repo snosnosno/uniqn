@@ -18,6 +18,10 @@ import { useChatMessages, useChatRoomActions, useSendChatMessage } from '@/hooks
 import { useIsAppActive } from '@/hooks/chat/useIsAppActive';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
+import { pickChatImage, type ChatImageSource } from '@/services/chat';
+import { extractUserMessage } from '@/errors';
+import { logger } from '@/utils/logger';
 import { loadFailed } from '@/constants/messages';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { ChatSide } from '@/types/chat';
@@ -55,7 +59,7 @@ export function ChatRoomView(props: ChatRoomViewProps) {
   } = useChatMessages(conversationId);
   const isFocused = useIsFocused();
   const isAppActive = useIsAppActive();
-  const { outbox, send, retry, discard } = useSendChatMessage({
+  const { outbox, send, sendImage, retry, discard } = useSendChatMessage({
     conversationId,
     jobPostingId,
     seekerId,
@@ -86,6 +90,28 @@ export function ChatRoomView(props: ChatRoomViewProps) {
 
   const handleSend = useCallback((body: string) => void send(body), [send]);
   const handleRetry = useCallback((id: string) => void retry(id), [retry]);
+  const handleAttach = useCallback(
+    async (source: ChatImageSource) => {
+      try {
+        const picked = await pickChatImage(source);
+        if (picked === 'denied') {
+          useToastStore
+            .getState()
+            .error(source === 'camera' ? '카메라 권한이 필요해요' : '사진 접근 권한이 필요해요');
+          return;
+        }
+        if (picked) await sendImage(picked);
+      } catch (error) {
+        logger.warn('채팅 사진 고르기 실패', { component: 'ChatRoomView' });
+        useToastStore.getState().error(extractUserMessage(error) || '사진을 불러오지 못했어요');
+      }
+    },
+    [sendImage]
+  );
+  const handleAttachPress = useCallback(
+    (source: ChatImageSource) => void handleAttach(source),
+    [handleAttach]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: ChatRow }) => (
@@ -144,6 +170,7 @@ export function ChatRoomView(props: ChatRoomViewProps) {
       </View>
       <ChatComposer
         onSend={handleSend}
+        onAttach={handleAttachPress}
         disabled={!isOnline}
         disabledReason={isOnline ? undefined : '오프라인에서는 메시지를 보낼 수 없어요'}
       />

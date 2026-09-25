@@ -59,4 +59,30 @@ describe('ChatComposer', () => {
     const { getByTestId } = render(<ChatComposer onSend={jest.fn()} />);
     expect(getByTestId('chat-composer-input').props.className).toMatch(/dark:/);
   });
+
+  it('onAttach 가 없으면 사진 첨부 버튼을 그리지 않는다', () => {
+    const { queryByTestId } = render(<ChatComposer onSend={jest.fn()} />);
+    expect(queryByTestId('chat-attach-button')).toBeNull();
+  });
+
+  it('네이티브: + 를 누르면 앨범/카메라가 뜨고, 고른 쪽으로 onAttach 를 부른다', () => {
+    const onAttach = jest.fn();
+    const { getByTestId, getByLabelText, queryByTestId } = render(
+      <ChatComposer onSend={jest.fn()} onAttach={onAttach} />
+    );
+
+    fireEvent.press(getByTestId('chat-attach-button'));
+    expect(getByTestId('chat-attach-menu')).toBeTruthy();
+    fireEvent.press(getByLabelText('카메라에서 사진 고르기'));
+
+    expect(onAttach).toHaveBeenCalledWith('camera');
+    expect(queryByTestId('chat-attach-menu')).toBeNull();
+  });
+
+  it('오프라인(disabled)이면 첨부 버튼도 막힌다', () => {
+    const { getByTestId } = render(
+      <ChatComposer onSend={jest.fn()} onAttach={jest.fn()} disabled disabledReason="오프라인" />
+    );
+    expect(getByTestId('chat-attach-button').props.accessibilityState?.disabled).toBe(true);
+  });
 });

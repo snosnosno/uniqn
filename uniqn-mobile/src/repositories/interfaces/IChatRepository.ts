@@ -53,4 +53,9 @@ export interface IChatRepository {
   ): Promise<ChatMessage[]>;
   /** anchor 이후 메시지 오름차순 */
   getMessagesAfter(conversationId: string, afterIso: string, limit: number): Promise<ChatMessage[]>;
+
+  /** (S2b) 사진 업로드 — 같은 경로가 이미 있으면(재전송) 성공으로 본다 */
+  uploadImage(path: string, bytes: ArrayBuffer): Promise<void>;
+  /** (S2b) 사진 서명 URL */
+  createSignedImageUrl(path: string, expiresInSec: number): Promise<string>;
 }

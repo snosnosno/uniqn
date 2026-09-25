@@ -162,6 +162,8 @@ debug-*.html
 # 프로젝트 내 에셋은 허용
 !uniqn-mobile/assets/**
 !uniqn-mobile/src/**
+# E2E 채팅 사진 픽스처(GPS EXIF 포함 — 업로드본에서 사라지는지 단언용). 이 파일 하나만
+!uniqn-mobile/e2e/fixtures/chat-exif-sample.jpg
 
 # ========================================
 # PROJECT SPECIFIC
