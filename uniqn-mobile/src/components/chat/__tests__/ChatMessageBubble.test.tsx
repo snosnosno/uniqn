@@ -178,3 +178,46 @@ describe('ChatOutboxBubble — 사진', () => {
     expect(getByLabelText('보내지 못한 메시지 삭제')).toBeTruthy();
   });
 });
+
+describe('ChatServerBubble — (S4) 길게 눌러 신고', () => {
+  it('onLongPress 가 있으면 길게 누를 때 그 메시지로 부른다', () => {
+    const onLongPress = jest.fn();
+    const msg = message();
+    const { getByTestId } = render(
+      <ChatServerBubble message={msg} isMine={false} showSenderName onLongPress={onLongPress} />
+    );
+    fireEvent(getByTestId('chat-bubble-m1'), 'longPress');
+    expect(onLongPress).toHaveBeenCalledWith(msg);
+  });
+
+  it('onLongPress 가 없으면(내 메시지 등) 신고 동작을 노출하지 않고 본문 선택은 그대로', () => {
+    const { getByTestId, getByText } = render(
+      <ChatServerBubble message={message()} isMine showSenderName={false} />
+    );
+    expect(getByTestId('chat-bubble-m1').props.accessibilityActions).toBeUndefined();
+    expect(getByText('네 확인했어요').props.selectable).toBe(true);
+  });
+
+  it('사진 말풍선은 사진 쪽 Pressable 로 길게 누르기를 넘긴다', () => {
+    const onLongPress = jest.fn();
+    const msg = message({ kind: 'image', imagePath: 'c/u/x.jpg', imageWidth: 10, imageHeight: 10 });
+    render(
+      <ChatServerBubble message={msg} isMine={false} showSenderName onLongPress={onLongPress} />
+    );
+    const props = mockImageBubble.mock.calls.at(-1)?.[0] as { onLongPress?: () => void };
+    props.onLongPress?.();
+    expect(onLongPress).toHaveBeenCalledWith(msg);
+  });
+
+  it('신고 가능한 말풍선은 접근성 동작으로도 신고를 연다', () => {
+    const onLongPress = jest.fn();
+    const msg = message();
+    const { getByTestId } = render(
+      <ChatServerBubble message={msg} isMine={false} showSenderName onLongPress={onLongPress} />
+    );
+    fireEvent(getByTestId('chat-bubble-m1'), 'accessibilityAction', {
+      nativeEvent: { actionName: 'longpress' },
+    });
+    expect(onLongPress).toHaveBeenCalledWith(msg);
+  });
+});

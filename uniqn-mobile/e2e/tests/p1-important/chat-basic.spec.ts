@@ -9,6 +9,7 @@
  *   5) 구인자 '나가기' → 목록에서 사라짐 / 6) 구직자 새 메시지 → 다시 나타남
  *   7) 전송 실패 → '재전송' → 같은 p_client_message_id, 서버 행은 정확히 1개
  *   8) 사진 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음, 긴 변 1600, 1.5MB 이하)
+ *      (S4 M1) 업로드는 chat-media-inbox 로만 가고, 정화 EF 를 거쳐 chat-media 에 놓인다
  *
  * 🔒 서버는 다크로 착지했다. 이 스펙은 e2e.yml 의 `npm run e2e:chat-enable` 스텝(로컬 스택 전용
  *    GRANT + 플래그 ON)을 전제로 한다.
@@ -236,6 +237,8 @@ test('5·6) 구인자 나가기 → 목록에서 사라지고, 새 메시지가 
   await employerPage.goto(`/chat/${conversationId}`);
   await waitForAppReady(employerPage);
   employerPage.once('dialog', (dialog) => void dialog.accept());
+  // (S4) 헤더 "나가기" 글자가 `⋯` 메뉴로 바뀌었다 — 메뉴를 연 뒤 항목을 누른다
+  await employerPage.getByRole('button', { name: '채팅방 메뉴' }).click();
   await employerPage.getByRole('button', { name: '채팅방 나가기' }).click();
 
   await openEmployerList(employerPage.context().browser() as Browser);
@@ -317,6 +320,15 @@ test('8) 사진: 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음
   expect(hasExif(original)).toBe(true);
   expect(original.includes(Buffer.from('GPS-Leak-Test'))).toBe(true);
 
+  // (S4 M1) 앱은 chat-media 에 직접 쓰지 않는다 — 업로드 대상 버킷과 정화 EF 호출을 기록한다
+  const storageWrites: string[] = [];
+  let sanitizeCalls = 0;
+  page.on('request', (request) => {
+    const url = request.url();
+    if (request.method() === 'POST' && url.includes('/storage/v1/object/')) storageWrites.push(url);
+    if (url.includes('/functions/v1/chat-media-sanitize')) sanitizeCalls += 1;
+  });
+
   await page.goto(`/chat/${conversationId}`);
   await waitForAppReady(page);
   const chooser = page.waitForEvent('filechooser');
@@ -353,6 +365,15 @@ test('8) 사진: 첨부 → 올라간 객체는 재인코딩본(EXIF·GPS 없음
   expect(imagePath).toMatch(new RegExp(`^${conversationId}/${SUPABASE_QA_ACCOUNTS.staff.id}/`));
 
   uploadedImagePath = imagePath;
+  expect(storageWrites.length).toBeGreaterThan(0);
+  for (const url of storageWrites) expect(url).toContain('/storage/v1/object/chat-media-inbox/');
+  expect(sanitizeCalls).toBeGreaterThan(0);
+  // 정화가 끝나면 접수 창구(inbox)의 원본은 지워진다
+  const { data: inboxLeft } = await admin.storage
+    .from('chat-media-inbox')
+    .list(`${conversationId}/${SUPABASE_QA_ACCOUNTS.staff.id}`);
+  expect((inboxLeft ?? []).map((o) => o.name)).not.toContain(imagePath.split('/').pop());
+
   const { data: blob, error } = await admin.storage.from('chat-media').download(imagePath);
   if (error || !blob) fail(`업로드 객체 다운로드 실패: ${error?.message ?? 'empty'}`);
   const uploaded = Buffer.from(await blob.arrayBuffer());

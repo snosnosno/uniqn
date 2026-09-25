@@ -15,6 +15,7 @@ import {
   CHAT_ERROR_CODES,
   isChatStorageDuplicate,
   mapChatRpcError,
+  mapChatSanitizeError,
   mapChatStorageError,
 } from '@/errors/chat';
 
@@ -149,5 +150,69 @@ describe('storage 에러 (S2b)', () => {
     });
     expect(mapChatStorageError({ message: 'Object not found', statusCode: '404' })).toBeNull();
     expect(mapChatStorageError(null)).toBeNull();
+  });
+});
+
+describe('mapChatRpcError — (S4) 신고 토큰', () => {
+  it('DUPLICATE_REPORT → 이미 신고한 메시지(재시도 불가)', () => {
+    const mapped = mapChatRpcError(pgError('DUPLICATE_REPORT: 이미 신고한 메시지입니다'));
+    expect(mapped).toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_REPORT_DUPLICATE,
+      userMessage: '이미 신고한 메시지예요.',
+      isRetryable: false,
+    });
+  });
+
+  it('CHAT_REPORT_LIMITED → 오늘은 더 신고할 수 없음', () => {
+    const mapped = mapChatRpcError(pgError('CHAT_REPORT_LIMITED: 하루 신고 한도 초과'));
+    expect(mapped).toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_REPORT_LIMITED,
+      userMessage: '오늘은 더 이상 신고할 수 없어요.',
+    });
+  });
+
+  it('반대쪽 차단 해제 시도(PERMISSION_DENIED)는 서버 꼬리 문구를 그대로 보인다', () => {
+    const mapped = mapChatRpcError(
+      pgError('PERMISSION_DENIED: 상대가 차단한 대화는 해제할 수 없습니다')
+    );
+    expect(mapped).toBeInstanceOf(PermissionError);
+    expect(mapped?.userMessage).toBe('상대가 차단한 대화는 해제할 수 없습니다');
+  });
+});
+
+describe('mapChatSanitizeError — (S4 M1) 사진 정화 EF 실패 응답', () => {
+  it.each(['CHAT_IMAGE_INVALID', 'CHAT_IMAGE_TOO_LARGE'])(
+    '%s → 사진 거부(E6153, 재시도 불가)',
+    (code) => {
+      expect(mapChatSanitizeError({ code, error: 'x' }, 400)).toMatchObject({
+        code: CHAT_ERROR_CODES.CHAT_IMAGE_INVALID,
+        isRetryable: false,
+      });
+    }
+  );
+
+  it('CHAT_IMAGE_NOT_FOUND → 다시 올려야 함(E6160, 재시도 가능)', () => {
+    expect(mapChatSanitizeError({ code: 'CHAT_IMAGE_NOT_FOUND' }, 404)).toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_IMAGE_MISSING,
+      isRetryable: true,
+    });
+  });
+
+  it('CHAT_IMAGE_UNAUTHENTICATED → 세션 만료', () => {
+    expect(mapChatSanitizeError({ code: 'CHAT_IMAGE_UNAUTHENTICATED' }, 401)).toMatchObject({
+      code: ERROR_CODES.AUTH_SESSION_EXPIRED,
+    });
+  });
+
+  it('본문이 없거나 모르는 코드(5xx·네트워크)는 재시도 가능한 요청 실패', () => {
+    const mapped = mapChatSanitizeError(null, 502);
+    expect(isAppError(mapped)).toBe(true);
+    expect(mapped).toMatchObject({
+      code: ERROR_CODES.NETWORK_REQUEST_FAILED,
+      isRetryable: true,
+    });
+    expect(mapChatSanitizeError({ code: 'WHAT' }, undefined).code).toBe(
+      ERROR_CODES.NETWORK_REQUEST_FAILED
+    );
   });
 });

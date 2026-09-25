@@ -5,9 +5,11 @@
  * - 구직자 화면에서 구인자 측 발신자가 여럿일 수 있어 상대 말풍선 위에 발신자 이름을 작게 단다.
  * - 실패: 모양 전환 없이 아이콘+색만 바꾸고 "재전송"·"삭제"를 붙인다(자주 보는 요소라 움직임 없음).
  * - 사진(kind=image)은 ChatImageBubble 로 그린다(S2b). 삭제된 사진은 일반 삭제 문구.
+ * - (S4) 신고 가능한 상대 메시지는 길게 눌러(또는 접근성 동작) 신고 메뉴를 연다. 이때 본문 텍스트
+ *   선택(selectable)은 끈다 — 안드로이드에서 텍스트 선택이 길게 누르기를 가로챈다.
  */
 import React, { memo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, type AccessibilityActionEvent } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { RefreshIcon } from '@/components/icons';
@@ -24,33 +26,20 @@ interface ServerBubbleProps {
   message: ChatMessage;
   isMine: boolean;
   showSenderName: boolean;
+  /** (S4) 신고 가능한 메시지일 때만 준다 */
+  onLongPress?: (message: ChatMessage) => void;
 }
 
-export const ChatServerBubble = memo(function ChatServerBubble({
-  message,
-  isMine,
-  showSenderName,
-}: ServerBubbleProps) {
-  if (
-    message.senderSide === 'system' ||
-    message.kind === 'system' ||
-    message.kind === 'announcement'
-  ) {
-    return (
-      <View className="my-2 items-center px-6">
-        <Text className="text-center text-xs text-content-muted dark:text-secondary-400">
-          {message.body}
-        </Text>
-      </View>
-    );
-  }
+const REPORT_A11Y_ACTIONS = [{ name: 'longpress', label: '신고하기' }];
 
+/** 발신자 이름 + 본문(텍스트/사진) + 시각 — 감싸는 줄(길게 누르기 여부)과 분리 */
+function ServerBubbleContent({ message, isMine, showSenderName, onLongPress }: ServerBubbleProps) {
   const deleted = message.deletedAt !== null;
   const isImage = message.kind === 'image' && !deleted && !!message.imagePath;
   const body = deleted ? '삭제된 메시지예요' : message.body;
 
   return (
-    <View className={`my-1 px-4 ${isMine ? 'items-end' : 'items-start'}`}>
+    <>
       {showSenderName && !isMine ? (
         <Text className="mb-0.5 ml-1 text-xs text-content-muted dark:text-secondary-400">
           {message.senderDisplayName}
@@ -63,6 +52,7 @@ export const ChatServerBubble = memo(function ChatServerBubble({
             width={message.imageWidth}
             height={message.imageHeight}
             isMine={isMine}
+            onLongPress={onLongPress ? () => onLongPress(message) : undefined}
           />
         ) : (
           <View
@@ -73,7 +63,7 @@ export const ChatServerBubble = memo(function ChatServerBubble({
             }`}
           >
             <Text
-              selectable
+              selectable={!onLongPress}
               className={`text-base ${
                 deleted
                   ? 'italic text-content-muted dark:text-secondary-400'
@@ -90,7 +80,62 @@ export const ChatServerBubble = memo(function ChatServerBubble({
           {timeLabel(message.createdAt)}
         </Text>
       </View>
-    </View>
+    </>
+  );
+}
+
+export const ChatServerBubble = memo(function ChatServerBubble({
+  message,
+  isMine,
+  showSenderName,
+  onLongPress,
+}: ServerBubbleProps) {
+  if (
+    message.senderSide === 'system' ||
+    message.kind === 'system' ||
+    message.kind === 'announcement'
+  ) {
+    return (
+      <View className="my-2 items-center px-6">
+        <Text className="text-center text-xs text-content-muted dark:text-secondary-400">
+          {message.body}
+        </Text>
+      </View>
+    );
+  }
+
+  const content = (
+    <ServerBubbleContent
+      message={message}
+      isMine={isMine}
+      showSenderName={showSenderName}
+      onLongPress={onLongPress}
+    />
+  );
+  const rowClass = `my-1 px-4 ${isMine ? 'items-end' : 'items-start'}`;
+  const testID = `chat-bubble-${message.id}`;
+
+  if (!onLongPress) {
+    return (
+      <View className={rowClass} testID={testID}>
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onLongPress={() => onLongPress(message)}
+      delayLongPress={350}
+      accessibilityHint="길게 누르면 신고할 수 있어요"
+      accessibilityActions={REPORT_A11Y_ACTIONS}
+      onAccessibilityAction={(event: AccessibilityActionEvent) => {
+        if (event.nativeEvent.actionName === 'longpress') onLongPress(message);
+      }}
+      className={rowClass}
+      testID={testID}
+    >
+      {content}
+    </Pressable>
   );
 });
 

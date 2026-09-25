@@ -1,8 +1,9 @@
 /**
- * useSendChatMessage — 사진 전송·재전송 (S2b C9)
+ * useSendChatMessage — 사진 전송·재전송 (S2b C9 → S4 M1)
  *
- * 순서: 재인코딩 → (방 열기) → 업로드 → 보내기.
+ * 순서: 재인코딩 → (방 열기) → inbox 업로드 → 정화 EF → 보내기(EF 가 잰 크기로).
  * 재전송은 같은 clientMessageId 로 가고, **이미 올라간 사진은 다시 올리지 않는다**(업로드 완료분 재사용).
+ * 정화가 실패했으면 재전송은 EF 부터 다시 한다(EF 는 멱등).
  */
 import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -18,7 +19,9 @@ const mockSendText = jest.fn();
 const mockSendImage = jest.fn();
 const mockPrepare = jest.fn();
 const mockUpload = jest.fn();
+const mockSanitize = jest.fn();
 jest.mock('@/services/chat', () => ({
+  sanitizeChatImage: (...a: unknown[]) => mockSanitize(...a),
   chatService: {
     openConversation: (...a: unknown[]) => mockOpen(...a),
     sendText: (...a: unknown[]) => mockSendText(...a),
@@ -81,12 +84,14 @@ beforeEach(() => {
     async (input: { conversationId: string; uid: string; clientMessageId: string }) =>
       `${input.conversationId}/${input.uid}/${input.clientMessageId}.jpg`
   );
+  // 서버가 다시 잰 크기 — 재인코딩 결과(1600x1200)와 일부러 다르게 둔다
+  mockSanitize.mockImplementation(async (path: string) => ({ path, width: 1598, height: 1198 }));
   mockSendImage.mockResolvedValue({ messageId: 'm1', createdAt: 'x', deduped: false });
   mockOpen.mockResolvedValue(CONV);
 });
 
 describe('useSendChatMessage — 사진', () => {
-  it('재인코딩 → 업로드 → 보내기 순서로 가고, 말풍선은 로컬 사진으로 먼저 보인다', async () => {
+  it('재인코딩 → 업로드 → 정화 → 보내기 순서로 가고, 말풍선은 로컬 사진으로 먼저 보인다', async () => {
     const { result } = renderRoom();
 
     await act(async () => {
@@ -104,13 +109,20 @@ describe('useSendChatMessage — 사진', () => {
       conversationId: CONV,
       clientMessageId: uploadInput.clientMessageId,
       imagePath: `${CONV}/a3bb189e-8bf9-3888-9912-ace4e6543002/${uploadInput.clientMessageId}.jpg`,
-      width: 1600,
-      height: 1200,
+      // EF 응답 width/height 로 보낸다(재인코딩 결과 크기가 아니라)
+      width: 1598,
+      height: 1198,
     });
+    expect(mockSanitize).toHaveBeenCalledWith(
+      `${CONV}/a3bb189e-8bf9-3888-9912-ace4e6543002/${uploadInput.clientMessageId}.jpg`
+    );
     expect(mockPrepare.mock.invocationCallOrder[0]).toBeLessThan(
       mockUpload.mock.invocationCallOrder[0] ?? 0
     );
     expect(mockUpload.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSanitize.mock.invocationCallOrder[0] ?? 0
+    );
+    expect(mockSanitize.mock.invocationCallOrder[0]).toBeLessThan(
       mockSendImage.mock.invocationCallOrder[0] ?? 0
     );
     expect(result.current.outbox[0]).toMatchObject({
@@ -183,6 +195,85 @@ describe('useSendChatMessage — 사진', () => {
     expect((mockUpload.mock.calls[0]?.[0] as { conversationId: string }).conversationId).toBe(CONV);
   });
 
+  it('정화가 실패했으면 재전송은 재업로드 없이 EF 부터 다시 한다', async () => {
+    mockSanitize.mockRejectedValueOnce(new Error('EF 502'));
+    const { result } = renderRoom();
+
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    await waitFor(() => expect(result.current.outbox[0]?.status).toBe('failed'));
+    expect(mockSendImage).not.toHaveBeenCalled();
+    const id = result.current.outbox[0]?.clientMessageId ?? '';
+
+    await act(async () => {
+      await result.current.retry(id);
+    });
+
+    expect(mockPrepare).toHaveBeenCalledTimes(1);
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(mockSanitize).toHaveBeenCalledTimes(2);
+    expect(mockSanitize.mock.calls[1]?.[0]).toBe(mockSanitize.mock.calls[0]?.[0]);
+    expect(mockSendImage).toHaveBeenCalledTimes(1);
+    expect(result.current.outbox[0]?.status).toBe('sent');
+  });
+
+  it('정화 뒤 보내기만 실패했으면 재전송은 업로드·정화 없이 같은 크기로 보낸다', async () => {
+    mockSendImage.mockRejectedValueOnce(new Error('network'));
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    const id = result.current.outbox[0]?.clientMessageId ?? '';
+
+    await act(async () => {
+      await result.current.retry(id);
+    });
+
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(mockSanitize).toHaveBeenCalledTimes(1);
+    expect(mockSendImage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ width: 1598, height: 1198 })
+    );
+  });
+
+  it('EF 가 inbox 객체를 못 찾으면(E6160) 재전송은 다시 올린다', async () => {
+    mockSanitize.mockRejectedValueOnce(
+      new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_MISSING, {
+        userMessage: '사진을 보내지 못했어요. 다시 시도해 주세요.',
+        isRetryable: true,
+      })
+    );
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    expect(result.current.outbox[0]).toMatchObject({ status: 'failed', retryable: true });
+    const id = result.current.outbox[0]?.clientMessageId ?? '';
+
+    await act(async () => {
+      await result.current.retry(id);
+    });
+
+    expect(mockPrepare).toHaveBeenCalledTimes(1);
+    expect(mockUpload).toHaveBeenCalledTimes(2);
+    expect(result.current.outbox[0]?.status).toBe('sent');
+  });
+
+  it('정화가 사진을 거부(E6153)하면 보내지 않고 재전송 불가로 남는다', async () => {
+    mockSanitize.mockRejectedValueOnce(
+      new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_INVALID, {
+        userMessage: '사진을 보낼 수 없어요. 다시 선택해 주세요.',
+      })
+    );
+    const { result } = renderRoom();
+    await act(async () => {
+      await result.current.sendImage(PICKED);
+    });
+    expect(mockSendImage).not.toHaveBeenCalled();
+    expect(result.current.outbox[0]).toMatchObject({ status: 'failed', retryable: false });
+  });
+
   it('재인코딩이 실패하면 업로드·보내기 없이 실패 말풍선으로 남는다', async () => {
     mockPrepare.mockRejectedValueOnce(new Error('decode failed'));
     const { result } = renderRoom();
@@ -196,7 +287,7 @@ describe('useSendChatMessage — 사진', () => {
     expect(mockSendImage).not.toHaveBeenCalled();
   });
 
-  it('업로드가 한도(E6157)로 막혀도 이미 올라간 객체일 수 있으니 보내기를 한 번 시도한다', async () => {
+  it('업로드가 한도(E6157)로 막혀도 이미 올라간 객체일 수 있으니 정화·보내기를 한 번 시도한다', async () => {
     // 첫 시도: 업로드는 됐는데 응답 유실 → 재전송 시 정책(10분 20장) 경계에서 403
     const limit = new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, {
       userMessage: '지금은 사진을 더 보낼 수 없어요.',
@@ -218,13 +309,15 @@ describe('useSendChatMessage — 사진', () => {
     expect(result.current.outbox[0]?.status).toBe('sent');
   });
 
-  it('한도에 막히고 보내기도 실패하면(객체 없음) 원래 한도 문구로 실패한다', async () => {
+  it('한도에 막히고 정화도 실패하면(객체 없음) 원래 한도 문구로 실패한다', async () => {
     const limit = new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, {
       userMessage: '지금은 사진을 더 보낼 수 없어요.',
       isRetryable: true,
     });
     mockUpload.mockRejectedValueOnce(limit);
-    mockSendImage.mockRejectedValueOnce(new Error('CHAT_IMAGE_INVALID'));
+    mockSanitize.mockRejectedValueOnce(
+      new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_MISSING, { userMessage: 'x' })
+    );
     const { result } = renderRoom();
 
     await act(async () => {
@@ -251,6 +344,7 @@ describe('useSendChatMessage — 사진', () => {
 
     expect(mockPrepare).not.toHaveBeenCalled();
     expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockSanitize).not.toHaveBeenCalled();
     expect(mockSendImage).not.toHaveBeenCalled();
   });
 

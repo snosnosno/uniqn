@@ -8,9 +8,12 @@ import type {
   ChatConversationMeta,
   ChatConversationSummary,
   ChatMessage,
+  ChatSafetyState,
+  ChatSanitizedImage,
   ChatSendKind,
   ChatSendResult,
 } from '@/types/chat';
+import type { ChatReportReason } from '@/constants/chat';
 
 export interface ChatSendInput {
   conversationId: string;
@@ -26,6 +29,13 @@ export interface ChatSendInput {
 export interface ChatMessageCursor {
   createdAt: string;
   id: string;
+}
+
+/** (S4) 메시지 신고 입력 — 서비스가 검증을 마친 값 */
+export interface ChatReportInput {
+  messageId: string;
+  reason: ChatReportReason;
+  detail: string | null;
 }
 
 export interface IChatRepository {
@@ -54,8 +64,21 @@ export interface IChatRepository {
   /** anchor 이후 메시지 오름차순 */
   getMessagesAfter(conversationId: string, afterIso: string, limit: number): Promise<ChatMessage[]>;
 
-  /** (S2b) 사진 업로드 — 같은 경로가 이미 있으면(재전송) 성공으로 본다 */
+  /** (S2b→S4 M1) 사진을 접수 창구(inbox)에 올린다 — 같은 경로가 이미 있으면(재전송) 성공으로 본다 */
   uploadImage(path: string, bytes: ArrayBuffer): Promise<void>;
+  /** (S4 M1) 정화 EF — inbox 의 사진을 걸러 chat-media 로 옮긴다(멱등) */
+  sanitizeImage(path: string): Promise<ChatSanitizedImage>;
   /** (S2b) 사진 서명 URL */
   createSignedImageUrl(path: string, expiresInSec: number): Promise<string>;
+
+  /** (S4) 내 알림 끄기/켜기 */
+  setMuted(conversationId: string, muted: boolean): Promise<void>;
+  /** (S4) 방 단위 차단(이미 차단이면 no-op) */
+  block(conversationId: string): Promise<void>;
+  /** (S4) 차단 해제 — 막은 쪽만 */
+  unblock(conversationId: string): Promise<void>;
+  /** (S4) 메시지 신고 → report id */
+  reportMessage(input: ChatReportInput): Promise<string>;
+  /** (S4) 방 안전 상태(차단 행 + 내 뮤트) */
+  getSafetyState(conversationId: string): Promise<ChatSafetyState>;
 }

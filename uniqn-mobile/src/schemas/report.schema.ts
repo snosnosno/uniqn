@@ -262,3 +262,34 @@ export function parseReportDocument(data: unknown): ReportDocumentData | null {
   const result = reportDocumentSchema.safeParse(data);
   return result.success ? result.data : null;
 }
+
+// ============================================================================
+// (S4) 채팅 신고 증거 스냅샷 — 외부 경계(jsonb) 검증
+// ============================================================================
+
+const chatReportEvidenceMessageSchema = z.object({
+  id: z.string(),
+  senderSide: z.enum(['seeker', 'employer', 'system']),
+  senderDisplayName: z.string(),
+  kind: z.enum(['text', 'image', 'announcement', 'system']),
+  body: z.string(),
+  imagePath: z.string().nullable(),
+  createdAt: z.string(),
+  reported: z.boolean(),
+});
+
+/**
+ * `reports.evidence_snapshot`(source='chat', version=1). 모르는 모양은 safeParse 실패로 걸러
+ * 관리자 화면이 섹션을 숨긴다. 사유(reason)는 서버가 늘릴 수 있어 문자열로 받는다(라벨은 표시 쪽).
+ */
+export const chatReportEvidenceSchema = z.object({
+  source: z.literal('chat'),
+  version: z.literal(1),
+  conversationId: z.string(),
+  jobPostingId: z.string(),
+  postingTitle: z.string(),
+  reason: z.string(),
+  reportedMessageId: z.string(),
+  messages: z.array(chatReportEvidenceMessageSchema),
+  imagePaths: z.array(z.string()),
+});

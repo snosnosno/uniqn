@@ -6,7 +6,11 @@
  */
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
-import { CHAT_MESSAGE_MAX_LENGTH } from '@/constants/chat';
+import {
+  CHAT_MESSAGE_MAX_LENGTH,
+  CHAT_REPORT_DETAIL_MAX_LENGTH,
+  CHAT_REPORT_REASONS,
+} from '@/constants/chat';
 
 export const chatTextBodySchema = z
   .string()
@@ -29,6 +33,23 @@ export const chatUuidSchema = z
   });
 
 const isoString = z.string().min(1);
+
+/** (S4) 메시지 신고 입력 — 설명은 선택(비면 null), 500자 + XSS */
+export const chatReportInputSchema = z.object({
+  messageId: chatUuidSchema,
+  reason: z.enum(CHAT_REPORT_REASONS, { message: '신고 사유를 골라 주세요' }),
+  detail: z
+    .string()
+    .trim()
+    .max(CHAT_REPORT_DETAIL_MAX_LENGTH, {
+      message: `설명은 ${CHAT_REPORT_DETAIL_MAX_LENGTH}자까지 쓸 수 있어요`,
+    })
+    .refine(xssValidation, {
+      message: '쓸 수 없는 표현이 들어 있어요. 꺾쇠(<, >)나 스크립트 형태를 빼 주세요',
+    })
+    .nullable()
+    .transform((v) => (v ? v : null)),
+});
 
 export const chatListRowSchema = z
   .object({
@@ -113,6 +134,18 @@ export const chatSendResultSchema = z.object({
   messageId: z.string(),
   createdAt: isoString,
   deduped: z.boolean(),
+});
+
+/** (S4 M1) 정화 EF 성공 응답 — 서버가 다시 잰 크기(1~2048) */
+export const chatSanitizedImageSchema = z.object({
+  path: z.string().min(1),
+  width: z.number().int().min(1),
+  height: z.number().int().min(1),
+});
+
+/** (S4) `chat_blocks` 한 행 중 클라가 읽는 컬럼(GRANT 된 것만) */
+export const chatBlockRowSchema = z.object({
+  blocked_by_side: z.enum(['seeker', 'employer']),
 });
 
 /** `chat_messages` SELECT 컬럼(행 파서와 1:1) */

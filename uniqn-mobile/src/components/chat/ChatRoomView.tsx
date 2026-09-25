@@ -7,13 +7,14 @@
  * - 키보드: keyboard-controller 의 KeyboardAvoidingView(padding) 가 목록과 입력창을 함께 올린다.
  * - 읽음: 화면에 들어온 가장 최신 **상대** 메시지까지 mark_read(같은 id 는 한 번).
  */
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ErrorState } from '@/components/ui';
-import { mergeChatTimeline } from '@/domains/chat';
+import { ActionSheet } from '@/components/ui/ActionSheet';
+import { isReportableMessage, mergeChatTimeline, type ChatBlockState } from '@/domains/chat';
 import {
   useActiveConversation,
   useChatMessages,
@@ -29,9 +30,11 @@ import { extractUserMessage } from '@/errors';
 import { logger } from '@/utils/logger';
 import { loadFailed } from '@/constants/messages';
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import type { ChatSide } from '@/types/chat';
+import type { ChatMessage, ChatSide } from '@/types/chat';
+import { ChatBlockedNotice } from './ChatBlockedNotice';
 import { ChatComposer } from './ChatComposer';
 import { ChatPostingCard } from './ChatPostingCard';
+import { ChatReportSheet } from './ChatReportSheet';
 import { ChatTimelineRow, withUnreadDivider, type ChatRow } from './ChatTimelineRow';
 
 export interface ChatRoomViewProps {
@@ -46,6 +49,26 @@ export interface ChatRoomViewProps {
   readCursor: string | null;
   onPressPosting?: () => void;
   onSent?: (conversationId: string) => void;
+  /** (S4) 차단 상태 — none 이 아니면 입력창 대신 안내 */
+  blockState?: ChatBlockState;
+  /** (S4) 내가 막은 방에서 안내 옆 "차단 해제" */
+  onUnblock?: () => void;
+  isSafetyBusy?: boolean;
+}
+
+const REPORT_MENU_OPTIONS = [{ value: 'report', label: '신고하기', destructive: true }];
+
+/** (S4) 길게 누른 메시지 → "신고하기" 메뉴 → 신고 시트. 메뉴와 시트는 한 번에 하나만 뜬다 */
+function useReportFlow(mySide: ChatSide | null) {
+  const [menuTarget, setMenuTarget] = useState<string | null>(null);
+  const [reportTarget, setReportTarget] = useState<string | null>(null);
+  const canReport = useCallback((m: ChatMessage) => isReportableMessage(m, mySide), [mySide]);
+  const openMenu = useCallback((m: ChatMessage) => setMenuTarget(m.id), []);
+  const closeMenu = useCallback(() => setMenuTarget(null), []);
+  // ActionSheet 는 onSelect 뒤 onClose 를 부른다 — 대상은 선택 시점에 옮겨 둔다
+  const selectReport = useCallback(() => setReportTarget(menuTarget), [menuTarget]);
+  const closeReport = useCallback(() => setReportTarget(null), []);
+  return { menuTarget, reportTarget, canReport, openMenu, closeMenu, selectReport, closeReport };
 }
 
 const MAINTAIN_POSITION = { startRenderingFromBottom: true, autoscrollToBottomThreshold: 0.2 };
@@ -71,6 +94,8 @@ export function ChatRoomView(props: ChatRoomViewProps) {
     onSent: props.onSent,
   });
   const { markRead } = useChatRoomActions(conversationId);
+  const reportFlow = useReportFlow(mySide);
+  const blockState = props.blockState ?? 'none';
   // 이 방이 화면 맨 위에 있을 때만 '보고 있는 방' — 공고 상세 등이 위에 쌓이면 푸시를 다시 띄운다
   useActiveConversation(isFocused ? conversationId : null);
 
@@ -128,9 +153,11 @@ export function ChatRoomView(props: ChatRoomViewProps) {
         showSenderName={mySide === 'seeker'}
         onRetry={handleRetry}
         onDiscard={discard}
+        onLongPressMessage={reportFlow.openMenu}
+        canReport={reportFlow.canReport}
       />
     ),
-    [uid, mySide, handleRetry, discard]
+    [uid, mySide, handleRetry, discard, reportFlow.openMenu, reportFlow.canReport]
   );
 
   return (
@@ -175,12 +202,29 @@ export function ChatRoomView(props: ChatRoomViewProps) {
           />
         )}
       </View>
-      <ChatComposer
-        onSend={handleSend}
-        onAttach={handleAttachPress}
-        disabled={!isOnline}
-        disabledReason={isOnline ? undefined : '오프라인에서는 메시지를 보낼 수 없어요'}
+      {blockState === 'none' ? (
+        <ChatComposer
+          onSend={handleSend}
+          onAttach={handleAttachPress}
+          disabled={!isOnline}
+          disabledReason={isOnline ? undefined : '오프라인에서는 메시지를 보낼 수 없어요'}
+        />
+      ) : (
+        <ChatBlockedNotice
+          canUnblock={blockState === 'mine' && !!props.onUnblock}
+          onUnblock={() => props.onUnblock?.()}
+          isBusy={props.isSafetyBusy}
+        />
+      )}
+      <ActionSheet
+        visible={reportFlow.menuTarget !== null}
+        onClose={reportFlow.closeMenu}
+        options={REPORT_MENU_OPTIONS}
+        onSelect={reportFlow.selectReport}
       />
+      {reportFlow.reportTarget ? (
+        <ChatReportSheet messageId={reportFlow.reportTarget} onClose={reportFlow.closeReport} />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }

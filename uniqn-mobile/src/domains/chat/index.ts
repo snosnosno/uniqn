@@ -3,3 +3,4 @@ export { detectPrivacyRisk, PRIVACY_WARNING_MESSAGES, type PrivacyRisk } from '.
 export { mergeChatTimeline } from './timeline';
 export { chatOutboxReducer, type ChatOutboxAction } from './outbox';
 export { chatPostingBadge, type ChatPostingBadge } from './postingBadge';
+export { chatBlockState, isChatMuted, isReportableMessage, type ChatBlockState } from './safety';

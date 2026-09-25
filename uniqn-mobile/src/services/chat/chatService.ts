@@ -9,7 +9,8 @@
  */
 import { ERROR_CODES, ValidationError } from '@/errors/AppError';
 import { chatRepository } from '@/repositories/chat';
-import { chatTextBodySchema } from '@/schemas/chat.schema';
+import { chatReportInputSchema, chatTextBodySchema } from '@/schemas/chat.schema';
+import type { ChatReportReason } from '@/constants/chat';
 import type { ChatSendResult } from '@/types/chat';
 
 export interface SendTextInput {
@@ -78,10 +79,44 @@ function hide(conversationId: string): Promise<void> {
   return chatRepository.hideConversation(conversationId);
 }
 
+function setMuted(conversationId: string, muted: boolean): Promise<void> {
+  return chatRepository.setMuted(conversationId, muted);
+}
+
+function block(conversationId: string): Promise<void> {
+  return chatRepository.block(conversationId);
+}
+
+function unblock(conversationId: string): Promise<void> {
+  return chatRepository.unblock(conversationId);
+}
+
+export interface ReportMessageInput {
+  messageId: string;
+  reason: ChatReportReason;
+  /** 선택 설명 — 비면 보내지 않는다 */
+  detail: string | null;
+}
+
+/** (S4) 메시지 신고. 증거 스냅샷은 서버가 DB 에서 채운다 — 클라는 본문을 보내지 않는다 */
+async function reportMessage(input: ReportMessageInput): Promise<string> {
+  const parsed = chatReportInputSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: parsed.error.issues[0]?.message ?? '신고 내용을 확인해 주세요',
+    });
+  }
+  return chatRepository.reportMessage(parsed.data);
+}
+
 export const chatService = {
   sendText,
   sendImage,
   openConversation,
   markRead,
   hide,
+  setMuted,
+  block,
+  unblock,
+  reportMessage,
 } as const;

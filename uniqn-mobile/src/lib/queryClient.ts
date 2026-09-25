@@ -574,6 +574,9 @@ export const queryKeys = {
     /** (S2b) 사진 서명 URL */
     media: (imagePath: string, uid: string) =>
       [...queryKeys.chat.all, 'media', imagePath, uid] as const,
+    /** (S4) 방 안전 상태(차단 행 + 내 뮤트) — 무효화는 safetyPrefix(id) */
+    safetyPrefix: (id: string) => [...queryKeys.chat.all, 'safety', id] as const,
+    safety: (id: string, uid: string) => [...queryKeys.chat.safetyPrefix(id), uid] as const,
   },
 
   // 근무표(운영처) — 운영처(컨테이너) 목록 + 월 요약 셀맵 + 하루 슬롯

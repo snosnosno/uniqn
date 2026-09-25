@@ -309,6 +309,12 @@ export interface Report extends FirebaseDocument {
    */
   evidenceUrls?: string[];
 
+  /**
+   * (S4) 채팅 신고 증거 스냅샷 — 서버 RPC(`chat_report_message`)가 DB 에서 채운다.
+   * 경계(Repository)에서 zod 로 검증된 모양만 실린다. 모르는 모양이면 undefined(섹션 숨김).
+   */
+  evidenceSnapshot?: ChatReportEvidence;
+
   /** 처리 상태 */
   status: ReportStatus;
 
@@ -323,6 +329,33 @@ export interface Report extends FirebaseDocument {
 
   /** 심각도 */
   severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+/** (S4) 채팅 신고 증거 — 메시지 한 줄 */
+export interface ChatReportEvidenceMessage {
+  id: string;
+  senderSide: 'seeker' | 'employer' | 'system';
+  senderDisplayName: string;
+  kind: 'text' | 'image' | 'announcement' | 'system';
+  body: string;
+  imagePath: string | null;
+  createdAt: string;
+  /** 신고 대상 메시지 */
+  reported: boolean;
+}
+
+/** (S4) 채팅 신고 증거 스냅샷 v1 — 메시지는 오래된→최신, 신고 메시지 포함 최대 11개 */
+export interface ChatReportEvidence {
+  source: 'chat';
+  version: 1;
+  conversationId: string;
+  jobPostingId: string;
+  postingTitle: string;
+  reason: string;
+  reportedMessageId: string;
+  messages: ChatReportEvidenceMessage[];
+  /** 관리자가 `chat-media` 서명 URL 로 읽을 수 있는 경로 */
+  imagePaths: string[];
 }
 
 // ============================================================================

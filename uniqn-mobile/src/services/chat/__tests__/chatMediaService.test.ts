@@ -12,6 +12,7 @@ import {
   buildChatImagePath,
   chatImageResizeTarget,
   prepareChatImage,
+  sanitizeChatImage,
   uploadChatImage,
 } from '../chatMediaService';
 
@@ -26,8 +27,12 @@ jest.mock('expo-image-manipulator', () => ({
 }));
 
 const mockUpload = jest.fn();
+const mockSanitize = jest.fn();
 jest.mock('@/repositories/chat', () => ({
-  chatRepository: { uploadImage: (...a: unknown[]) => mockUpload(...a) },
+  chatRepository: {
+    uploadImage: (...a: unknown[]) => mockUpload(...a),
+    sanitizeImage: (...a: unknown[]) => mockSanitize(...a),
+  },
 }));
 
 jest.mock('expo-image-picker', () => ({}));
@@ -179,6 +184,25 @@ describe('uploadChatImage', () => {
     expect(mockManipulate.mock.invocationCallOrder[0]).toBeLessThan(
       mockUpload.mock.invocationCallOrder[0] ?? 0
     );
+  });
+});
+
+describe('sanitizeChatImage (S4 M1)', () => {
+  it('정화 EF 결과(서버가 다시 잰 크기)를 그대로 돌려준다', async () => {
+    const path = buildChatImagePath(CONV, UID, CLIENT);
+    mockSanitize.mockResolvedValue({ path, width: 1599, height: 1199 });
+
+    await expect(sanitizeChatImage(path)).resolves.toEqual({ path, width: 1599, height: 1199 });
+    expect(mockSanitize).toHaveBeenCalledWith(path);
+  });
+
+  it('EF 가 다른 경로를 돌려주면 거부한다 — 보내는 경로는 서버가 완전 일치로 대조한다', async () => {
+    const path = buildChatImagePath(CONV, UID, CLIENT);
+    mockSanitize.mockResolvedValue({ path: 'other/path.jpg', width: 10, height: 10 });
+
+    await expect(sanitizeChatImage(path)).rejects.toMatchObject({
+      code: CHAT_ERROR_CODES.CHAT_IMAGE_INVALID,
+    });
   });
 });
 
