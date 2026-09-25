@@ -86,6 +86,55 @@ function serverTail(message: string, token: string): string {
 
 const CHAT_FUNCTION_DENIED = /permission denied for function chat_/i;
 
+// ----------------------------------------------------------------------------
+// (S2b) 사진 storage 에러 — storage-js 의 StorageApiError { message, status, statusCode }
+// ----------------------------------------------------------------------------
+
+function storageFields(error: unknown): { message: string; statusCode: string } {
+  if (!error || typeof error !== 'object') return { message: '', statusCode: '' };
+  const e = error as { message?: unknown; statusCode?: unknown; status?: unknown };
+  const statusCode =
+    typeof e.statusCode === 'string' || typeof e.statusCode === 'number'
+      ? String(e.statusCode)
+      : typeof e.status === 'number'
+        ? String(e.status)
+        : '';
+  return { message: typeof e.message === 'string' ? e.message : '', statusCode };
+}
+
+/**
+ * 같은 경로 객체가 이미 있다 — 재전송이 업로드를 다시 시도한 경우라 **성공**으로 본다.
+ * 경로에 내 uid·clientMessageId 가 들어가고 정책이 2세그먼트=본인을 강제하므로 남의 객체일 수 없다.
+ */
+export function isChatStorageDuplicate(error: unknown): boolean {
+  const { message, statusCode } = storageFields(error);
+  return statusCode === '409' || /already exists|duplicate/i.test(message);
+}
+
+/**
+ * 사진 업로드·서명 URL 에러 → AppError. 못 잡으면 null(호출자가 handleSupabaseError 로 폴백).
+ * storage 정책 거부는 원인(10분 20장·하루 60장·비참여자)을 구분할 수 없어 복합 문구를 쓴다.
+ */
+export function mapChatStorageError(error: unknown): AppError | null {
+  const { message, statusCode } = storageFields(error);
+  if (!message && !statusCode) return null;
+
+  if (/row-level security/i.test(message) || statusCode === '403') {
+    return new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, {
+      message,
+      userMessage: '지금은 사진을 더 보낼 수 없어요. 잠시 후 다시 시도해 주세요.',
+      isRetryable: true,
+    });
+  }
+  if (statusCode === '413' || /maximum allowed size|mime type/i.test(message)) {
+    return new BusinessError(CHAT_ERROR_CODES.CHAT_IMAGE_INVALID, {
+      message,
+      userMessage: '사진을 보낼 수 없어요. 다시 선택해 주세요.',
+    });
+  }
+  return null;
+}
+
 export function mapChatRpcError(error: unknown): AppError | null {
   if (!error || typeof error !== 'object') return null;
   const message = (error as { message?: unknown }).message;

@@ -11,11 +11,13 @@ import { chatRepository } from '../../chat';
 
 const mockRpc = jest.fn();
 const mockFrom = jest.fn();
+const mockStorageFrom = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
     from: (...args: unknown[]) => mockFrom(...args),
+    storage: { from: (...args: unknown[]) => mockStorageFrom(...args) },
     channel: jest.fn(),
   },
 }));
@@ -275,5 +277,94 @@ describe('RLS SELECT', () => {
         ['eq', ['seeker_id', USER]],
       ])
     );
+  });
+});
+
+describe('사진 storage (S2b)', () => {
+  const PATH = `${CONV}/${USER}/${CLIENT}.jpg`;
+
+  function bucket(overrides: Record<string, jest.Mock>) {
+    const api = { upload: jest.fn(), createSignedUrl: jest.fn(), ...overrides };
+    mockStorageFrom.mockReturnValueOnce(api);
+    return api;
+  }
+
+  it('uploadImage — chat-media 버킷에 JPEG · upsert:false 로 올린다', async () => {
+    const api = bucket({
+      upload: jest.fn().mockResolvedValue({ data: { path: PATH }, error: null }),
+    });
+    const bytes = new Uint8Array([1, 2, 3]).buffer;
+
+    await chatRepository.uploadImage(PATH, bytes);
+
+    expect(mockStorageFrom).toHaveBeenCalledWith('chat-media');
+    expect(api.upload).toHaveBeenCalledWith(PATH, bytes, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    });
+  });
+
+  it('uploadImage — 이미 있는 객체(재전송)는 성공으로 본다', async () => {
+    bucket({
+      upload: jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'The resource already exists', statusCode: '409', status: 400 },
+      }),
+    });
+    await expect(
+      chatRepository.uploadImage(PATH, new Uint8Array([1]).buffer)
+    ).resolves.toBeUndefined();
+  });
+
+  it('uploadImage — storage 정책 거부는 사진 한도(E6157, 재시도 가능)로 매핑', async () => {
+    bucket({
+      upload: jest.fn().mockResolvedValue({
+        data: null,
+        error: {
+          message: 'new row violates row-level security policy',
+          statusCode: '403',
+          status: 400,
+        },
+      }),
+    });
+    await expect(
+      chatRepository.uploadImage(PATH, new Uint8Array([1]).buffer)
+    ).rejects.toMatchObject({ code: CHAT_ERROR_CODES.CHAT_IMAGE_LIMIT, isRetryable: true });
+  });
+
+  it('uploadImage — 용량 초과는 사진 거부(E6153)로 매핑', async () => {
+    bucket({
+      upload: jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'The object exceeded the maximum allowed size', statusCode: '413' },
+      }),
+    });
+    await expect(
+      chatRepository.uploadImage(PATH, new Uint8Array([1]).buffer)
+    ).rejects.toMatchObject({ code: CHAT_ERROR_CODES.CHAT_IMAGE_INVALID });
+  });
+
+  it('createSignedImageUrl — 주어진 TTL 로 서명 URL 을 받는다', async () => {
+    const api = bucket({
+      createSignedUrl: jest
+        .fn()
+        .mockResolvedValue({ data: { signedUrl: 'https://x/signed?token=t' }, error: null }),
+    });
+
+    await expect(chatRepository.createSignedImageUrl(PATH, 300)).resolves.toBe(
+      'https://x/signed?token=t'
+    );
+    expect(mockStorageFrom).toHaveBeenCalledWith('chat-media');
+    expect(api.createSignedUrl).toHaveBeenCalledWith(PATH, 300);
+  });
+
+  it('createSignedImageUrl — 실패는 던진다(빈 URL 로 조용히 넘어가지 않는다)', async () => {
+    bucket({
+      createSignedUrl: jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Object not found', statusCode: '404' },
+      }),
+    });
+    await expect(chatRepository.createSignedImageUrl(PATH, 300)).rejects.toBeDefined();
   });
 });

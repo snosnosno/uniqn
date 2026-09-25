@@ -8,7 +8,8 @@
  * 🔑 에러: 채팅 매퍼(`mapChatRpcError`) 먼저 → 못 잡으면 `handleSupabaseError`.
  */
 import { supabase } from '@/lib/supabase';
-import { mapChatRpcError } from '@/errors/chat';
+import { CHAT_MEDIA_BUCKET } from '@/constants/chat';
+import { isChatStorageDuplicate, mapChatRpcError, mapChatStorageError } from '@/errors/chat';
 import { handleSupabaseError } from '@/utils/supabase';
 import {
   CHAT_CONVERSATION_COLUMNS,
@@ -35,6 +36,15 @@ function fail(error: unknown, operation: string, table = 'chat'): never {
   const mapped = mapChatRpcError(error);
   if (mapped) throw mapped;
   handleSupabaseError(error, { operation, table });
+}
+
+function failStorage(error: unknown, operation: string): never {
+  const mapped = mapChatStorageError(error);
+  if (mapped) throw mapped;
+  handleSupabaseError(error ?? new Error(`${operation}: 응답이 비었습니다`), {
+    operation,
+    table: 'storage.chat-media',
+  });
 }
 
 const lower = (id: string) => chatUuidSchema.parse(id);
@@ -177,5 +187,22 @@ export class SupabaseChatRepository implements IChatRepository {
       .limit(limit);
     if (error) fail(error, 'getMessagesAfter', 'chat_messages');
     return parseMessages(data);
+  }
+
+  async uploadImage(path: string, bytes: ArrayBuffer): Promise<void> {
+    // upsert:false — 덮어쓰기를 허용하면 이미 보낸 사진을 같은 경로로 바꿔치기할 수 있다
+    const { error } = await supabase.storage
+      .from(CHAT_MEDIA_BUCKET)
+      .upload(path, bytes, { contentType: 'image/jpeg', upsert: false });
+    if (!error || isChatStorageDuplicate(error)) return;
+    failStorage(error, 'uploadImage');
+  }
+
+  async createSignedImageUrl(path: string, expiresInSec: number): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from(CHAT_MEDIA_BUCKET)
+      .createSignedUrl(path, expiresInSec);
+    if (error || !data?.signedUrl) failStorage(error, 'createSignedImageUrl');
+    return data.signedUrl;
   }
 }
