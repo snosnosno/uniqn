@@ -17,6 +17,8 @@ import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useShare } from '@/hooks/useShare';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
+import { ChatStartButton } from '@/components/chat';
+import { useCanStartChat } from '@/hooks/chat/useCanStartChat';
 import { incrementViewCount } from '@/services/jobs/jobService';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores/themeStore';
@@ -50,6 +52,8 @@ export default function JobDetailScreen() {
   } = useHasAppliedToJob(id);
   const { shareJob, isSharing } = useShare();
   const { job, isLoading, error, refresh } = useJobDetail(id ?? '');
+  // 구인자 측(소유자·워크스페이스 멤버·협업자)·비게시 상태면 숨김 — 조기 return 전에 호출
+  const chatAllowed = useCanStartChat(job ?? null, sessionUserId ?? null);
 
   // PTR 스피너는 사용자가 당겼을 때만 — 조회 상태를 그대로 물리면 화면에 들어올 때마다
   // 배경 재조회로 스피너가 뜬다(useManualRefresh 주석 참고).
@@ -221,6 +225,7 @@ export default function JobDetailScreen() {
   }
 
   const isFixed = job.schedule.kind === 'fixed';
+  const canStartChat = chatAllowed && !isApprovalBlocked;
   const alreadyApplied = !!sessionUserId && (hasApplied(job.id) || hasAppliedDirect);
   const applicationStatus = getApplicationStatus(job.id);
   const canRequestCancel =
@@ -272,96 +277,111 @@ export default function JobDetailScreen() {
         }}
       >
         <SafeAreaView edges={['bottom']}>
-          {isApprovalBlocked ? (
-            // 여기 도달하는 것은 관리자 열람뿐 — 지원 서비스단 게이트에 막히므로 CTA 차단
-            <Button disabled fullWidth>
-              미승인 대회공고 — 관리자 열람 전용
-            </Button>
-          ) : isCheckingApplication ? (
-            <Button disabled fullWidth>
-              지원 여부 확인 중...
-            </Button>
-          ) : alreadyApplied ? (
-            <View className="items-center">
-              <Text className="mb-2 text-sm text-content-secondary font-sans">
-                {getApplicationStatusMessage(applicationStatus?.status)}
-              </Text>
-              {cancelUnavailableReason ? (
-                <Text className="mb-2 text-center text-xs text-content-secondary font-sans">
-                  {cancelUnavailableReason}
-                </Text>
-              ) : null}
-              <View className="w-full flex-row">
-                <View className="mr-2 flex-1">
+          {/* 채팅 진입(플래그 OFF 면 ChatStartButton 이 null) — CTA 옆에 나란히 두어 하단 높이를 늘리지 않는다 */}
+          <View className="flex-row items-end">
+            {/* 여백은 버튼 자신이 가진다 — 플래그 OFF 면 버튼과 함께 사라져 CTA 가 밀리지 않는다 */}
+            {canStartChat ? (
+              <ChatStartButton
+                postingId={job.id}
+                method="job_detail"
+                variant="full"
+                label="채팅"
+                className="mr-2"
+              />
+            ) : null}
+            <View className="flex-1">
+              {isApprovalBlocked ? (
+                // 여기 도달하는 것은 관리자 열람뿐 — 지원 서비스단 게이트에 막히므로 CTA 차단
+                <Button disabled fullWidth>
+                  미승인 대회공고 — 관리자 열람 전용
+                </Button>
+              ) : isCheckingApplication ? (
+                <Button disabled fullWidth>
+                  지원 여부 확인 중...
+                </Button>
+              ) : alreadyApplied ? (
+                <View className="items-center">
+                  <Text className="mb-2 text-sm text-content-secondary font-sans">
+                    {getApplicationStatusMessage(applicationStatus?.status)}
+                  </Text>
+                  {cancelUnavailableReason ? (
+                    <Text className="mb-2 text-center text-xs text-content-secondary font-sans">
+                      {cancelUnavailableReason}
+                    </Text>
+                  ) : null}
+                  <View className="w-full flex-row">
+                    <View className="mr-2 flex-1">
+                      <Button
+                        onPress={() =>
+                          router.push(isFixed ? '/(app)/(tabs)/profile' : '/(app)/(tabs)/schedule')
+                        }
+                        variant="outline"
+                        fullWidth
+                      >
+                        {isFixed ? '프로필 보기' : '내 일정 확인'}
+                      </Button>
+                    </View>
+                    {canRequestCancel ? (
+                      <View className="flex-1">
+                        <Button onPress={handleCancelRequest} variant="ghost" fullWidth>
+                          취소 요청
+                        </Button>
+                      </View>
+                    ) : null}
+                    {canCancelApplied ? (
+                      <View className="flex-1">
+                        <Button
+                          onPress={handleCancelApplication}
+                          variant="ghost"
+                          fullWidth
+                          loading={isCancelling}
+                          disabled={isCancelling}
+                        >
+                          지원 취소
+                        </Button>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
+                <Button disabled fullWidth>
+                  {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
+                    ? '정원이 마감되었습니다'
+                    : '마감된 공고입니다'}
+                </Button>
+              ) : isFixed ? (
+                // 고정 공고는 앱 지원 플로우(AssignmentSelector)가 비활성 상태 — 빈 지원폼으로
+                // 진입하는 dead-end를 막기 위해 CTA 단계에서 차단한다.
+                <View className="items-center">
+                  <Button disabled fullWidth>
+                    고정 공고는 앱에서 지원할 수 없어요
+                  </Button>
+                  <Text className="mt-2 text-center text-xs text-content-secondary font-sans">
+                    상시 모집 공고예요. 위 연락처로 직접 문의해 주세요.
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  {!sessionUserId ? (
+                    <Text className="mb-2 text-center text-sm text-content-secondary font-sans">
+                      로그인 후 지원할 수 있어요
+                    </Text>
+                  ) : null}
+                  {/* 공용 Button 사용 — 수제 Pressable은 화살표 글리프가 텍스트에 붙어
+                  베이스라인이 어긋나 보였다. 아이콘은 icon prop 으로 분리(정렬 일관). */}
                   <Button
-                    onPress={() =>
-                      router.push(isFixed ? '/(app)/(tabs)/profile' : '/(app)/(tabs)/schedule')
-                    }
-                    variant="outline"
+                    onPress={handleApply}
                     fullWidth
+                    icon={<ArrowRightIcon size={18} color={TEXT_COLORS.onGold} />}
+                    iconPosition="right"
+                    accessibilityLabel="공고에 지원하기"
                   >
-                    {isFixed ? '프로필 보기' : '내 일정 확인'}
+                    지원하기
                   </Button>
                 </View>
-                {canRequestCancel ? (
-                  <View className="flex-1">
-                    <Button onPress={handleCancelRequest} variant="ghost" fullWidth>
-                      취소 요청
-                    </Button>
-                  </View>
-                ) : null}
-                {canCancelApplied ? (
-                  <View className="flex-1">
-                    <Button
-                      onPress={handleCancelApplication}
-                      variant="ghost"
-                      fullWidth
-                      loading={isCancelling}
-                      disabled={isCancelling}
-                    >
-                      지원 취소
-                    </Button>
-                  </View>
-                ) : null}
-              </View>
+              )}
             </View>
-          ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
-            <Button disabled fullWidth>
-              {job.status === STATUS.JOB_POSTING.CAPACITY_FULL
-                ? '정원이 마감되었습니다'
-                : '마감된 공고입니다'}
-            </Button>
-          ) : isFixed ? (
-            // 고정 공고는 앱 지원 플로우(AssignmentSelector)가 비활성 상태 — 빈 지원폼으로
-            // 진입하는 dead-end를 막기 위해 CTA 단계에서 차단한다.
-            <View className="items-center">
-              <Button disabled fullWidth>
-                고정 공고는 앱에서 지원할 수 없어요
-              </Button>
-              <Text className="mt-2 text-center text-xs text-content-secondary font-sans">
-                상시 모집 공고예요. 위 연락처로 직접 문의해 주세요.
-              </Text>
-            </View>
-          ) : (
-            <View>
-              {!sessionUserId ? (
-                <Text className="mb-2 text-center text-sm text-content-secondary font-sans">
-                  로그인 후 지원할 수 있어요
-                </Text>
-              ) : null}
-              {/* 공용 Button 사용 — 수제 Pressable은 화살표 글리프가 텍스트에 붙어
-                  베이스라인이 어긋나 보였다. 아이콘은 icon prop 으로 분리(정렬 일관). */}
-              <Button
-                onPress={handleApply}
-                fullWidth
-                icon={<ArrowRightIcon size={18} color={TEXT_COLORS.onGold} />}
-                iconPosition="right"
-                accessibilityLabel="공고에 지원하기"
-              >
-                지원하기
-              </Button>
-            </View>
-          )}
+          </View>
         </SafeAreaView>
       </View>
     </SafeAreaView>

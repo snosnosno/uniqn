@@ -24,6 +24,18 @@ describe('BoardTabBar', () => {
     expect(noticeTab.props.accessibilityState?.selected).toBe(false);
   });
 
+  it('채팅 칸은 showChat 일 때만 보이고, 누르면 chat 키를 넘긴다', () => {
+    const onTabPress = jest.fn();
+    const hidden = render(<BoardTabBar activeTab="schedule" onTabPress={onTabPress} />);
+    expect(hidden.queryByText('채팅')).toBeNull();
+
+    const shown = render(<BoardTabBar activeTab="chat" onTabPress={onTabPress} showChat />);
+    const chatTab = shown.getByLabelText('채팅 탭');
+    expect(chatTab.props.accessibilityState?.selected).toBe(true);
+    fireEvent.press(chatTab);
+    expect(onTabPress).toHaveBeenCalledWith('chat');
+  });
+
   it('invokes onTabPress with the pressed tab key', () => {
     const onTabPress = jest.fn();
     const { getByLabelText } = render(<BoardTabBar activeTab="schedule" onTabPress={onTabPress} />);

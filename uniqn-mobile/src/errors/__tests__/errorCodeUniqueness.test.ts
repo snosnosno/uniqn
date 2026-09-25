@@ -8,10 +8,15 @@
 
 import { ERROR_CODES } from '@/errors/AppError';
 import { WORKSPACE_ERROR_CODES } from '@/errors/workspace';
+import { CHAT_ERROR_CODES } from '@/errors/chat';
 
 describe('에러 코드 값 전역 유일성', () => {
   it('모든 코드맵을 합쳐도 중복 값이 없다', () => {
-    const allCodes = [...Object.values(ERROR_CODES), ...Object.values(WORKSPACE_ERROR_CODES)];
+    const allCodes = [
+      ...Object.values(ERROR_CODES),
+      ...Object.values(WORKSPACE_ERROR_CODES),
+      ...Object.values(CHAT_ERROR_CODES),
+    ];
 
     const seen = new Set<string>();
     const duplicates: string[] = [];

@@ -178,7 +178,12 @@ describe('핵심 퍼널 영속 레일 (마이그 20260923100000)', () => {
     expect(mockInsert).toHaveBeenCalledWith('settlement_complete', { settlement_count: 3 });
   });
 
-  it('핵심 퍼널 8종 전부가 서버 레일을 탄다 (서버 CHECK 화이트리스트와 1:1)', async () => {
+  it('chat_open 은 job_id·method 만 서버에 싣는다', async () => {
+    await trackEvent('chat_open', { job_id: 'p1', method: 'job_detail' });
+    expect(mockInsert).toHaveBeenCalledWith('chat_open', { job_id: 'p1', method: 'job_detail' });
+  });
+
+  it('핵심 퍼널 9종 전부가 서버 레일을 탄다 (서버 CHECK 화이트리스트와 1:1)', async () => {
     const events = [
       'signup',
       'login',
@@ -188,6 +193,7 @@ describe('핵심 퍼널 영속 레일 (마이그 20260923100000)', () => {
       'check_in',
       'check_out',
       'settlement_complete',
+      'chat_open',
     ];
     for (const event of events) {
       await trackEvent(event);

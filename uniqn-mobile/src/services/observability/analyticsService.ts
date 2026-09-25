@@ -18,6 +18,7 @@
  * - 알림: notification_receive, notification_click
  */
 
+import type { ChatOpenMethod } from '@/types/chat';
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -68,6 +69,8 @@ export type AnalyticsEvent =
   // 정산
   | 'settlement_view'
   | 'settlement_complete'
+  // 채팅
+  | 'chat_open'
   // 알림
   | 'notification_receive'
   | 'notification_click'
@@ -96,8 +99,8 @@ export interface AnalyticsEventParams {
   content_type?: string;
   content_id?: string;
 
-  // 인증
-  method?: 'email' | 'google' | 'apple' | 'kakao';
+  // 인증(로그인 수단) · 채팅 진입점(chat_open)
+  method?: 'email' | 'google' | 'apple' | 'kakao' | ChatOpenMethod;
 
   // 구인구직
   job_id?: string;
@@ -155,7 +158,7 @@ export interface UserProperties {
 // ============================================================================
 
 /**
- * `trackEvent` 가 브레드크럼과 함께 **서버에도** 남기는 이벤트 (마이그 20260923100000).
+ * `trackEvent` 가 브레드크럼과 함께 **서버에도** 남기는 이벤트 (마이그 20260923100000 · chat_open 20260925200000).
  * 서버 CHECK 화이트리스트와 1:1 — 여기만 늘리면 서버가 조용히 거부한다.
  */
 const CORE_FUNNEL_EVENTS: ReadonlySet<string> = new Set<CoreFunnelEvent>([
@@ -167,6 +170,7 @@ const CORE_FUNNEL_EVENTS: ReadonlySet<string> = new Set<CoreFunnelEvent>([
   'check_in',
   'check_out',
   'settlement_complete',
+  'chat_open',
 ]);
 
 /**

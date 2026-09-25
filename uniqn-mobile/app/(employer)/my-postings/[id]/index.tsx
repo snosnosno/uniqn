@@ -17,6 +17,7 @@ import { ActionSheet, type ActionSheetOption } from '@/components/ui';
 //    (tsc 는 목 문자열을 보지 않으므로 타입 체크는 통과한다). 타일 그리드는 그 테스트들이
 //    실제로 검증하는 대상이라 목되면 안 된다.
 import { ActionTileGrid, type ActionTileItem } from '@/components/ui/ActionTileGrid';
+import { useChatPostingTile } from '@/hooks/chat/useChatPostingTile';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
@@ -328,6 +329,7 @@ export default function JobPostingDetailScreen() {
   const deleteMessage = '정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다.';
 
   const postingId = id || '';
+  const chatTile = useChatPostingTile(postingId);
   const { data: filledAll } = usePostingFilledCounts([postingId]);
   const filledCounts = useMemo(
     () => extractPostingFilledSubmap(filledAll, postingId),
@@ -763,6 +765,8 @@ export default function JobPostingDetailScreen() {
       onPress: handleCollaborators,
       testID: 'job-posting-manage-collaborators',
     },
+    // 채팅(플래그 ON 일 때만) — 맨 끝에 둔다: 기존 타일 자리를 밀지 않는다
+    chatTile,
     // 지원 QR 은 헤더 `공유` 시트, 스태프 공지는 [근무] 헤더 `메시지` 로 옮겼다(구인자 IA S1).
   ];
 

@@ -34,7 +34,9 @@ export type CoreFunnelEvent =
   | 'job_create'
   | 'check_in'
   | 'check_out'
-  | 'settlement_complete';
+  | 'settlement_complete'
+  // 앱 내 채팅(마이그 20260925200000) — 방 화면 마운트당 1회 (props: job_id, method)
+  | 'chat_open';
 
 /** analytics_events 에 영속되는 이벤트 전체 — 서버 event CHECK 화이트리스트와 1:1. */
 export type PersistedAnalyticsEvent = OpsFunnelEvent | CoreFunnelEvent;

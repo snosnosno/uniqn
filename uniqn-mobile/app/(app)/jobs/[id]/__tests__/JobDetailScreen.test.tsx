@@ -69,6 +69,9 @@ jest.mock('@/components/ui/Button', () => {
   };
 });
 
+// 채팅 진입 판정은 워크스페이스·협업자 쿼리를 쓴다 — 이 화면 테스트는 훅을 개별 mock 하는 관례
+jest.mock('@/hooks/chat/useCanStartChat', () => ({ useCanStartChat: () => false }));
+
 jest.mock('@/hooks/useApplications', () => ({
   useApplications: () => ({
     hasApplied: () => false,

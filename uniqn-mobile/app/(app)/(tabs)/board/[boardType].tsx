@@ -9,9 +9,10 @@ import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { useBoardPosts } from '@/hooks/useBoard';
+import { useChatEnabled } from '@/hooks/chat';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
-import type { BoardType } from '@/types/board';
+import type { BoardType, CommunicationBoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { loadFailed, notFound } from '@/constants/messages';
@@ -19,6 +20,7 @@ import { loadFailed, notFound } from '@/constants/messages';
 const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule'];
 
 function navigateToTab(tab: BoardTabKey) {
+  // 'chat' 은 정적 세그먼트 board/chat.tsx 가 받는다(이 동적 라우트보다 우선)
   router.replace(`/(app)/(tabs)/board/${tab}`);
 }
 
@@ -27,7 +29,10 @@ export default function BoardListScreen() {
   const { boardType: rawBoardType } = useLocalSearchParams<{ boardType: string }>();
   const boardType = rawBoardType as BoardType;
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
-  const safeBoardType: BoardTabKey = isValidBoardType ? (boardType as BoardTabKey) : 'schedule';
+  const safeBoardType: CommunicationBoardType = isValidBoardType
+    ? (boardType as CommunicationBoardType)
+    : 'schedule';
+  const { enabled: chatEnabled } = useChatEnabled();
   const { data, isLoading, error, refetch } = useBoardPosts(safeBoardType, 50);
   // 스피너는 사용자가 당겼을 때만 (useManualRefresh 주석 참고).
   const { refreshing, onRefresh } = useManualRefresh(refetch);
@@ -50,7 +55,7 @@ export default function BoardListScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="소통" />
-      <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} />
+      <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} showChat={chatEnabled} />
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">

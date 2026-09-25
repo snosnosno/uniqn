@@ -111,6 +111,18 @@ jest.mock('@/domains/job-posting', () => ({
   }),
 }));
 
+// 채팅 타일은 플래그 OFF 기본값(비노출) — 이 화면 테스트는 QueryClientProvider 없이 훅을 개별 mock 한다
+jest.mock('@/hooks/chat/useChatPostingTile', () => ({
+  useChatPostingTile: () => ({
+    key: 'chat',
+    visible: false,
+    icon: null,
+    title: '채팅',
+    description: '',
+    onPress: jest.fn(),
+  }),
+}));
+
 jest.mock('@/hooks/applicant', () => ({
   useApplicantsByJobPosting: () => ({
     data: { stats: { total: 0, confirmed: 0, applied: 0, cancellationPending: 0 } },

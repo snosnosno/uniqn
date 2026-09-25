@@ -86,3 +86,38 @@ export async function getOpsHubFlagRaw(): Promise<unknown> {
     return null;
   }
 }
+
+/** app_config 의 앱 내 채팅 플래그 키(SSOT). value 모양은 `{"enabled": boolean}` */
+const CHAT_FLAG_KEY = 'chat_enabled';
+
+/**
+ * 앱 내 채팅 원격 플래그 raw value 조회.
+ *
+ * @returns app_config.chat_enabled 의 value(모양 불명, unknown). 행 부재·오류 시 null.
+ *          boolean 정규화와 fail-closed fallback 은 도메인 파서(resolveChatEnabled)가 담당한다.
+ */
+export async function getChatFlagRaw(): Promise<unknown> {
+  try {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', CHAT_FLAG_KEY)
+      .maybeSingle();
+
+    if (error) {
+      logger.warn('채팅 플래그 조회 실패, fallback 적용', {
+        component: 'appConfigService',
+        code: error.code,
+      });
+      return null;
+    }
+
+    return data?.value ?? null;
+  } catch (error) {
+    logger.warn('채팅 플래그 로드 예외, fallback 적용', {
+      component: 'appConfigService',
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}

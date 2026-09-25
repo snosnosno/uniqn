@@ -24,6 +24,7 @@ import type { ScheduleEvent } from '@/types';
 import { formatPhoneForDisplay } from '@/utils/phone';
 import { openExternalUrl } from '@/utils/externalLink';
 import { ContactActions } from '../ContactActions';
+import { ChatStartButton } from '@/components/chat/ChatStartButton';
 
 // ============================================================================
 // Types
@@ -230,6 +231,16 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             <ContactActions phone={schedule.ownerPhone} component="WorkTab" />
           </View>
         </View>
+      )}
+
+      {/* 채팅 — 확정 근무면 전화번호가 없어도 사장님과 대화할 수 있다(플래그 OFF 면 안 보임) */}
+      {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
+        <ChatStartButton
+          postingId={schedule.jobPostingId}
+          method="work_tab"
+          label="사장님과 채팅"
+          className="mb-5 ml-6 self-start"
+        />
       )}
 
       {/* 출퇴근 기록 */}
