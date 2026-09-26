@@ -26,12 +26,15 @@ export const pushState: {
   receivedHandler: NotificationReceivedHandler | null;
   responseHandler: NotificationResponseHandler | null;
   responseSubscription: { remove: () => void } | null;
+  /** 마지막으로 처리한 알림 탭(request.identifier) — 리스너와 콜드 스타트 응답의 중복 처리 방지 */
+  lastHandledResponseId: string | null;
 } = {
   isInitialized: false,
   currentToken: null,
   receivedHandler: null,
   responseHandler: null,
   responseSubscription: null,
+  lastHandledResponseId: null,
 };
 
 // Expo Notifications 모듈 (동적 로드)
