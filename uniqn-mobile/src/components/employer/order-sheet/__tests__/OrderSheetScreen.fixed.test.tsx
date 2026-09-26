@@ -103,7 +103,7 @@ describe('OrderSheetScreen — 고정 역할 급여 프리필 안내 토스트(S
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'success',
-        message: expect.stringContaining('플로어 30,000원'),
+        message: expect.stringContaining('플로어 시급 ₩30,000'),
       })
     );
     expect(mockAddToast).toHaveBeenCalledWith(

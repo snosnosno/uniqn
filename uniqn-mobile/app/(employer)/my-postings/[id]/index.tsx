@@ -1212,10 +1212,14 @@ export default function JobPostingDetailScreen() {
             )}
           </Pressable>
           {/* 서버(`deleteWithTransaction`)가 막는 축과 같은 말을 쓴다 — 캡션이 "확정된 지원자"라고
-              하면 사장은 지원자 화면에서 확정 0명을 확인하고도 삭제가 거부되는 이유를 알 수 없다. */}
-          <Text className="mt-2 text-center text-xs text-content-placeholder font-sans">
-            채워진 자리가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.
-          </Text>
+              하면 사장은 지원자 화면에서 확정 0명을 확인하고도 삭제가 거부되는 이유를 알 수 없다.
+              삭제가 막혔을 때만 보인다 — 채워진 자리 0 인데도 "삭제할 수 없습니다" 가 떠 있으면
+              눌러도 되는 버튼을 못 누르는 버튼으로 읽는다(UX 감사 L). */}
+          {!canDelete ? (
+            <Text className="mt-2 text-center text-xs text-content-placeholder font-sans">
+              채워진 자리가 있는 공고는 삭제할 수 없습니다. 대신 마감해 주세요.
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
 

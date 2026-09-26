@@ -89,11 +89,16 @@ export function SlotCard({
           testID={`order-time-start-${index}`}
           accessibilityRole="button"
           accessibilityLabel={`출근 시간 ${timeLabel(slot, '미설정')} 변경`}
-          className="min-h-[44px] justify-center active:opacity-80"
+          className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-80"
         >
           <Text className="text-base font-sans-bold text-content-primary">
             출근 {timeLabel(slot, '--:--')}
           </Text>
+          {/* 기본값(19:00)이 조용히 들어가는 자리다 — 글자만 있으면 바꿀 수 있는 줄 모른다. */}
+          <Text className="text-xs font-sans text-content-secondary">
+            {slot.startTime || slot.isTimeToBeAnnounced === true ? '변경' : '선택'}
+          </Text>
+          <ChevronRightIcon size={14} />
         </Pressable>
         {removable && (
           <Pressable

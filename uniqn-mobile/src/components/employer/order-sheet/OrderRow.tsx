@@ -39,7 +39,7 @@ export function OrderRow({
           className={`flex-1 text-sm font-sans-medium ${
             state.value === '없음' ? 'text-content-muted' : 'text-content-primary'
           }`}
-          numberOfLines={1}
+          numberOfLines={state.wrap ? 2 : 1}
         >
           {state.value}
         </Text>

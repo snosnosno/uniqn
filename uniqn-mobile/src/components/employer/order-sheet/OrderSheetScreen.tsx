@@ -18,6 +18,7 @@ import {
   orderGroupsFor,
   resolveGroupIndexByDates,
   roleName,
+  salaryLabel,
   summarizeGroupDates,
   type OrderRowKey,
   type OrderRowTarget,
@@ -207,10 +208,8 @@ export function OrderSheetScreen({
           type: 'success',
           message: `기본 급여 적용: ${added
             .map(
-              (rs) =>
-                `${roleName(rs.role, rs.customRole)} ${
-                  rs.salary.type === 'other' ? '협의' : `${rs.salary.amount.toLocaleString()}원`
-                }`
+              // 급여 행과 같은 정본 표기("플로어 시급 ₩30,000") — 한 화면에 두 표기가 섞이지 않게.
+              (rs) => `${roleName(rs.role, rs.customRole)} ${salaryLabel(rs.salary)}`
             )
             .join(' · ')} · 급여 행에서 수정 가능`,
         });
@@ -359,6 +358,18 @@ export function OrderSheetScreen({
   );
 
   const unsetTarget = firstUnsetRow(values);
+
+  // 라벨이 "제목부터 입력하기" 인 동안 CTA 는 제출이 아니라 **안내**다. 여기서 handleSubmit 을 돌리면
+  // 아직 손대지 않은 전 행이 한꺼번에 빨갛게 뜬다(UX 감사 G). 미설정 행이 남아 있으면 그 시트만 연다 —
+  // 제출 실패 경로의 1순위(firstUnsetRow → handleRowPress)와 같은 목적지라 동작은 그대로다.
+  const handlePrimaryPress = () => {
+    if (unsetTarget !== null) {
+      handleRowPress(unsetTarget.key, unsetTarget.groupIndex);
+      return;
+    }
+    void handleSubmitPress();
+  };
+
   const submitLabel = (() => {
     if (unsetTarget === null) {
       if (mode === 'edit') return '이대로 수정'; // 대회 포함 — 편집은 승인상태 보존(⑥), 재승인 요청 아님
@@ -473,7 +484,7 @@ export function OrderSheetScreen({
             ) : null}
             <View className="flex-1">
               <Button
-                onPress={handleSubmitPress}
+                onPress={handlePrimaryPress}
                 disabled={isSubmitting}
                 loading={isSubmitting}
                 testID={mode === 'edit' ? 'job-posting-edit-submit' : 'job-posting-create-submit'}

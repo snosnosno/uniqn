@@ -56,7 +56,7 @@ export class JobDetailPage extends BasePage {
         '마감된 공고입니다',
         '내 지원 확인',
         '지원 현황 보기',
-        '내 일정 확인',
+        '내 스케줄 확인',
         '프로필 보기',
         '지원 완료',
         '공고를 찾을 수 없',

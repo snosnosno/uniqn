@@ -87,7 +87,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
     await flushValidation();
 
     const salaryRow = getByTestId('order-sheet-row-salary');
-    expect(within(salaryRow).getByText(/딜러 20,000/)).toBeTruthy();
+    expect(within(salaryRow).getByText(/딜러 시급 ₩20,000/)).toBeTruthy();
     expect(getByTestId('order-sheet-row-salary-badge')).toBeTruthy();
     expect(mockAddToast).not.toHaveBeenCalled();
   });
@@ -109,10 +109,10 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
     await flushValidation();
 
     const salaryRow = getByTestId('order-sheet-row-salary');
-    expect(within(salaryRow).getByText(/딜러 20,000 · 플로어 30,000/)).toBeTruthy();
+    expect(within(salaryRow).getByText(/딜러 시급 ₩20,000 · 플로어 시급 ₩30,000/)).toBeTruthy();
     expect(mockAddToast).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('플로어 30,000원'),
+        message: expect.stringContaining('플로어 시급 ₩30,000'),
       })
     );
   });
@@ -167,7 +167,7 @@ describe('OrderSheetScreen — 역할별 급여 자동 프리필(syncRoleSalarie
     await flushValidation();
 
     const salaryRow = getByTestId('order-sheet-row-salary');
-    expect(within(salaryRow).getByText(/딜러 25,000 · 플로어 30,000/)).toBeTruthy();
+    expect(within(salaryRow).getByText(/딜러 시급 ₩25,000 · 플로어 시급 ₩30,000/)).toBeTruthy();
     expect(queryByTestId('order-sheet-row-salary-badge')).toBeNull(); // 딜러 25,000 ≠ 기본값
   });
 });

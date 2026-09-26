@@ -10,8 +10,7 @@ import { View, Text } from 'react-native';
 import type { SalaryInfo } from '@/types';
 import type { SalaryType } from '@/types/jobPosting';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatNumber } from '@/utils/formatters';
-import { SALARY_TYPE_LABELS } from '@/utils/settlement/constants';
+import { formatCurrency, formatSalary as formatSalaryCanonical } from '@/utils/formatters';
 
 // ============================================================================
 // Types
@@ -41,13 +40,12 @@ interface RoleSalaryDisplayProps {
 // ============================================================================
 
 /**
- * 급여 포맷 (라벨 금액원 — ₩ 없음, 'other'는 '협의')
+ * 급여 포맷 — 정본 `formatSalary`("시급 ₩20,000", impeccable §19) 경유. 'other'는 '협의'.
+ * 예전엔 이 파일만 "시급 20,000원"을 따로 만들어, 공고 상세(₩)와 지원 화면(원)이 갈라져 보였다.
  */
 function formatSalary(type: SalaryType, amount: number): string {
   if (type === 'other') return '협의';
-  const typeLabel = SALARY_TYPE_LABELS[type] || '';
-  const formattedAmount = formatNumber(amount);
-  return `${typeLabel} ${formattedAmount}원`;
+  return formatSalaryCanonical(type, amount);
 }
 
 /**
@@ -55,7 +53,7 @@ function formatSalary(type: SalaryType, amount: number): string {
  */
 function formatSalaryShort(type: SalaryType, amount: number): string {
   if (type === 'other') return '협의';
-  return `${formatNumber(amount)}원`;
+  return formatCurrency(amount);
 }
 
 /**

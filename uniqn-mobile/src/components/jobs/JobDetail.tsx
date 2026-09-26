@@ -19,6 +19,7 @@ import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
 import { POSTING_TYPE_LABELS } from '@/types/postingConfig';
 import { josa } from '@/utils/text/josa';
+import { formatPhoneForDisplay } from '@/utils/phone';
 import {
   PostingCompensationContent,
   PostingScheduleContent,
@@ -195,15 +196,16 @@ export function JobDetail({ job }: JobDetailProps) {
           <Pressable
             onPress={handleCall}
             accessibilityRole="button"
-            accessibilityLabel={`${josa(detail.contactPhone, '으로/로')} 전화 걸기`}
+            accessibilityLabel={`${josa(formatPhoneForDisplay(detail.contactPhone), '으로/로')} 전화 걸기`}
             className="active:bg-secondary-50 dark:active:bg-secondary-800"
           >
             <InfoRow
               icon={<PhoneIcon size={18} color={SECONDARY_PALETTE[400]} />}
               label="연락처"
               value={
+                // 저장값은 E.164(+8210…)일 수 있다 — 표시만 010-… 로 바꾸고 tel: 링크는 원문을 쓴다.
                 <Text className={`text-sm font-sans ${TEXT_CLASSES.link}`}>
-                  {detail.contactPhone}
+                  {formatPhoneForDisplay(detail.contactPhone)}
                 </Text>
               }
             />
