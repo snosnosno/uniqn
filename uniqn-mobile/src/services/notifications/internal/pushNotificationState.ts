@@ -26,12 +26,22 @@ export const pushState: {
   receivedHandler: NotificationReceivedHandler | null;
   responseHandler: NotificationResponseHandler | null;
   responseSubscription: { remove: () => void } | null;
+  /** 마지막으로 처리한 알림 탭(request.identifier) — 리스너와 콜드 스타트 응답의 중복 처리 방지 */
+  lastHandledResponseId: string | null;
+  /**
+   * 핸들러가 **명시적으로 해제된**(로그아웃) 상태인가. 이때 들어온 탭은 보존하지 않고 버린다 —
+   * 다음에 로그인한 계정이 남의 탭을 처리하지 않게. 앱 시작 직후(아직 한 번도 등록 전)는 false 라
+   * 콜드 스타트 탭(안드로이드는 리스너 등록 순간 재전달)을 보존한다.
+   */
+  responseHandlerDetached: boolean;
 } = {
   isInitialized: false,
   currentToken: null,
   receivedHandler: null,
   responseHandler: null,
   responseSubscription: null,
+  lastHandledResponseId: null,
+  responseHandlerDetached: false,
 };
 
 // Expo Notifications 모듈 (동적 로드)

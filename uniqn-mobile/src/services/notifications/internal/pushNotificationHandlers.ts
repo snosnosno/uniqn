@@ -149,18 +149,65 @@ function setupNotificationHandlers(): void {
   // 알림 터치 응답 리스너 (subscription 저장하여 cleanup 시 해제)
   pushState.responseSubscription = Notifications.addNotificationResponseReceivedListener(
     (response) => {
-      const payload = extractPayload(response.notification);
-      const actionId = response.actionIdentifier;
-
-      logger.info('알림 응답 수신', { actionId, data: payload.data });
-
-      if (pushState.responseHandler) {
-        pushState.responseHandler(payload, actionId);
-      }
+      dispatchNotificationResponse(response);
     }
   );
 
   logger.info('알림 핸들러 설정 완료');
+}
+
+/**
+ * 알림 탭 1건을 앱 핸들러로 넘긴다. 처리했으면 true.
+ *
+ * 같은 탭이 리스너와 콜드 스타트 응답(getLastNotificationResponse) 양쪽으로 올 수 있어
+ * request.identifier 로 한 번만 처리한다. 핸들러가 아직 없으면(콜드 스타트 초기화 전)
+ * 처리 표시를 남기지 않아, 핸들러 등록 시점의 consumeLaunchNotificationResponse 가 다시 집는다.
+ * 단 로그아웃으로 핸들러가 해제된 동안 온 탭은 버린다(다음 계정이 처리하지 않게).
+ */
+function dispatchNotificationResponse(response: NotificationsTypes.NotificationResponse): boolean {
+  const payload = extractPayload(response.notification);
+  const actionId = response.actionIdentifier;
+  const responseId = response.notification.request?.identifier ?? null;
+
+  logger.info('알림 응답 수신', { actionId, data: payload.data });
+
+  if (responseId !== null && responseId === pushState.lastHandledResponseId) return false;
+  if (!pushState.responseHandler) {
+    if (pushState.responseHandlerDetached) clearLastResponse();
+    return false;
+  }
+
+  pushState.lastHandledResponseId = responseId;
+  pushState.responseHandler(payload, actionId);
+  // 처리한 응답은 비운다 — 다음 핸들러 재등록·재로그인 때 같은 탭이 되살아나지 않게
+  clearLastResponse();
+  return true;
+}
+
+function clearLastResponse(): void {
+  try {
+    getNotifications()?.clearLastNotificationResponse?.();
+  } catch (error) {
+    logger.warn('알림 탭 응답 비우기 실패', { error: toError(error).message });
+  }
+}
+
+/**
+ * 앱을 연 알림 탭(콜드 스타트)을 처리한다.
+ *
+ * 앱이 완전히 꺼진 상태에서 푸시를 누르면, 탭 응답이 JS 리스너 등록(로그인 복원 → (app) 레이아웃
+ * 마운트 → 비동기 initialize) 보다 먼저 도착해 리스너로는 받지 못한다(09-26 실기기: 채팅 푸시를
+ * 눌러도 방으로 안 감). expo-notifications 가 보관하는 마지막 응답을 핸들러 등록 시점에 한 번 읽는다.
+ */
+function consumeLaunchNotificationResponse(): void {
+  const Notifications = getNotifications();
+  if (!Notifications || Platform.OS === 'web') return;
+  try {
+    const response = Notifications.getLastNotificationResponse?.();
+    if (response) dispatchNotificationResponse(response);
+  } catch (error) {
+    logger.warn('앱을 연 알림 탭 처리 실패', { error: toError(error).message });
+  }
 }
 
 /**
@@ -328,6 +375,9 @@ export function setNotificationReceivedHandler(handler: NotificationReceivedHand
  */
 export function setNotificationResponseHandler(handler: NotificationResponseHandler | null): void {
   pushState.responseHandler = handler;
+  pushState.responseHandlerDetached = handler === null;
+  // 핸들러가 생기는 순간 = 앱을 연 알림 탭을 처리할 수 있는 첫 시점
+  if (handler) consumeLaunchNotificationResponse();
 }
 
 // ============================================================================
@@ -345,6 +395,8 @@ export function cleanup(): void {
 
   pushState.receivedHandler = null;
   pushState.responseHandler = null;
+  pushState.lastHandledResponseId = null;
+  pushState.responseHandlerDetached = false;
   pushState.currentToken = null;
   pushState.isInitialized = false;
 
