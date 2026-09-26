@@ -17,12 +17,9 @@ import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
   REPORT_SEVERITY_COLORS,
-  EMPLOYEE_REPORT_TYPE_LABELS,
-  EMPLOYER_REPORT_TYPE_LABELS,
+  getReportTypeLabel,
   type Report,
   type ReportStatus,
-  type EmployeeReportType,
-  type EmployerReportType,
 } from '@/types/report';
 
 // ============================================================================
@@ -39,16 +36,6 @@ interface ReportCardProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * 신고 타입 라벨 가져오기
- */
-function getReportTypeLabel(report: Report): string {
-  if (report.reporterType === 'employer') {
-    return EMPLOYEE_REPORT_TYPE_LABELS[report.type as EmployeeReportType] || report.type;
-  }
-  return EMPLOYER_REPORT_TYPE_LABELS[report.type as EmployerReportType] || report.type;
-}
 
 /**
  * 심각도 라벨
@@ -79,7 +66,7 @@ const REPORT_STATUS_TONE: Record<ReportStatus, CardStripeTone> = {
 // ============================================================================
 
 export const ReportCard = React.memo(function ReportCard({ report, onPress }: ReportCardProps) {
-  const typeLabel = getReportTypeLabel(report);
+  const typeLabel = getReportTypeLabel(report.type, report.reporterType);
   const statusColor = REPORT_STATUS_COLORS[report.status];
   const severityColor = REPORT_SEVERITY_COLORS[report.severity];
 

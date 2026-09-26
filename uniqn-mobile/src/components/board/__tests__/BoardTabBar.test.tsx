@@ -36,6 +36,25 @@ describe('BoardTabBar', () => {
     expect(onTabPress).toHaveBeenCalledWith('chat');
   });
 
+  it('채팅 안 읽음이 있으면 채팅 칸에 배지를 달고, 0 이면 달지 않는다', () => {
+    const withUnread = render(
+      <BoardTabBar activeTab="schedule" onTabPress={jest.fn()} showChat chatUnread={3} />
+    );
+    expect(withUnread.getByText('3')).toBeTruthy();
+    expect(withUnread.getByLabelText('채팅 탭, 안 읽은 메시지 3개')).toBeTruthy();
+
+    const capped = render(
+      <BoardTabBar activeTab="schedule" onTabPress={jest.fn()} showChat chatUnread={150} />
+    );
+    expect(capped.getByText('99+')).toBeTruthy();
+
+    const none = render(
+      <BoardTabBar activeTab="schedule" onTabPress={jest.fn()} showChat chatUnread={0} />
+    );
+    expect(none.getByLabelText('채팅 탭')).toBeTruthy();
+    expect(none.queryByLabelText(/읽지 않은 알림/)).toBeNull();
+  });
+
   it('invokes onTabPress with the pressed tab key', () => {
     const onTabPress = jest.fn();
     const { getByLabelText } = render(<BoardTabBar activeTab="schedule" onTabPress={onTabPress} />);

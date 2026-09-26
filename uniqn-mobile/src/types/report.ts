@@ -194,6 +194,23 @@ export const EMPLOYER_REPORT_TYPE_LABELS: Record<EmployerReportType, string> = {
 };
 
 /**
+ * 신고 유형 라벨 — 신고자 쪽 맵을 먼저 보고, 없으면 반대쪽 맵까지 본다.
+ *
+ * 채팅 신고(chat_report_message)는 신고자 쪽과 무관하게 'inappropriate_behavior'(구인자 신고 맵 키)를
+ * 쓴다. 구인자가 채팅으로 신고하면 신고자 쪽 맵(스태프 신고)에 그 키가 없어 원문 키가 제목으로
+ * 보였다(09-26 QA). 두 맵의 키는 'other'(둘 다 '기타') 말고는 겹치지 않는다.
+ */
+export function getReportTypeLabel(type: string, reporterType: ReporterType): string {
+  const employeeLabels: Record<string, string> = EMPLOYEE_REPORT_TYPE_LABELS;
+  const employerLabels: Record<string, string> = EMPLOYER_REPORT_TYPE_LABELS;
+  const [primary, secondary] =
+    reporterType === 'employer'
+      ? [employeeLabels, employerLabels]
+      : [employerLabels, employeeLabels];
+  return primary[type] ?? secondary[type] ?? type;
+}
+
+/**
  * 신고 심각도별 색상 (NativeWind)
  */
 export const REPORT_SEVERITY_COLORS: Record<

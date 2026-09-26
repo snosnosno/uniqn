@@ -2,7 +2,8 @@
  * 채팅 말풍선 — 서버 메시지 또는 아직 서버에 없는 내 메시지(아웃박스)
  *
  * - 내 것: 오른쪽·골드. 상대: 왼쪽·회색. 시스템/공지: 가운데 작은 안내.
- * - 구직자 화면에서 구인자 측 발신자가 여럿일 수 있어 상대 말풍선 위에 발신자 이름을 작게 단다.
+ * - 상대 말풍선 위에 발신자 이름을 작게 단다 — 양쪽 화면 모두, 연달아 보낸 묶음의 첫 말풍선에만
+ *   (판정은 ChatTimelineRow 의 senderNameRowKeys).
  * - 실패: 모양 전환 없이 아이콘+색만 바꾸고 "재전송"·"삭제"를 붙인다(자주 보는 요소라 움직임 없음).
  * - 사진(kind=image)은 ChatImageBubble 로 그린다(S2b). 삭제된 사진은 일반 삭제 문구.
  * - (S4) 신고 가능한 상대 메시지는 길게 눌러(또는 접근성 동작) 신고 메뉴를 연다. 이때 본문 텍스트
@@ -14,6 +15,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { RefreshIcon } from '@/components/icons';
 import { STATUS_COLORS } from '@/constants/colors';
+import { isChatNoticeMessage } from '@/domains/chat';
 import type { ChatMessage, ChatOutboxItem, ChatOutboxStage } from '@/types/chat';
 import { ChatImageBubble } from './ChatImageBubble';
 
@@ -90,11 +92,7 @@ export const ChatServerBubble = memo(function ChatServerBubble({
   showSenderName,
   onLongPress,
 }: ServerBubbleProps) {
-  if (
-    message.senderSide === 'system' ||
-    message.kind === 'system' ||
-    message.kind === 'announcement'
-  ) {
+  if (isChatNoticeMessage(message)) {
     return (
       <View className="my-2 items-center px-6">
         <Text className="text-center text-xs text-content-muted dark:text-secondary-400">

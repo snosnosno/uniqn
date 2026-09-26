@@ -43,12 +43,9 @@ import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
   REPORT_SEVERITY_COLORS,
-  EMPLOYEE_REPORT_TYPE_LABELS,
-  EMPLOYER_REPORT_TYPE_LABELS,
+  getReportTypeLabel,
   type Report,
   type ReportStatus,
-  type EmployeeReportType,
-  type EmployerReportType,
 } from '@/types/report';
 import { toDate } from '@/utils/date';
 import { notFound } from '@/constants/messages';
@@ -76,13 +73,6 @@ const TERMINAL_REPORT_STATUSES: readonly ReportStatus[] = ['resolved', 'dismisse
 // Helper Functions
 // ============================================================================
 
-function getReportTypeLabel(report: Report): string {
-  if (report.reporterType === 'employer') {
-    return EMPLOYEE_REPORT_TYPE_LABELS[report.type as EmployeeReportType] || report.type;
-  }
-  return EMPLOYER_REPORT_TYPE_LABELS[report.type as EmployerReportType] || report.type;
-}
-
 function formatTimestamp(timestamp: Date | { toDate: () => Date } | undefined): string {
   const date = toDate(timestamp);
   if (!date) return '-';
@@ -105,7 +95,7 @@ function formatTimeAgo(timestamp: Date | { toDate: () => Date } | undefined): st
 function ReportInfoSection({ report }: { report: Report }) {
   const statusColor = REPORT_STATUS_COLORS[report.status];
   const severityColor = REPORT_SEVERITY_COLORS[report.severity];
-  const typeLabel = getReportTypeLabel(report);
+  const typeLabel = getReportTypeLabel(report.type, report.reporterType);
 
   return (
     <View className="bg-surface-card rounded-md p-4 mx-4 mb-4">

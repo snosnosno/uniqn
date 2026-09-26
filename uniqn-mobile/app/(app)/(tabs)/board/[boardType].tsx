@@ -9,7 +9,7 @@ import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { useBoardPosts } from '@/hooks/useBoard';
-import { useChatEnabled } from '@/hooks/chat';
+import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
 import { useManualRefresh } from '@/hooks/useManualRefresh';
 import { useTabBarBottomPadding } from '@/hooks/useTabBarBottomPadding';
 import type { BoardType, CommunicationBoardType } from '@/types/board';
@@ -33,6 +33,8 @@ export default function BoardListScreen() {
     ? (boardType as CommunicationBoardType)
     : 'schedule';
   const { enabled: chatEnabled } = useChatEnabled();
+  // 채팅 칸 배지 — 소통 탭 배지와 같은 쿼리 키라 추가 요청 없음
+  const chatUnread = useChatUnreadTotal(chatEnabled);
   const { data, isLoading, error, refetch } = useBoardPosts(safeBoardType, 50);
   // 스피너는 사용자가 당겼을 때만 (useManualRefresh 주석 참고).
   const { refreshing, onRefresh } = useManualRefresh(refetch);
@@ -55,7 +57,12 @@ export default function BoardListScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="소통" />
-      <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} showChat={chatEnabled} />
+      <BoardTabBar
+        activeTab={safeBoardType}
+        onTabPress={navigateToTab}
+        showChat={chatEnabled}
+        chatUnread={chatUnread}
+      />
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">

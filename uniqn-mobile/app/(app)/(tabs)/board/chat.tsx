@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
 import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
 import { ChatListScreen } from '@/components/chat';
-import { useChatEnabled } from '@/hooks/chat';
+import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
 
 function navigateToTab(tab: BoardTabKey) {
   if (tab === 'chat') return;
@@ -18,6 +18,7 @@ function navigateToTab(tab: BoardTabKey) {
 
 export default function BoardChatScreen() {
   const { enabled, isLoading } = useChatEnabled();
+  const chatUnread = useChatUnreadTotal(enabled);
   const { postingId } = useLocalSearchParams<{ postingId?: string }>();
 
   if (!enabled && !isLoading) {
@@ -27,7 +28,7 @@ export default function BoardChatScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="소통" />
-      <BoardTabBar activeTab="chat" onTabPress={navigateToTab} showChat />
+      <BoardTabBar activeTab="chat" onTabPress={navigateToTab} showChat chatUnread={chatUnread} />
       {enabled ? <ChatListScreen postingId={postingId || null} /> : null}
     </SafeAreaView>
   );

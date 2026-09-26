@@ -1,13 +1,14 @@
 -- ============================================================
 -- 앱 내 채팅 S1 — 알림 수신자 · 방 단위 collapse · EF 호출 수 · 카운터 (마이그 20260925100000)
+-- 09-26 QA(마이그 20260926120000): 5분 흡수 제거 → 메시지마다 푸시, 알림함은 방당 1행 유지
 -- ============================================================
--- 설계 §6 · §4-2 M3·M4 · D4(5분 묶음 · 미리보기 60자 · 사진 "사진을 보냈어요" · category application)
+-- 설계 §6 · §4-2 M3·M4 · D4(미리보기 60자 · 사진 "사진을 보냈어요" · category application)
 --
 -- 🚨 EF 호출 수를 net 큐로 세지 않는다
 --    로컬엔 vault 시크릿이 없어 trigger_send_push_notification 이 net.http_post **전에** 반환한다
 --    → net 큐는 항상 0 = 공허한 검증. 대신 테스트 안에 **스파이 STATEMENT 트리거**
 --    (REFERENCING NEW TABLE)를 달아 그 문장의 new_rows 행 수 = EF 에 넘길 id 수를 기록한다.
---    실제 트리거와 같은 transition table 을 보므로 "UPDATE 흡수 경로는 EF 0회" 가정(R3)을 고정한다.
+--    실제 트리거와 같은 transition table 을 보므로 "연속 메시지도 EF 에 id 가 넘어간다"를 고정한다.
 --    모든 0 단언 앞에 같은 스파이가 ≥1 을 기록한 대조군이 있다.
 -- 🚨 notifications 를 세기 전 RESET ROLE — authenticated 면 RLS 로 남의 알림이 0 으로 보인다.
 --
@@ -71,19 +72,22 @@ SELECT is(
 SELECT is(pg_temp.counter(jpc_chat_id('owner')), current_setting('chat.c0')::int + 1, 'N7 owner 배지 카운터 +1');
 
 -- ------------------------------------------------------------
--- 2. 5분 안 두 번째 — 1행 유지 · 미리보기 교체 · 푸시 0 · 카운터 불변
+-- 2. 곧바로 온 두 번째 — 1행 유지 · 미리보기 교체 · **푸시 다시 1회** · 카운터 불변 (09-26)
 -- ------------------------------------------------------------
+SELECT jpc_chat_put('first_row', (SELECT id FROM public.notifications WHERE recipient_id = jpc_chat_id('owner') AND type = 'chat_message' AND is_read = false));
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT chat_send_message(jpc_chat_id('conv'), 'text', 'second message', NULL, NULL, NULL, gen_random_uuid());
 RESET ROLE;
-SELECT is(pg_temp.unread(jpc_chat_id('owner'), jpc_chat_id('conv')), 1, 'N8 5분 안 두 번째 메시지 — 미읽음 알림은 여전히 1행');
-SELECT is((SELECT body FROM public.notifications WHERE recipient_id = jpc_chat_id('owner') AND type = 'chat_message' AND is_read = false),
-  'second message', 'N9 미리보기만 교체된다');
-SELECT is(pg_temp.spy_last(), '2:0', 'N10 ON CONFLICT DO UPDATE 문장의 new_rows = 0 → EF 에 넘길 id 없음(R3 가정 고정)');
-SELECT is(pg_temp.counter(jpc_chat_id('owner')), current_setting('chat.c0')::int + 1, 'N11 카운터 불변(흡수는 증가 없음)');
+SELECT is(pg_temp.unread(jpc_chat_id('owner'), jpc_chat_id('conv')), 1, 'N8 곧바로 온 두 번째 메시지 — 미읽음 알림은 여전히 방당 1행');
+SELECT ok(
+  (SELECT body = 'second message' AND id <> jpc_chat_id('first_row') FROM public.notifications
+    WHERE recipient_id = jpc_chat_id('owner') AND type = 'chat_message' AND is_read = false),
+  'N9 이전 행은 지워지고 최신 미리보기를 가진 새 행으로 교체');
+SELECT is(pg_temp.spy_last(), '2:3', 'N10 두 번째 문장도 new_rows 3 → EF 에 id 3개(메시지마다 푸시)');
+SELECT is(pg_temp.counter(jpc_chat_id('owner')), current_setting('chat.c0')::int + 1, 'N11 카운터 순증 0 (삭제 −1 · 삽입 +1)');
 
 -- ------------------------------------------------------------
--- 3. 5분 지난 미읽음 → 옛 행 삭제 + 새 행(새 푸시). 다른 타입 알림은 보존
+-- 3. 오래된 미읽음도 같은 규칙(옛 행 삭제 + 새 행). 다른 타입 알림은 보존
 -- ------------------------------------------------------------
 INSERT INTO public.notifications (recipient_id, type, category, title, body, data, created_at)
 VALUES (jpc_chat_id('owner'), 'posting_announcement', 'job', '공지', '공지 본문',
@@ -115,7 +119,7 @@ RESET ROLE;
 SELECT is(
   (SELECT title || '|' || body FROM public.notifications
     WHERE recipient_id = jpc_chat_id('seeker') AND type = 'chat_message' AND is_read = false),
-  'jpc test ws|owner reply', 'N16 구직자 알림: 제목=업장명 · 미리보기');
+  '사장닉|owner reply', 'N16 구직자 알림: 제목=공고 작성자 닉네임(09-26 — 업장명 아님) · 미리보기');
 SELECT is((SELECT body FROM public.notifications
             WHERE recipient_id = jpc_chat_id('editor') AND type = 'chat_message' AND is_read = false),
   'third message', 'N17 구인자 측 발신은 같은 편(editor) 알림을 건드리지 않는다');
