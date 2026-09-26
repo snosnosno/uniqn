@@ -162,6 +162,7 @@ function setupNotificationHandlers(): void {
  * 같은 탭이 리스너와 콜드 스타트 응답(getLastNotificationResponse) 양쪽으로 올 수 있어
  * request.identifier 로 한 번만 처리한다. 핸들러가 아직 없으면(콜드 스타트 초기화 전)
  * 처리 표시를 남기지 않아, 핸들러 등록 시점의 consumeLaunchNotificationResponse 가 다시 집는다.
+ * 단 로그아웃으로 핸들러가 해제된 동안 온 탭은 버린다(다음 계정이 처리하지 않게).
  */
 function dispatchNotificationResponse(response: NotificationsTypes.NotificationResponse): boolean {
   const payload = extractPayload(response.notification);
@@ -171,13 +172,24 @@ function dispatchNotificationResponse(response: NotificationsTypes.NotificationR
   logger.info('알림 응답 수신', { actionId, data: payload.data });
 
   if (responseId !== null && responseId === pushState.lastHandledResponseId) return false;
-  if (!pushState.responseHandler) return false;
+  if (!pushState.responseHandler) {
+    if (pushState.responseHandlerDetached) clearLastResponse();
+    return false;
+  }
 
   pushState.lastHandledResponseId = responseId;
   pushState.responseHandler(payload, actionId);
   // 처리한 응답은 비운다 — 다음 핸들러 재등록·재로그인 때 같은 탭이 되살아나지 않게
-  getNotifications()?.clearLastNotificationResponse?.();
+  clearLastResponse();
   return true;
+}
+
+function clearLastResponse(): void {
+  try {
+    getNotifications()?.clearLastNotificationResponse?.();
+  } catch (error) {
+    logger.warn('알림 탭 응답 비우기 실패', { error: toError(error).message });
+  }
 }
 
 /**
@@ -363,6 +375,7 @@ export function setNotificationReceivedHandler(handler: NotificationReceivedHand
  */
 export function setNotificationResponseHandler(handler: NotificationResponseHandler | null): void {
   pushState.responseHandler = handler;
+  pushState.responseHandlerDetached = handler === null;
   // 핸들러가 생기는 순간 = 앱을 연 알림 탭을 처리할 수 있는 첫 시점
   if (handler) consumeLaunchNotificationResponse();
 }
@@ -383,6 +396,7 @@ export function cleanup(): void {
   pushState.receivedHandler = null;
   pushState.responseHandler = null;
   pushState.lastHandledResponseId = null;
+  pushState.responseHandlerDetached = false;
   pushState.currentToken = null;
   pushState.isInitialized = false;
 

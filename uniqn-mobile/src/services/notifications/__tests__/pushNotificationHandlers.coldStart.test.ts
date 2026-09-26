@@ -125,4 +125,33 @@ describe('앱을 연 알림 탭(콜드 스타트)', () => {
     listener()(chatTap('warm-2'));
     expect(handler).toHaveBeenCalledTimes(2);
   });
+  it('로그아웃(핸들러 해제) 중에 누른 탭은 버린다 — 다음 로그인 계정이 처리하지 않게', () => {
+    const first = jest.fn();
+    pushNotificationService.setNotificationResponseHandler(first);
+    pushNotificationService.setNotificationResponseHandler(null);
+
+    listener()(chatTap('logged-out-1'));
+    expect(mockClearLastNotificationResponse).toHaveBeenCalled();
+
+    // 네이티브가 비웠으므로 다음 등록 때 getLast 는 null
+    mockGetLastNotificationResponse.mockReturnValue(null);
+    const next = jest.fn();
+    pushNotificationService.setNotificationResponseHandler(next);
+    expect(first).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('앱 시작 직후(아직 등록 전) 리스너로 온 탭은 비우지 않는다 — 안드로이드 재전달 보존', () => {
+    listener()(chatTap('android-early'));
+    expect(mockClearLastNotificationResponse).not.toHaveBeenCalled();
+  });
+
+  it('웹에서는 앱을 연 탭을 읽지 않는다', () => {
+    Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
+    mockGetLastNotificationResponse.mockReturnValue(chatTap('web-1'));
+    const handler = jest.fn();
+    pushNotificationService.setNotificationResponseHandler(handler);
+    expect(mockGetLastNotificationResponse).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+  });
 });
