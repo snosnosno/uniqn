@@ -30,7 +30,8 @@ const STAFF_PAGES: readonly TutorialPage[] = [
     title: '원하는 공고를 찾아보세요',
     subtitle: '날짜, 지역, 타입별로 필터링하세요',
     description:
-      '긴급, 대회, 일반, 고정 4가지 타입의 공고를 탐색하고\n달력에서 원하는 날짜의 공고만 볼 수 있어요.',
+      // 유형 이름·순서는 홈 칩(PostingTypeChips)과 같게 — 정본 라벨은 POSTING_TYPE_LABELS 다.
+      '급구, 대회, 지원, 고정 4가지 타입의 공고를 탐색하고\n달력에서 원하는 날짜의 공고만 볼 수 있어요.',
   },
   {
     id: 'staff-apply',
@@ -73,7 +74,8 @@ const EMPLOYER_PAGES: readonly TutorialPage[] = [
     title: '공고를 작성해 보세요',
     subtitle: '4가지 타입 중 상황에 맞는 공고를 선택',
     description:
-      '일반, 긴급, 대회, 고정 타입 중 선택하고\n날짜, 역할, 급여를 설정하세요.\n템플릿으로 반복 작성도 간편해요.',
+      // 유형 이름·순서는 공고 작성 화면 세그먼트(TypeSegment)와 같게.
+      '지원, 급구, 고정, 대회 타입 중 선택하고\n날짜, 역할, 급여를 설정하세요.\n템플릿으로 반복 작성도 간편해요.',
   },
   {
     id: 'employer-applicants',

@@ -9,6 +9,9 @@ import { START_TIME_RE, type OrderSheetFormValues } from '@/schemas/orderSheet.s
 import { STAFF_ROLES } from '@/constants/jobPosting';
 import { PROVIDED_FLAG } from '@/utils/settlement';
 import { groupConsecutiveDates } from '@/utils/date';
+import { formatSalary } from '@/utils/formatters/display';
+import { formatPhoneForDisplay } from '@/utils/phone';
+import type { SalaryType } from '@/types/jobPosting';
 
 export type OrderRowKey =
   | 'title'
@@ -30,6 +33,12 @@ export interface OrderRowState {
   value: string;
   unset: boolean;
   optional: boolean;
+  /**
+   * 값이 한 줄을 넘으면 두 줄까지 보여준다(기본 한 줄 말줄임). 금액 요약 전용 —
+   * 금액은 자르지 않는다(impeccable §26). "딜러 시급 ₩20,000 · 플로어 시급 ₩30,000" 은
+   * 360dp 기기의 값 칸(배지 포함 ~200dp)을 넘는다.
+   */
+  wrap?: true;
 }
 
 /** 행 타깃 — 일정 행(dates/time/roles)은 그룹 스코프(S1), 나머지는 groupIndex 0 고정 */
@@ -351,12 +360,6 @@ export function summarizeGroupDates(dates: string[]): string {
   return `${compress(runs[0]!)} 외 ${sorted.length - runs[0]!.length}일`;
 }
 
-const SALARY_TYPE_LABEL = {
-  hourly: '시급',
-  daily: '일급',
-  monthly: '월급',
-  other: '협의',
-} as const;
 const WELFARE_LABEL = {
   guaranteedHours: '보장시간',
   meal: '식사',
@@ -372,8 +375,12 @@ export const roleName = (role: string, customRole?: string) =>
 const roleKey = (role: string, customRole?: string) =>
   role === 'other' ? `other:${customRole ?? ''}` : role;
 
-const salaryLabel = (s: { type: keyof typeof SALARY_TYPE_LABEL; amount: number }) =>
-  s.type === 'other' ? '협의' : `${SALARY_TYPE_LABEL[s.type]} ${s.amount.toLocaleString()}원`;
+/**
+ * 급여 요약 — 공고 상세·홈 카드·스케줄과 같은 정본 포맷("시급 ₩20,000", impeccable §19).
+ * 예전엔 이 파일만 "20,000원"(동일급여)·"20,000"(역할별, 유형·단위 없음)으로 갈라져 있었다.
+ */
+export const salaryLabel = (s: { type: SalaryType; amount: number }) =>
+  s.type === 'other' ? '협의' : formatSalary(s.type, s.amount);
 
 type OrderSheetGroupSlots = NonNullable<
   OrderSheetFormValues['scheduleGroups']
@@ -450,7 +457,8 @@ export function getRowState(
     case 'contact':
       return {
         label: '연락처',
-        value: values.contactPhone,
+        // 프로필에서 프리필되는 값은 E.164(+8210…)다 — 요약은 010-… 로 읽히게 한다(저장값은 그대로).
+        value: formatPhoneForDisplay(values.contactPhone),
         unset: values.contactPhone.length === 0,
         optional: false,
       };
@@ -539,14 +547,18 @@ export function getRowState(
           });
         const parts = [...uniqueRoles.values()].map((r) => {
           const s = salaryByRole.get(roleKey(r.role, r.customRole));
-          return `${roleName(r.role, r.customRole)} ${
-            s ? (s.type === 'other' ? '협의' : s.amount.toLocaleString()) : '미정'
-          }`;
+          return `${roleName(r.role, r.customRole)} ${s ? salaryLabel(s) : '미정'}`;
         });
         // 금액 truncation 금지(impeccable §26) — 역할 3개+면 첫 항목 + 개수 축약(2차 Design-medium)
         const summary =
           parts.length >= 3 ? `${parts[0]} 외 ${parts.length - 1}개 역할` : parts.join(' · ');
-        return { label: '급여', value: covered ? summary : '', unset: !covered, optional: false };
+        return {
+          label: '급여',
+          value: covered ? summary : '',
+          unset: !covered,
+          optional: false,
+          wrap: true,
+        };
       }
       const { type, amount } = values.salary;
       const set = type === 'other' || amount > 0;
@@ -555,6 +567,7 @@ export function getRowState(
         value: set ? salaryLabel(values.salary) : '',
         unset: !set,
         optional: false,
+        wrap: true,
       };
     }
     case 'welfare':

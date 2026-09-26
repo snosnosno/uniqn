@@ -294,7 +294,9 @@ export class ScheduleConverter {
     }
 
     const { startTime, endTime } = parseTimeSlotToDate(timeSlot, date);
-    const parsedTime = type === 'start' ? startTime : (endTime ?? startTime);
+    // 종료 시각이 없는 슬롯('19:00')의 end 를 start 로 메우면 카드가 "19:00 – 19:00" 을 그린다.
+    // workLogToScheduleEvent 처럼 null 로 두면 formatWorkTimeRange 가 "19:00 시작" 으로 읽는다.
+    const parsedTime = type === 'start' ? startTime : endTime;
     return parsedTime ?? null;
   }
 }

@@ -57,6 +57,9 @@ jest.mock('@/features/employer/workSchedule/WorkScheduleView', () => {
 });
 
 jest.mock('@/features/employer/tab/EmployerMoreMenu', () => ({ EmployerMoreMenu: () => null }));
+jest.mock('@/features/employer/tab/EmployerReviewPrompt', () => ({
+  EmployerReviewPrompt: () => null,
+}));
 
 jest.mock('@/components', () => {
   const ReactNative = jest.requireActual('react-native') as typeof import('react-native');

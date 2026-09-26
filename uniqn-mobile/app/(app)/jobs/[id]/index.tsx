@@ -318,7 +318,7 @@ export default function JobDetailScreen() {
                         variant="outline"
                         fullWidth
                       >
-                        {isFixed ? '프로필 보기' : '내 일정 확인'}
+                        {isFixed ? '프로필 보기' : '내 스케줄 확인'}
                       </Button>
                     </View>
                     {canRequestCancel ? (

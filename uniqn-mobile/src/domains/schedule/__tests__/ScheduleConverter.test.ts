@@ -124,6 +124,20 @@ describe('ScheduleConverter.parseTimeSlotToTimestamp', () => {
       ScheduleConverter.parseTimeSlotToTimestamp('09:00~18:00', '2025-02-30', 'start')
     ).toBeNull();
   });
+
+  // 종료 시각이 없는 슬롯('19:00')의 end 를 start 로 메우면 카드가 "19:00 – 19:00" 을 그린다.
+  // 확정 후 경로(workLogToScheduleEvent)는 null 을 넘기므로 지원 경로도 같아야 한다.
+  it('단일 시각 슬롯의 end 는 start 로 메우지 않고 null 이다', () => {
+    expect(
+      ScheduleConverter.parseTimeSlotToTimestamp('19:00', '2026-09-29', 'start')
+    ).not.toBeNull();
+    expect(ScheduleConverter.parseTimeSlotToTimestamp('19:00', '2026-09-29', 'end')).toBeNull();
+  });
+
+  it('범위 슬롯의 end 는 그대로 파싱한다', () => {
+    const end = ScheduleConverter.parseTimeSlotToTimestamp('09:00~18:00', '2025-01-15', 'end');
+    expect(end?.getHours()).toBe(18);
+  });
 });
 
 describe('ScheduleConverter.workLogToScheduleEvent', () => {
