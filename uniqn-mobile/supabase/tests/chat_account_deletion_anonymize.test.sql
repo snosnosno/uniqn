@@ -22,7 +22,12 @@ SELECT jpc_chat_simulate_on();
 
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT jpc_chat_put('conv', chat_open_conversation(jpc_chat_id('jp')));
-SELECT chat_send_message(jpc_chat_id('conv'), 'text', '첫 문의 — 연락처 010-1234-5678', NULL, NULL, NULL, gen_random_uuid());
+SELECT jpc_chat_put('m_first', (chat_send_message(jpc_chat_id('conv'), 'text', '첫 문의 — 연락처 010-1234-5678', NULL, NULL, NULL, gen_random_uuid()) ->> 'messageId')::uuid);
+RESET ROLE;
+-- owner 가 첫 문의를 읽어 둔다 — 09-26 부터 안 읽은 방 알림은 다음 메시지가 **교체**하므로,
+-- 읽어 둬야 "새 채팅 문의" 행이 남아 A9 의 제목 보존을 볼 수 있다
+SELECT jpc_test_set_user(jpc_chat_id('owner'));
+SELECT chat_mark_read(jpc_chat_id('conv'), jpc_chat_id('m_first'));
 RESET ROLE;
 
 -- 사진 4장 — EF 가 쓴 것처럼 postgres 로
@@ -65,7 +70,7 @@ SELECT is(
   (SELECT count(*)::int FROM public.notifications
     WHERE type = 'chat_message' AND recipient_id = jpc_chat_id('owner') AND data ->> 'senderId' = jpc_chat_id('seeker')::text
       AND body <> ''),
-  2, 'A0 대조군: 탈퇴 전 owner 는 구직자발 채팅 알림 2행(미리보기 있음)을 갖고 있다');
+  3, 'A0 대조군: 탈퇴 전 owner 는 구직자발 채팅 알림 3행(읽은 첫 문의 · 읽은 증거 사진 · 안 읽은 최신 — 미리보기 있음)을 갖고 있다');
 
 -- 본인 탈퇴(가드 [2] 본인 경로)
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
@@ -122,7 +127,7 @@ SELECT is(
 SELECT is(
   (SELECT string_agg(title, ' | ' ORDER BY created_at) FROM public.notifications
     WHERE type = 'chat_message' AND recipient_id = jpc_chat_id('owner') AND data ->> 'senderId' = jpc_chat_id('seeker')::text),
-  '새 채팅 문의 | [탈퇴한 사용자]', 'A9 제목: "새 채팅 문의"는 유지, 구직자 이름 제목은 [탈퇴한 사용자]');
+  '새 채팅 문의 | [탈퇴한 사용자] | [탈퇴한 사용자]', 'A9 제목: "새 채팅 문의"는 유지, 구직자 이름 제목은 [탈퇴한 사용자]');
 
 -- ⑤ 신고 증거(D12)
 SELECT is(

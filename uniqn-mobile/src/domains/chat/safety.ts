@@ -10,6 +10,13 @@ import type { ChatMessage, ChatSide } from '@/types/chat';
 
 export type ChatBlockState = 'none' | 'mine' | 'theirs';
 
+/** 가운데 안내 줄(시스템·공지) — 말풍선이 아니다(이름·신고 없음). 말풍선 렌더와 이름 묶음이 함께 쓴다 */
+export function isChatNoticeMessage(message: Pick<ChatMessage, 'senderSide' | 'kind'>): boolean {
+  return (
+    message.senderSide === 'system' || message.kind === 'system' || message.kind === 'announcement'
+  );
+}
+
 /** PostgREST 는 timestamptz 'infinity' 를 문자열 그대로 준다 */
 export function isChatMuted(mutedUntil: string | null, now: number = Date.now()): boolean {
   if (!mutedUntil) return false;

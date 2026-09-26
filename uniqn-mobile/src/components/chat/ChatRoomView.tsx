@@ -35,7 +35,12 @@ import { ChatBlockedNotice } from './ChatBlockedNotice';
 import { ChatComposer } from './ChatComposer';
 import { ChatPostingCard } from './ChatPostingCard';
 import { ChatReportSheet } from './ChatReportSheet';
-import { ChatTimelineRow, withUnreadDivider, type ChatRow } from './ChatTimelineRow';
+import {
+  ChatTimelineRow,
+  senderNameRowKeys,
+  withUnreadDivider,
+  type ChatRow,
+} from './ChatTimelineRow';
 
 export interface ChatRoomViewProps {
   conversationId: string | null;
@@ -103,6 +108,8 @@ export function ChatRoomView(props: ChatRoomViewProps) {
     () => withUnreadDivider(mergeChatTimeline([messages], [], outbox), readCursor, uid),
     [messages, outbox, readCursor, uid]
   );
+  // 상대 말풍선 이름 — 양쪽 화면 모두, 연달아 보낸 묶음의 첫 말풍선에만(09-26 QA)
+  const nameRowKeys = useMemo(() => senderNameRowKeys(rows, uid), [rows, uid]);
 
   const latestIncomingId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -150,14 +157,14 @@ export function ChatRoomView(props: ChatRoomViewProps) {
       <ChatTimelineRow
         row={item}
         myUid={uid}
-        showSenderName={mySide === 'seeker'}
+        showSenderName={nameRowKeys.has(item.key)}
         onRetry={handleRetry}
         onDiscard={discard}
         onLongPressMessage={reportFlow.openMenu}
         canReport={reportFlow.canReport}
       />
     ),
-    [uid, mySide, handleRetry, discard, reportFlow.openMenu, reportFlow.canReport]
+    [uid, nameRowKeys, handleRetry, discard, reportFlow.openMenu, reportFlow.canReport]
   );
 
   return (

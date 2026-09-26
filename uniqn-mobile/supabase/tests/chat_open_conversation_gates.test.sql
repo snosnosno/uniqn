@@ -129,7 +129,7 @@ SELECT ok(
 SELECT is((SELECT seeker_display_name FROM public.chat_conversations WHERE id = jpc_chat_id('conv_app')), '지원자닉',
   'S2 닉네임 있으면 닉네임');
 SELECT is((SELECT employer_display_name || ' / ' || posting_title FROM public.chat_conversations WHERE id = jpc_chat_id('conv')),
-  'jpc test ws / jpc test posting', 'S3 업장명 = 워크스페이스 이름 · 공고 제목 스냅샷');
+  '사장닉 / jpc test posting', 'S3 구인자 쪽 이름 = 공고 작성자 닉네임(09-26 — 업장명 아님) · 공고 제목 스냅샷');
 
 -- 메시지 없는 방은 구인자 측에 보이지 않는다(구직자가 "채팅하기"만 누른 흔적 — 보안 L3)
 SELECT jpc_test_set_user(jpc_chat_id('owner'));
@@ -141,17 +141,19 @@ SELECT is((SELECT count(*)::int FROM public.chat_conversations WHERE id = jpc_ch
   'S5 대조군: 연 구직자 본인은 1');
 RESET ROLE;
 
--- 스냅샷 원천(workspaces.name)은 XSS 트리거 밖 → 패턴이면 중립값으로 폴백(보안 L2)
+-- 작성자 닉네임이 없으면 공고 제목(09-26). XSS 패턴 업장명은 이제 원천이 아니다(보안 L2 유지)
 SELECT jpc_test_clear_user();
 SELECT jpc_chat_put('ws_x', gen_random_uuid());
 INSERT INTO public.workspaces (id, name, owner_id, created_at, updated_at)
 VALUES (jpc_chat_id('ws_x'), '<script>alert(1)</script>', jpc_chat_id('owner'), now(), now());
 SELECT jpc_chat_put('jp_x', jpc_chat_posting(jpc_chat_id('ws_x'), jpc_chat_id('owner'), 'active'));
+UPDATE public.users SET nickname = NULL WHERE id = jpc_chat_id('owner');
 SELECT jpc_test_set_user(jpc_chat_id('seeker'));
 SELECT jpc_chat_put('conv_x', chat_open_conversation(jpc_chat_id('jp_x')));
 RESET ROLE;
-SELECT is((SELECT employer_display_name FROM public.chat_conversations WHERE id = jpc_chat_id('conv_x')), 'jpc owner',
-  'S6 XSS 패턴 업장명은 스냅샷에 싣지 않고 다음 후보(owner_name)로');
+SELECT is((SELECT employer_display_name FROM public.chat_conversations WHERE id = jpc_chat_id('conv_x')), 'jpc chat posting active',
+  'S6 작성자 닉네임이 없으면 공고 제목(XSS 패턴 업장명·실명 owner_name 은 쓰이지 않는다)');
+UPDATE public.users SET nickname = '사장닉' WHERE id = jpc_chat_id('owner');
 
 -- ------------------------------------------------------------
 -- R. 새 방 하루 20개 — 21번째 신규는 거부, 기존 방 재진입은 세지 않는다
