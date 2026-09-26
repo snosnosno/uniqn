@@ -44,11 +44,14 @@ export const AppliedActions = React.memo(function AppliedActions({
   const isConfirmDisabled = !isFixedMode && totalCount > 0 && selectedCount === 0;
 
   // 확정 버튼 텍스트
+  // 0개 선택은 "0개 확정"이 아니라 할 일을 말한다 — 잠긴 이유를 버튼 자체가 설명한다.
   const confirmButtonText = isFixedMode
     ? '역할 확정'
-    : totalCount > 0 && selectedCount < totalCount
-      ? `${selectedCount}개 확정`
-      : '확정';
+    : isConfirmDisabled
+      ? '일정을 골라주세요'
+      : totalCount > 0 && selectedCount < totalCount
+        ? `${selectedCount}개 확정`
+        : '확정';
 
   // impeccable v2 §17 — 결정적 순간 햅틱:
   //  - 확정(긍정) → Medium (성공적 승인 신호)
@@ -72,7 +75,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         accessibilityRole="button"
         accessibilityLabel="지원 거절"
         accessibilityHint="지원자를 거절합니다"
-        className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
+        className="flex-1 min-h-[44px] flex-row items-center justify-center mr-2 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
       >
         <XMarkIcon size={16} color={STATUS_COLORS.error} />
         <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
@@ -88,12 +91,18 @@ export const AppliedActions = React.memo(function AppliedActions({
         accessibilityLabel={confirmButtonText}
         accessibilityHint="지원자를 확정합니다"
         accessibilityState={{ disabled: isConfirmDisabled }}
-        className={`flex-1 flex-row items-center justify-center py-2 rounded-lg active:opacity-70 ${
+        className={`flex-1 min-h-[44px] flex-row items-center justify-center rounded-lg active:opacity-70 ${
           isConfirmDisabled ? 'bg-secondary-300 dark:bg-surface-elevated' : 'bg-primary-500'
         }`}
       >
-        <CheckIcon size={16} color="#fff" />
-        <Text className="ml-1 text-sm font-sans-medium text-content-onGold">
+        {isConfirmDisabled ? null : <CheckIcon size={16} color="#fff" />}
+        <Text
+          className={`ml-1 text-sm font-sans-medium ${
+            isConfirmDisabled
+              ? 'text-content-muted dark:text-secondary-400'
+              : 'text-content-onGold dark:text-content-onGold'
+          }`}
+        >
           {confirmButtonText}
         </Text>
       </Pressable>

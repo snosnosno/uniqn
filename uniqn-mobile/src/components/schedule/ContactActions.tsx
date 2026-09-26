@@ -9,7 +9,7 @@
  * reject 되면 catch 없이는 unhandled rejection 으로 조용히 아무 일도 일어나지 않는다
  * (Sentry UNIQN-MOBILE-1F). 유틸이 실패를 흡수하고 번호를 그대로 보여줘 직접 걸 수 있게 한다.
  */
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, type ReactNode } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { MessageIcon, PhoneIcon } from '@/components/icons';
 import { formatPhoneForDisplay } from '@/utils/phone';
@@ -20,15 +20,24 @@ export interface ContactActionsProps {
   phone: string;
   /** 로깅에 남길 화면 이름 */
   component?: string;
+  /** 연락 상대 — 스크린리더 라벨에 쓴다(지원자 카드에서는 '지원자'). 기본 '구인자' */
+  counterpart?: string;
+  /** 전화·문자 버튼 줄 끝에 나란히 둘 추가 액션(예: 채팅) — 연락 수단을 한 줄 타일로 모은다 */
+  children?: ReactNode;
 }
 
 /** 웹 브라우저에는 문자 앱이 없다 — 죽은 버튼을 두느니 감춘다. */
 const SUPPORTS_SMS = Platform.OS !== 'web';
 
-const ACTION_CLASSNAME =
+export const CONTACT_ACTION_CLASSNAME =
   'flex-1 min-h-[44px] flex-row items-center justify-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30';
 
-function ContactActionsComponent({ phone, component = 'ContactActions' }: ContactActionsProps) {
+function ContactActionsComponent({
+  phone,
+  component = 'ContactActions',
+  counterpart = '구인자',
+  children,
+}: ContactActionsProps) {
   const display = formatPhoneForDisplay(phone);
 
   const handleCall = useCallback(() => {
@@ -59,8 +68,8 @@ function ContactActionsComponent({ phone, component = 'ContactActions' }: Contac
         <Pressable
           onPress={handleCall}
           accessibilityRole="button"
-          accessibilityLabel={`구인자에게 전화하기 ${display}`}
-          className={ACTION_CLASSNAME}
+          accessibilityLabel={`${counterpart}에게 전화하기 ${display}`}
+          className={CONTACT_ACTION_CLASSNAME}
         >
           <PhoneIcon size={16} color="#B8962E" />
           <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -72,8 +81,8 @@ function ContactActionsComponent({ phone, component = 'ContactActions' }: Contac
           <Pressable
             onPress={handleMessage}
             accessibilityRole="button"
-            accessibilityLabel={`구인자에게 문자하기 ${display}`}
-            className={ACTION_CLASSNAME}
+            accessibilityLabel={`${counterpart}에게 문자하기 ${display}`}
+            className={CONTACT_ACTION_CLASSNAME}
           >
             <MessageIcon size={16} color="#B8962E" />
             <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -81,6 +90,7 @@ function ContactActionsComponent({ phone, component = 'ContactActions' }: Contac
             </Text>
           </Pressable>
         )}
+        {children}
       </View>
     </View>
   );

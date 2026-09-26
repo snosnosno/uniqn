@@ -11,6 +11,7 @@
  */
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { ContactActions } from '../ContactActions';
 
 const mockOpenExternalUrl = jest.fn().mockResolvedValue(true);
@@ -62,5 +63,17 @@ describe('ContactActions', () => {
 
     expect(getByRole('button', { name: '구인자에게 전화하기 010-1234-5678' })).toBeTruthy();
     expect(getByRole('button', { name: '구인자에게 문자하기 010-1234-5678' })).toBeTruthy();
+  });
+
+  it('counterpart 로 연락 상대를 바꾸고, children 은 같은 버튼 줄에 붙는다', () => {
+    const { getByRole, getByText } = render(
+      <ContactActions phone="01012345678" counterpart="지원자">
+        <Text>채팅 타일</Text>
+      </ContactActions>
+    );
+
+    expect(getByRole('button', { name: '지원자에게 전화하기 010-1234-5678' })).toBeTruthy();
+    expect(getByRole('button', { name: '지원자에게 문자하기 010-1234-5678' })).toBeTruthy();
+    expect(getByText('채팅 타일')).toBeTruthy();
   });
 });

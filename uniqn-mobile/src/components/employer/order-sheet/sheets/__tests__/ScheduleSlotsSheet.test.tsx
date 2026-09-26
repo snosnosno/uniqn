@@ -28,10 +28,11 @@ jest.mock('@/components/ui/SheetModal', () => {
 jest.mock('@/components/ui/TimeWheelPicker', () => {
   const { Pressable, Text } = require('react-native');
   return {
-    TimeWheelPicker: ({ visible, value, onConfirm, onConfirmTBA }: any) =>
+    TimeWheelPicker: ({ visible, value, maxHour, onConfirm, onConfirmTBA }: any) =>
       visible ? (
         <>
           <Text testID="mock-time-seed">{`${value?.hour}:${value?.minute}`}</Text>
+          <Text testID="mock-time-max-hour">{String(maxHour)}</Text>
           <Pressable testID="mock-time-confirm" onPress={() => onConfirm({ hour: 20, minute: 30 })}>
             <Text>MockPicker</Text>
           </Pressable>
@@ -69,6 +70,14 @@ describe('ScheduleSlotsSheet', () => {
       slots: [{ startTime: '20:30', roles: [{ role: 'dealer', count: 1 }] }],
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('시간 휠은 23시까지만 연다 — 24시 이상은 검증에서 떨어져 확인이 잠긴다', () => {
+    const { getByTestId } = render(
+      <ScheduleSlotsSheet visible value={[]} onConfirm={jest.fn()} onClose={jest.fn()} />
+    );
+    fireEvent.press(getByTestId('order-time-start-0'));
+    expect(getByTestId('mock-time-max-hour').props.children).toBe('23');
   });
 
   it('진입 시 첫 미완성 슬롯이 펼쳐진다 (역할 0개인 두 번째)', () => {

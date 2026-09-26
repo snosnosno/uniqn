@@ -208,20 +208,22 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               />
             )}
 
+            {/* 연락 수단(전화·문자·채팅)을 한 줄 타일로 — 채팅만 모양이 다른 별도 줄이던 것을 합쳤다.
+                채팅은 서버가 이 공고 지원자에게만 구인자가 먼저 걸 수 있게 한다(플래그 OFF 면 안 보임). */}
             <ContactInfo
               phone={userProfile?.phone || applicant.applicantPhone}
               message={applicant.message}
               preQuestionAnswers={applicant.preQuestionAnswers}
-            />
-
-            {/* 채팅 — 서버는 이 공고 지원자에게만 구인자가 먼저 걸 수 있게 한다(플래그 OFF 면 안 보임) */}
-            <ChatStartButton
-              postingId={applicant.jobPostingId}
-              seekerId={applicant.applicantId}
-              method="applicants"
-              label="지원자와 채팅"
-              className="mb-2 self-start"
-              testID={`applicant-chat-${applicant.applicantId}`}
+              extraAction={
+                <ChatStartButton
+                  postingId={applicant.jobPostingId}
+                  seekerId={applicant.applicantId}
+                  method="applicants"
+                  variant="tile"
+                  label="채팅하기"
+                  testID={`applicant-chat-${applicant.applicantId}`}
+                />
+              }
             />
 
             <StatusInfo

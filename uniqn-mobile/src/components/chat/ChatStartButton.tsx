@@ -9,11 +9,15 @@ import { Pressable, Text } from 'react-native';
 import { ChatbubbleEllipsesOutlineIcon } from '@/components/icons';
 import { useChatEntry, type OpenChatParams } from '@/hooks/chat';
 import { PRIMARY_COLORS } from '@/constants/colors';
+import { CONTACT_ACTION_CLASSNAME } from '@/components/schedule/ContactActions';
 
 interface ChatStartButtonProps extends OpenChatParams {
   label?: string;
-  /** compact = 아이콘+짧은 글자(행 안), full = 넓은 버튼 */
-  variant?: 'compact' | 'full';
+  /**
+   * compact = 아이콘+짧은 글자(행 안), full = 넓은 버튼,
+   * tile = 전화·문자 타일(ContactActions)과 같은 모양 — 그 줄에 나란히 넣을 때
+   */
+  variant?: 'compact' | 'full' | 'tile';
   testID?: string;
   /** 바깥 여백 — 플래그 OFF 면 버튼과 함께 사라지므로 빈 여백이 남지 않는다 */
   className?: string;
@@ -28,6 +32,23 @@ export const ChatStartButton = memo(function ChatStartButton({
 }: ChatStartButtonProps) {
   const { enabled, openChat } = useChatEntry();
   if (!enabled) return null;
+
+  if (variant === 'tile') {
+    return (
+      <Pressable
+        onPress={() => openChat(params)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        testID={testID}
+        className={`${CONTACT_ACTION_CLASSNAME} ${className}`}
+      >
+        <ChatbubbleEllipsesOutlineIcon size={16} color={PRIMARY_COLORS[500]} />
+        <Text className="ml-1.5 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
+          {label}
+        </Text>
+      </Pressable>
+    );
+  }
 
   const isFull = variant === 'full';
   return (

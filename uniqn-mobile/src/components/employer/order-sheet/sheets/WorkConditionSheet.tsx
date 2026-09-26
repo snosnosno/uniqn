@@ -105,6 +105,8 @@ export function WorkConditionSheet({
             title="출근 시간"
             value={toTimeValue(startTime)}
             minuteInterval={15}
+            // 스키마 START_TIME_RE 는 00~23시만 유효 — 휠 기본(47)을 두면 24:00 이 골라져 제출에서 떨어진다.
+            maxHour={23}
             onConfirm={(t) => {
               setStartTime(toStartTime(t));
               setPickerOpen(false);

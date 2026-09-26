@@ -208,6 +208,10 @@ export function ScheduleSlotsSheet({
             // 휠이 00:00 으로 열린다(구 TimeSlotsSheet 선재 버그). 빈 값도 기본값으로 떨어뜨린다.
             value={toTimeValue(slots[pickerIndex]?.startTime || DEFAULT_START)}
             minuteInterval={15}
+            // 휠 기본 maxHour(47)는 24~47시("다음날")를 허용하지만, 슬롯 검증(START_TIME_RE)은
+            // 00~23시만 유효로 본다 — 24:00 을 고르면 카드엔 "출근 24:00" 이 찍히고 확인만 영구
+            // 잠겼다. 새벽 근무는 "실제 출근 날짜 + 00~23시"로 적는 관례(D3)라 23 으로 막는다.
+            maxHour={23}
             onConfirm={(t) => {
               updateStart(pickerIndex, t);
               setPickerIndex(null);
