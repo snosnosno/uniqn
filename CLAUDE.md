@@ -20,7 +20,7 @@
 | 리스트 | FlashList (대형) / FlatList (소형) | 대형에 FlatList |
 | 이미지 | expo-image | RN `<Image>` |
 
-예외(eslint ignores 등록됨 — `uniqn-mobile/eslint.config.js:301-302`): `functions/**/*.ts`(Cloudflare Pages Functions) · `supabase/functions/**/*.ts`(Supabase Edge Functions, Deno)
+예외(`uniqn-mobile/eslint.config.js` ignores 등록됨): `functions/**/*.ts`(Cloudflare Pages Functions) · `supabase/functions/**/*.ts`(Supabase Edge Functions, Deno)
 
 ## 지식 위키
 프로젝트 지식 합성 레이어는 `wiki/`. 위키 작업(ingest/query/lint) 시 `wiki/AGENTS.md` 규약 준수. 운영: `/ingest` `/query` `/lint`.
@@ -75,9 +75,9 @@ OSS·MCP·패키지 도입 **전**→`/oss-vet` | 옵시디언 마크다운→`/
 RLS/권한/위험 변경 전→`/guard` 먼저
 세션 종료·마무리→`/session-end`(착지·최신화·정리·인계 **실행**) · 회고형 탐지는 `/session-wrap`
 
-⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있다 → **상수·enum·사용자 문구를 단일 소스로 바꿔도 `e2e/` 는 `npm run quality` 가 못 잡는다**(PR#353 실사고: 제목 상한 25→40 상향 때 E2E 단언만 25 로 남아 CI red). 상수/enum/문구 변경 시 `e2e/` 별도 Grep 필수.
+⚠️ **eslint 사각지대**: `eslint.config.js` ignores 에 `scripts/`·`e2e/`·`functions/`·`supabase/functions/` 가 있어, 상수·enum·사용자 문구를 바꿔도 `e2e/` 의 옛 단언은 `npm run quality` 가 못 잡고 CI 에서야 드러난다. 상수/enum/문구 변경 시 `e2e/` 를 별도로 Grep 한다.
 
-⚠️ **영향권 테스트를 파일명 패턴으로 고르면 뚫린다**: `jest <파일명패턴>` 은 **같은 문구를 단언하는 다른 이름의 테스트**를 매칭하지 못해 CI 에서야 빨개진다(2026-09-15 실사고: `jest notificationMessageNormalizer` 초록 → `notificationService.test.ts` red). **디렉터리로 돌려라**(`jest src/services/notifications`). 문구·상수 변경은 특히.
+⚠️ **영향권 테스트는 디렉터리로 돌린다**(`jest src/services/notifications`): `jest <파일명패턴>` 은 같은 문구를 단언하는 다른 이름의 테스트를 놓쳐 CI 에서야 빨개진다. 문구·상수 변경 때 특히 그렇다.
 
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**
