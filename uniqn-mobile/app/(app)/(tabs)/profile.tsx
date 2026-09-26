@@ -34,7 +34,7 @@ import { signOut } from '@/services/auth';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
-import { getRoleDisplayName } from '@/types/unified';
+import { USER_ROLE_LABELS } from '@/types/role';
 import { EmployerApplicationStatusBanner } from '@/components/employer-application';
 
 interface MenuItemProps {
@@ -163,7 +163,9 @@ export default function ProfileScreen() {
               <View className="mt-1 flex-row items-center gap-2">
                 <View className="rounded-sm bg-secondary-100 px-2 py-0.5 dark:bg-surface-overlay">
                   <Text className="text-xs font-sans-medium text-secondary-700 dark:text-secondary-300">
-                    {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
+                    {/* 앱 권한(UserRole) 라벨이다 — getRoleDisplayName 은 직무(StaffRole) 맵이라
+                        구직자('staff')를 '직원'으로 읽는다. 설정 > 프로필과 같은 '스태프'로 맞춘다. */}
+                    {profile?.role ? (USER_ROLE_LABELS[profile.role] ?? '미설정') : '미설정'}
                   </Text>
                 </View>
                 {bubbleScore && <BubbleScoreBadge score={bubbleScore.score} />}
@@ -206,7 +208,8 @@ export default function ProfileScreen() {
           <Divider spacing="sm" />
           <MenuItem
             icon={<UsersIcon size={20} color={SECONDARY_PALETTE[500]} />}
-            label="커뮤니티"
+            // 하단 탭 이름과 같게 쓴다 — 같은 화면이 '커뮤니티'·'소통' 두 이름으로 보였다.
+            label="소통"
             onPress={() => router.push('/(app)/(tabs)/board')}
           />
           <Divider spacing="sm" />

@@ -24,6 +24,7 @@ import {
   type EmployerTabSegmentValue,
 } from '@/features/employer/tab/EmployerTabSegment';
 import { TodayAttentionLine } from '@/features/employer/tab/TodayAttentionLine';
+import { EmployerReviewPrompt } from '@/features/employer/tab/EmployerReviewPrompt';
 import {
   WorkScheduleView,
   type WorkScheduleFocusRequest,
@@ -471,6 +472,8 @@ function EmployerView() {
               />
             )}
             keyExtractor={(item) => item.id}
+            // 작성할 평가 안내 — 고정 영역이 아니라 목록 헤더라 스크롤과 함께 밀려난다(밀도 예산).
+            ListHeaderComponent={EmployerReviewPrompt}
             estimatedItemSize={200}
             refreshControl={
               <RefreshControl

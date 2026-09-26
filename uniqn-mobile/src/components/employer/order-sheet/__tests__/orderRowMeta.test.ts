@@ -159,7 +159,7 @@ describe('getRowState (그룹 스코프 — S1)', () => {
     };
     const s = getRowState(byRole, 'salary');
     expect(s.unset).toBe(false);
-    expect(s.value).toBe('딜러 20,000 · 플로어 30,000');
+    expect(s.value).toBe('딜러 시급 ₩20,000 · 플로어 시급 ₩30,000');
     // 그룹1(floor) 미커버면 unset
     const partial = { ...byRole, roleSalaries: [byRole.roleSalaries![0]!] };
     expect(getRowState(partial, 'salary').unset).toBe(true);
@@ -190,7 +190,7 @@ describe('getRowState (그룹 스코프 — S1)', () => {
         { role: 'serving', salary: { type: 'hourly', amount: 20000 } },
       ],
     };
-    expect(getRowState(byRole, 'salary').value).toBe('딜러 20,000 외 2개 역할');
+    expect(getRowState(byRole, 'salary').value).toBe('딜러 시급 ₩20,000 외 2개 역할');
   });
 });
 
