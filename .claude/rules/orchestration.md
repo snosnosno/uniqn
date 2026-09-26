@@ -10,7 +10,7 @@ paths:
 ## 세션 시작 프로토콜
 1. 구현 작업 전 `git status` — 내가 만들지 않은 미커밋 변경이 있으면 새 워크트리+브랜치로 격리 (전역 git-workflow 규칙)
 2. 옵시디언 색인(SessionStart 훅이 자동 주입)은 지도로만 사용 — 관련 노트만 on-demand Read, 전체 로딩 금지
-3. 작업 유형에 맞는 스킬 라우팅 확인 — CLAUDE.md 라우팅 표 + `.claude/rules/skills-guide.md`. 1%라도 해당하면 Skill tool 먼저 호출
+3. 작업 유형에 맞는 스킬 라우팅 확인 — CLAUDE.md 라우팅 표 + `.claude/rules/skills-guide.md`. 작업에 맞는 스킬이 있으면 Skill tool 을 먼저 호출
 
 ## 에이전트 분담 (Agent tool) — 기본값
 | 상황 | 에이전트 | 비고 |
@@ -50,7 +50,7 @@ paths:
 
 ## 지식 4계층 (자동 운영)
 CLAUDE.md=불변 규칙 / memory MEMORY.md=라이브 함정·진행작업 / wiki/=영속 합성(`/ingest` `/query`) / 옵시디언 색인=발견.
-계약·졸업 규칙 전문: `wiki/AGENTS.md` §10. 세션 마무리 시 `/session-wrap`.
+계약·졸업 규칙 전문: `wiki/AGENTS.md` §10. 세션 종료는 `/session-end`, 회고형 탐지는 `/session-wrap`.
 
 ## 완료 게이트 (요약)
 완료 주장 전 이 메시지 안에서 실행한 증거(테스트/빌드 출력) 필수. "될 것"·"통과할 듯" 금지. 전문: 전역 verification 규칙.
