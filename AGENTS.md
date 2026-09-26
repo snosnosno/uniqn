@@ -1,6 +1,8 @@
 # 저장소 가이드라인 (AGENTS.md)
 
 > 모든 AI 에이전트/하네스 공용 규약. Claude Code 전용 규칙·스킬 라우팅은 `CLAUDE.md`, 세션 오케스트레이션(에이전트 분담·병렬 디스패치·훅)은 `.claude/rules/orchestration.md`가 단일 진실원이다.
+>
+> **언어(필수)**: 모든 응답·진행 보고·커밋·PR·문서·코드 주석은 **한글**. 고유 기술 용어(식별자·명령어·라이브러리명)만 원문 유지.
 
 ## 프로젝트 구조
 주 개발은 `uniqn-mobile/`. `app/`은 Expo Router 그룹: `(public)`, `(auth)`, `(app)`, `(employer)`, `(admin)`. UI는 `src/components/`, 훅은 `src/hooks/`, 비즈니스 로직은 `src/services/`, Supabase 접근은 `src/repositories/`, 에러는 `src/errors/`. Supabase Edge Functions는 `uniqn-mobile/supabase/functions/`, DB 마이그레이션은 `uniqn-mobile/supabase/migrations/`, 문서는 `docs/`, 지식 위키는 `wiki/`. 루트 `functions/`(Firebase Functions)는 레거시 — 신규 작업 금지.
