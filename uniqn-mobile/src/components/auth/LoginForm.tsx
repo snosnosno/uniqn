@@ -12,6 +12,7 @@ import { Link, router } from 'expo-router';
 import { Checkbox } from '@/components/ui';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { GUEST_HOME_ROUTE } from '@/shared/navigation/guestAccess';
 import { loginSchema, type LoginFormData } from '@/schemas';
 
 // ============================================================================
@@ -173,6 +174,22 @@ export function LoginForm({
             </Text>
           </Pressable>
         </Link>
+      </View>
+
+      {/* 둘러보기 — 게스트는 공고 목록을 로그인 없이 볼 수 있다(@/shared/navigation/guestAccess).
+          로그아웃 직후나 로그인 화면으로 바로 들어온 사람이 막히지 않게 출구를 둔다. */}
+      <View className="mt-1 items-center">
+        <Pressable
+          onPress={() => router.replace(GUEST_HOME_ROUTE)}
+          hitSlop={8}
+          className="min-h-[44px] justify-center px-2 active:opacity-70"
+          accessibilityRole="link"
+          testID="guest-browse-link"
+        >
+          <Text className="font-sans text-sm text-content-muted dark:text-secondary-400 underline">
+            로그인 없이 공고 둘러보기
+          </Text>
+        </Pressable>
       </View>
     </View>
   );

@@ -12,6 +12,7 @@ export type InstallPromptSource =
   | 'job-card'
   | 'job-detail-cta'
   | 'schedule-tab'
+  | 'board-tab'
   | 'employer-tab'
   | 'profile-tab';
 
@@ -26,6 +27,7 @@ interface InstallPromptCopy {
 
 const DEFAULT_LOGIN_REDIRECTS: Partial<Record<InstallPromptSource, string>> = {
   'schedule-tab': '/(app)/(tabs)/schedule',
+  'board-tab': '/(app)/(tabs)/board',
   'employer-tab': '/(app)/(tabs)/employer',
   'profile-tab': '/(app)/(tabs)/profile',
 };
@@ -36,6 +38,11 @@ function getInstallPromptCopy(source: InstallPromptSource): InstallPromptCopy {
       return {
         title: '앱에서 스케줄을 확인할 수 있어요',
         description: '내 스케줄 확인과 근무 관리는 UNIQN 앱에서 이용할 수 있습니다.',
+      };
+    case 'board-tab':
+      return {
+        title: '앱에서 소통할 수 있어요',
+        description: '공지 확인과 채팅은 UNIQN 앱에서 이용할 수 있습니다.',
       };
     case 'employer-tab':
       return {

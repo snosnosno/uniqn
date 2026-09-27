@@ -13,6 +13,8 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
 import { CHAT_UNREAD_CAP } from '@/constants/chat';
 import { getLayoutColor, PRIMARY_COLORS, SURFACE_COLORS } from '@/constants/colors';
+import { useGuestGate, useIsGuest } from '@/hooks/useGuestGate';
+import type { InstallPromptSource } from '@/hooks/useInstallPrompt';
 
 // `/(app)/(tabs)` 진입 시 기본 탭을 home-jobs로 해석.
 // URL '/' (Splash) 및 공개 '/jobs' 와의 충돌 회피 — 구인구직 탭 URL = /home-jobs
@@ -47,8 +49,29 @@ function renderTabBarIcon(Icon: IconComponent) {
   };
 }
 
+/**
+ * 게스트가 누를 수 없는 탭 — 이동을 막고 로그인(웹은 앱 설치)을 안내한다.
+ * 로그인 뒤에는 누르려던 탭으로 돌아간다.
+ */
+const GUEST_LOCKED_TABS: Record<string, { source: InstallPromptSource; redirect: string }> = {
+  schedule: { source: 'schedule-tab', redirect: '/(app)/(tabs)/schedule' },
+  board: { source: 'board-tab', redirect: '/(app)/(tabs)/board' },
+  employer: { source: 'employer-tab', redirect: '/(app)/(tabs)/employer' },
+  profile: { source: 'profile-tab', redirect: '/(app)/(tabs)/profile' },
+};
+
 export default function TabLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
+  const isGuest = useIsGuest();
+  const { promptGuest } = useGuestGate();
+  const guestTabListeners = (name: keyof typeof GUEST_LOCKED_TABS) => ({
+    tabPress: (event: { preventDefault: () => void }) => {
+      if (!isGuest) return;
+      event.preventDefault();
+      const { source, redirect } = GUEST_LOCKED_TABS[name];
+      promptGuest(source, redirect);
+    },
+  });
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   // 채팅 안 읽음 — 소통 탭 배지(결정 D-c). 플래그 OFF 면 조회도 안 한다
@@ -106,6 +129,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="schedule"
+        listeners={guestTabListeners('schedule')}
         options={{
           title: '내 스케줄',
           tabBarIcon: renderTabBarIcon(CalendarIcon),
@@ -113,6 +137,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="board"
+        listeners={guestTabListeners('board')}
         options={{
           title: '소통',
           tabBarIcon: renderTabBarIcon(MessageIcon),
@@ -121,6 +146,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="employer"
+        listeners={guestTabListeners('employer')}
         options={{
           title: '내 공고',
           tabBarIcon: renderTabBarIcon(BriefcaseIcon),
@@ -128,6 +154,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="profile"
+        listeners={guestTabListeners('profile')}
         options={{
           title: '프로필',
           tabBarIcon: renderTabBarIcon(UserIcon),

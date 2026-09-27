@@ -132,7 +132,8 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
       }),
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
-    enabled: status === 'authenticated',
+    // 인증 판정이 끝난 뒤에만 — 게스트(unauthenticated)도 공고 목록을 둘러보므로 포함한다.
+    enabled: status === 'authenticated' || status === 'unauthenticated',
     ...(options?.keepPreviousCounts ? { placeholderData: keepPreviousData } : {}),
   });
 

@@ -175,25 +175,53 @@ describe('useAuthGuard', () => {
     });
   });
 
-  it('redirects guest users away from the legacy public jobs alias route', async () => {
+  it('sends guest users on the legacy public jobs alias route to the browsable job list', async () => {
     mockPathname = '/jobs';
     mockSegments = ['jobs'];
 
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(auth)/login');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
     });
   });
 
-  it('redirects guest users away from the public jobs group route', async () => {
+  it('sends guest users on the public jobs group route to the browsable job list', async () => {
     mockPathname = '/jobs';
     mockSegments = ['(public)', 'jobs'];
 
     renderHook(() => useAuthGuard());
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/(auth)/login');
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
+    });
+  });
+
+  // 게스트 둘러보기 — 공고 목록 탭은 로그인 없이 머문다(역할 검사보다 먼저 빠져야 한다).
+  it.each([
+    [['(app)', '(tabs)', 'home-jobs'], '/home-jobs'],
+    [['(app)', '(tabs)'], '/'],
+  ])('lets guest users stay on the job list tab (%j)', async (segments, pathname) => {
+    mockPathname = pathname;
+    mockSegments = segments;
+
+    renderHook(() => useAuthGuard());
+
+    // 가드 effect 가 한 번 돌 시간을 준 뒤 아무 이동도 없어야 한다.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('still sends guest users to login from other tabs with the tab as redirect', async () => {
+    mockPathname = '/schedule';
+    mockSegments = ['(app)', '(tabs)', 'schedule'];
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith(
+        '/(auth)/login?redirect=%2F(app)%2F(tabs)%2Fschedule'
+      );
     });
   });
 

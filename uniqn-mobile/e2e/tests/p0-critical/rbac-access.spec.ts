@@ -156,16 +156,19 @@ test.describe('RBAC access control', () => {
     await context.close();
   });
 
-  test('unauthenticated user is redirected away from protected routes', async ({ browser }) => {
+  test('unauthenticated user browses the job list but is redirected away from protected routes', async ({
+    browser,
+  }) => {
     const context = await browser.newContext({ storageState: unauthenticatedState });
     const page = await context.newPage();
 
+    // 루트 → 게스트 둘러보기(공고 목록)
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForURL(/login|auth/, { timeout: 30_000 }).catch(() => {});
+    await page.waitForURL(/\/home-jobs(?:[/?#]|$)/, { timeout: 30_000 });
 
-    const pathname = new URL(page.url()).pathname;
-    expect(pathname).toMatch(/^\/$|\/jobs$|login|auth/);
+    // 목록 외 보호 라우트 → 로그인(돌아올 곳을 redirect 로 보존)
+    await page.goto('/schedule', { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/login\?redirect=/, { timeout: 30_000 });
 
     await context.close();
   });

@@ -15,11 +15,8 @@ import {
   isPasswordRecoveryEntry,
   shouldHandleNativeRecoveryUrl,
 } from '@/shared/auth/recoveryEntry';
-import {
-  AUTH_ENTRY_ROUTES,
-  AUTH_LOGIN_ROUTE,
-  getAuthenticatedEntryRoute,
-} from '@/shared/navigation/authRedirect';
+import { AUTH_ENTRY_ROUTES, getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
+import { GUEST_HOME_ROUTE } from '@/shared/navigation/guestAccess';
 import { selectIsLoading, useAuthStore } from '@/stores/authStore';
 import { selectStartupPhase, useAppStartupStore } from '@/stores/appStartupStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -99,7 +96,8 @@ export default function SplashScreen() {
     }
 
     const timer = setTimeout(() => {
-      router.replace(user ? authenticatedEntryRoute : AUTH_LOGIN_ROUTE);
+      // 게스트는 로그인 벽 대신 공고 목록부터 본다(둘러보기) — 상세·지원 시점에 로그인을 유도한다.
+      router.replace(user ? authenticatedEntryRoute : GUEST_HOME_ROUTE);
     }, SPLASH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
