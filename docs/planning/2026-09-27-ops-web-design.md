@@ -1,7 +1,7 @@
 ---
-title: ops 웹 분리 — ops.uniqn.app (Next.js · Cloudflare Workers) 설계
+title: ops 웹 분리 — ops.uniqn.app (Vite SPA · Cloudflare 정적 호스팅) 설계
 date: 2026-09-27
-status: 승인 대기 (opus 설계 리뷰 1회 반영 · 호스팅 Cloudflare 확정)
+status: 승인 대기 (opus 설계 리뷰 1회 반영 · Cloudflare 무료 · Vite 확정 · 디자인 단계 추가)
 owner: snosnosno
 related:
   - wiki/architecture/ops-engine.md
@@ -12,11 +12,11 @@ related:
   - uniqn-mobile/src/shared/navigation/authRedirect.ts
 ---
 
-# ops 웹 분리 — `ops.uniqn.app` 설계
+# ops 웹 분리 — `ops.uniqn.app` 설계 (Vite)
 
-> **한 줄 요약**: 대회 운영(ops)을 **웹 전용 Next.js 앱**으로 따로 만들어 `ops.uniqn.app` 에서 연다.
+> **한 줄 요약**: 대회 운영(ops)을 **웹 전용 Vite + React SPA**로 따로 만들어 `ops.uniqn.app` 에서 연다.
 > **DB·RPC·계정은 UNIQN 과 같은 Supabase 를 그대로 쓴다** — 서버 재작성 0, 새 RPC 0 이 목표.
-> 공개뷰(전광판·플레이어뷰)도 포함하고, 호스팅은 **Cloudflare Workers(OpenNext)**, 가입 절차는 UNIQN 과 동일(UNIQN 에서 가입). 개발·프리뷰 DB 는 **로컬 Supabase**.
+> 공개뷰(전광판·플레이어뷰)도 포함하고, 호스팅은 **Cloudflare Workers 정적 자산(무료·무제한)**, 가입 절차는 UNIQN 과 동일(UNIQN 에서 가입). 개발·프리뷰 DB 는 **로컬 Supabase**.
 
 ## 0. 확정된 결정 (2026-09-27 사용자)
 
@@ -24,11 +24,12 @@ related:
 |---|---|---|
 | D1 | 분리 방식 | 별도 입구 `ops.uniqn.app`, DB·서버·계정 공유 |
 | D2 | 플랫폼 | **웹 전용**, 모바일 반응형 |
-| D3 | 스택 | Next.js(App Router) + React + TypeScript |
+| D3 | 스택 | **Vite + React + React Router + TypeScript** (Next.js 에서 변경 — 로그인 후 실시간 화면이라 SSR·SEO 이득이 없고, 정적 SPA 는 무료 호스팅 가능) |
 | D4 | 공개뷰 | 전광판(`/monitor/:token`)·플레이어뷰(`/live/:view_token`) **포함** |
-| D5 | 호스팅 | **Cloudflare Workers + `@opennextjs/cloudflare`** (Vercel 에서 변경 — Hobby 플랜 비상업 전용 약관, 기존 CF 인프라 재사용) |
+| D5 | 호스팅 | **Cloudflare Workers 정적 자산 + SPA fallback, 무료 플랜** (Vercel → CF: Hobby 비상업 약관 / 서버 코드 0 이라 CPU 한도·요청 과금 무관) |
 | D6 | 가입 | UNIQN 과 **같은 절차**(이메일 가입 + PortOne 본인인증 + 프로필) |
 | D7 | 개발·프리뷰 DB | **로컬 Supabase**(`supabase start`) — 원격 프리뷰 배포는 두지 않는다(§8) |
+| D8 | 디자인 | 코드 전 **디자인 단계 D1~D4**(§6.1) — 시안 승인 전 화면 구현 금지 |
 
 ## 1. 현황 실측 (2026-09-27, master `76bfa84b7`)
 
@@ -74,7 +75,7 @@ related:
  uniqn.app      │ Expo 웹 (Cloudflare Pages) │──┐
  (앱/웹)         └───────────────────────────┘  │   같은 Supabase 프로젝트
                 ┌───────────────────────────┐  ├──▶ Auth · Postgres(RLS) · ops_* RPC · Realtime
- ops.uniqn.app  │ Next.js (CF Workers)       │──┘
+ ops.uniqn.app  │ Vite SPA (CF 정적 자산)     │──┘
                 └───────────────────────────┘
         ops-web/src/core  ◀── 동기화 스크립트 ── uniqn-mobile/src (정본)
 ```
@@ -84,22 +85,19 @@ related:
 ```
 T-HOLDEM/
 ├─ uniqn-mobile/           # 기존 — 이번 작업으로 바뀌는 곳은 §7 링크 생성·_redirects 뿐
-├─ ops-web/                # 신규 Next.js 앱 (OpenNext → Cloudflare Workers, wrangler 설정 포함)
-│  ├─ app/
-│  │  ├─ (auth)/login/            # 로그인·비밀번호 찾기
-│  │  ├─ (console)/tournaments/   # 목록 · new · [id]/(탭별 하위 라우트)
-│  │  ├─ monitor/[token]/         # 공개 전광판 (anon)
-│  │  ├─ live/[viewToken]/        # 공개 플레이어뷰 (anon, 로그인 시 claim)
-│  │  └─ layout.tsx
+├─ ops-web/                # 신규 Vite SPA (wrangler.jsonc: assets + SPA fallback)
+│  ├─ public/_headers      # 보안 헤더 (§8)
 │  ├─ src/
+│  │  ├─ routes/          # React Router — /login · /reset-password · /tournaments · /tournaments/:id/:tab · /monitor/:token · /live/:viewToken
 │  │  ├─ core/            # ⚠️ 자동 생성 사본 — 직접 수정 금지 (§3.2)
-│  │  ├─ lib/supabase/{client,server,middleware}.ts   # @supabase/ssr
-│  │  ├─ lib/env.ts       # 환경변수 검증 + 프리뷰→prod 차단 가드 (§8)
+│  │  ├─ lib/supabase.ts  # supabase-js 브라우저 클라이언트
+│  │  ├─ lib/env.ts       # 환경변수 검증 (§8, 빌드 가드는 vite.config)
 │  │  ├─ repositories/    # ops_* RPC 호출 (SupabaseClient 주입형)
 │  │  ├─ hooks/           # TanStack Query + realtime 무효화
 │  │  ├─ components/      # shadcn/ui 기반
+│  │  ├─ design/          # 디자인 토큰(CSS 변수) · 테마 (§6.1 D1 산출물)
 │  │  └─ errors/          # P0001 → 한글 메시지 매핑 (mapOpsRpcError 이식)
-│  └─ middleware.ts       # 세션 갱신 + (console) 보호
+│  └─ vite.config.ts      # 빌드 시 환경 가드 (§8)
 └─ scripts/sync-ops-core.mjs   # 정본 → ops-web/src/core 복사 + import 경로 치환 + 해시 기록
 ```
 
@@ -118,7 +116,7 @@ T-HOLDEM/
 ## 4. 인증
 
 ### 4.1 로그인
-- `@supabase/ssr` **쿠키 세션**. `middleware.ts` 에서 매 요청 세션을 갱신하고 `(console)` 은 비로그인이면 `/login?redirect=<경로>` 로 보낸다.
+- supabase-js 기본 세션(브라우저 저장소, 자동 토큰 갱신) — uniqn.app 웹과 같은 방식. 콘솔 라우트는 **클라이언트 라우트 가드**가 비로그인이면 `/login?redirect=<경로>` 로 보낸다. 데이터 보호는 원래대로 RLS 가 한다(가드는 UX 용).
 - redirect 는 **내부 경로만** 허용(`/` 로 시작, `//`·`\` 금지 — 모바일 `normalizePostAuthRedirect` 와 같은 규칙, 테스트로 고정).
 - 비밀번호 찾기: Supabase `resetPasswordForEmail(redirectTo: https://ops.uniqn.app/reset-password)` — ops 웹에 재설정 화면 1개 둔다.
 
@@ -130,12 +128,12 @@ T-HOLDEM/
 
 ### 4.3 외부 콘솔 설정 (사람 작업)
 - Supabase Auth → Redirect URLs 에 `https://ops.uniqn.app/**` 추가(비밀번호 재설정 메일 링크용).
-- Cloudflare → Workers & Pages → ops-web Worker → Settings → Domains & Routes 에서 **Custom Domain `ops.uniqn.app`** 연결(같은 계정의 uniqn.app 존이라 DNS 레코드·인증서 자동 생성). Workers Paid 플랜(월 $5) 가입.
+- Cloudflare → Workers & Pages → ops-web Worker → Settings → Domains & Routes 에서 **Custom Domain `ops.uniqn.app`** 연결(같은 계정의 uniqn.app 존이라 DNS 레코드·인증서 자동 생성). **무료 플랜으로 충분**(정적 자산 요청은 무료·무제한, Worker 스크립트 없음).
 - ⚠️ Redirect URLs 는 **이메일 링크만** 제한한다. 비밀번호 로그인 자체는 어느 origin 에서든 된다 → 프리뷰 방어는 §8 의 환경 분리로 한다.
 
 ## 5. 데이터 계층
 
-- **읽기**: TanStack Query, 클라이언트 컴포넌트에서 조회(운영 화면은 실시간성이 핵심이라 SSR 이득이 작다). 서버 컴포넌트는 인증 확인·레이아웃에만.
+- **읽기**: TanStack Query, 브라우저가 Supabase 에 직접 조회(서버 계층 없음).
 - **쓰기**: 전부 기존 `ops_*` SECDEF RPC. 테이블 직접 DML 금지. actor 는 `p_actor_id = auth.uid()`.
 - **realtime**: 모바일과 같은 테이블 필터로 구독, 콜백은 `invalidateQueries` 만. 추가로 웹 전용 처리:
   - `CHANNEL_ERROR`·`TIMED_OUT`·재접속 시 해당 쿼리 전체 무효화.
@@ -147,7 +145,7 @@ T-HOLDEM/
 
 ## 6. UI · 반응형
 
-- **스택**: Tailwind CSS + shadcn/ui(Radix) · `next-themes`(다크모드 필수, 전광판은 항상 다크) · `lucide-react`. 대량 목록 표는 TanStack Table(가상화는 실측 후).
+- **스택**: Tailwind CSS + shadcn/ui(Radix) · 다크모드는 `class` 전략 + 시스템 설정 연동(필수, 전광판은 항상 다크) · `lucide-react` · 모션 `motion` · 토스트 `sonner` · 폰 바텀시트 `vaul`. 대량 목록 표는 TanStack Table(가상화는 실측 후).
 - **브레이크포인트**
 
 | 폭 | 레이아웃 |
@@ -157,6 +155,18 @@ T-HOLDEM/
 | ≥ 1024 (태블릿 가로·노트북) **1순위** | 좌측 탭 레일 + 본문 + 우측 상세 패널(2-pane), 클럭 스트립 상단 고정 |
 
 - 터치 타깃 최소 44px, 등록데스크 키보드 단축키, 포커스 링, `prefers-reduced-motion` 준수.
+
+### 6.1 디자인 단계 D1~D4 (D8 — 화면 구현 전 승인 게이트)
+
+| 단계 | 내용 | 산출물 | 도구 |
+|---|---|---|---|
+| **D1 디자인 시스템** | UNIQN 브랜드와 이어지는 색·타이포·간격·라운드·그림자·다크모드 토큰. 출발점 = 앱 토큰 `uniqn-mobile/src/constants/colors.ts` | `DESIGN.md` + 토큰(CSS 변수) + shadcn 컴포넌트 견본 페이지 | `/design-consultation`, tweakcn(shadcn 테마 시각 편집), `design.md` 포맷 |
+| **D2 레퍼런스** | 대회 운영·실시간 대시보드·포커 전광판·등록데스크 화면 레퍼런스 수집 | 무드보드 1장 | lazyweb MCP(1건씩 — 연속 호출 시 rate limit), `awesome-design-md` |
+| **D3 핵심 화면 시안** | ① 운영 콘솔(태블릿 가로, 1순위) ② 폰 콘솔 ③ 전광판(TV) ④ 플레이어뷰 — 화면별 복수안 비교 후 선택 | 시안 비교 보드 → 확정안 | `/design-shotgun`, `/design-html` |
+| **D4 인터랙션** | 시트·탭 전환, 클럭·탈락·좌석 이동 등 실시간 변화의 모션, 터치 피드백, reduced-motion | 모션 원칙 1쪽 | `/emil-design-eng`, `/apple-design`, `motion` |
+
+- 구현 후 검수: 슬라이스마다 `/design-review` 로 실제 화면을 확정안과 대조.
+- 외부 스킬·패키지 도입 전에는 `/oss-vet`(라이선스·유지보수·보안) 필수.
 
 ## 7. 공개뷰 URL 이전 (D4)
 
@@ -170,13 +180,13 @@ T-HOLDEM/
 ## 8. 보안 · 운영
 
 - **환경은 2개뿐 — local / production**(D7, 리뷰 C2):
-  - **local**: `next dev` 또는 `opennextjs-cloudflare preview` + **로컬 Supabase**(`supabase start`, `http://127.0.0.1:54321`). 레포의 마이그레이션·시드로 재현. 이것이 "프리뷰"다.
-  - **production**: master 머지 후 GitHub Actions 가 `wrangler deploy`. prod Supabase URL·anon 키는 **production Worker 에만** 설정.
-  - **원격 프리뷰 배포(브랜치별 URL)는 만들지 않는다** — 배포된 Worker 는 개발자 PC 의 로컬 Supabase 에 닿을 수 없고, prod 를 붙이면 실데이터 오염이 된다. 필요해지면 그때 Supabase 브랜치를 재검토.
-  - `src/lib/env.ts` 부팅 가드: 빌드 시 주입하는 `APP_ENV` 가 `production` 이 아닌데 `NEXT_PUBLIC_SUPABASE_URL` 이 prod 프로젝트(`ygfxukhktpqymahfrvbz`)면 **즉시 throw**. 반대로 `APP_ENV=production` 인데 localhost URL 이면 throw. 단위 테스트로 고정.
+  - **local**: `vite dev` / `vite preview` + **로컬 Supabase**(`supabase start`, `http://127.0.0.1:54321`). 레포의 마이그레이션·시드로 재현. 이것이 "프리뷰"다.
+  - **production**: master 머지 후 GitHub Actions 가 `vite build --mode production` → `wrangler deploy`. prod Supabase URL·anon 키는 **GitHub Actions 의 production 환경 시크릿에만** 둔다(정적 빌드라 값이 번들에 박힌다 — anon 키는 원래 공개값이라 무방).
+  - **원격 프리뷰 배포(브랜치별 URL)는 만들지 않는다** — 배포된 사이트는 개발자 PC 의 로컬 Supabase 에 닿을 수 없고, prod 를 붙이면 실데이터 오염이 된다. 필요해지면 그때 Supabase 브랜치를 재검토.
+  - **빌드 가드**(`vite.config.ts`): `mode !== 'production'` 인데 `VITE_SUPABASE_URL` 이 prod 프로젝트(`ygfxukhktpqymahfrvbz`)면 **빌드 실패**. 반대로 `production` 인데 localhost 면 빌드 실패. 판정 함수는 순수 함수로 빼서 단위 테스트로 고정.
 - service_role 키는 ops 웹에 두지 않는다. 필요한 변수 미설정 시 부팅 실패.
 - anon=2 계약·RLS 는 서버 쪽이라 불변. 새 RPC 가 생기면 anon REVOKE + 카탈로그 카운트 테스트 갱신 필수.
-- 보안 헤더: CSP(Supabase 도메인 허용), `X-Frame-Options: DENY`, HSTS. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
+- 보안 헤더(`public/_headers`): CSP(Supabase 도메인 허용), `X-Frame-Options: DENY`, HSTS. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
 - 사용자 입력은 동기화된 zod 스키마(xss refine 포함)로 검증 후 RPC 호출.
 - 로깅: `console.log` 금지. 에러 수집 도구는 W0 에서 모바일과 같은 조직 사용 여부 확인 후 결정.
 - 퍼널 계측은 기존 `trackOpsFunnel` 이벤트명 유지(🔑 `CHECK`↔`PersistedAnalyticsEvent`↔`CORE_FUNNEL_EVENTS` 1:1 규약을 건드리지 않는 범위).
@@ -186,9 +196,13 @@ T-HOLDEM/
 
 | 슬라이스 | 내용 | 완료 기준(검증) |
 |---|---|---|
-| **W0** 기반 | `ops-web/` Next 스캐폴드 + `@opennextjs/cloudflare`·`wrangler` 설정, Tailwind·shadcn, ESLint/Prettier/TS strict, Vitest, GitHub Actions(경로 필터 `ops-web/**`, master 머지 시 `wrangler deploy`), 로컬 Supabase 연결 스크립트, **`ops.uniqn.app` Custom Domain 연결(noindex, 로그인 필수)**, 환경 가드 | `build`·`lint`·`typecheck`·`test` 통과, OpenNext 빌드 → 로컬 `preview` 로 로컬 Supabase 조회 성공, 환경 가드 테스트(비-prod+prod URL → throw) 통과, `ops.uniqn.app` 200 |
+| **W0** 기반 | `ops-web/` Vite+React+TS strict 스캐폴드, React Router, Tailwind·shadcn 초기화, ESLint/Prettier, Vitest, `wrangler.jsonc`(assets + SPA fallback), `_headers`, GitHub Actions(경로 필터 `ops-web/**`, master 머지 시 deploy), 로컬 Supabase 연결 + ops 시드, **`ops.uniqn.app` Custom Domain 연결(noindex)**, 빌드 가드 | `build`·`lint`·`typecheck`·`test` 통과, 로컬 Supabase 조회 성공, 빌드 가드 레드-그린(비-prod+prod URL → 빌드 실패), `ops.uniqn.app/아무/경로` 새로고침 200(SPA fallback) |
+| **D1** 디자인 시스템 | §6.1 | 토큰·견본 페이지 승인 |
+| **D2** 레퍼런스 | §6.1 | 무드보드 승인 |
+| **D3** 핵심 화면 시안 | §6.1 | 화면 4종 확정안 승인 |
+| **D4** 인터랙션 | §6.1 | 모션 원칙 승인 — **여기까지 승인돼야 W3 이후 화면 구현 착수** |
 | **W1** 동기화 | `scripts/sync-ops-core.mjs` + `--check` CI, `core/` 생성, 동기화 사본 단위 테스트(모바일 테스트 일부 이식) | `--check` 통과 · 정본 1줄 바꾸면 `--check` 실패(레드-그린) |
-| **W2** 인증 | 로그인·로그아웃·비밀번호 찾기/재설정, middleware 보호, 진입 판정 + 미완성 안내 화면 | Playwright: 비로그인 → 로그인 → 원래 경로 복귀, `//evil`·`\` redirect 거부, 미완성 계정 → 안내 화면 |
+| **W2** 인증 | 로그인·로그아웃·비밀번호 찾기/재설정, 클라이언트 라우트 가드, 진입 판정 + 미완성 안내 화면 (D1 토큰 적용) | Playwright: 비로그인 → 로그인 → 원래 경로 복귀, `//evil`·`\` redirect 거부, 미완성 계정 → 안내 화면 |
 | **W3** 목록·생성 | 대회 목록(보관 포함)·생성·복제·공고 연결 + 기능 동등성 체크리스트(`docs/qa/ops-web-parity.md`) 작성 | 스테이징 DB 에서 생성 → 모바일 앱 목록에 같은 대회 표시 |
 | **W4** 콘솔 1 | 콘솔 셸(반응형 3단), 상태 탭, 클럭 스트립(offset 보정), 참가자(등록·리바이·애드온·탈락·재입장·칩) | 두 브라우저 realtime 반영, 탭 백그라운드 후 복귀 동기화, 1시간 방치 후 realtime 유지. 이후 슬라이스부터 375/768/1280 스크린샷(라이트·다크) 첨부 |
 | **W5** 콘솔 2 | 테이블/좌석(좌석표·이동·재배치·웨이팅), 블라인드/프리셋 | 좌석 이동 후 모바일 화면 동기화 |
@@ -210,8 +224,9 @@ T-HOLDEM/
 |---|---|---|
 | 정본·사본 드리프트 | 계산·검증 불일치 | `--check` CI 게이트, 사본 직접 수정 금지 헤더 |
 | 두 UI 동시 유지 기간의 동작 드리프트 | 운영자 혼란 | 동등성 체크리스트, 문구는 사본에서 공유 |
+| 디자인이 "AI 템플릿"처럼 보임 | 제품 인상 저하 | D1~D4 승인 게이트, shadcn 코드 소유로 끝까지 커스터마이즈, 슬라이스마다 `/design-review` |
 | 개발 중 prod 에 쓰기 | 실데이터 오염 | local/production 2환경 + 부팅 가드(§8), 원격 프리뷰 없음 |
-| OpenNext 미지원 Next 기능·Worker CPU/크기 한도 | 빌드·런타임 실패 | W0 에서 빈 앱으로 먼저 배포 실측, 미들웨어는 세션 갱신만(가볍게), Workers Paid |
+| SPA 첫 로딩 속도(특히 TV 전광판) | 첫 화면 지연 | 라우트별 코드 분할(공개뷰 번들 분리), 번들 크기 CI 체크 |
 | 원격 프리뷰가 없어 PR 리뷰 시 화면 확인이 로컬에서만 가능 | 리뷰 비용 | 슬라이스마다 Playwright 스크린샷 첨부(§9) |
 | 도메인별 로그인 분리 | 가입 후·claim 시 재로그인 | 안내 문구, claim 복귀 흐름, §10 SSO |
 | 1.0.6 함대가 옛 공개뷰 링크 생성 | 링크 깨짐 | `_redirects` 영구 유지 |
@@ -220,7 +235,7 @@ T-HOLDEM/
 
 ## 12. 착수 시 확인할 것 (미확인 항목)
 
-- Next.js·`@opennextjs/cloudflare`·`wrangler`·`@supabase/ssr`·shadcn/ui·Tailwind **최신 안정판 버전·호환 조합과 설치법**, Workers Paid 의 CPU·스크립트 크기 한도 — 문서 작성 시 문서 조회 도구(context7)가 연결되지 않아 미확인. W0 에서 공식 문서로 확인 후 고정.
+- Vite·React Router·`wrangler`(정적 자산 SPA fallback·`_headers` 지원)·shadcn/ui(Vite 설치법)·Tailwind **최신 안정판 버전·호환 조합과 설치법** — 문서 작성 시 문서 조회 도구(context7)가 연결되지 않아 미확인. W0 에서 공식 문서로 확인 후 고정.
 - 로컬 Supabase 에 ops 테스트 데이터 시드(대회·참가자·좌석) — 기존 `supabase/seed` 에 없으면 W0 에서 추가.
 - 운영자 클럭 서버시각 보정을 새 RPC 없이 할 수 있는지(§5).
 
@@ -228,3 +243,4 @@ T-HOLDEM/
 
 - 2026-09-27 opus 설계 리뷰 1회: CRITICAL 2(모듈 해석·프리뷰 prod 쓰기) · HIGH 3(가입 위임 규모·판정 4필드·슬라이스 순서) · MEDIUM 6 · LOW 3 — 전부 반영. C1·H1·H2·M1·`p_actor_id` 는 코드 대조로 사실 확인.
 - 2026-09-27 사용자 결정: 호스팅 Vercel → **Cloudflare**(Vercel Hobby 약관상 상업 사용 불가 확인), 프리뷰 DB = **로컬 Supabase** → 원격 프리뷰 배포 제거.
+- 2026-09-27 사용자 결정: 스택 Next.js → **Vite**(무료 호스팅, SSR 불필요), **디자인 단계 D1~D4 추가**.
