@@ -8,6 +8,8 @@
 홀덤펍·대회사 대상 단발 인력 매칭 앱 — Expo 55 / RN 0.83.10 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 타깃: 홀덤펍 사장(상시 단발 알바) + 대회사 운영팀(대회 D-7~D-day 집중 인력). 포커룸은 비타깃.
 
+**`ops-web/`** = 대회 운영 웹 `ops.uniqn.app`(Vite SPA · Cloudflare 정적 · 같은 Supabase). 별도 앱이라 위 모바일 규칙 대신 `ops-web/README.md` 를 따른다. **UI 작업 전 `ops-web/DESIGN.md`(피트월) 필독** · 설계 정본 `docs/planning/2026-09-27-ops-web-design.md` · 검증 `cd ops-web && npm run quality`.
+
 ## 핵심 규칙
 | 항목 | 필수 | 금지 |
 |------|------|------|

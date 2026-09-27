@@ -145,7 +145,8 @@ T-HOLDEM/
 
 ## 6. UI · 반응형
 
-- **스택**: Tailwind CSS + shadcn/ui(Radix) · 다크모드는 `class` 전략 + 시스템 설정 연동(필수, 전광판은 항상 다크) · `lucide-react` · 모션 `motion` · 토스트 `sonner` · 폰 바텀시트 `vaul`. 대량 목록 표는 TanStack Table(가상화는 실측 후).
+- **디자인 시스템 정본 = `ops-web/DESIGN.md`(피트월, D1 2026-09-28 확정)**. 이 절과 어긋나면 DESIGN.md 가 이긴다.
+- **스택**: Tailwind CSS + shadcn/ui(Radix, nova) · 다크 **기본**(`<html data-theme="dark">`) + 라이트는 사용자 선택(`src/lib/theme.ts`, next-themes 미사용) · `lucide-react` · 토스트 `sonner` · 글꼴 SUIT/Geist Mono/Big Shoulders **npm 셀프호스팅**. `motion`·`vaul`·TanStack Table 은 필요한 슬라이스에서 추가.
 - **브레이크포인트**
 
 | 폭 | 레이아웃 |
@@ -198,7 +199,8 @@ T-HOLDEM/
 | 슬라이스 | 내용 | 완료 기준(검증) |
 |---|---|---|
 | **W0** 기반 | `ops-web/` Vite+React+TS strict 스캐폴드, React Router, Tailwind, oxlint(Vite 템플릿 기본)/Prettier, Vitest, `wrangler.jsonc`(assets + SPA fallback), `_headers`, GitHub Actions(경로 필터 `ops-web/**`, master 머지 + 저장소 변수 `OPS_WEB_DEPLOY_ENABLED=true` 일 때만 deploy), 로컬 Supabase 연결 확인 스크립트, 빌드 가드. ⤷ 구현 중 이동: **shadcn 초기화·Storybook → D1**(테마 토큰을 D1 에서 정하므로), **ops 시드 → W3**(목록 화면이 처음 필요로 함), **Custom Domain 은 첫 배포 때**(`wrangler.jsonc` routes — 사람의 Cloudflare 토큰·스위치 필요) | `build`·`lint`·`typecheck`·`test` 통과, 로컬 Supabase 조회 성공, 빌드 가드 레드-그린(비-prod+prod URL → 빌드 실패), wrangler 로컬 서버에서 딥링크 새로고침 200(SPA fallback)·보안 헤더 적용 |
-| **D1** 디자인 시스템 | §6.1 + shadcn 초기화(테마=D1 토큰)·Storybook | 토큰·견본 페이지 승인 |
+| **D1** 디자인 시스템 ✅ | §6.1 + shadcn 초기화(테마=D1 토큰)·Storybook. 경쟁사 3곳·웹 조사·독립 의견 → 시안 3종(A 피트월·B 브로드캐스트·C 스위스 레저) 실렌더 비교 → **A 채택**, 확인창 유지 | `DESIGN.md` · 견본 `/_design`(비운영 빌드) · Storybook 스토리 4종 |
+| ↳ D2~D4 | D1 에서 레퍼런스 조사(D2)·핵심 화면 시안(D3 일부: 콘솔·폰·전광판)·인터랙션 원칙(D4 일부)을 함께 소화. **남은 것**: 전광판·플레이어뷰·테이블/좌석표 화면 시안은 각 W 슬라이스 착수 시 `/design-shotgun` 으로 | 슬라이스별 시안 승인 |
 | **D2** 레퍼런스 | §6.1 | 무드보드 승인 |
 | **D3** 핵심 화면 시안 | §6.1 | 화면 4종 확정안 승인 |
 | **D4** 인터랙션 | §6.1 | 모션 원칙 승인 — **여기까지 승인돼야 W3 이후 화면 구현 착수** |

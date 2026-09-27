@@ -22,13 +22,13 @@ export function RouteErrorPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
       <h1 className="text-xl font-semibold">화면을 불러오지 못했어요</h1>
-      <p className="text-sm text-gray-600 dark:text-gray-300">
+      <p className="text-sm text-muted-foreground">
         {status ? `오류 코드 ${status}` : '잠시 후 다시 시도해 주세요.'}
       </p>
       <button
         type="button"
         onClick={() => window.location.reload()}
-        className="min-h-11 rounded-md border border-gray-300 px-4 text-sm dark:border-gray-700"
+        className="min-h-11 rounded-sm border px-4 text-sm font-semibold"
       >
         새로고침
       </button>

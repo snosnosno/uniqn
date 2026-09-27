@@ -19,6 +19,10 @@ export const router = createBrowserRouter([
       { path: 'tournaments/:id/:tab?', lazy: () => import('./placeholders/TournamentConsolePage') },
       { path: 'monitor/:token', lazy: () => import('./placeholders/MonitorPage') },
       { path: 'live/:viewToken', lazy: () => import('./placeholders/PlayerViewPage') },
+      // 디자인 견본(D1) — 운영 빌드에는 넣지 않는다.
+      ...(import.meta.env.MODE === 'production'
+        ? []
+        : [{ path: '_design', lazy: () => import('./design/DesignPage') }]),
       { path: '*', element: <NotFoundPage /> },
     ],
   },

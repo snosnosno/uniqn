@@ -8,11 +8,9 @@ interface PlaceholderProps {
 export function Placeholder({ title, slice, detail }: PlaceholderProps) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-2 px-4">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{slice} 에서 구현 예정</p>
+      <p className="label">{slice} 에서 구현 예정</p>
       <h1 className="text-2xl font-semibold">{title}</h1>
-      {detail ? (
-        <p className="break-all text-sm text-gray-600 dark:text-gray-300">{detail}</p>
-      ) : null}
+      {detail ? <p className="break-all text-sm text-muted-foreground">{detail}</p> : null}
     </main>
   );
 }
