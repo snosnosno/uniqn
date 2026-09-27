@@ -5,7 +5,7 @@ export function getApplicationStatusMessage(status: string | undefined): string 
 
   switch (status) {
     case STATUS.APPLICATION.APPLIED:
-      return '지원 완료 - 검토 중';
+      return '지원이 접수되어 검토 중입니다.';
     case STATUS.APPLICATION.CONFIRMED:
       return '지원이 확정되었습니다.';
     case STATUS.APPLICATION.REJECTED:
@@ -41,9 +41,9 @@ export function getCancelUnavailableReason(params: {
     return '취소 요청이 접수되어 검토 중이에요. 결과를 기다려 주세요.';
   }
 
-  // 장기(고정) 공고는 앱 취소 불가 — 사업주 직접 문의 필요
+  // 고정 공고는 앱 취소 불가 — 사업주 직접 문의 필요
   if (params.isFixed) {
-    return '장기 알바는 앱에서 취소할 수 없어요. 사업주에게 직접 문의해 주세요.';
+    return '고정 공고는 앱에서 취소할 수 없어요. 구인자에게 직접 문의해 주세요.';
   }
 
   return null;

@@ -90,7 +90,7 @@ function normalizeFixedAssignment(
 ): Assignment[] {
   if (assignments.length !== 1) {
     throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-      userMessage: '고정공고는 역할 1개만 선택해 지원할 수 있습니다.',
+      userMessage: '고정 공고는 역할 1개만 선택해 지원할 수 있어요.',
     });
   }
   const requestedRoleId = assignments[0]?.roleIds?.[0];
@@ -365,7 +365,8 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       if (jobData.schedule.kind === 'fixed') {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+          userMessage:
+            '고정 공고는 앱에서 취소 요청을 할 수 없어요. 구인자에게 직접 문의해 주세요.',
         });
       }
 

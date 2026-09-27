@@ -28,21 +28,24 @@ export interface NotificationPermissionScreenProps {
   isLoading?: boolean;
 }
 
+// 실제로 발송되는 알림만 약속한다 — 발송 경로가 없는 알림(예: 새 공고 알림)을 적으면
+// 허용한 사용자가 기다리다 앱을 불신하게 된다. 새 항목은 발송 경로가 생긴 뒤에 추가할 것.
+// 출근 리마인드 = 확정 근무 전날 20시 로컬 알림(services/work/shiftReminderScheduler).
 const BENEFITS = [
-  {
-    icon: BriefcaseIcon,
-    title: '새 공고 알림',
-    description: '관심 있는 공고가 올라오면 바로 확인할 수 있어요.',
-  },
   {
     icon: CheckCircleIcon,
     title: '지원 결과 알림',
-    description: '지원 승인과 취소 결과를 놓치지 않게 알려드려요.',
+    description: '지원이 확정되거나 거절되면 바로 알려드려요.',
   },
   {
     icon: ClockIcon,
     title: '출근 리마인드',
-    description: '근무 시작 전에 필요한 안내를 제때 받아볼 수 있어요.',
+    description: '확정된 근무 전날 저녁에 미리 알려드려요.',
+  },
+  {
+    icon: BriefcaseIcon,
+    title: '새 지원자 알림',
+    description: '내 공고에 지원자가 오면 바로 확인할 수 있어요.',
   },
   {
     icon: BanknotesIcon,

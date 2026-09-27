@@ -168,7 +168,7 @@ export const NotificationType = {
   EMPLOYER_APP_SUBMITTED: 'employer_app_submitted',
   /** 구인자 신청 승인 (신청자에게) */
   EMPLOYER_APP_APPROVED: 'employer_app_approved',
-  /** 구인자 신청 거부 (신청자에게) */
+  /** 구인자 신청 거절 (신청자에게) */
   EMPLOYER_APP_REJECTED: 'employer_app_rejected',
   /** 새 구인자 신청 접수 (관리자에게) */
   NEW_EMPLOYER_APPLICATION: 'new_employer_application',
@@ -592,7 +592,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '대회 승인 요청',
   [NotificationType.EMPLOYER_APP_SUBMITTED]: '구인자 신청 접수',
   [NotificationType.EMPLOYER_APP_APPROVED]: '구인자 신청 승인',
-  [NotificationType.EMPLOYER_APP_REJECTED]: '구인자 신청 거부',
+  [NotificationType.EMPLOYER_APP_REJECTED]: '구인자 신청 거절',
   [NotificationType.NEW_EMPLOYER_APPLICATION]: '새 구인자 신청',
   [NotificationType.ROLE_CHANGED]: '계정 권한 변경',
 

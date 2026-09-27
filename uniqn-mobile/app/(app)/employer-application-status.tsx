@@ -17,17 +17,13 @@ import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { loadFailed } from '@/constants/messages';
+import { getEmployerRejectionCategoryLabel } from '@/constants/employerApplication';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const CATEGORY_LABELS: Record<string, string> = {
-  duplicate: '중복 계정',
-  dummy: '더미/테스트 계정',
-  identity_mismatch: '본인인증 불일치',
-  other: '기타',
-};
+// 거절 사유 라벨은 DB 거절 알림 본문과 한 벌이다 — @/constants/employerApplication
 
 // ============================================================================
 // Helpers
@@ -63,7 +59,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
   const labelMap = {
     pending: '심사 중',
     approved: '승인됨',
-    rejected: '거부됨',
+    rejected: '거절됨',
   };
 
   return (
@@ -203,16 +199,16 @@ function RejectedScreen({
           </View>
 
           <Text className="mb-3 text-sm text-content-primary dark:text-off-white font-sans">
-            구인자 신청이 거부되었습니다.
+            구인자 신청이 거절되었습니다.
           </Text>
 
           {rejectionCategory ? (
             <View className="mb-2 flex-row">
               <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
-                거부 사유:{' '}
+                거절 사유:{' '}
               </Text>
               <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
-                {CATEGORY_LABELS[rejectionCategory] ?? rejectionCategory}
+                {getEmployerRejectionCategoryLabel(rejectionCategory)}
               </Text>
             </View>
           ) : null}

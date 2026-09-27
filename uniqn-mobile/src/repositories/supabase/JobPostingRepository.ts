@@ -1003,7 +1003,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         cur.filledPositions >= cur.totalPositions
       ) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '모든 역할 정원이 마감된 고정공고는 재오픈할 수 없습니다.',
+          userMessage: '모든 역할 정원이 마감된 고정 공고는 재오픈할 수 없습니다.',
         });
       }
 

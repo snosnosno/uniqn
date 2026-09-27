@@ -218,7 +218,7 @@ export function countAssignmentDates(assignments: Assignment[]): number {
 export function buildCanonicalFixedAssignment(jobData: JobPosting, roleId: string): Assignment {
   if (jobData.schedule.kind !== 'fixed') {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '고정공고 assignment를 생성할 수 없습니다.',
+      userMessage: '고정 공고 지원 정보를 만들지 못했어요. 다시 시도해 주세요.',
     });
   }
   return {

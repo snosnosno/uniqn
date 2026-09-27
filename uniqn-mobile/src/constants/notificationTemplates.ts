@@ -7,6 +7,7 @@
 
 import { NotificationType } from '@/types/notification';
 import { buildBoardNoticePostId } from '@/shared/board/boardIds';
+import { getEmployerRejectionCategoryLabel } from '@/constants/employerApplication';
 
 // ============================================================================
 // Types
@@ -401,9 +402,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
 
   [NotificationType.EMPLOYER_APP_REJECTED]: {
-    title: '구인자 신청 거부',
+    // 문구 정본 = DB 트리거 notify_employer_application_change (마이그 20260927100000)
+    title: '구인자 신청 거절',
     body: (d) =>
-      `구인자 신청이 거부되었습니다.${d.rejectionCategory ? ` 사유: ${d.rejectionCategory}` : ''}`,
+      `구인자 신청이 거절되었습니다.${
+        d.rejectionCategory
+          ? ` 사유: ${getEmployerRejectionCategoryLabel(d.rejectionCategory)}`
+          : ''
+      }`,
     link: () => '/employer-application-status',
     icon: '❌',
   },

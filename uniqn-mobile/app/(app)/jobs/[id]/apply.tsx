@@ -67,7 +67,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
           variant="outline"
           fullWidth
         >
-          {isFixed ? '프로필 보기' : '내 스케줄 보기'}
+          {isFixed ? '프로필 보기' : '내 스케줄 확인'}
         </Button>
       </View>
     </View>
@@ -322,7 +322,7 @@ export default function ApplyScreen() {
               공고 상세로 돌아가기
             </Button>
             <Button onPress={handleViewPostSubmitTarget} variant="outline" fullWidth>
-              {isFixed ? '프로필 보기' : '내 스케줄 보기'}
+              {isFixed ? '프로필 보기' : '내 스케줄 확인'}
             </Button>
           </View>
         </View>

@@ -135,7 +135,7 @@ describe('executeReviewCancellation — fixed 공고 취소 요청 검토 (SP2 T
     mockLoadAndVerifyJobPostingAccess.mockResolvedValue(fakeFixedJobPosting);
   });
 
-  it('fixed 공고 취소 요청 승인 시 "고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다." BusinessError를 던지지 않음', async () => {
+  it('fixed 공고 취소 요청 승인 시 "고정 공고는 앱에서 취소 요청을 할 수 없어요" BusinessError를 던지지 않음', async () => {
     mockRpc.mockResolvedValue({
       data: { success: true, idempotent: false, deleted_work_log_count: 1 },
       error: null,

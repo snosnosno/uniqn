@@ -452,7 +452,7 @@ export default function ScheduleScreen() {
         if (application.recruitmentType === 'fixed') {
           addToast({
             type: 'warning',
-            message: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+            message: '고정 공고는 앱에서 취소 요청을 할 수 없어요. 구인자에게 직접 문의해 주세요.',
           });
           return;
         }
