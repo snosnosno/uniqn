@@ -1,0 +1,14 @@
+{
+  // ops.uniqn.app — Worker 스크립트 없는 정적 자산 전용(무료 플랜, 설계 D5).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uniqn-ops-web",
+  "compatibility_date": "2026-09-27",
+  "assets": {
+    "directory": "./dist",
+    // SPA: 없는 경로는 index.html 로 — /tournaments/:id 등 딥링크 새로고침 대응
+    "not_found_handling": "single-page-application",
+  },
+  // 배포 시 같은 계정의 uniqn.app 존에 레코드·인증서를 자동 생성한다(수동 CNAME 불필요)
+  "routes": [{ "pattern": "ops.uniqn.app", "custom_domain": true }],
+  "workers_dev": false,
+}

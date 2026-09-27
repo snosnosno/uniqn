@@ -1,0 +1,93 @@
+name: ops-web
+
+# ops.uniqn.app (Vite SPA) — 설계 docs/planning/2026-09-27-ops-web-design.md §8·§9.
+# ⚠️ 이 워크플로는 branch protection 의 required check 가 **아니다** → pull_request 에도
+#    paths 필터를 둔다(ci.yml 의 "required check + paths = 영원히 pending" 함정과 무관).
+#    required 로 승격할 때는 ci.yml 처럼 changes 잡 + 애그리게이터 구조로 바꿔야 한다.
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'ops-web/**'
+      - '.github/workflows/ops-web.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'ops-web/**'
+      - '.github/workflows/ops-web.yml'
+
+defaults:
+  run:
+    working-directory: ops-web
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: ops-web quality
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ops-web-quality-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ops-web/package-lock.json
+
+      - run: npm ci
+      - run: npm run quality
+
+      # CI 에는 로컬 Supabase 가 없다 — 가짜 로컬 URL 로 번들이 만들어지는지만 본다.
+      - name: Build (development mode)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: ci-placeholder
+
+  deploy:
+    name: ops-web deploy (Cloudflare)
+    needs: quality
+    # 저장소 변수 OPS_WEB_DEPLOY_ENABLED=true 를 켜기 전에는 배포하지 않는다 —
+    # 시크릿 준비 전 머지로 master 가 빨개지거나, 의도치 않게 도메인이 열리는 것을 막는다.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/master' &&
+      vars.OPS_WEB_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    # 진행 중인 배포는 취소하지 않는다 — 반쯤 올라간 상태로 끊기지 않게 순서대로 줄 세운다.
+    concurrency:
+      group: ops-web-deploy
+      cancel-in-progress: false
+    # GitHub → Settings → Environments → `ops-web-production` 에 시크릿 4종을 둔다(설계 §8).
+    environment: ops-web-production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ops-web/package-lock.json
+
+      - run: npm ci
+
+      # 빌드 가드(config/envGuard.ts)가 production 인데 localhost 면 여기서 실패한다.
+      - name: Build (production)
+        run: npm run build:prod
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

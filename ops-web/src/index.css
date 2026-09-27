@@ -1,0 +1,188 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist-mono';
+@import '@fontsource-variable/big-shoulders-display';
+
+/*
+ * 피트월 디자인 토큰 — 정본은 ops-web/DESIGN.md. 값을 바꾸면 DESIGN.md 결정 기록도 갱신한다.
+ *
+ * 테마: 다크가 기본(index.html 의 <html data-theme="dark">). 라이트는 사용자가 고를 때만
+ * main.tsx 가 data-theme="light" 로 바꾼다. 인라인 스크립트가 없어 CSP(script-src 'self')와 충돌하지 않는다.
+ */
+
+/* SUIT 패키지 CSS 에는 font-display 가 없어 직접 선언한다(늦게 와도 글자가 먼저 보이게). */
+@font-face {
+  font-family: 'SUIT Variable';
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('@sun-typeface/suit/fonts/variable/woff2/SUIT-Variable.woff2') format('woff2-variations');
+}
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0a0c0b;
+  --foreground: #ecefe6;
+  --card: #131614;
+  --card-foreground: #ecefe6;
+  --popover: #131614;
+  --popover-foreground: #ecefe6;
+  --primary: #c6f432;
+  --primary-foreground: #0a0c0b;
+  --secondary: #1a1e1b;
+  --secondary-foreground: #ecefe6;
+  --muted: #1a1e1b;
+  --muted-foreground: #858c82;
+  --accent: #1a1e1b;
+  --accent-foreground: #ecefe6;
+  --destructive: #ff5147;
+  /* 빨강 위 글자: 다크는 짙은 글자(6.09:1) — 흰 글자는 3.22 로 AA 미달(D1 리뷰 H2) */
+  --destructive-foreground: #0a0c0b;
+  --border: #252925;
+  --input: #252925;
+  --ring: #c6f432;
+  /* 피트월 전용 */
+  --accent-text: #c6f432;
+  --prize: #d4af37;
+  --success: #2bd9a0;
+  --warning: #ffb020;
+  --flash: rgb(198 244 50 / 0.18);
+  --radius: 2px;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --background: #f3f4ee;
+  --foreground: #0f110f;
+  --card: #ffffff;
+  --card-foreground: #0f110f;
+  --popover: #ffffff;
+  --popover-foreground: #0f110f;
+  --primary: #c6f432;
+  --primary-foreground: #0f110f;
+  --secondary: #f8f9f4;
+  --secondary-foreground: #0f110f;
+  --muted: #f8f9f4;
+  --muted-foreground: #5b6159;
+  --accent: #f8f9f4;
+  --accent-foreground: #0f110f;
+  --destructive: #d92d20;
+  --destructive-foreground: #ffffff;
+  --border: #d6d9cf;
+  --input: #d6d9cf;
+  --ring: #3d6300;
+  --accent-text: #3d6300;
+  --prize: #8a7228;
+  --success: #0b7a56;
+  --warning: #9a5b00;
+  --flash: rgb(198 244 50 / 0.35);
+}
+
+@theme inline {
+  --font-sans: 'SUIT Variable', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --font-clock: 'Big Shoulders Display Variable', 'Geist Mono Variable', sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-accent-text: var(--accent-text);
+  --color-prize: var(--prize);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-flash: var(--flash);
+
+  /* 모서리는 2px 하나(DESIGN.md). 알약형은 rounded-full 로 상태 칩에만. */
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
+
+  /* 그림자 없음 — 깊이는 1px 괘선과 명도 차이로만 */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@layer base {
+  * {
+    /* 포커스 표시는 불투명 링 — 50% 는 라이트에서 2.23:1 로 미달(D1 리뷰) */
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* 숫자는 항상 자릿수 고정 */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .clock {
+    font-family: var(--font-clock);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 0.95;
+  }
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+  }
+}
+
+/* 바뀐 칸: 라임 틴트 80ms 켰다가 500ms 페이드(DESIGN.md 모션) */
+@keyframes flash {
+  0%,
+  14% {
+    background-color: var(--flash);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* 동작 줄이기: 움직임은 끄되 색 변화(.motion-color, 바뀐 칸 틴트)는 남긴다(DESIGN.md) */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.motion-color),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
