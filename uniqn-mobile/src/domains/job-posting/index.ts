@@ -55,9 +55,4 @@ export {
   selectPostingCapacityGaps,
   toCapacityGapByDate,
 } from './capacityGap';
-export {
-  buildExtendedFixedConfig,
-  describeFixedExpiry,
-  FIXED_EXPIRY_SOON_HOURS,
-  type FixedExpiryInfo,
-} from './fixedExpiry';
+export { describeFixedExpiry, FIXED_EXPIRY_SOON_HOURS, type FixedExpiryInfo } from './fixedExpiry';

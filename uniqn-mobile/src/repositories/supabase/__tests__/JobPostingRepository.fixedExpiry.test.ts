@@ -1,45 +1,40 @@
 // src/repositories/supabase/__tests__/JobPostingRepository.fixedExpiry.test.ts
+/**
+ * 고정 공고 게시 기간 — 재오픈·연장은 서버 RPC `renew_fixed_posting` 으로 만료를 다시 잡는다.
+ *
+ * 상태만 active 로 돌리면(옛 방식) BEFORE UPDATE 트리거 tr_fixed_posting_expired 가 옛 expiresAt 을
+ * 보고 같은 UPDATE 에서 곧바로 closed 로 되돌린다. 앱이 기기 시각으로 계산해도 시계가 느리면 같다.
+ * 그리고 RPC 결과가 비거나(권한 없음) 게시 상태가 아니면(트리거가 닫음) 성공으로 넘기지 않는다.
+ */
 import { SupabaseJobPostingRepository } from '../JobPostingRepository';
 import { ERROR_CODES } from '@/errors/AppError';
 
 const mockUpdate = jest.fn();
 const mockEq = jest.fn();
-const mockFrom = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]) => {
-      mockFrom(...args);
-      return {
-        update: (...a: unknown[]) => {
-          mockUpdate(...a);
-          return {
-            eq: (...b: unknown[]) => {
-              mockEq(...b);
-              return Promise.resolve({ error: null });
-            },
-          };
-        },
-        select: jest.fn().mockReturnThis(),
-        insert: jest.fn().mockReturnThis(),
-        rpc: jest.fn(),
-        channel: jest.fn(),
-      };
-    },
-    rpc: jest.fn(),
+    from: () => ({
+      update: (...a: unknown[]) => {
+        mockUpdate(...a);
+        return {
+          eq: (...b: unknown[]) => {
+            mockEq(...b);
+            return Promise.resolve({ error: null });
+          },
+        };
+      },
+    }),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     channel: jest.fn(),
   },
 }));
 
-// load*Access 는 supabase/parse 의존이라 stub 로 상태만 주입한다.
 const mockLoadMutate = jest.fn();
-const mockLoadDelete = jest.fn();
-const mockLoadRoleKeys = jest.fn();
 jest.mock('../JobPostingRepositoryHelpers', () => ({
   ...jest.requireActual('../JobPostingRepositoryHelpers'),
   loadAndVerifyMutateAccess: (...args: unknown[]) => mockLoadMutate(...args),
-  loadAndVerifyDeleteAccess: (...args: unknown[]) => mockLoadDelete(...args),
-  loadActiveWorkLogRoleKeys: (...args: unknown[]) => mockLoadRoleKeys(...args),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -54,63 +49,40 @@ jest.mock('@sentry/react-native', () => ({
 const OWNER = '11111111-1111-4111-8111-111111111111';
 const POSTING = '55555555-5555-4555-8555-555555555555';
 
-beforeEach(() => {
-  mockFrom.mockClear();
-  mockUpdate.mockClear();
-  mockEq.mockClear();
-  mockLoadMutate.mockReset();
-  mockLoadDelete.mockReset();
-  mockLoadRoleKeys.mockReset();
-  mockLoadRoleKeys.mockResolvedValue(new Set<string>());
-});
-
-/**
- * 고정 공고 게시 기간 — 재오픈·연장은 만료 시각을 "지금부터 7일"로 다시 잡아야 한다.
- * 상태만 active 로 돌리면 만료 크론(매시 11분)이 과거 expiresAt 을 보고 1시간 안에 다시 닫는다.
- */
-const NOW = new Date('2026-09-27T05:00:00.000Z');
-const SEVEN_DAYS_LATER = '2026-10-04T05:00:00.000Z';
-
 const fixedPosting = (status: string) => ({
   ownerId: OWNER,
   status,
   schedule: { kind: 'fixed' },
   totalPositions: 2,
   filledPositions: 0,
-  fixedConfig: {
-    durationDays: 7,
-    createdAt: '2026-09-01T00:00:00.000Z',
-    expiresAt: '2026-09-08T00:00:00.000Z',
-  },
 });
 
-describe('고정 공고 게시 기간 — 재오픈·연장', () => {
+const rpcReturns = (rows: unknown[]) => mockRpc.mockResolvedValue({ data: rows, error: null });
+
+beforeEach(() => {
+  mockUpdate.mockClear();
+  mockEq.mockClear();
+  mockRpc.mockReset();
+  mockLoadMutate.mockReset();
+});
+
+describe('고정 공고 게시 기간 — 재오픈·연장은 서버 RPC', () => {
   const repo = new SupabaseJobPostingRepository();
 
-  beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(NOW);
-  });
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('재오픈: 고정 공고는 상태와 함께 만료 시각을 지금부터 7일로 다시 잡는다', async () => {
+  it('재오픈: 고정 공고는 테이블을 직접 고치지 않고 RPC(p_reopen=true)로 다시 연다', async () => {
     mockLoadMutate.mockResolvedValue(fixedPosting('closed'));
+    rpcReturns([{ result_status: 'active', result_expires_at: '2026-10-04T05:00:00.000Z' }]);
 
     await repo.reopenWithTransaction(POSTING, OWNER);
 
-    expect(mockUpdate).toHaveBeenCalledTimes(1);
-    const payload = mockUpdate.mock.calls[0][0];
-    expect(payload.status).toBe('active');
-    expect(payload.fixed_config).toEqual({
-      durationDays: 7,
-      createdAt: '2026-09-01T00:00:00.000Z',
-      expiresAt: SEVEN_DAYS_LATER,
+    expect(mockRpc).toHaveBeenCalledWith('renew_fixed_posting', {
+      p_job_posting_id: POSTING,
+      p_reopen: true,
     });
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('재오픈: 고정 공고가 아니면 fixed_config 를 건드리지 않는다', async () => {
+  it('재오픈: 고정 공고가 아니면 종전대로 상태만 UPDATE 한다(RPC 없음)', async () => {
     mockLoadMutate.mockResolvedValue({
       ownerId: OWNER,
       status: 'closed',
@@ -119,24 +91,48 @@ describe('고정 공고 게시 기간 — 재오픈·연장', () => {
 
     await repo.reopenWithTransaction(POSTING, OWNER);
 
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockUpdate.mock.calls[0][0]).toMatchObject({ status: 'active' });
     expect(mockUpdate.mock.calls[0][0]).not.toHaveProperty('fixed_config');
   });
 
+  it('재오픈: RPC 뒤 공고가 닫힌 채면 성공으로 넘기지 않는다', async () => {
+    mockLoadMutate.mockResolvedValue(fixedPosting('closed'));
+    rpcReturns([{ result_status: 'closed', result_expires_at: '2026-09-01T00:00:00.000Z' }]);
+
+    await expect(repo.reopenWithTransaction(POSTING, OWNER)).rejects.toMatchObject({
+      code: ERROR_CODES.BUSINESS_INVALID_STATE,
+      userMessage: '공고가 게시 상태로 남지 않았어요. 새로고침 후 다시 시도해 주세요.',
+    });
+  });
+
   it.each(['active', 'capacity_full'])(
-    '연장: %s 고정 공고는 만료만 7일 뒤로(상태 불변)',
+    '연장: %s 고정 공고는 RPC(p_reopen=false)',
     async (status) => {
       mockLoadMutate.mockResolvedValue(fixedPosting(status));
+      rpcReturns([{ result_status: status, result_expires_at: '2026-10-04T05:00:00.000Z' }]);
 
       await repo.extendFixedPostingWithTransaction(POSTING, OWNER);
 
-      const payload = mockUpdate.mock.calls[0][0];
-      expect(payload).not.toHaveProperty('status');
-      expect(payload.fixed_config.expiresAt).toBe(SEVEN_DAYS_LATER);
-      expect(mockEq).toHaveBeenCalledWith('id', POSTING);
+      expect(mockRpc).toHaveBeenCalledWith('renew_fixed_posting', {
+        p_job_posting_id: POSTING,
+        p_reopen: false,
+      });
+      expect(mockUpdate).not.toHaveBeenCalled();
     }
   );
 
-  it('연장: 고정 공고가 아니면 한글 userMessage 로 거절', async () => {
+  it('연장: RPC 가 0행이면(권한 없음·대상 아님) 실패로 알린다', async () => {
+    mockLoadMutate.mockResolvedValue(fixedPosting('active'));
+    rpcReturns([]);
+
+    await expect(repo.extendFixedPostingWithTransaction(POSTING, OWNER)).rejects.toMatchObject({
+      code: ERROR_CODES.BUSINESS_INVALID_STATE,
+      userMessage: '공고 게시 기간을 바꾸지 못했어요. 공고 상태를 확인하고 다시 시도해 주세요.',
+    });
+  });
+
+  it('연장: 고정 공고가 아니면 한글 userMessage 로 거절(RPC 없음)', async () => {
     mockLoadMutate.mockResolvedValue({
       ownerId: OWNER,
       status: 'active',
@@ -147,16 +143,16 @@ describe('고정 공고 게시 기간 — 재오픈·연장', () => {
       code: ERROR_CODES.BUSINESS_INVALID_STATE,
       userMessage: '고정 공고만 게시 기간을 연장할 수 있어요.',
     });
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('연장: 마감된 공고는 재오픈으로 안내하고 쓰지 않는다', async () => {
+  it('연장: 마감된 공고는 재오픈으로 안내하고 RPC 를 부르지 않는다', async () => {
     mockLoadMutate.mockResolvedValue(fixedPosting('closed'));
 
     await expect(repo.extendFixedPostingWithTransaction(POSTING, OWNER)).rejects.toMatchObject({
       code: ERROR_CODES.BUSINESS_INVALID_STATE,
       userMessage: '마감된 공고는 재오픈하면 7일 동안 다시 게시돼요.',
     });
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 });

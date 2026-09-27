@@ -160,12 +160,15 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
  *   없으므로 클라이언트에서 흡수한다.
  * - CHAT_MESSAGE: 목적지는 data.conversationId 의 방 하나뿐이다. link 와 매핑의 파라미터 수가
  *   같으면 link 가 이기므로, link 가 방이 아닌 곳(공고 등)을 가리켜도 방으로 가도록 매핑을 강제한다.
+ * - FIXED_POSTING_EXPIRED: 만료 트리거가 link 에 구직자 화면('/jobs/{id}')을 심는다. 사장은
+ *   재오픈하러 가야 하므로 관리 화면(매핑)으로 강제한다. 이미 발송된 link 는 고칠 수 없다.
  */
 const ROUTE_MAP_PRIORITY_TYPES: NotificationType[] = [
   NotificationType.REVIEW_REQUEST,
   NotificationType.REVIEW_REMINDER,
   NotificationType.ROLE_CHANGED,
   NotificationType.CHAT_MESSAGE,
+  NotificationType.FIXED_POSTING_EXPIRED,
 ];
 
 /** 라우트가 얼마나 구체적인지 — 파라미터 개수로 근사한다. */

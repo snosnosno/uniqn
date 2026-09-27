@@ -1113,7 +1113,8 @@ export default function JobPostingDetailScreen() {
           </View>
         ) : null}
 
-        {fixedExpiry && !fixedExpiry.isExpired && id ? (
+        {/* 만료가 지났어도 아직 게시 중이면(자동 마감 전 최대 약 1시간) 연장할 수 있게 그대로 낸다. */}
+        {fixedExpiry && id ? (
           <View className="px-4 pt-3">
             <FixedPostingExpiryCard
               expiry={fixedExpiry}

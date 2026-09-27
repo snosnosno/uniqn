@@ -268,6 +268,11 @@
 --       fn_chat_posting_owner_cleared(작성자 탈퇴 시 닉네임 제거).
 --     정책 106 불변. (chat_send_message 는 CREATE OR REPLACE 재정의라 0)
 --
+--   2026-09-27 고정 공고 게시 기간(마이그 20260927110000):
+--     함수 251 = 249 + 2 — fn_notify_fixed_postings_expiring(크론 notify-fixed-postings-expiring) ·
+--       renew_fixed_posting(서버 시각 연장·재오픈 RPC, SECURITY INVOKER).
+--     정책 106 불변. (20260927100000 notify_employer_application_change 는 CREATE OR REPLACE 라 0)
+--
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
 --   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
 --   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
@@ -288,7 +293,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=249
+-- PARITY_EXPECT_FUNCS=251
 -- PARITY_EXPECT_POLICIES=106
 -- ============================================================
 BEGIN;
@@ -308,8 +313,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  249,
-  'public function count (249 = 238 + 채팅 S4 6 + S5-b 1 + 09-26 QA 4, 2026-09-26 — 출처는 상단 장부 참조)');
+  251,
+  'public function count (251 = 238 + 채팅 S4 6 + S5-b 1 + 09-26 QA 4 + 09-27 고정공고 게시기간 2 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(

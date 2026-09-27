@@ -29,26 +29,27 @@ export function FixedPostingExpiryCard({
 }: FixedPostingExpiryCardProps) {
   const expiresLabel = format(expiry.expiresAt, 'M/d(EEE) HH:mm', { locale: ko });
   const remainingLabel = expiry.isSoon ? '오늘·내일 마감' : `${expiry.remainingDays}일 남음`;
+  const urgent = expiry.isSoon || expiry.isExpired;
+  const title = expiry.isExpired
+    ? '게시 기간이 지났어요 · 곧 자동 마감돼요'
+    : `게시 ${expiresLabel}까지 · ${remainingLabel}`;
 
   return (
     <Card
       variant="outlined"
       padding="md"
       className={
-        expiry.isSoon
+        urgent
           ? 'border-warning-500 bg-warning-50 dark:border-warning-500 dark:bg-warning-900/30'
           : undefined
       }
       testID="fixed-posting-expiry-card"
     >
       <View className="flex-row items-center">
-        <ClockIcon
-          size={18}
-          color={expiry.isSoon ? STATUS_COLORS.warning : SECONDARY_PALETTE[400]}
-        />
+        <ClockIcon size={18} color={urgent ? STATUS_COLORS.warning : SECONDARY_PALETTE[400]} />
         <View className="ml-2 flex-1">
           <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
-            게시 {expiresLabel}까지 · {remainingLabel}
+            {title}
           </Text>
           <Text className="mt-0.5 text-xs text-content-secondary dark:text-secondary-400 font-sans">
             계속 구하신다면 연장해 주세요. 지나면 자동 마감돼요.
@@ -56,7 +57,7 @@ export function FixedPostingExpiryCard({
         </View>
         <Button
           size="sm"
-          variant={expiry.isSoon ? 'primary' : 'outline'}
+          variant={urgent ? 'primary' : 'outline'}
           onPress={onExtend}
           loading={isExtending}
           disabled={isExtending}

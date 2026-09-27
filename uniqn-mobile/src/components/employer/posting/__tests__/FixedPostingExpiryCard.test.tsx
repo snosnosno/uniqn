@@ -31,4 +31,15 @@ describe('FixedPostingExpiryCard', () => {
 
     expect(getByText(/오늘·내일 마감/)).toBeTruthy();
   });
+
+  it('만료가 지났는데 아직 게시 중이면 연장을 권한다', () => {
+    const onExtend = jest.fn();
+    const { getByText, getByTestId } = render(
+      <FixedPostingExpiryCard expiry={expiryIn(-1)} onExtend={onExtend} isExtending={false} />
+    );
+
+    expect(getByText(/게시 기간이 지났어요/)).toBeTruthy();
+    fireEvent.press(getByTestId('fixed-posting-extend-button'));
+    expect(onExtend).toHaveBeenCalledTimes(1);
+  });
 });
