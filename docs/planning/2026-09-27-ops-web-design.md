@@ -1,7 +1,7 @@
 ---
-title: ops 웹 분리 — ops.uniqn.app (Next.js · Vercel) 설계
+title: ops 웹 분리 — ops.uniqn.app (Next.js · Cloudflare Workers) 설계
 date: 2026-09-27
-status: 승인 대기 (opus 설계 리뷰 1회 반영)
+status: 승인 대기 (opus 설계 리뷰 1회 반영 · 호스팅 Cloudflare 확정)
 owner: snosnosno
 related:
   - wiki/architecture/ops-engine.md
@@ -16,7 +16,7 @@ related:
 
 > **한 줄 요약**: 대회 운영(ops)을 **웹 전용 Next.js 앱**으로 따로 만들어 `ops.uniqn.app` 에서 연다.
 > **DB·RPC·계정은 UNIQN 과 같은 Supabase 를 그대로 쓴다** — 서버 재작성 0, 새 RPC 0 이 목표.
-> 공개뷰(전광판·플레이어뷰)도 포함하고, 호스팅은 Vercel, 가입 절차는 UNIQN 과 동일(UNIQN 에서 가입).
+> 공개뷰(전광판·플레이어뷰)도 포함하고, 호스팅은 **Cloudflare Workers(OpenNext)**, 가입 절차는 UNIQN 과 동일(UNIQN 에서 가입). 개발·프리뷰 DB 는 **로컬 Supabase**.
 
 ## 0. 확정된 결정 (2026-09-27 사용자)
 
@@ -26,8 +26,9 @@ related:
 | D2 | 플랫폼 | **웹 전용**, 모바일 반응형 |
 | D3 | 스택 | Next.js(App Router) + React + TypeScript |
 | D4 | 공개뷰 | 전광판(`/monitor/:token`)·플레이어뷰(`/live/:view_token`) **포함** |
-| D5 | 호스팅 | **Vercel** |
+| D5 | 호스팅 | **Cloudflare Workers + `@opennextjs/cloudflare`** (Vercel 에서 변경 — Hobby 플랜 비상업 전용 약관, 기존 CF 인프라 재사용) |
 | D6 | 가입 | UNIQN 과 **같은 절차**(이메일 가입 + PortOne 본인인증 + 프로필) |
+| D7 | 개발·프리뷰 DB | **로컬 Supabase**(`supabase start`) — 원격 프리뷰 배포는 두지 않는다(§8) |
 
 ## 1. 현황 실측 (2026-09-27, master `76bfa84b7`)
 
@@ -73,7 +74,7 @@ related:
  uniqn.app      │ Expo 웹 (Cloudflare Pages) │──┐
  (앱/웹)         └───────────────────────────┘  │   같은 Supabase 프로젝트
                 ┌───────────────────────────┐  ├──▶ Auth · Postgres(RLS) · ops_* RPC · Realtime
- ops.uniqn.app  │ Next.js (Vercel)           │──┘
+ ops.uniqn.app  │ Next.js (CF Workers)       │──┘
                 └───────────────────────────┘
         ops-web/src/core  ◀── 동기화 스크립트 ── uniqn-mobile/src (정본)
 ```
@@ -83,7 +84,7 @@ related:
 ```
 T-HOLDEM/
 ├─ uniqn-mobile/           # 기존 — 이번 작업으로 바뀌는 곳은 §7 링크 생성·_redirects 뿐
-├─ ops-web/                # 신규 Next.js 앱 (Vercel Root Directory)
+├─ ops-web/                # 신규 Next.js 앱 (OpenNext → Cloudflare Workers, wrangler 설정 포함)
 │  ├─ app/
 │  │  ├─ (auth)/login/            # 로그인·비밀번호 찾기
 │  │  ├─ (console)/tournaments/   # 목록 · new · [id]/(탭별 하위 라우트)
@@ -129,6 +130,7 @@ T-HOLDEM/
 
 ### 4.3 외부 콘솔 설정 (사람 작업)
 - Supabase Auth → Redirect URLs 에 `https://ops.uniqn.app/**` 추가(비밀번호 재설정 메일 링크용).
+- Cloudflare → Workers & Pages → ops-web Worker → Settings → Domains & Routes 에서 **Custom Domain `ops.uniqn.app`** 연결(같은 계정의 uniqn.app 존이라 DNS 레코드·인증서 자동 생성). Workers Paid 플랜(월 $5) 가입.
 - ⚠️ Redirect URLs 는 **이메일 링크만** 제한한다. 비밀번호 로그인 자체는 어느 origin 에서든 된다 → 프리뷰 방어는 §8 의 환경 분리로 한다.
 
 ## 5. 데이터 계층
@@ -167,22 +169,24 @@ T-HOLDEM/
 
 ## 8. 보안 · 운영
 
-- **프리뷰 → prod 쓰기 차단**(리뷰 C2):
-  - Vercel **Production** 환경에만 prod Supabase URL·anon 키. **Preview·Development** 환경엔 로컬 또는 Supabase 브랜치 URL.
-  - `src/lib/env.ts` 부팅 가드: `NEXT_PUBLIC_SUPABASE_URL` 이 prod 프로젝트(`ygfxukhktpqymahfrvbz`)인데 `VERCEL_ENV !== 'production'` 이면 **즉시 throw**. 단위 테스트로 고정.
+- **환경은 2개뿐 — local / production**(D7, 리뷰 C2):
+  - **local**: `next dev` 또는 `opennextjs-cloudflare preview` + **로컬 Supabase**(`supabase start`, `http://127.0.0.1:54321`). 레포의 마이그레이션·시드로 재현. 이것이 "프리뷰"다.
+  - **production**: master 머지 후 GitHub Actions 가 `wrangler deploy`. prod Supabase URL·anon 키는 **production Worker 에만** 설정.
+  - **원격 프리뷰 배포(브랜치별 URL)는 만들지 않는다** — 배포된 Worker 는 개발자 PC 의 로컬 Supabase 에 닿을 수 없고, prod 를 붙이면 실데이터 오염이 된다. 필요해지면 그때 Supabase 브랜치를 재검토.
+  - `src/lib/env.ts` 부팅 가드: 빌드 시 주입하는 `APP_ENV` 가 `production` 이 아닌데 `NEXT_PUBLIC_SUPABASE_URL` 이 prod 프로젝트(`ygfxukhktpqymahfrvbz`)면 **즉시 throw**. 반대로 `APP_ENV=production` 인데 localhost URL 이면 throw. 단위 테스트로 고정.
 - service_role 키는 ops 웹에 두지 않는다. 필요한 변수 미설정 시 부팅 실패.
 - anon=2 계약·RLS 는 서버 쪽이라 불변. 새 RPC 가 생기면 anon REVOKE + 카탈로그 카운트 테스트 갱신 필수.
-- 보안 헤더: CSP(Supabase·Vercel 도메인 허용), `X-Frame-Options: DENY`, HSTS. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
+- 보안 헤더: CSP(Supabase 도메인 허용), `X-Frame-Options: DENY`, HSTS. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
 - 사용자 입력은 동기화된 zod 스키마(xss refine 포함)로 검증 후 RPC 호출.
 - 로깅: `console.log` 금지. 에러 수집 도구는 W0 에서 모바일과 같은 조직 사용 여부 확인 후 결정.
 - 퍼널 계측은 기존 `trackOpsFunnel` 이벤트명 유지(🔑 `CHECK`↔`PersistedAnalyticsEvent`↔`CORE_FUNNEL_EVENTS` 1:1 규약을 건드리지 않는 범위).
-- DNS: uniqn.app 은 Cloudflare DNS → `ops` CNAME `cname.vercel-dns.com`, **프록시 끔(DNS only)**.
+- DNS: Workers Custom Domain 이 `ops.uniqn.app` 레코드·인증서를 자동 생성한다(수동 CNAME 불필요). 2026-09-27 실측: `ops.uniqn.app` 미존재(NXDOMAIN), CAA 레코드 없음.
 
 ## 9. 진행 슬라이스 (각 슬라이스 = PR 1개, 전용 워크트리)
 
 | 슬라이스 | 내용 | 완료 기준(검증) |
 |---|---|---|
-| **W0** 기반 | `ops-web/` Next 스캐폴드, Tailwind·shadcn, ESLint/Prettier/TS strict, Vitest, GitHub Actions(경로 필터 `ops-web/**`), Vercel 연결, **`ops.uniqn.app` 도메인 연결(noindex, 로그인 필수)**, 환경 분리 + 프리뷰 가드 | `build`·`lint`·`typecheck`·`test` 통과, 프리뷰가 prod URL 로 뜨면 부팅 실패하는 테스트 통과, `ops.uniqn.app` 200 |
+| **W0** 기반 | `ops-web/` Next 스캐폴드 + `@opennextjs/cloudflare`·`wrangler` 설정, Tailwind·shadcn, ESLint/Prettier/TS strict, Vitest, GitHub Actions(경로 필터 `ops-web/**`, master 머지 시 `wrangler deploy`), 로컬 Supabase 연결 스크립트, **`ops.uniqn.app` Custom Domain 연결(noindex, 로그인 필수)**, 환경 가드 | `build`·`lint`·`typecheck`·`test` 통과, OpenNext 빌드 → 로컬 `preview` 로 로컬 Supabase 조회 성공, 환경 가드 테스트(비-prod+prod URL → throw) 통과, `ops.uniqn.app` 200 |
 | **W1** 동기화 | `scripts/sync-ops-core.mjs` + `--check` CI, `core/` 생성, 동기화 사본 단위 테스트(모바일 테스트 일부 이식) | `--check` 통과 · 정본 1줄 바꾸면 `--check` 실패(레드-그린) |
 | **W2** 인증 | 로그인·로그아웃·비밀번호 찾기/재설정, middleware 보호, 진입 판정 + 미완성 안내 화면 | Playwright: 비로그인 → 로그인 → 원래 경로 복귀, `//evil`·`\` redirect 거부, 미완성 계정 → 안내 화면 |
 | **W3** 목록·생성 | 대회 목록(보관 포함)·생성·복제·공고 연결 + 기능 동등성 체크리스트(`docs/qa/ops-web-parity.md`) 작성 | 스테이징 DB 에서 생성 → 모바일 앱 목록에 같은 대회 표시 |
@@ -206,7 +210,9 @@ T-HOLDEM/
 |---|---|---|
 | 정본·사본 드리프트 | 계산·검증 불일치 | `--check` CI 게이트, 사본 직접 수정 금지 헤더 |
 | 두 UI 동시 유지 기간의 동작 드리프트 | 운영자 혼란 | 동등성 체크리스트, 문구는 사본에서 공유 |
-| 프리뷰가 prod 에 쓰기 | 실데이터 오염 | 환경 분리 + 부팅 가드(§8) |
+| 개발 중 prod 에 쓰기 | 실데이터 오염 | local/production 2환경 + 부팅 가드(§8), 원격 프리뷰 없음 |
+| OpenNext 미지원 Next 기능·Worker CPU/크기 한도 | 빌드·런타임 실패 | W0 에서 빈 앱으로 먼저 배포 실측, 미들웨어는 세션 갱신만(가볍게), Workers Paid |
+| 원격 프리뷰가 없어 PR 리뷰 시 화면 확인이 로컬에서만 가능 | 리뷰 비용 | 슬라이스마다 Playwright 스크린샷 첨부(§9) |
 | 도메인별 로그인 분리 | 가입 후·claim 시 재로그인 | 안내 문구, claim 복귀 흐름, §10 SSO |
 | 1.0.6 함대가 옛 공개뷰 링크 생성 | 링크 깨짐 | `_redirects` 영구 유지 |
 | 태블릿 시계 오차 | 클럭 표시 어긋남 | 서버시각 offset 보정(§5) |
@@ -214,10 +220,11 @@ T-HOLDEM/
 
 ## 12. 착수 시 확인할 것 (미확인 항목)
 
-- Next.js·`@supabase/ssr`·shadcn/ui·Tailwind **최신 안정판 버전과 설치법** — 문서 작성 시 문서 조회 도구(context7)가 연결되지 않아 미확인. W0 에서 공식 문서로 확인 후 고정.
-- 스테이징용 Supabase(브랜치 or 로컬) 방식과 비용.
+- Next.js·`@opennextjs/cloudflare`·`wrangler`·`@supabase/ssr`·shadcn/ui·Tailwind **최신 안정판 버전·호환 조합과 설치법**, Workers Paid 의 CPU·스크립트 크기 한도 — 문서 작성 시 문서 조회 도구(context7)가 연결되지 않아 미확인. W0 에서 공식 문서로 확인 후 고정.
+- 로컬 Supabase 에 ops 테스트 데이터 시드(대회·참가자·좌석) — 기존 `supabase/seed` 에 없으면 W0 에서 추가.
 - 운영자 클럭 서버시각 보정을 새 RPC 없이 할 수 있는지(§5).
 
 ## 13. 리뷰 이력
 
 - 2026-09-27 opus 설계 리뷰 1회: CRITICAL 2(모듈 해석·프리뷰 prod 쓰기) · HIGH 3(가입 위임 규모·판정 4필드·슬라이스 순서) · MEDIUM 6 · LOW 3 — 전부 반영. C1·H1·H2·M1·`p_actor_id` 는 코드 대조로 사실 확인.
+- 2026-09-27 사용자 결정: 호스팅 Vercel → **Cloudflare**(Vercel Hobby 약관상 상업 사용 불가 확인), 프리뷰 DB = **로컬 Supabase** → 원격 프리뷰 배포 제거.
