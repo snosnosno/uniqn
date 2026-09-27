@@ -386,7 +386,7 @@ export default function JobsScreen() {
         />
       )}
 
-      {/* 튜토리얼은 로그인 뒤에 — 게스트에게 먼저 보여 주면 완료 처리돼 정작 가입 후엔 안 뜬다. */}
+      {/* 튜토리얼은 로그인 뒤에 — 게스트는 앱 사용법(지원·스케줄)을 쓸 수 없어 안내가 맞지 않는다. */}
       {!isGuest && needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
           <TutorialOverlay

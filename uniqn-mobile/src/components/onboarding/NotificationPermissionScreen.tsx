@@ -44,8 +44,8 @@ const BENEFITS = [
   },
   {
     icon: BriefcaseIcon,
-    title: '새 지원자 알림',
-    description: '내 공고에 지원자가 오면 바로 확인할 수 있어요.',
+    title: '근무 변경 알림',
+    description: '근무 시간이 바뀌거나 공고가 취소되면 알려드려요.',
   },
   {
     icon: BanknotesIcon,

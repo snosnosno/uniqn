@@ -10,6 +10,20 @@
  *    여기서 넓히는 것은 **라우트 가드**뿐이다.
  */
 
+/**
+ * 게스트인가 — 라우트 가드(`!user`)와 화면이 **같은 판정**을 쓰게 하는 단일 술어.
+ *
+ * - `unauthenticated` = 판정이 끝난 비로그인.
+ * - `idle` + user 없음 = 로그아웃 직후. 화면은 `signOut()` 뒤 `reset()` 으로 스토어를 초기값(idle)으로
+ *   되돌리는데, SIGNED_OUT 처리가 먼저 끝나면 idle 로 남는다. 이걸 빼면 가드는 게스트로 보고 목록을
+ *   열어 주는데 화면은 게스트 UI(탭 잠금·안내)를 끄는 어긋남이 생긴다.
+ * - `authenticated`/`loading` 은 user 가 잠깐 비어도 게스트가 아니다(세션 복원 중).
+ */
+export function isGuestAuthState(state: { status: string; user: unknown }): boolean {
+  if (state.user) return false;
+  return state.status === 'unauthenticated' || state.status === 'idle';
+}
+
 /** 게스트의 첫 화면 = 구인구직 탭 */
 export const GUEST_HOME_ROUTE = '/(app)/(tabs)/home-jobs';
 

@@ -13,8 +13,12 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
 import { CHAT_UNREAD_CAP } from '@/constants/chat';
 import { getLayoutColor, PRIMARY_COLORS, SURFACE_COLORS } from '@/constants/colors';
-import { useGuestGate, useIsGuest } from '@/hooks/useGuestGate';
-import type { InstallPromptSource } from '@/hooks/useInstallPrompt';
+import {
+  createGuestTabPressHandler,
+  useGuestGate,
+  useIsGuest,
+  type GuestLockedTab,
+} from '@/hooks/useGuestGate';
 
 // `/(app)/(tabs)` 진입 시 기본 탭을 home-jobs로 해석.
 // URL '/' (Splash) 및 공개 '/jobs' 와의 충돌 회피 — 구인구직 탭 URL = /home-jobs
@@ -49,28 +53,12 @@ function renderTabBarIcon(Icon: IconComponent) {
   };
 }
 
-/**
- * 게스트가 누를 수 없는 탭 — 이동을 막고 로그인(웹은 앱 설치)을 안내한다.
- * 로그인 뒤에는 누르려던 탭으로 돌아간다.
- */
-const GUEST_LOCKED_TABS: Record<string, { source: InstallPromptSource; redirect: string }> = {
-  schedule: { source: 'schedule-tab', redirect: '/(app)/(tabs)/schedule' },
-  board: { source: 'board-tab', redirect: '/(app)/(tabs)/board' },
-  employer: { source: 'employer-tab', redirect: '/(app)/(tabs)/employer' },
-  profile: { source: 'profile-tab', redirect: '/(app)/(tabs)/profile' },
-};
-
 export default function TabLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const isGuest = useIsGuest();
   const { promptGuest } = useGuestGate();
-  const guestTabListeners = (name: keyof typeof GUEST_LOCKED_TABS) => ({
-    tabPress: (event: { preventDefault: () => void }) => {
-      if (!isGuest) return;
-      event.preventDefault();
-      const { source, redirect } = GUEST_LOCKED_TABS[name];
-      promptGuest(source, redirect);
-    },
+  const guestTabListeners = (name: GuestLockedTab) => ({
+    tabPress: createGuestTabPressHandler(name, isGuest, promptGuest),
   });
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
