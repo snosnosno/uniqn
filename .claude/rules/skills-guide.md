@@ -108,7 +108,7 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 - 참조 전용 클론 `~/.claude/design-refs/`: `awesome-design-md`(MIT, DESIGN.md 74종) · `shadcn-admin`(MIT, Vite+shadcn 구조 참고 — 코드 복사 아님) · `design.md`(Apache-2.0, 형식 명세).
 - `@google/design.md` CLI(npm 저장소=원본 일치)는 전역 설치 없이 ops-web devDependency 로(D1 에서 `DESIGN.md` lint).
 - `@storybook/react-vite`(MIT) — ops-web W0 에서 devDependency.
-- `21st-dev/magic-mcp`(ISC) **조건부** — 무료 키 필요(21st.dev), AI 생성은 크레딧 과금·검색은 무료. 키는 `~/.claude.json` local 스코프 + 환경변수로만, 레포 커밋 금지.
+- `21st-dev/magic-mcp`(ISC) **제외(2026-09-27 사용자 결정)** — oss-vet 은 조건부 통과(무료 키 필요, AI 생성은 크레딧 과금·검색은 무료)였으나 쓰지 않기로 함.
 - 제외: `cosscom/coss`(옛 Origin UI) — **AGPL-3.0**.
 
 **graphify 운영** — 재색인은 수동이고 **그래프는 조용히 낡는다**(MCP 툴은 낡은 그래프에도 정상

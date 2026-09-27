@@ -186,7 +186,8 @@ T-HOLDEM/
   - **빌드 가드**(`vite.config.ts`): `mode !== 'production'` 인데 `VITE_SUPABASE_URL` 이 prod 프로젝트(`ygfxukhktpqymahfrvbz`)면 **빌드 실패**. 반대로 `production` 인데 localhost 면 빌드 실패. 판정 함수는 순수 함수로 빼서 단위 테스트로 고정.
 - service_role 키는 ops 웹에 두지 않는다. 필요한 변수 미설정 시 부팅 실패.
 - anon=2 계약·RLS 는 서버 쪽이라 불변. 새 RPC 가 생기면 anon REVOKE + 카탈로그 카운트 테스트 갱신 필수.
-- 보안 헤더(`public/_headers`): CSP(Supabase 도메인 허용), `X-Frame-Options: DENY`, HSTS. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
+- **개통 전 접근 제한**: 첫 배포부터 `ops.uniqn.app` 이 열린다(`wrangler.jsonc` custom_domain). W0~W2 는 자리표시뿐이라 noindex 로 충분하지만, **W3 에서 실제 화면이 올라가기 전에 Cloudflare Access(무료 50석)로 운영자 이메일만 허용**하고 W8 개통 때 해제한다(W0 코드 리뷰).
+- 보안 헤더(`public/_headers`): CSP(Supabase 도메인 허용, `object-src 'none'`), `X-Frame-Options: DENY`, HSTS. `style-src 'unsafe-inline'` 은 sonner·vaul 등이 `<style>` 을 주입해 유지. 개통 전(W0~W7) 도메인은 `X-Robots-Tag: noindex`.
 - 사용자 입력은 동기화된 zod 스키마(xss refine 포함)로 검증 후 RPC 호출.
 - 로깅: `console.log` 금지. 에러 수집 도구는 W0 에서 모바일과 같은 조직 사용 여부 확인 후 결정.
 - 퍼널 계측은 기존 `trackOpsFunnel` 이벤트명 유지(🔑 `CHECK`↔`PersistedAnalyticsEvent`↔`CORE_FUNNEL_EVENTS` 1:1 규약을 건드리지 않는 범위).
@@ -196,14 +197,14 @@ T-HOLDEM/
 
 | 슬라이스 | 내용 | 완료 기준(검증) |
 |---|---|---|
-| **W0** 기반 | `ops-web/` Vite+React+TS strict 스캐폴드, React Router, Tailwind·shadcn 초기화, ESLint/Prettier, Vitest, `wrangler.jsonc`(assets + SPA fallback), `_headers`, GitHub Actions(경로 필터 `ops-web/**`, master 머지 시 deploy), 로컬 Supabase 연결 + ops 시드, **`ops.uniqn.app` Custom Domain 연결(noindex)**, 빌드 가드 | `build`·`lint`·`typecheck`·`test` 통과, 로컬 Supabase 조회 성공, 빌드 가드 레드-그린(비-prod+prod URL → 빌드 실패), `ops.uniqn.app/아무/경로` 새로고침 200(SPA fallback) |
-| **D1** 디자인 시스템 | §6.1 | 토큰·견본 페이지 승인 |
+| **W0** 기반 | `ops-web/` Vite+React+TS strict 스캐폴드, React Router, Tailwind, oxlint(Vite 템플릿 기본)/Prettier, Vitest, `wrangler.jsonc`(assets + SPA fallback), `_headers`, GitHub Actions(경로 필터 `ops-web/**`, master 머지 + 저장소 변수 `OPS_WEB_DEPLOY_ENABLED=true` 일 때만 deploy), 로컬 Supabase 연결 확인 스크립트, 빌드 가드. ⤷ 구현 중 이동: **shadcn 초기화·Storybook → D1**(테마 토큰을 D1 에서 정하므로), **ops 시드 → W3**(목록 화면이 처음 필요로 함), **Custom Domain 은 첫 배포 때**(`wrangler.jsonc` routes — 사람의 Cloudflare 토큰·스위치 필요) | `build`·`lint`·`typecheck`·`test` 통과, 로컬 Supabase 조회 성공, 빌드 가드 레드-그린(비-prod+prod URL → 빌드 실패), wrangler 로컬 서버에서 딥링크 새로고침 200(SPA fallback)·보안 헤더 적용 |
+| **D1** 디자인 시스템 | §6.1 + shadcn 초기화(테마=D1 토큰)·Storybook | 토큰·견본 페이지 승인 |
 | **D2** 레퍼런스 | §6.1 | 무드보드 승인 |
 | **D3** 핵심 화면 시안 | §6.1 | 화면 4종 확정안 승인 |
 | **D4** 인터랙션 | §6.1 | 모션 원칙 승인 — **여기까지 승인돼야 W3 이후 화면 구현 착수** |
 | **W1** 동기화 | `scripts/sync-ops-core.mjs` + `--check` CI, `core/` 생성, 동기화 사본 단위 테스트(모바일 테스트 일부 이식) | `--check` 통과 · 정본 1줄 바꾸면 `--check` 실패(레드-그린) |
 | **W2** 인증 | 로그인·로그아웃·비밀번호 찾기/재설정, 클라이언트 라우트 가드, 진입 판정 + 미완성 안내 화면 (D1 토큰 적용) | Playwright: 비로그인 → 로그인 → 원래 경로 복귀, `//evil`·`\` redirect 거부, 미완성 계정 → 안내 화면 |
-| **W3** 목록·생성 | 대회 목록(보관 포함)·생성·복제·공고 연결 + 기능 동등성 체크리스트(`docs/qa/ops-web-parity.md`) 작성 | 스테이징 DB 에서 생성 → 모바일 앱 목록에 같은 대회 표시 |
+| **W3** 목록·생성 | 대회 목록(보관 포함)·생성·복제·공고 연결 + 로컬 Supabase ops 시드(대회·참가자·좌석) + 기능 동등성 체크리스트(`docs/qa/ops-web-parity.md`) 작성 | 로컬 DB 에서 생성 → 모바일 앱(로컬 DB 연결) 목록에 같은 대회 표시 |
 | **W4** 콘솔 1 | 콘솔 셸(반응형 3단), 상태 탭, 클럭 스트립(offset 보정), 참가자(등록·리바이·애드온·탈락·재입장·칩) | 두 브라우저 realtime 반영, 탭 백그라운드 후 복귀 동기화, 1시간 방치 후 realtime 유지. 이후 슬라이스부터 375/768/1280 스크린샷(라이트·다크) 첨부 |
 | **W5** 콘솔 2 | 테이블/좌석(좌석표·이동·재배치·웨이팅), 블라인드/프리셋 | 좌석 이동 후 모바일 화면 동기화 |
 | **W6** 콘솔 3 | 상금 구조·지급 장부·보정, 스태프(공고 가져오기·출퇴근 연결), 이력 | 동등성 체크리스트 100% |

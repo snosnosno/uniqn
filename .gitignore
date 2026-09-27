@@ -13,6 +13,7 @@ build/
 */build/
 lib/
 !uniqn-mobile/src/lib/
+!ops-web/src/lib/
 dist/
 */dist/
 
