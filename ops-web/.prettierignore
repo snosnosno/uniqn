@@ -3,3 +3,5 @@ node_modules
 .wrangler
 package-lock.json
 storybook-static
+# 자동 생성 사본(정본 uniqn-mobile/src) — 모바일 포맷 그대로 둔다. 일치 검사는 sync-ops-core --check
+src/core

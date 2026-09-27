@@ -1,0 +1,378 @@
+{
+  "note": "자동 생성 — node scripts/sync-ops-core.mjs. 사본 sha256·정본 경로 기록(검증은 --check 가 내용 전체로 한다).",
+  "files": {
+    "constants/messages/failure.ts": {
+      "sources": [
+        "uniqn-mobile/src/constants/messages/failure.ts"
+      ],
+      "sha256": "474e6c603633048d26b54ec6f0261d8ea8f85028dbbe663b05501ce74e7cd6f6"
+    },
+    "constants/messages/index.ts": {
+      "sources": [
+        "uniqn-mobile/src/constants/messages/index.ts"
+      ],
+      "sha256": "60156006a5727b61c86ae57e094616f27f13a485dca6b736573bff57964c63ab"
+    },
+    "domains/ops/__tests__/defaultBlindStructure.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/defaultBlindStructure.test.ts"
+      ],
+      "sha256": "0158ea751314affad58c8eaba71b7d931efb4129bc0eea64d70f98564b110baf"
+    },
+    "domains/ops/__tests__/opsEventDate.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/opsEventDate.test.ts"
+      ],
+      "sha256": "84f4e5fde74de6c3af4a3786973ece9d223e827f82b1e9528c62bd6990394d2a"
+    },
+    "domains/ops/__tests__/opsHubFlag.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/opsHubFlag.test.ts"
+      ],
+      "sha256": "ac19b3bf86ad2067dfb342d195d054c832939b275365bdee48278c1595e0c411"
+    },
+    "domains/ops/__tests__/OpsParticipantStatusMachine.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/OpsParticipantStatusMachine.test.ts"
+      ],
+      "sha256": "2606f44d4e458467713699c3580745fccec95b39c463e7f2ddac60e01d09f4ce"
+    },
+    "domains/ops/__tests__/opsStats.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/opsStats.test.ts"
+      ],
+      "sha256": "fc80df6d8a35be97825fe8eb06d849050d17a550435110ffb8fd87c2aa78e69a"
+    },
+    "domains/ops/clock/__tests__/computeClockRemaining.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/clock/__tests__/computeClockRemaining.test.ts"
+      ],
+      "sha256": "085493ffdeb952ec23f04896b3b4d5ee0003f843cdc7db2f06d83e5f64e58141"
+    },
+    "domains/ops/clock/computeClockRemaining.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/clock/computeClockRemaining.ts"
+      ],
+      "sha256": "a737da921b2c3a300fc6f3ca8b806dcd8d9003f77624e2519be0bbe9f49b8166"
+    },
+    "domains/ops/defaultBlindStructure.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/defaultBlindStructure.ts"
+      ],
+      "sha256": "3b7b07d3dc827de6fbd7b6901126ba9adfa1734337e35dd25511dae68b8d1801"
+    },
+    "domains/ops/index.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/index.ts"
+      ],
+      "sha256": "9c3e6613fe0c43e952e12a66654fce6210f2abcedf5e516a349051f046aa47f3"
+    },
+    "domains/ops/monitor/__tests__/monitorConfig.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/monitor/__tests__/monitorConfig.test.ts"
+      ],
+      "sha256": "2fb632257774dfd6eb03d49c9f00b4fddb63ac4ffc48c6bfe19bd30867dbb30e"
+    },
+    "domains/ops/monitor/__tests__/nextBreak.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/monitor/__tests__/nextBreak.test.ts"
+      ],
+      "sha256": "8be3b2ecf2611cb1fbaf9e460b63738f42e3b83fe577a3fadb89d638c817df79"
+    },
+    "domains/ops/monitor/monitorConfig.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/monitor/monitorConfig.ts"
+      ],
+      "sha256": "4b6c74d2bc1beae6465768a13e289c3738ee0d9aea7b2e112339c58ccfd80d05"
+    },
+    "domains/ops/monitor/nextBreak.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/monitor/nextBreak.ts"
+      ],
+      "sha256": "e47ba9ad4199b6e452b7ad162962260be07df5fd62634e8b96c749caa037a2c2"
+    },
+    "domains/ops/opsEventDate.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/opsEventDate.ts"
+      ],
+      "sha256": "daa03d59ac26662ab68ee101afde37464a2ae0362fa269d8c9d47c2c2f694188"
+    },
+    "domains/ops/opsHubFlag.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/opsHubFlag.ts"
+      ],
+      "sha256": "8f5e45234985253ced5447fcad3c808134bfab3f457ba433d34f4dcdd9fbead8"
+    },
+    "domains/ops/OpsParticipantStatusMachine.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/OpsParticipantStatusMachine.ts"
+      ],
+      "sha256": "f774c3c65098175fa0e190d8b7ddb2fa78e3dffceff36c06c667c08a05f0a492"
+    },
+    "domains/ops/opsStats.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/opsStats.ts"
+      ],
+      "sha256": "dcf7803d04f78bde4de5b4a075b46c84d70e84b9438b6cd5ee87aefc8e4b4687"
+    },
+    "domains/ops/prizeCurve/__tests__/computeAmountsFromPercents.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/__tests__/computeAmountsFromPercents.test.ts"
+      ],
+      "sha256": "1b8d9b4daadf495f72659944b1d41fa18d83ea7be66aa22da5d0529a524fed0e"
+    },
+    "domains/ops/prizeCurve/__tests__/payoutCurves.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/__tests__/payoutCurves.test.ts"
+      ],
+      "sha256": "e669f52caa0c526d80c63fc98e814ab4b0264c7b748a8b47dec4f37d6f87471a"
+    },
+    "domains/ops/prizeCurve/computeAmountsFromPercents.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/computeAmountsFromPercents.ts"
+      ],
+      "sha256": "fd374bfffdd0cfee3dab20edd06bc566fc4efde1f0aacaa4747528df8b55e89a"
+    },
+    "domains/ops/prizeCurve/index.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/index.ts"
+      ],
+      "sha256": "f6cd24dd59f85c5273bba7bee6210f7326a40b2c848fa731ead2a57d0ddbb1ae"
+    },
+    "domains/ops/prizeCurve/payoutCurves.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/payoutCurves.ts"
+      ],
+      "sha256": "37e443f89c84787f86d6bdce9fba0a7df7962dd508f395471a1b0b0727cf421b"
+    },
+    "domains/ops/prizeCurve/prizeCurve.types.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/prizeCurve/prizeCurve.types.ts"
+      ],
+      "sha256": "cdff12018baeda9377af298e043c18b67165e9a5f47b91f8123241e8ecdaecb8"
+    },
+    "domains/ops/resume/__tests__/selectResumeTournament.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/resume/__tests__/selectResumeTournament.test.ts"
+      ],
+      "sha256": "b4db233cc181fd110b3fd9e4e77855acf1d94515c284a52f5916353f252d78a9"
+    },
+    "domains/ops/resume/selectResumeTournament.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/resume/selectResumeTournament.ts"
+      ],
+      "sha256": "a98d69391e2a7eda40563e3826f928b602b43255b0f4113d4ee45bf37aa4ae32"
+    },
+    "domains/ops/seatAssignment/__tests__/chipDraft.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/__tests__/chipDraft.test.ts"
+      ],
+      "sha256": "017cf4cc193d41214bea9d3ce75440e4cfb06a5e3a9d9a489650db71d4f85583"
+    },
+    "domains/ops/seatAssignment/__tests__/randomDraw.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/__tests__/randomDraw.test.ts"
+      ],
+      "sha256": "5ff6a28a0cdca0c7ffb3f425c3d5827881d9071c25c6720c8bb7bd7ad974c534"
+    },
+    "domains/ops/seatAssignment/__tests__/seatWithinTable.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/__tests__/seatWithinTable.test.ts"
+      ],
+      "sha256": "bdfbe6b98fb7b884a9560a4a967a3e2b4e4588e119e7caa27ba536ffd97ed5fe"
+    },
+    "domains/ops/seatAssignment/__tests__/waitlistFill.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/__tests__/waitlistFill.test.ts"
+      ],
+      "sha256": "fb876ae29cc5101988d1c4f67e3932c5abcb8c5171125c81eda5d1e29fa9a99c"
+    },
+    "domains/ops/seatAssignment/chipDraft.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/chipDraft.ts"
+      ],
+      "sha256": "b971025b8f153d076ea997d40be58e8b539e425a7a5c64aab8ba217565efffe3"
+    },
+    "domains/ops/seatAssignment/index.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/index.ts"
+      ],
+      "sha256": "f64010657d66632fa618fcf53bf7106178c29b4e1823173a8a2b77cf5802f0c3"
+    },
+    "domains/ops/seatAssignment/randomDraw.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/randomDraw.ts"
+      ],
+      "sha256": "365bd5d7ebaed679ffcb31ed0d473faf500f5ce21a91c0001ed17d961845f24b"
+    },
+    "domains/ops/seatAssignment/reseat.types.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/reseat.types.ts"
+      ],
+      "sha256": "104b688d8aa50ba3836435976d7d7e3f686e9eaffc060287aa7b30ecd7ca1042"
+    },
+    "domains/ops/seatAssignment/seatWithinTable.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/seatWithinTable.ts"
+      ],
+      "sha256": "b23996146968994d0596dd81c0be833a4c32e5f0fbefa6bfe43abfe988bc1e76"
+    },
+    "domains/ops/seatAssignment/waitlistFill.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/seatAssignment/waitlistFill.ts"
+      ],
+      "sha256": "d7b641d826becb11ccb9ffc2f4adc33fa9dcc48dca0b628f2e09cf3799125e18"
+    },
+    "errors/AppError.ts": {
+      "sources": [
+        "uniqn-mobile/src/errors/AppError.ts"
+      ],
+      "sha256": "d1545b572db3423d0116df2a3c3cc49a75bb214bb8c6dcde6e93367572f7dd14"
+    },
+    "hooks/ops/__tests__/publicPollingPolicy.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/hooks/ops/__tests__/publicPollingPolicy.test.ts"
+      ],
+      "sha256": "be46f2ca14969a7445a8debe448da9f78b3944a844599baea662233ceb8a42ae"
+    },
+    "hooks/ops/publicPollingPolicy.ts": {
+      "sources": [
+        "uniqn-mobile/src/hooks/ops/publicPollingPolicy.ts"
+      ],
+      "sha256": "193355e4e4b56185b1cf8f84323cc50d7fed83dff1c5893ebf522f74ff22ad46"
+    },
+    "opsEnums.ts": {
+      "sources": [
+        "uniqn-mobile/src/types/supabase.ts"
+      ],
+      "sha256": "19ec372cec5ff8c200b58ca5e84a499877e9251863d5b21e0f528e2f167f3020"
+    },
+    "repositories/supabase/opsRpcError.ts": {
+      "sources": [
+        "uniqn-mobile/src/repositories/supabase/opsRpcError.ts"
+      ],
+      "sha256": "41397434c256ca97e6a0e86db3f96997e0696b7a88af5d42a7a0c62ce87e03a1"
+    },
+    "schemas/__tests__/ops.schema.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/__tests__/ops.schema.test.ts"
+      ],
+      "sha256": "0fca1b46e2336f18051ab87afb1be0a03104248727710507817dcd23c1679302"
+    },
+    "schemas/__tests__/opsBlindLevel.schema.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/__tests__/opsBlindLevel.schema.test.ts"
+      ],
+      "sha256": "232273f224cec683181663b8e1f6669456020c11bed4f077208058fda4955451"
+    },
+    "schemas/__tests__/opsPrize.schema.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/__tests__/opsPrize.schema.test.ts"
+      ],
+      "sha256": "fa1e27a3c137892b579bd1ba190f17013a4d0ccc7862d2112196b0ace036aa96"
+    },
+    "schemas/__tests__/opsSeat.schema.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/__tests__/opsSeat.schema.test.ts"
+      ],
+      "sha256": "df5afe7e381b8bd624ed2526a2456018972e5c35560280b6d74ee22d1a621607"
+    },
+    "schemas/common.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/common.ts"
+      ],
+      "sha256": "3b518f88ea8c3da8ef7e994601e3a9605a075ce1ee34eb6525bb533df7d18ee5"
+    },
+    "schemas/opsBlindLevel.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsBlindLevel.schema.ts"
+      ],
+      "sha256": "a8ebd0bbb37442bfb77cce21e059d8988c3b0bf5cb04b2d6e5abfabfc94cbc8c"
+    },
+    "schemas/opsParticipant.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsParticipant.schema.ts"
+      ],
+      "sha256": "6e1db5065f870fadb3c9a4605e94879c6307a8423f081f0fd4e62c988959ce78"
+    },
+    "schemas/opsPrize.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsPrize.schema.ts"
+      ],
+      "sha256": "d5cc9d807d557c9865f0c909b2035074506be85559ece058ce7cf0ac79075a7b"
+    },
+    "schemas/opsPublicReport.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsPublicReport.schema.ts"
+      ],
+      "sha256": "aa30d0a6a714adfa56d694c195edfc5e0eebc3c69691b5cfa880681c21cbb67a"
+    },
+    "schemas/opsSeat.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsSeat.schema.ts"
+      ],
+      "sha256": "e5e904aab89d54b5ceada9b8cbd26d1e9bc76ca4a32f587e18990a73653d6437"
+    },
+    "schemas/opsStaff.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsStaff.schema.ts"
+      ],
+      "sha256": "d5871430139f553c691846c980c5fb020f95e8d2e58d934192ea8e799c97f832"
+    },
+    "schemas/opsTournament.schema.ts": {
+      "sources": [
+        "uniqn-mobile/src/schemas/opsTournament.schema.ts"
+      ],
+      "sha256": "6b599643a51dd05395e0346f786a34169d1826ec5a190df83f142480e3d9863e"
+    },
+    "shared/navigation/__tests__/authRedirect.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/shared/navigation/__tests__/authRedirect.test.ts"
+      ],
+      "sha256": "07b956ba20322186ba0b3a1ab4a9df15a83e1418cb2b5fe9c3431eced512d8c8"
+    },
+    "shared/navigation/authRedirect.ts": {
+      "sources": [
+        "uniqn-mobile/src/shared/navigation/authRedirect.ts"
+      ],
+      "sha256": "f33a7b7afacd145382657531df073c604d2400698f80913fd999516a23da6f6c"
+    },
+    "supabaseErrorTables.ts": {
+      "sources": [
+        "uniqn-mobile/src/utils/supabase.ts",
+        "uniqn-mobile/src/errors/errorUtils.ts"
+      ],
+      "sha256": "cdf8fa01c7de9d631ad9045dc0935d2427a3fdc13c30b9d7ebf0ce4fab22b10b"
+    },
+    "types/index.ts": {
+      "sources": [
+        "uniqn-mobile/src/types/user.ts"
+      ],
+      "sha256": "2b8432906c567b4207f354996ffce34c808a37224a5c17523c5b6021c89f82f6"
+    },
+    "types/ops.ts": {
+      "sources": [
+        "uniqn-mobile/src/types/ops.ts"
+      ],
+      "sha256": "b3e2493be070a68367eb6acc4d28523bee8e0722fd81fc32c421b25435ba03da"
+    },
+    "types/role.ts": {
+      "sources": [
+        "uniqn-mobile/src/types/role.ts"
+      ],
+      "sha256": "67088a2c574ba6a63abd7d066329ef4ac7088bd31504c64fc8e7001c1eb56413"
+    },
+    "utils/security.ts": {
+      "sources": [
+        "uniqn-mobile/src/utils/security.ts"
+      ],
+      "sha256": "190bb5738d3e65de54e40bb1cfb2120cd855a8a664201d41fd2e160cd3301e65"
+    },
+    "utils/text/josa.ts": {
+      "sources": [
+        "uniqn-mobile/src/utils/text/josa.ts"
+      ],
+      "sha256": "1ab8f998114eb555784011642cf07ea1f838608e604b9d0f6b660cecfc18f022"
+    }
+  }
+}

@@ -81,6 +81,8 @@ RLS/권한/위험 변경 전→`/guard` 먼저
 
 ⚠️ **영향권 테스트는 디렉터리로 돌린다**(`jest src/services/notifications`): `jest <파일명패턴>` 은 같은 문구를 단언하는 다른 이름의 테스트를 놓쳐 CI 에서야 빨개진다. 문구·상수 변경 때 특히 그렇다.
 
+⚠️ **ops 도메인은 ops-web 사본의 정본이다**: `src/domains/ops`·`types/ops.ts`·`schemas/ops*`·`errors/AppError.ts`(문구 포함) 등을 고치면 `node scripts/sync-ops-core.mjs` 로 `ops-web/src/core` 를 재생성해 **같은 PR 에 커밋**한다. 안 하면 CI `ops-web quality`(`--check`)가 빨개진다. 대상 목록 = 스크립트 상단.
+
 ## 세션 오케스트레이션 (자동 적용)
 - 에이전트 분담·병렬 디스패치·Workflow 옵트인·훅·지식 4계층: `.claude/rules/orchestration.md` **상시 준수**
 - **모델 3계층 라우팅**: 읽기·탐색=haiku/sonnet · 구현·작성=opus · 설계/계획/검증/판정=opus — 서브에이전트 디스패치 시 `model` 명시. 주 세션 모델과 무관하게 판정은 opus 위임 (전역 agents-v2 + orchestration.md)
