@@ -27,7 +27,9 @@ test.describe('Smoke Test', () => {
     // 인증 페이지 또는 앱 메인 페이지 중 하나여야 함
     const isAuthPage = pathname.includes('login') || pathname.includes('auth');
     const isAppRoot = pathname === '/';
-    const isAppPage = pathname.includes('schedule') || pathname.includes('scan');
+    // 게스트(비로그인)는 공고 목록(/home-jobs)부터 본다 — 둘러보기(guestAccess).
+    const isAppPage =
+      pathname.includes('home-jobs') || pathname.includes('schedule') || pathname.includes('scan');
     expect(isAuthPage || isAppRoot || isAppPage).toBeTruthy();
   });
 });

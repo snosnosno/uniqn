@@ -32,7 +32,7 @@ type AdminApplicationFilter = 'pending' | 'approved' | 'rejected' | 'all';
 const STATUS_OPTIONS: { value: AdminApplicationFilter; label: string }[] = [
   { value: 'pending', label: '대기 중' },
   { value: 'approved', label: '승인됨' },
-  { value: 'rejected', label: '거부됨' },
+  { value: 'rejected', label: '거절됨' },
   { value: 'all', label: '전체' },
 ];
 
@@ -63,7 +63,7 @@ function getStatusLabel(status: EmployerApplication['status']): string {
     case 'approved':
       return '승인됨';
     case 'rejected':
-      return '거부됨';
+      return '거절됨';
     default:
       return '대기 중';
   }

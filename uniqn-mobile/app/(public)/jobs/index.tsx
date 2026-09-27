@@ -1,10 +1,7 @@
 import { Redirect } from 'expo-router';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
-import {
-  AUTH_ENTRY_ROUTES,
-  AUTH_LOGIN_ROUTE,
-  getAuthenticatedEntryRoute,
-} from '@/shared/navigation/authRedirect';
+import { AUTH_ENTRY_ROUTES, getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
+import { GUEST_HOME_ROUTE } from '@/shared/navigation/guestAccess';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function LegacyPublicJobsEntryRoute() {
@@ -12,7 +9,7 @@ export default function LegacyPublicJobsEntryRoute() {
   const profile = useAuthStore((state) => state.profile);
 
   if (!user) {
-    return <Redirect href={AUTH_LOGIN_ROUTE} />;
+    return <Redirect href={GUEST_HOME_ROUTE} />;
   }
 
   if (!profile) {

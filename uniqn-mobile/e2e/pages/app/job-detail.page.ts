@@ -22,7 +22,9 @@ export class JobDetailPage extends BasePage {
     this.applyButton = page.getByRole('button', { name: '지원하기' });
     this.loginToApplyButton = page.getByRole('button', { name: '로그인하고 지원하기' });
     this.closedButton = page.getByRole('button', { name: '마감된 공고입니다' });
-    this.statusText = page.getByText(/지원 완료|지원 확정|지원이 거절|지원 완료 - 검토 중/).last();
+    this.statusText = page
+      .getByText(/지원 완료|지원 확정|지원이 거절|지원이 접수되어 검토 중/)
+      .last();
     this.retryButton = page.getByRole('button', { name: '다시 시도' });
     this.viewStatusButton = page.getByRole('button', { name: /내 지원 확인|지원 현황 보기/ });
     this.shareButton = page.locator('[aria-label="공고 공유하기"]');

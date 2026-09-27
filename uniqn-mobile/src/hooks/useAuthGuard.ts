@@ -22,6 +22,7 @@ import {
   getResolvedAuthenticatedRoute,
   normalizePostAuthRedirect,
 } from '@/shared/navigation/authRedirect';
+import { GUEST_HOME_ROUTE, isGuestBrowsableRoute } from '@/shared/navigation/guestAccess';
 import { RoleResolver } from '@/shared/role';
 import { useAuthStore, selectIsLoading, selectProfile } from '@/stores/authStore';
 import type { UserRole } from '@/types';
@@ -277,13 +278,14 @@ export function useAuthGuard(): void {
         return;
       }
 
+      // 옛 공개 목록 주소(/jobs)로 온 게스트는 로그인이 아니라 공고 목록으로 — 둘러보기가 허용된다.
       if (isPublicJobsEntryRoute && !isAuthenticated) {
         logger.debug('Guest user entered legacy public jobs alias route', {
           component: 'useAuthGuard',
           pathname,
           browserPathname,
         });
-        routerRef.current.replace('/(auth)/login');
+        routerRef.current.replace(GUEST_HOME_ROUTE);
         return;
       }
 
@@ -338,7 +340,7 @@ export function useAuthGuard(): void {
           component: 'useAuthGuard',
           pathname,
         });
-        routerRef.current.replace('/(auth)/login');
+        routerRef.current.replace(GUEST_HOME_ROUTE);
       }
 
       return;
@@ -364,6 +366,12 @@ export function useAuthGuard(): void {
         pathname,
       });
       routerRef.current.replace(resolvedAuthenticatedRoute);
+      return;
+    }
+
+    // 게스트 둘러보기 — 공고 목록 탭만 연다. 역할 검사(staff 이상)보다 먼저 빠져야 한다:
+    // 게스트는 역할이 없어 아래 권한 검사에서 로그인으로 튕긴다.
+    if (!isAuthenticated && isGuestBrowsableRoute(segments)) {
       return;
     }
 

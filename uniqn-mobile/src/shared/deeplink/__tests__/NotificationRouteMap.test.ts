@@ -12,6 +12,8 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
+    // 55 = 54 + fixed_posting_expiring (크론 notify-fixed-postings-expiring 이 보낸다,
+    //                                   마이그 20260927110000)
     // 54 = 53 + chat_message (채팅 S1 — RPC chat_send_message 가 보낸다, 마이그 20260925100000)
     // 53 = 52 + posting_announcement (S3-2 — RPC send_job_posting_announcement 가 보낸다,
     //                                  마이그 20260813140000)
@@ -21,7 +23,7 @@ describe('NotificationRouteMap', () => {
     // 50 = 46 + job_posting_collaborator_added/removed (DB 트리거가 보내는데 클라가 몰랐다)
     //         + work_log_check_in/out (2026-04-21~08-07 발송분 6건 흡수용 레거시)
     //      46 = 47 - settlement_requested(정산 요청, 2026-08-02 죽은 회로 정리로 제거 — 발신 코드가 이력 전체에 0건이었다)
-    expect(allNotificationTypes.length).toBe(54);
+    expect(allNotificationTypes.length).toBe(55);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -283,4 +285,16 @@ describe('NotificationRouteMap', () => {
       expect(isEmployerOnlyNotification(NotificationType.CANCELLATION_REQUESTED)).toBe(true);
     });
   });
+
+  // 만료·만료 예정은 사장이 재오픈·[7일 연장]을 하러 가는 알림 — 구직자 뷰('job')가 아니라 관리 화면.
+  it.each([NotificationType.FIXED_POSTING_EXPIRED, NotificationType.FIXED_POSTING_EXPIRING])(
+    '%s 는 공고 관리 화면으로 보낸다',
+    (type) => {
+      expect(NOTIFICATION_ROUTE_MAP[type]({ jobPostingId: 'jp-1' })).toEqual({
+        name: 'employer/posting',
+        params: { id: 'jp-1' },
+      });
+      expect(NOTIFICATION_ROUTE_MAP[type]()).toEqual({ name: 'employer/my-postings' });
+    }
+  );
 });

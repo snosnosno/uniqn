@@ -10,9 +10,12 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { LoginForm } from '../LoginForm';
 
+const mockRouterReplace = jest.fn();
+
 // Mock expo-router
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
+  router: { replace: (...args: unknown[]) => mockRouterReplace(...args), push: jest.fn() },
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -105,6 +108,14 @@ describe('LoginForm', () => {
 
     expect(getByText('계정이 없으신가요?')).toBeTruthy();
     expect(getByText('회원가입')).toBeTruthy();
+  });
+
+  it('로그인 없이 둘러보기 링크는 공고 목록 탭으로 보낸다', () => {
+    const { getByTestId } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
+
+    fireEvent.press(getByTestId('guest-browse-link'));
+
+    expect(mockRouterReplace).toHaveBeenCalledWith('/(app)/(tabs)/home-jobs');
   });
 
   it('should call onSubmit when login button is pressed', async () => {

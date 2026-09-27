@@ -25,6 +25,19 @@ const mockJobList = jest.fn(
   }
 );
 
+const mockRouterPush = jest.fn();
+const mockPromptGuest = jest.fn();
+let mockIsGuest = false;
+
+jest.mock('expo-router', () => ({
+  router: { push: (...args: unknown[]) => mockRouterPush(...args) },
+}));
+
+jest.mock('@/hooks/useGuestGate', () => ({
+  useIsGuest: () => mockIsGuest,
+  useGuestGate: () => ({ promptGuest: mockPromptGuest }),
+}));
+
 jest.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ isEmployer: false }),
 }));
@@ -335,5 +348,51 @@ describe('JobsScreen search filters', () => {
     fireEvent.press(getByText('regular'));
 
     expect(await findByTestId('date-calendar')).toBeTruthy();
+  });
+});
+
+describe('JobsScreen 게스트 둘러보기', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsGuest = false;
+    mockUsePostingTypeCounts.mockReturnValue({
+      counts: { urgent: 1, tournament: 0, regular: 0 },
+      hasCounts: true,
+      firstAvailableType: 'urgent',
+      isLoading: false,
+    });
+    (useQuery as jest.Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isRefetching: false,
+      error: null,
+      refetch: jest.fn(),
+    });
+  });
+
+  function pressFirstJob() {
+    const props = mockJobList.mock.calls.at(-1)?.[0] as unknown as {
+      onJobPress: (jobId: string) => void;
+    };
+    act(() => props.onJobPress('job-1'));
+  }
+
+  it('게스트가 공고를 누르면 상세로 가지 않고 로그인(웹은 설치) 안내를 띄운다', () => {
+    mockIsGuest = true;
+    render(<JobsScreen />);
+
+    pressFirstJob();
+
+    expect(mockPromptGuest).toHaveBeenCalledWith('job-card', '/(app)/jobs/job-1');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+  });
+
+  it('로그인 사용자는 공고 상세로 바로 간다', () => {
+    render(<JobsScreen />);
+
+    pressFirstJob();
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/(app)/jobs/job-1');
+    expect(mockPromptGuest).not.toHaveBeenCalled();
   });
 });

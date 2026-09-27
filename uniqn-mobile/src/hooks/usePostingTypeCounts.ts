@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { jobPostingRepository } from '@/repositories';
 import type { PostingTypeCounts } from '@/repositories/interfaces/IJobPostingRepository';
+import { isGuestAuthState } from '@/shared/navigation/guestAccess';
 import { useAuthStore } from '@/stores/authStore';
 import type { FilterableSalaryType, PostingType, SalarySortDirection } from '@/types';
 import type { StaffRole } from '@/types/role';
@@ -93,6 +94,7 @@ export interface UsePostingTypeCountsOptions {
 
 export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
   const { status } = useAuthStore();
+  const isGuest = useAuthStore(isGuestAuthState);
   const region = options?.region ?? null;
   const regions = options?.regions ?? [];
   const regionPrefixes = options?.regionPrefixes ?? [];
@@ -132,7 +134,8 @@ export function usePostingTypeCounts(options?: UsePostingTypeCountsOptions) {
       }),
     staleTime: cachingPolicies.frequent,
     gcTime: cachingPolicies.standard * 2,
-    enabled: status === 'authenticated',
+    // 인증 판정이 끝난 뒤에만 — 게스트도 공고 목록을 둘러보므로 포함한다(판정은 가드와 같은 술어).
+    enabled: status === 'authenticated' || isGuest,
     ...(options?.keepPreviousCounts ? { placeholderData: keepPreviousData } : {}),
   });
 

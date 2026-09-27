@@ -12,6 +12,7 @@ import {
   deleteJobPosting,
   closeJobPosting,
   reopenJobPosting,
+  extendFixedPosting,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
   getMyJobPostings,
@@ -355,6 +356,29 @@ export function useReopenJobPosting(options: StatusMutationOptions = {}) {
         }
       },
     }),
+  });
+}
+
+/**
+ * 고정 공고 게시 기간 7일 연장 — 상태는 그대로라 낙관적 갱신 없이 상세·목록만 다시 읽는다.
+ */
+export function useExtendFixedPosting() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (jobPostingId: string) => {
+      requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.extendFixedPosting');
+      return extendFixedPosting(jobPostingId, user.uid);
+    },
+    onSuccess: (_, jobPostingId) => {
+      addToast({ type: 'success', message: '게시 기간을 7일 연장했어요.' });
+      queryClient.invalidateQueries({ queryKey: queryKeys.jobManagement.all });
+      queryClient.invalidateQueries({ queryKey: getJobDetailQueryKey(jobPostingId, user?.uid) });
+    },
+    onError: createMutationErrorHandler('고정 공고 연장', addToast),
   });
 }
 

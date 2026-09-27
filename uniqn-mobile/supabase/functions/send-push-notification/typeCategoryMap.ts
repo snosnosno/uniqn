@@ -45,6 +45,7 @@ export const TYPE_CATEGORY_MAP: Record<string, string> = {
   job_cancelled: 'job',
   job_closed: 'job',
   fixed_posting_expired: 'job',
+  fixed_posting_expiring: 'job',
   work_date_expired: 'job',
   posting_capacity_gap: 'job',
   posting_announcement: 'job',

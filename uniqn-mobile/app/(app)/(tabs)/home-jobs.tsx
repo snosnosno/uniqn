@@ -25,6 +25,9 @@ import { formatRoleFiltersLabel, formatSalaryFilterLabel } from '@/utils/jobFilt
 import { useJobFilterStore, type SalaryFilter } from '@/stores/jobFilterStore';
 import type { StaffRole } from '@/types/role';
 import { TabHeader } from '@/components/headers';
+import { Button } from '@/components/ui/Button';
+import { useGuestGate, useIsGuest } from '@/hooks/useGuestGate';
+import { AUTH_LOGIN_ROUTE } from '@/shared/navigation/authRedirect';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { useApplications } from '@/hooks/useApplications';
 import { buildJobApplicationStatusMap } from '@/utils/applicationStatusMap';
@@ -49,6 +52,9 @@ import { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from '@/constants/tutorials';
 export default function JobsScreen() {
   const bottomPadding = useTabBarBottomPadding();
   const { isEmployer, profile } = useAuth();
+  // 게스트(비로그인) 둘러보기 — 목록만 보이고, 상세는 로그인(웹은 앱 설치)으로 유도한다.
+  const isGuest = useIsGuest();
+  const { promptGuest } = useGuestGate();
   const tutorialConfig = isEmployer ? APP_INTRO_EMPLOYER : APP_INTRO_STAFF;
   const {
     needsTutorial,
@@ -249,10 +255,18 @@ export default function JobsScreen() {
     () => searchQuery.refetch()
   );
 
-  const handleJobPress = useCallback((jobId: string) => {
-    Keyboard.dismiss();
-    router.push(`/(app)/jobs/${jobId}`);
-  }, []);
+  const handleJobPress = useCallback(
+    (jobId: string) => {
+      Keyboard.dismiss();
+      const detailRoute = `/(app)/jobs/${jobId}`;
+      if (isGuest) {
+        promptGuest('job-card', detailRoute);
+        return;
+      }
+      router.push(detailRoute);
+    },
+    [isGuest, promptGuest]
+  );
 
   const handleRegionApply = useCallback(
     (tokens: RegionToken[]) => {
@@ -277,7 +291,26 @@ export default function JobsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader title="구인구직" />
+      {isGuest ? (
+        <TabHeader
+          title="구인구직"
+          showQR={false}
+          showNotification={false}
+          rightAction={
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={() => router.push(AUTH_LOGIN_ROUTE)}
+              accessibilityLabel="로그인"
+              testID="guest-login-button"
+            >
+              로그인
+            </Button>
+          }
+        />
+      ) : (
+        <TabHeader title="구인구직" />
+      )}
 
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
@@ -353,7 +386,8 @@ export default function JobsScreen() {
         />
       )}
 
-      {needsTutorial && !isTutorialLoading && (
+      {/* 튜토리얼은 로그인 뒤에 — 게스트는 앱 사용법(지원·스케줄)을 쓸 수 없어 안내가 맞지 않는다. */}
+      {!isGuest && needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
           <TutorialOverlay
             config={tutorialConfig}

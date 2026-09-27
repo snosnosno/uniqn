@@ -357,6 +357,40 @@ async function offsetSortedPage(
 
 // ── Repository ───────────────────────────────────────────────────────────────
 
+/**
+ * 고정 공고 게시 기간을 서버 시각 기준 지금부터 7일로 다시 잡는다(RPC renew_fixed_posting).
+ *
+ * RPC 는 SECURITY INVOKER 라 RLS 가 권한을 판단하고, 갱신 뒤 상태를 돌려준다.
+ * - 0행 = 권한 없음 또는 대상 아님 → 조용히 성공으로 넘기지 않는다.
+ * - 게시 상태가 아님 = 트리거가 닫아 버림 → 성공 토스트를 띄우면 사장이 속는다.
+ */
+async function renewFixedPosting(
+  jobPostingId: string,
+  reopen: boolean,
+  operation: string
+): Promise<void> {
+  const { data, error } = await supabase.rpc('renew_fixed_posting', {
+    p_job_posting_id: jobPostingId,
+    p_reopen: reopen,
+  });
+  if (error) handleSupabaseError(error, { operation, table: TABLE });
+
+  const row = Array.isArray(data) ? (data[0] as { result_status?: string } | undefined) : undefined;
+  if (!row) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '공고 게시 기간을 바꾸지 못했어요. 공고 상태를 확인하고 다시 시도해 주세요.',
+    });
+  }
+  if (
+    row.result_status !== STATUS.JOB_POSTING.ACTIVE &&
+    row.result_status !== STATUS.JOB_POSTING.CAPACITY_FULL
+  ) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '공고가 게시 상태로 남지 않았어요. 새로고침 후 다시 시도해 주세요.',
+    });
+  }
+}
+
 export class SupabaseJobPostingRepository implements IJobPostingRepository {
   // ── Read ────────────────────────────────────────────────────────────────
 
@@ -1003,8 +1037,18 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         cur.filledPositions >= cur.totalPositions
       ) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '모든 역할 정원이 마감된 고정공고는 재오픈할 수 없습니다.',
+          userMessage: '모든 역할 정원이 마감된 고정 공고는 재오픈할 수 없습니다.',
         });
+      }
+
+      // 🔴 고정 공고는 만료 시각을 **서버 시각**으로 함께 다시 잡아야 한다. 상태만 active 로 돌리면
+      //    BEFORE UPDATE 트리거(tr_fixed_posting_expired)가 옛 expiresAt 을 보고 **같은 UPDATE 에서**
+      //    곧바로 closed 로 되돌린다(2026-09-27 재오픈 결함). 기기 시각으로 계산하면 시계가 느린 폰에서
+      //    같은 일이 생기므로 RPC 가 now() 로 계산한다.
+      if (cur.schedule?.kind === 'fixed') {
+        await renewFixedPosting(jobPostingId, true, '공고 재오픈');
+        logger.info('공고 재오픈 완료', { jobPostingId });
+        return;
       }
 
       const { error } = await supabase
@@ -1015,6 +1059,33 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 재오픈 완료', { jobPostingId });
     } catch (error) {
       rethrowOrHandle(error, '공고 재오픈', { jobPostingId });
+    }
+  }
+
+  async extendFixedPostingWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
+    try {
+      logger.info('고정 공고 게시 기간 연장', { jobPostingId, ownerId });
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '고정 공고 연장');
+
+      if (cur.schedule?.kind !== 'fixed') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정 공고만 게시 기간을 연장할 수 있어요.',
+        });
+      }
+      // 게시 중인 공고만 — 마감된 공고는 재오픈이 같은 연장을 함께 한다(상태 전이는 재오픈의 몫).
+      if (
+        cur.status !== STATUS.JOB_POSTING.ACTIVE &&
+        cur.status !== STATUS.JOB_POSTING.CAPACITY_FULL
+      ) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '마감된 공고는 재오픈하면 7일 동안 다시 게시돼요.',
+        });
+      }
+
+      await renewFixedPosting(jobPostingId, false, '고정 공고 연장');
+      logger.info('고정 공고 게시 기간 연장 완료', { jobPostingId });
+    } catch (error) {
+      rethrowOrHandle(error, '고정 공고 연장', { jobPostingId });
     }
   }
 

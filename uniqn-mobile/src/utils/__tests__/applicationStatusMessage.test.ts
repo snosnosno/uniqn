@@ -5,6 +5,12 @@ import {
 import { STATUS } from '@/constants';
 
 describe('getApplicationStatusMessage', () => {
+  it('지원 접수 상태도 다른 상태와 같은 합니다체 문장으로 반환한다', () => {
+    expect(getApplicationStatusMessage(STATUS.APPLICATION.APPLIED)).toBe(
+      '지원이 접수되어 검토 중입니다.'
+    );
+  });
+
   it('확정 상태 메시지를 반환한다', () => {
     expect(getApplicationStatusMessage(STATUS.APPLICATION.CONFIRMED)).toBe(
       '지원이 확정되었습니다.'
@@ -23,14 +29,14 @@ describe('getApplicationStatusMessage', () => {
 });
 
 describe('getCancelUnavailableReason', () => {
-  it('고정(장기) 공고가 확정되면 앱 취소 불가 안내를 반환한다', () => {
+  it('고정 공고가 확정되면 앱 취소 불가 안내를 반환한다', () => {
     expect(
       getCancelUnavailableReason({
         status: STATUS.APPLICATION.CONFIRMED,
         isFixed: true,
         hasPendingCancellation: false,
       })
-    ).toBe('장기 알바는 앱에서 취소할 수 없어요. 사업주에게 직접 문의해 주세요.');
+    ).toBe('고정 공고는 앱에서 취소할 수 없어요. 구인자에게 직접 문의해 주세요.');
   });
 
   it('취소 요청이 접수된 확정 건은 검토 중 안내를 우선 반환한다', () => {

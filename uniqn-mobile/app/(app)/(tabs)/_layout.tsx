@@ -13,6 +13,12 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useChatEnabled, useChatUnreadTotal } from '@/hooks/chat';
 import { CHAT_UNREAD_CAP } from '@/constants/chat';
 import { getLayoutColor, PRIMARY_COLORS, SURFACE_COLORS } from '@/constants/colors';
+import {
+  createGuestTabPressHandler,
+  useGuestGate,
+  useIsGuest,
+  type GuestLockedTab,
+} from '@/hooks/useGuestGate';
 
 // `/(app)/(tabs)` 진입 시 기본 탭을 home-jobs로 해석.
 // URL '/' (Splash) 및 공개 '/jobs' 와의 충돌 회피 — 구인구직 탭 URL = /home-jobs
@@ -49,6 +55,11 @@ function renderTabBarIcon(Icon: IconComponent) {
 
 export default function TabLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
+  const isGuest = useIsGuest();
+  const { promptGuest } = useGuestGate();
+  const guestTabListeners = (name: GuestLockedTab) => ({
+    tabPress: createGuestTabPressHandler(name, isGuest, promptGuest),
+  });
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   // 채팅 안 읽음 — 소통 탭 배지(결정 D-c). 플래그 OFF 면 조회도 안 한다
@@ -106,6 +117,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="schedule"
+        listeners={guestTabListeners('schedule')}
         options={{
           title: '내 스케줄',
           tabBarIcon: renderTabBarIcon(CalendarIcon),
@@ -113,6 +125,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="board"
+        listeners={guestTabListeners('board')}
         options={{
           title: '소통',
           tabBarIcon: renderTabBarIcon(MessageIcon),
@@ -121,6 +134,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="employer"
+        listeners={guestTabListeners('employer')}
         options={{
           title: '내 공고',
           tabBarIcon: renderTabBarIcon(BriefcaseIcon),
@@ -128,6 +142,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="profile"
+        listeners={guestTabListeners('profile')}
         options={{
           title: '프로필',
           tabBarIcon: renderTabBarIcon(UserIcon),

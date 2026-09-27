@@ -55,7 +55,7 @@ function getStatusLabel(status: EmployerApplication['status']): string {
     case 'approved':
       return '승인됨';
     case 'rejected':
-      return '거부됨';
+      return '거절됨';
     default:
       return '대기 중';
   }

@@ -162,7 +162,7 @@ export default function CancellationRequestsScreen() {
         />
         <ErrorState
           title="지원하지 않는 화면입니다"
-          message="고정공고는 1차 범위에서 취소 요청 관리를 지원하지 않습니다."
+          message="고정 공고는 앱에서 취소 요청을 받지 않아요. 스태프와 직접 조율해 주세요."
         />
       </SafeAreaView>
     );
