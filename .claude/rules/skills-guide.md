@@ -101,6 +101,16 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 요청 없이 리포트 금지. 이미지 URL 은 서명 URL 이라 `curl -o` 로 받아 Read 로 본다.
 탈락: **Inspo**(`Nutlope/inspo`, inspomcp.dev) — 웹사이트 832개 캡처뿐이라 네이티브 앱 레퍼런스로 약함.
 
+**ops 웹 디자인 도구(2026-09-27 `/oss-vet` 통과, 설계=`docs/planning/2026-09-27-ops-web-design.md` §6.1)**:
+- `ui-ux-pro-max`(nextlevelbuilder, MIT, 커밋 `09170ee`) — **스킬 폴더 1개만** `~/.claude/skills/` 로 복사.
+  🚨 `/plugin install`·`uipro init` 금지 — 플러그인은 레포 루트를 통째로 실어 불필요 스킬 6개(brand·slides·banner 등)가 딸려온다.
+  훅 없음. python3 `scripts/search.py` 로 동작(Windows 실측).
+- 참조 전용 클론 `~/.claude/design-refs/`: `awesome-design-md`(MIT, DESIGN.md 74종) · `shadcn-admin`(MIT, Vite+shadcn 구조 참고 — 코드 복사 아님) · `design.md`(Apache-2.0, 형식 명세).
+- `@google/design.md` CLI(npm 저장소=원본 일치)는 전역 설치 없이 ops-web devDependency 로(D1 에서 `DESIGN.md` lint).
+- `@storybook/react-vite`(MIT) — ops-web W0 에서 devDependency.
+- `21st-dev/magic-mcp`(ISC) **조건부** — 무료 키 필요(21st.dev), AI 생성은 크레딧 과금·검색은 무료. 키는 `~/.claude.json` local 스코프 + 환경변수로만, 레포 커밋 금지.
+- 제외: `cosscom/coss`(옛 Origin UI) — **AGPL-3.0**.
+
 **graphify 운영** — 재색인은 수동이고 **그래프는 조용히 낡는다**(MCP 툴은 낡은 그래프에도 정상
 응답한다). `graphify update uniqn-mobile`(레포 루트, ~3분). 머지 웨이브 직후·대규모 리팩터링 후·
 `get_node` 가 최근 심볼을 못 찾을 때 돌린다. 검증=방금 추가한 함수를 `get_node` 로 조회.
