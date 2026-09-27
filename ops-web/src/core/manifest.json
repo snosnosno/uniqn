@@ -1,6 +1,30 @@
 {
   "note": "자동 생성 — node scripts/sync-ops-core.mjs. 사본 sha256·정본 경로 기록(검증은 --check 가 내용 전체로 한다).",
   "files": {
+    "components/ops/__tests__/payoutMessages.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/__tests__/payoutMessages.test.ts"
+      ],
+      "sha256": "8898680bc25f53776f3d95aa1a1f994889000093f3c13317f386e6b2e70fd21b"
+    },
+    "components/ops/__tests__/payoutRows.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/__tests__/payoutRows.test.ts"
+      ],
+      "sha256": "db2a44f2940c2f2fa5e6b2afba6cc18245117caa31b421d5b468f3091e0120aa"
+    },
+    "components/ops/payoutMessages.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/payoutMessages.ts"
+      ],
+      "sha256": "e0fbc908f99e4b96ca6727653a8cff63974991af1ab36baafc12dc27cb4fb1ab"
+    },
+    "components/ops/payoutRows.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/payoutRows.ts"
+      ],
+      "sha256": "48562452f26eac97d04250fb55eccfc6ba7ba43fff5258c0f3e0d7292ae65049"
+    },
     "constants/messages/failure.ts": {
       "sources": [
         "uniqn-mobile/src/constants/messages/failure.ts"
@@ -600,6 +624,12 @@
         "uniqn-mobile/src/types/role.ts"
       ],
       "sha256": "67088a2c574ba6a63abd7d066329ef4ac7088bd31504c64fc8e7001c1eb56413"
+    },
+    "utils/formatters/currency.ts": {
+      "sources": [
+        "uniqn-mobile/src/utils/formatters/currency.ts"
+      ],
+      "sha256": "9ec2844d26015759187fbae5ed24f23da858db7831c3e50153ba86554d80a80e"
     },
     "utils/security.ts": {
       "sources": [

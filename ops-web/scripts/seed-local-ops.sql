@@ -60,4 +60,14 @@ ON CONFLICT (id) DO UPDATE
       is_active = EXCLUDED.is_active,
       updated_at = now();
 
+-- 4. ops-owner 의 워크스페이스 + 관리 공고 1건(대회↔공고 연결 검증용). 픽스처라 직접 INSERT.
+INSERT INTO public.workspaces (id, name, owner_id)
+VALUES ('0a5e0000-0000-4000-8000-0000000000a1', '옵스 시드 워크스페이스', '0a5e0000-0000-4000-8000-000000000001')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.job_postings (id, title, status, owner_id, workspace_id)
+VALUES ('0a5e0000-0000-4000-8000-0000000000b1', '시드 · 금요 토너먼트 딜러 모집', 'active',
+        '0a5e0000-0000-4000-8000-000000000001', '0a5e0000-0000-4000-8000-0000000000a1')
+ON CONFLICT (id) DO UPDATE SET status = 'active', owner_id = EXCLUDED.owner_id, workspace_id = EXCLUDED.workspace_id;
+
 COMMIT;

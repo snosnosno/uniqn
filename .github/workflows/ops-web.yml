@@ -41,6 +41,9 @@ on:
       - 'uniqn-mobile/src/repositories/ops.ts'
       - 'uniqn-mobile/src/services/ops/**'
       - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
+      - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
   push:
     branches: [master]
     # pull_request 와 같은 목록(앵커 대신 복제 — 바꿀 때 두 곳 모두)
@@ -75,6 +78,9 @@ on:
       - 'uniqn-mobile/src/repositories/ops.ts'
       - 'uniqn-mobile/src/services/ops/**'
       - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
+      - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
 
 defaults:
   run:

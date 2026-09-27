@@ -48,6 +48,10 @@ const COPY_FILES = [
   'errors/errorUtils.ts',
   'errors/serviceErrorHandler.ts',
   'repositories/ops.ts',
+  // W4 — 화면 쪽 순수 헬퍼(금액 파싱·지급 대장 행·상금 문구). RN 의존 0.
+  'utils/formatters/currency.ts',
+  'components/ops/payoutRows.ts',
+  'components/ops/payoutMessages.ts',
 ];
 
 /** 디렉터리별 파일명 규칙으로 고르는 사본. `exclude` 는 이유를 주석으로 남긴다. */
@@ -72,6 +76,8 @@ const TEST_FILES = [
   'schemas/__tests__/opsSeat.schema.test.ts',
   'hooks/ops/__tests__/publicPollingPolicy.test.ts',
   'shared/navigation/__tests__/authRedirect.test.ts',
+  'components/ops/__tests__/payoutRows.test.ts',
+  'components/ops/__tests__/payoutMessages.test.ts',
 ];
 
 /**

@@ -85,6 +85,51 @@ export async function login(page, email, password = PASSWORD) {
   await page.getByRole('button', { name: '로그인' }).click();
 }
 
+/** 로컬 DB 조회(검증 전용, 읽기). 결과는 psql -tA 행 배열. 로컬 컨테이너에만 붙는다. */
+export function sql(query) {
+  const r = spawnSync(
+    'docker',
+    ['exec', '-i', 'supabase_db_uniqn', 'psql', '-U', 'postgres', '-tA', '-v', 'ON_ERROR_STOP=1'],
+    { input: query, encoding: 'utf8' }
+  );
+  if (r.status !== 0) throw new Error(`sql 실패: ${r.stderr}`);
+  return r.stdout.split('\n').filter((l) => l.length > 0);
+}
+
+/**
+ * 모바일 앱이 보는 목록과 같은 조회 — owner JWT 로 RLS 를 태워 `ops_tournaments` 를 읽는다
+ * (모바일 OpsTournamentRepository.listForUser 와 같은 테이블·정렬). 웹이 만든 대회가 모바일에도 보이는지 대조용.
+ */
+export function listAsMobile(userId) {
+  return sql(`BEGIN;
+SELECT set_config('request.jwt.claims', '{"sub":"${userId}","role":"authenticated"}', true) \\g /dev/null
+SET LOCAL ROLE authenticated;
+SELECT id || '|' || name || '|' || coalesce(job_posting_id::text, '') || '|' || coalesce(archived_at::text, '')
+  FROM public.ops_tournaments ORDER BY event_date DESC NULLS LAST, created_at DESC;
+ROLLBACK;`).filter((l) => l.includes('|'));
+}
+
+/**
+ * E2E 가 만든 대회 정리 — 앱과 같은 RPC(ops_set_tournament_archived)로 보관한다.
+ * (ops_events append-only 라 삭제는 불가능하고, 보관이 유일한 "치우기" 경로다.)
+ */
+export function archiveAsOwner(userId, tournamentIds) {
+  if (tournamentIds.length === 0) return;
+  const calls = tournamentIds
+    .map(
+      (id) => `SELECT public.ops_set_tournament_archived('${id}', '${userId}', true) \\g /dev/null`
+    )
+    .join('\n');
+  sql(`BEGIN;
+SELECT set_config('request.jwt.claims', '{"sub":"${userId}","role":"authenticated"}', true) \\g /dev/null
+SET LOCAL ROLE authenticated;
+${calls}
+COMMIT;`);
+}
+
+export const OWNER_ID = '0a5e0000-0000-4000-8000-000000000001';
+export const SEED_POSTING_ID = '0a5e0000-0000-4000-8000-0000000000b1';
+
 /** 해당 주소로 온 가장 최근 메일 본문(text). */
 export async function latestMailText(to, { after = 0, timeoutMs = 10_000 } = {}) {
   const deadline = Date.now() + timeoutMs;

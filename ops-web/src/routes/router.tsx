@@ -25,7 +25,8 @@ export const router = createBrowserRouter([
           {
             element: <AppLayout />,
             children: [
-              { path: 'tournaments', lazy: () => import('./placeholders/TournamentsPage') },
+              { path: 'tournaments', lazy: () => import('./tournaments/TournamentsPage') },
+              { path: 'tournaments/new', lazy: () => import('./tournaments/NewTournamentPage') },
               {
                 path: 'tournaments/:id/:tab?',
                 lazy: () => import('./placeholders/TournamentConsolePage'),
