@@ -12,6 +12,7 @@ import {
   rewriteImports,
   injectVitestImports,
   extractConsts,
+  extractFunction,
   findLeftoverAliases,
   extractOpsEnums,
   extractInterfaceFields,
@@ -27,7 +28,9 @@ test('rewriteSpecifier: 예외 매핑이 일반 규칙보다 우선', () => {
   assert.equal(rewriteSpecifier('@/errors'), '@/core/errors/AppError');
   assert.equal(rewriteSpecifier('@/types/supabase'), '@/core/opsEnums');
   assert.equal(rewriteSpecifier('@/types'), '@/core/types');
-  assert.equal(rewriteSpecifier('@/utils/supabase'), '@/lib/supabaseError');
+  assert.equal(rewriteSpecifier('@/utils/supabase'), '@/lib/supabaseUtils');
+  assert.equal(rewriteSpecifier('@/utils/logger'), '@/lib/logger');
+  assert.equal(rewriteSpecifier('@/lib/supabase'), '@/lib/supabase');
 });
 
 test('rewriteSpecifier: 상대·패키지 경로는 그대로', () => {
@@ -103,7 +106,7 @@ test('findLeftoverAliases: 동적 import·import 타입의 @/ 는 잡고, core·
     "const m = await import('@/lib/env');",
     "type T = import('@/types/ops').X;",
     "import { a } from '@/core/x';",
-    "import { h } from '@/lib/supabaseError';",
+    "import { h } from '@/lib/supabaseUtils';",
     " * import type { UserRole } from '@/types/role';",
   ].join('\n');
   assert.deepEqual(findLeftoverAliases(src), [
@@ -182,4 +185,22 @@ test('ops-web 워크플로 paths(pull_request·push)가 모든 동기화 정본�
     const missing = [...sources].filter((src) => !patterns.some((p) => globMatches(p, src)));
     assert.deepEqual(missing, []);
   }
+});
+
+test('extractFunction: 본문 끝까지 발췌하고 export 를 붙인다', () => {
+  const src = [
+    'const X = 1;',
+    'function toCamel<T>(o: Record<string, unknown>): T {',
+    '  if (o) {',
+    '    return o as T;',
+    '  }',
+    '  return {} as T;',
+    '}',
+    'export const Y = 2;',
+  ].join('\n');
+  assert.equal(
+    extractFunction(src, 'toCamel'),
+    'export function toCamel<T>(o: Record<string, unknown>): T {\n  if (o) {\n    return o as T;\n  }\n  return {} as T;\n}'
+  );
+  assert.throws(() => extractFunction(src, 'nope'), /nope/);
 });

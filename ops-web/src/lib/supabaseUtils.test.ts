@@ -6,7 +6,7 @@ import {
   NetworkError,
   PermissionError,
 } from '@/core/errors/AppError';
-import { handleSupabaseError } from './supabaseError';
+import { handleSupabaseError } from './supabaseUtils';
 
 const ctx = { operation: 'test', table: 'ops' };
 
@@ -51,6 +51,10 @@ describe('handleSupabaseError (웹)', () => {
   it('Safari fetch 단절(TypeError: Load failed)도 오프라인 — iPad 현장 주력 브라우저', () => {
     expect(thrown(new TypeError('Load failed'))).toBeInstanceOf(NetworkError);
     expect(thrown({ code: '', message: 'TypeError: Load failed' })).toBeInstanceOf(NetworkError);
+  });
+
+  it('code 없는 일반 Error 라도 네트워크 문구면 네트워크 에러', () => {
+    expect(thrown(new Error('Failed to fetch'))).toBeInstanceOf(NetworkError);
   });
 
   it('매핑 없는 PostgrestError 는 UNKNOWN — 원문 영어를 사용자 문구로 노출하지 않는다', () => {

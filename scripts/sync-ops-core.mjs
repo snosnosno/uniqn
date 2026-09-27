@@ -41,9 +41,27 @@ const COPY_FILES = [
   'hooks/ops/publicPollingPolicy.ts',
   'shared/navigation/authRedirect.ts',
   'repositories/supabase/opsRpcError.ts',
+  // W2 — 로그인·비밀번호 재설정 입력 규칙(비밀번호 정책 포함)을 모바일과 같게
+  'schemas/auth.schema.ts',
+  // W3 — Repository·Service 도 사본으로 공유한다: RPC 이름·인자 매핑·경계 검증이 한 벌이어야
+  //      두 UI 가 같은 서버 계약을 쓴다(손 이식은 인자명 드리프트가 조용히 난다).
+  'errors/errorUtils.ts',
+  'errors/serviceErrorHandler.ts',
+  'repositories/ops.ts',
 ];
-/** schemas/ 중 ops 스키마 전부. */
-const SCHEMA_FILE_RE = /^ops.*\.schema\.ts$/;
+
+/** 디렉터리별 파일명 규칙으로 고르는 사본. `exclude` 는 이유를 주석으로 남긴다. */
+const PATTERN_COPIES = [
+  { dir: 'schemas', re: /^ops.*\.schema\.ts$/ },
+  { dir: 'repositories/interfaces', re: /^IOps.*Repository\.ts$/ },
+  { dir: 'repositories/supabase', re: /^Ops.*Repository\.ts$/ },
+  {
+    dir: 'services/ops',
+    re: /^ops.*Service\.ts$/,
+    // opsStaffService 는 근무표 그리드(services/workSchedule/gridWriteService)에 묶여 있다 — W6 에서 연결.
+    exclude: ['opsStaffService.ts'],
+  },
+];
 
 /** 이식하는 정본 테스트. 디렉터리는 하위 `__tests__/*.test.ts` 전부. */
 const TEST_DIRS = ['domains/ops'];
@@ -61,17 +79,26 @@ const TEST_FILES = [
  * - `@/errors`: 배럴(index)이 채팅·알림 에러까지 끌고 온다 → 클래스·코드·문구가 있는 AppError 만.
  * - `@/types/supabase`: 생성 타입 파일은 옮기지 않고 ops enum 만 발췌(`opsEnums.ts`).
  * - `@/types`: 배럴 대신 authRedirect 가 쓰는 UserProfile 필드만 발췌(`types/index.ts`).
- * - `@/utils/supabase`: 모바일 싱글턴·로거에 묶여 있다 → 웹 소유 `lib/supabaseError.ts`.
+ * - `@/utils/supabase`: 모바일 싱글턴·로거에 묶여 있다 → 웹 소유 `lib/supabaseUtils.ts`
+ *   (분류표·toCamelCase 는 그 파일이 사본 `supabaseTables.ts` 에서 가져온다).
+ * - `@/utils/logger`·`@/lib/supabase`: 같은 모양의 웹 소유 모듈(로거·브라우저 클라이언트 싱글턴).
  */
 const REMAP = {
   '@/errors': '@/core/errors/AppError',
   '@/types/supabase': '@/core/opsEnums',
   '@/types': '@/core/types',
-  '@/utils/supabase': '@/lib/supabaseError',
+  '@/utils/supabase': '@/lib/supabaseUtils',
+  '@/utils/logger': '@/lib/logger',
+  '@/lib/supabase': '@/lib/supabase',
 };
 
 /** 웹이 직접 소유하는(사본이 아닌) import 대상 — 폐포 검사에서 존재만 확인한다. */
-const WEB_OWNED = { '@/lib/supabaseError': path.join(ROOT, 'ops-web', 'src', 'lib', 'supabaseError.ts') };
+const webFile = (rel) => path.join(ROOT, 'ops-web', 'src', ...rel.split('/'));
+const WEB_OWNED = {
+  '@/lib/supabaseUtils': webFile('lib/supabaseUtils.ts'),
+  '@/lib/logger': webFile('lib/logger.ts'),
+  '@/lib/supabase': webFile('lib/supabase.ts'),
+};
 
 /** 두 앱이 같은 메이저를 써야 하는 런타임 의존(설계 §3.2 — 버전 드리프트 방지). */
 const PINNED_DEPS = ['zod', 'date-fns'];
@@ -104,7 +131,11 @@ const FROM_RE =
   /^(\s*(?:import|export)\b[^'"\n;]*?\bfrom\s+|\s*\}\s*from\s+|\s*import\s+)(['"])([^'"]+)\2/gm;
 
 /** 치환 후에도 남은 `@/` 경로(동적 import·import 타입·한 줄 두 import 등 FROM_RE 사각지대). */
-const LEFTOVER_ALIAS_RE = /(['"])@\/(?!core\/|lib\/supabaseError\1)/;
+const LEFTOVER_ALIAS_RE = new RegExp(
+  `(['"])@\\/(?!core\\/|(?:${Object.keys(WEB_OWNED)
+    .map((k) => k.slice(2))
+    .join('|')})\\1)`
+);
 
 /** 주석 줄(`//`, ` * `, `/*`)을 뺀 코드 줄에서 사각지대 `@/` 를 찾는다. */
 export function findLeftoverAliases(source) {
@@ -163,6 +194,32 @@ export function extractConsts(source, names) {
       throw new Error(`const ${name} 의 끝(;)을 찾지 못했습니다`);
     })
     .join('\n\n');
+}
+
+/**
+ * 최상위 `function NAME`(export 유무 무관)을 본문 끝 `}`(중괄호 깊이 0)까지 발췌, `export` 를 붙인다.
+ * 문자열 속 중괄호로 깊이가 음수가 되면 실패한다.
+ */
+export function extractFunction(source, name) {
+  const lines = source.split('\n');
+  const start = lines.findIndex((l) => new RegExp(`^(export )?function ${name}[<(]`).test(l));
+  if (start < 0) throw new Error(`발췌 대상 function ${name} 를 찾지 못했습니다`);
+  let depth = 0;
+  let opened = false;
+  for (let i = start; i < lines.length; i += 1) {
+    for (const ch of lines[i]) {
+      if (ch === '{') {
+        depth += 1;
+        opened = true;
+      } else if (ch === '}') depth -= 1;
+      if (depth < 0) throw new Error(`function ${name} 발췌 중 중괄호 깊이가 음수 — 규칙 점검 필요`);
+    }
+    if (opened && depth === 0) {
+      const block = lines.slice(start, i + 1).join('\n');
+      return block.startsWith('export ') ? block : `export ${block}`;
+    }
+  }
+  throw new Error(`function ${name} 의 끝을 찾지 못했습니다`);
 }
 
 /** supabase 생성 타입의 `Constants.public.Enums` 에서 `ops_*` 만 꺼낸다. */
@@ -268,11 +325,18 @@ export function buildOutputs() {
   const outputs = new Map();
   const put = (outRel, sources, body) => outputs.set(outRel, { sources, content: header(sources) + body });
 
-  const schemaFiles = fs
-    .readdirSync(path.join(SRC_DIR, 'schemas'))
-    .filter((f) => SCHEMA_FILE_RE.test(f))
-    .map((f) => `schemas/${f}`);
-  const copies = [...COPY_DIRS.flatMap((d) => walkTs(d, { tests: false })), ...COPY_FILES, ...schemaFiles];
+  const patternFiles = PATTERN_COPIES.flatMap(({ dir, re, exclude = [] }) =>
+    fs
+      .readdirSync(path.join(SRC_DIR, dir))
+      .filter((f) => re.test(f) && !exclude.includes(f))
+      .sort()
+      .map((f) => `${dir}/${f}`)
+  );
+  const copies = [
+    ...COPY_DIRS.flatMap((d) => walkTs(d, { tests: false })),
+    ...COPY_FILES,
+    ...patternFiles,
+  ];
   for (const rel of copies) put(rel, [rel], rewriteImports(readSource(rel)));
 
   const tests = [...TEST_DIRS.flatMap((d) => walkTs(d, { tests: true })), ...TEST_FILES];
@@ -305,15 +369,17 @@ export function buildOutputs() {
     ])}\n`
   );
 
-  // 발췌 4 — Supabase 에러 분류표. 웹 소유 lib/supabaseError.ts 가 이 사본을 import 해서
-  // 모바일이 코드·패턴을 바꾸면 --check 가 드러낸다(손 이식본 드리프트 방지, 리뷰 W1).
+  // 발췌 4 — Supabase 에러 분류표 + snake→camel 변환. 웹 소유 lib/supabaseUtils.ts 가 이 사본을
+  // import 해서 모바일이 코드·규칙을 바꾸면 --check 가 드러낸다(손 이식본 드리프트 방지, 리뷰 W1).
+  // 네트워크 문구 패턴은 errors/errorUtils.ts 사본(isNetworkErrorMessage)을 그대로 쓴다.
+  const supabaseUtils = readSource('utils/supabase.ts');
   put(
-    'supabaseErrorTables.ts',
-    ['utils/supabase.ts', 'errors/errorUtils.ts'],
-    `import { ERROR_CODES } from '@/core/errors/AppError';\n\n${extractConsts(
-      readSource('utils/supabase.ts'),
-      ['POSTGREST_ERROR_MAP']
-    )}\n\n${extractConsts(readSource('errors/errorUtils.ts'), ['NETWORK_MESSAGE_PATTERNS'])}\n`
+    'supabaseTables.ts',
+    ['utils/supabase.ts'],
+    `import { ERROR_CODES } from '@/core/errors/AppError';\n\n${extractConsts(supabaseUtils, [
+      'POSTGREST_ERROR_MAP',
+      'KNOWN_ACRONYMS',
+    ])}\n\n${extractFunction(supabaseUtils, 'toCamelCase')}\n`
   );
 
   // 발췌 3 — authRedirect 가 쓰는 UserProfile 필드

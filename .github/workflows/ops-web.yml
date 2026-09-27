@@ -29,12 +29,18 @@ on:
       - 'uniqn-mobile/src/utils/supabase.ts'
       - 'uniqn-mobile/src/schemas/ops*.schema.ts'
       - 'uniqn-mobile/src/schemas/common.ts'
+      - 'uniqn-mobile/src/schemas/auth.schema.ts'
       - 'uniqn-mobile/src/schemas/__tests__/ops*.test.ts'
       - 'uniqn-mobile/src/hooks/ops/publicPollingPolicy.ts'
       - 'uniqn-mobile/src/hooks/ops/__tests__/publicPollingPolicy.test.ts'
       - 'uniqn-mobile/src/shared/navigation/authRedirect.ts'
       - 'uniqn-mobile/src/shared/navigation/__tests__/authRedirect.test.ts'
       - 'uniqn-mobile/src/repositories/supabase/opsRpcError.ts'
+      - 'uniqn-mobile/src/repositories/supabase/Ops*Repository.ts'
+      - 'uniqn-mobile/src/repositories/interfaces/IOps*Repository.ts'
+      - 'uniqn-mobile/src/repositories/ops.ts'
+      - 'uniqn-mobile/src/services/ops/**'
+      - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
   push:
     branches: [master]
     # pull_request 와 같은 목록(앵커 대신 복제 — 바꿀 때 두 곳 모두)
@@ -57,12 +63,18 @@ on:
       - 'uniqn-mobile/src/utils/supabase.ts'
       - 'uniqn-mobile/src/schemas/ops*.schema.ts'
       - 'uniqn-mobile/src/schemas/common.ts'
+      - 'uniqn-mobile/src/schemas/auth.schema.ts'
       - 'uniqn-mobile/src/schemas/__tests__/ops*.test.ts'
       - 'uniqn-mobile/src/hooks/ops/publicPollingPolicy.ts'
       - 'uniqn-mobile/src/hooks/ops/__tests__/publicPollingPolicy.test.ts'
       - 'uniqn-mobile/src/shared/navigation/authRedirect.ts'
       - 'uniqn-mobile/src/shared/navigation/__tests__/authRedirect.test.ts'
       - 'uniqn-mobile/src/repositories/supabase/opsRpcError.ts'
+      - 'uniqn-mobile/src/repositories/supabase/Ops*Repository.ts'
+      - 'uniqn-mobile/src/repositories/interfaces/IOps*Repository.ts'
+      - 'uniqn-mobile/src/repositories/ops.ts'
+      - 'uniqn-mobile/src/services/ops/**'
+      - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
 
 defaults:
   run:

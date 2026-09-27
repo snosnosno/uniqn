@@ -1,0 +1,82 @@
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/repositories/interfaces/IOpsTournamentRepository.ts
+// 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
+import type { OpsTournament, OpsTournamentStatus, OpsTournamentArchiveResult } from '@/core/types/ops';
+
+/** 칩·정산 비용 설정 (생성 시 p_config 로 전달). */
+export interface OpsTournamentCostConfig {
+  buyInChips: number;
+  rebuyChips: number;
+  addonChips: number;
+  buyInCost: number;
+  feeCost: number;
+  rebuyCost: number;
+  addonCost: number;
+  /** 바운티(선택) — null = 비-바운티 대회(0 과 구분). knockoutPool·bountyAccrued 게이트. */
+  bountyCost: number | null;
+}
+
+export interface CreateOpsTournamentInput {
+  name: string;
+  venue?: string;
+  eventDate?: string;
+  gameType: string;
+  jobPostingId?: string;
+  startingChips: number;
+  seatsPerTable: number;
+  config: OpsTournamentCostConfig;
+}
+
+export interface UpdateOpsTournamentPatch {
+  name?: string;
+  venue?: string;
+  eventDate?: string;
+  gameType?: string;
+  startingChips?: number;
+  seatsPerTable?: number;
+  color?: string;
+  buyInChips?: number;
+  rebuyChips?: number;
+  addonChips?: number;
+  buyInCost?: number;
+  feeCost?: number;
+  rebuyCost?: number;
+  addonCost?: number;
+}
+
+/**
+ * ops 대회 Repository.
+ * 구현체: SupabaseOpsTournamentRepository (프로덕션). 읽기는 RLS 필터, 쓰기는 SECDEF RPC.
+ */
+export interface IOpsTournamentRepository {
+  /** RLS 가시 대회 목록 (event_date desc nulls last, created_at desc). */
+  listForUser(): Promise<OpsTournament[]>;
+  getById(id: string): Promise<OpsTournament | null>;
+  /** uniqn→ops 브릿지: 공고에 연결된 대회 목록(N:1, created_at desc). ops_* 미존재/실패 시 빈 배열(null-safe). */
+  listByPosting(jobPostingId: string): Promise<OpsTournament[]>;
+  createWithEvent(
+    input: CreateOpsTournamentInput,
+    actorId: string
+  ): Promise<{ tournamentId: string }>;
+  updateTournament(id: string, actorId: string, patch: UpdateOpsTournamentPatch): Promise<void>;
+  setStatus(id: string, actorId: string, status: OpsTournamentStatus): Promise<void>;
+  toggleRegistration(id: string, actorId: string, open: boolean): Promise<void>;
+  /** S1 A4: 지난 대회 설정(칩/비용/블라인드 구조/monitor_config) 복사로 새 대회 생성(owner 전용). */
+  duplicateTournament(
+    sourceTournamentId: string,
+    actorId: string,
+    options?: { name?: string; eventDate?: string }
+  ): Promise<{ tournamentId: string }>;
+  /** S1 C6: TV 모니터 구성 저장(owner 전용). null = 기본값 복귀. 서버 화이트리스트 검증(P0001). */
+  setMonitorConfig(tournamentId: string, actorId: string, config: unknown | null): Promise<void>;
+  /**
+   * 결함③: 대회 보관(true) / 복원(false, undo-first). 멱등.
+   * 🔑 hard DELETE 는 `ops_events` append-only 트리거와 충돌해 **물리적으로 불가능**하므로
+   *    이것이 목록에서 "치우기"의 유일한 경로다. `archived_at` 은 status 와 직교(원래 상태 보존).
+   *    진행 중(active) 대회 보관은 서버가 거부한다. 복원은 상태 무관 허용.
+   */
+  setArchived(
+    tournamentId: string,
+    actorId: string,
+    archived: boolean
+  ): Promise<OpsTournamentArchiveResult>;
+}

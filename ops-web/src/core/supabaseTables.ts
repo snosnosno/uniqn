@@ -1,4 +1,4 @@
-// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/utils/supabase.ts, uniqn-mobile/src/errors/errorUtils.ts
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/utils/supabase.ts
 // 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
 import { ERROR_CODES } from '@/core/errors/AppError';
 
@@ -24,12 +24,35 @@ export const POSTGREST_ERROR_MAP: Record<string, { code: string; category: strin
   '54000': { code: ERROR_CODES.INFRA_QUOTA_EXCEEDED, category: 'infrastructure' },
 };
 
-export const NETWORK_MESSAGE_PATTERNS = [
-  'network',
-  'timeout',
-  'offline',
-  'connection',
-  'ECONNREFUSED',
-  'ENOTFOUND',
-  'ETIMEDOUT',
-];
+export const KNOWN_ACRONYMS: Record<string, string> = {
+  Url: 'URL',
+  Urls: 'URLs',
+};
+
+export function toCamelCase<T>(obj: Record<string, unknown>): T {
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(obj)) {
+    let camelKey = key.replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
+    // Restore known acronyms anywhere in key
+    // - End of key: photoUrl → photoURL
+    // - Middle of key (followed by uppercase): photoUrlBlurhash → photoURLBlurhash
+    for (const [token, replacement] of Object.entries(KNOWN_ACRONYMS)) {
+      if (camelKey === token.toLowerCase()) {
+        continue;
+      }
+      if (camelKey.endsWith(token)) {
+        camelKey = camelKey.slice(0, -token.length) + replacement;
+        break;
+      }
+      // Middle occurrence: token must be followed by an uppercase letter
+      // to avoid false positives like `urlParam` (= would match `url` + `P`).
+      const midRegex = new RegExp(`${token}(?=[A-Z])`);
+      if (midRegex.test(camelKey)) {
+        camelKey = camelKey.replace(midRegex, replacement);
+        break;
+      }
+    }
+    result[camelKey] = obj[key];
+  }
+  return result as T;
+}

@@ -5,7 +5,7 @@
  * 알려지지 않은 에러는 handleSupabaseError 로 폴백(전송/일반 분류).
  */
 import { BusinessError, ERROR_CODES } from '@/core/errors/AppError';
-import { handleSupabaseError } from '@/lib/supabaseError';
+import { handleSupabaseError } from '@/lib/supabaseUtils';
 
 interface RpcErrorLike {
   message?: string;
