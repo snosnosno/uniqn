@@ -74,8 +74,11 @@ import { SHARE_SOURCES } from '@/constants/shareSource';
 import {
   useCloseJobPosting,
   useDeleteJobPosting,
+  useExtendFixedPosting,
   useReopenJobPosting,
 } from '@/hooks/useJobManagement';
+import { describeFixedExpiry } from '@/domains/job-posting/fixedExpiry';
+import { FixedPostingExpiryCard } from '@/components/employer/posting/FixedPostingExpiryCard';
 import { extractPostingFilledSubmap, usePostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
@@ -272,6 +275,19 @@ export default function JobPostingDetailScreen() {
   // 켜 두면 "공고가 마감되었습니다."와 "마감했어요 [되돌리기]"가 동시에 뜬다.
   const { mutate: closeJobPosting } = useCloseJobPosting({ suppressSuccessToast: true });
   const { mutate: reopenJobPosting } = useReopenJobPosting({ suppressSuccessToast: true });
+  // 고정 공고 게시 기간(7일) — 게시 중일 때만 만료일과 [7일 연장]을 낸다. 마감된 공고는
+  // 재오픈이 같은 연장을 함께 한다(JobPostingRepository.reopenWithTransaction).
+  const { mutate: extendFixedPosting, isPending: isExtendingFixed } = useExtendFixedPosting();
+  const fixedExpiry = useMemo(
+    () =>
+      isFixed &&
+      posting &&
+      (posting.status === STATUS.JOB_POSTING.ACTIVE ||
+        posting.status === STATUS.JOB_POSTING.CAPACITY_FULL)
+        ? describeFixedExpiry(posting.fixedConfig?.expiresAt)
+        : null,
+    [isFixed, posting]
+  );
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   // action 토스트는 dedupe 면제라(toastStore.ts:58-68) 연타하면 되돌리기 어포던스가 쌓인다.
   // 이 화면은 공고 하나만 다루므로 단일 플래그로 충분한 per-id 가드다.
@@ -1094,6 +1110,16 @@ export default function JobPostingDetailScreen() {
                 </Pressable>
               </View>
             </Card>
+          </View>
+        ) : null}
+
+        {fixedExpiry && !fixedExpiry.isExpired && id ? (
+          <View className="px-4 pt-3">
+            <FixedPostingExpiryCard
+              expiry={fixedExpiry}
+              onExtend={() => extendFixedPosting(id)}
+              isExtending={isExtendingFixed}
+            />
           </View>
         ) : null}
 

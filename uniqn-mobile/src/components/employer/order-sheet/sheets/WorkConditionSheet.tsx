@@ -120,7 +120,8 @@ export function WorkConditionSheet({
         {/* 게시기간 안내 — 카드 틴트(impeccable §14 border-l 금지) */}
         <View className="rounded-xl bg-surface-card border border-secondary-100 dark:border-surface-overlay px-3.5 py-3">
           <Text className="text-xs font-sans text-content-secondary leading-[1.125rem] dark:leading-5">
-            고정 공고는 상시 반복 근무예요. 게시 기간은 7일이며, 만료 후 재등록할 수 있어요.
+            고정 공고는 상시 반복 근무예요. 게시 기간은 7일이고, 마감 하루 전에 알려 드려요. 공고
+            관리에서 [7일 연장]을 누르면 계속 게시돼요.
           </Text>
         </View>
 

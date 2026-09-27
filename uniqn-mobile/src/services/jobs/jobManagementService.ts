@@ -339,6 +339,23 @@ export async function reopenJobPosting(jobPostingId: string, ownerId: string): P
   }
 }
 
+/**
+ * 고정 공고 게시 기간 연장 — 만료를 지금부터 7일 뒤로(상태 불변이라 게시판 동기화 불필요).
+ */
+export async function extendFixedPosting(jobPostingId: string, ownerId: string): Promise<void> {
+  try {
+    logger.info('고정 공고 연장 시작', { jobPostingId, ownerId });
+    await jobPostingRepository.extendFixedPostingWithTransaction(jobPostingId, ownerId);
+    logger.info('고정 공고 연장 완료', { jobPostingId });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '고정 공고 연장',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
+  }
+}
+
 export async function getMyJobPostingStats(ownerId: string): Promise<JobPostingStats> {
   try {
     logger.info('내 공고 통계 조회', { ownerId });

@@ -197,6 +197,7 @@ jest.mock('@/hooks/useJobManagement', () => ({
   useDeleteJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
   useCloseJobPosting: () => ({ mutate: mockCloseMutate, isPending: false }),
   useReopenJobPosting: () => ({ mutate: mockReopenMutate, isPending: false }),
+  useExtendFixedPosting: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 jest.mock('@/hooks/usePostingFilledCounts', () => ({

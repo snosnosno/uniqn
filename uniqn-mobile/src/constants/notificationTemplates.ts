@@ -248,6 +248,16 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '⏰',
   },
 
+  // 실제 발신·문구는 크론(`fn_notify_fixed_postings_expiring`)이 만든다 — 여기는 폴백.
+  // 🔑 목적지는 **관리 화면**이다 — 거기 [7일 연장] 카드가 있다.
+  [NotificationType.FIXED_POSTING_EXPIRING]: {
+    title: '⏰ 고정 공고가 곧 마감돼요',
+    body: (d) =>
+      `"${d.jobTitle}" 고정 공고가 24시간 안에 마감돼요. 계속 구하시면 7일 연장해 주세요.`,
+    link: (d) => (d.jobPostingId ? `/my-postings/${d.jobPostingId}` : '/my-postings'),
+    icon: '⏰',
+  },
+
   [NotificationType.WORK_DATE_EXPIRED]: {
     title: '⏰ 공고 자동 마감',
     body: (d) => `"${d.jobTitle}" 공고가 근무일 경과로 자동 마감되었습니다.`,

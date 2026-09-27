@@ -23,6 +23,7 @@ import {
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
 import { getTodayString } from '@/utils/date';
+import { buildExtendedFixedConfig } from '@/domains/job-posting/fixedExpiry';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
 import type { VenueContainer } from '@/domains/workSchedule';
@@ -1007,14 +1008,58 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
         });
       }
 
+      // 🔴 고정 공고는 만료 시각도 새로 잡는다 — 상태만 돌리면 만료 크론이 과거 expiresAt 을 보고
+      //    1시간 안에 다시 닫는다(fixedExpiry.ts). 한 번의 UPDATE 라 둘이 어긋날 틈이 없다.
+      const now = new Date();
       const { error } = await supabase
         .from(TABLE)
-        .update({ status: STATUS.JOB_POSTING.ACTIVE, updated_at: new Date().toISOString() })
+        .update({
+          status: STATUS.JOB_POSTING.ACTIVE,
+          updated_at: now.toISOString(),
+          ...(cur.schedule?.kind === 'fixed'
+            ? { fixed_config: buildExtendedFixedConfig(cur.fixedConfig, now) }
+            : {}),
+        })
         .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 재오픈', table: TABLE });
       logger.info('공고 재오픈 완료', { jobPostingId });
     } catch (error) {
       rethrowOrHandle(error, '공고 재오픈', { jobPostingId });
+    }
+  }
+
+  async extendFixedPostingWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
+    try {
+      logger.info('고정 공고 게시 기간 연장', { jobPostingId, ownerId });
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '고정 공고 연장');
+
+      if (cur.schedule?.kind !== 'fixed') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정 공고만 게시 기간을 연장할 수 있어요.',
+        });
+      }
+      // 게시 중인 공고만 — 마감된 공고는 재오픈이 같은 연장을 함께 한다(상태 전이는 재오픈의 몫).
+      if (
+        cur.status !== STATUS.JOB_POSTING.ACTIVE &&
+        cur.status !== STATUS.JOB_POSTING.CAPACITY_FULL
+      ) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '마감된 공고는 재오픈하면 7일 동안 다시 게시돼요.',
+        });
+      }
+
+      const now = new Date();
+      const { error } = await supabase
+        .from(TABLE)
+        .update({
+          fixed_config: buildExtendedFixedConfig(cur.fixedConfig, now),
+          updated_at: now.toISOString(),
+        })
+        .eq('id', jobPostingId);
+      if (error) handleSupabaseError(error, { operation: '고정 공고 연장', table: TABLE });
+      logger.info('고정 공고 게시 기간 연장 완료', { jobPostingId });
+    } catch (error) {
+      rethrowOrHandle(error, '고정 공고 연장', { jobPostingId });
     }
   }
 

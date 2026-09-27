@@ -80,8 +80,16 @@ export const NOTIFICATION_ROUTE_MAP: Record<
   [NotificationType.JOB_CANCELLED]: () => ({ name: 'schedule' }),
   [NotificationType.JOB_CLOSED]: (data) =>
     data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+  // 🔑 만료·만료 예정은 **사장이 다시 열거나 연장하러 가는** 알림이다 — 구직자 뷰가 아니라
+  //    재오픈·[7일 연장]이 있는 관리 화면으로 보낸다.
   [NotificationType.FIXED_POSTING_EXPIRED]: (data) =>
-    data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+    data?.jobPostingId
+      ? { name: 'employer/posting', params: { id: data.jobPostingId } }
+      : { name: 'employer/my-postings' },
+  [NotificationType.FIXED_POSTING_EXPIRING]: (data) =>
+    data?.jobPostingId
+      ? { name: 'employer/posting', params: { id: data.jobPostingId } }
+      : { name: 'employer/my-postings' },
   [NotificationType.WORK_DATE_EXPIRED]: (data) =>
     data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
 

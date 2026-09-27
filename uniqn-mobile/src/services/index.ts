@@ -84,6 +84,7 @@ export {
   closeJobPosting,
   createJobPosting,
   deleteJobPosting,
+  extendFixedPosting,
   getMyJobPostingStats,
   reopenJobPosting,
   updateJobPosting,

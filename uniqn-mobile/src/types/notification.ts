@@ -107,6 +107,12 @@ export const NotificationType = {
   JOB_CLOSED: 'job_closed',
   /** 고정 공고 만료 (작성자에게) */
   FIXED_POSTING_EXPIRED: 'fixed_posting_expired',
+  /**
+   * 고정 공고 만료 24시간 전 (작성자에게) — "계속 구하면 7일 연장하세요".
+   * 생산자는 크론 `notify-fixed-postings-expiring` → `fn_notify_fixed_postings_expiring()`
+   * (마이그 20260927110000). 목적지는 [7일 연장] 카드가 있는 관리 화면.
+   */
+  FIXED_POSTING_EXPIRING: 'fixed_posting_expiring',
   /** 근무일 경과 자동 마감 (작성자에게) */
   WORK_DATE_EXPIRED: 'work_date_expired',
   /**
@@ -281,6 +287,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CANCELLED]: NotificationCategory.JOB,
   [NotificationType.JOB_CLOSED]: NotificationCategory.JOB,
   [NotificationType.FIXED_POSTING_EXPIRED]: NotificationCategory.JOB,
+  [NotificationType.FIXED_POSTING_EXPIRING]: NotificationCategory.JOB,
   [NotificationType.WORK_DATE_EXPIRED]: NotificationCategory.JOB,
   [NotificationType.POSTING_CAPACITY_GAP]: NotificationCategory.JOB,
   [NotificationType.POSTING_ANNOUNCEMENT]: NotificationCategory.JOB,
@@ -377,6 +384,7 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.JOB_CANCELLED]: 'high',
   [NotificationType.JOB_CLOSED]: 'normal',
   [NotificationType.FIXED_POSTING_EXPIRED]: 'normal',
+  [NotificationType.FIXED_POSTING_EXPIRING]: 'high',
   [NotificationType.WORK_DATE_EXPIRED]: 'normal',
   // 하루 전은 마지막 기회다 — 서버가 d_offset 에 따라 urgent/high 를 실제로 갈라 쓴다.
   // 여기 기본값은 그 중 낮은 쪽에 맞춘다(클라가 서버 값을 덮지 않도록).
@@ -569,6 +577,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.JOB_CANCELLED]: '공고 취소',
   [NotificationType.JOB_CLOSED]: '공고 마감',
   [NotificationType.FIXED_POSTING_EXPIRED]: '고정 공고 만료',
+  [NotificationType.FIXED_POSTING_EXPIRING]: '고정 공고 만료 예정',
   [NotificationType.WORK_DATE_EXPIRED]: '근무일 경과 마감',
   [NotificationType.POSTING_CAPACITY_GAP]: '정원 미달 알림',
   [NotificationType.POSTING_ANNOUNCEMENT]: '공고 공지',

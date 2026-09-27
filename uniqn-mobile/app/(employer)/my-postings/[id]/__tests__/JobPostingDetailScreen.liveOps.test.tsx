@@ -165,6 +165,7 @@ jest.mock('@/hooks/useJobManagement', () => ({
   // 화면이 마운트조차 못 한다("useCloseJobPosting is not a function").
   useCloseJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
   useReopenJobPosting: () => ({ mutate: jest.fn(), isPending: false }),
+  useExtendFixedPosting: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 jest.mock('@/hooks/usePostingFilledCounts', () => ({

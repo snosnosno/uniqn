@@ -371,6 +371,14 @@ export interface IJobPostingRepository {
   reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
 
   /**
+   * 고정 공고 게시 기간 연장 — 만료 시각을 지금부터 7일 뒤로 다시 잡는다(게시 중인 공고만).
+   *
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 요청자 ID (권한 검증용 — 재오픈과 같은 owner|member 규칙)
+   */
+  extendFixedPostingWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
+
+  /**
    * 소유자별 공고 통계 조회
    * @param ownerId - 소유자 ID
    * @returns 공고 통계
