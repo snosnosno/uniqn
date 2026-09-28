@@ -4,6 +4,8 @@
  * 배경(2026-08-07): 네이티브 폴백이 `https://ops.uniqn.app` 였는데 그 도메인은 끝내 만들어지지
  * 않았다(DNS 미해석). 운영 앱에서 공유한 전광판 링크·플레이어 QR 이 열리지 않는 결함이라
  * 폴백을 메인 웹앱 origin 으로 되돌렸고, 그 상태를 이 테스트가 고정한다.
+ * 2026-09-28(ops-web W8): 공개뷰가 ops.uniqn.app 으로 옮겨 가 `EXPO_PUBLIC_OPS_URL` 로 켠다 —
+ * 설정되면 웹도 그 값을 우선한다. 미설정 폴백(위 회귀 가드)은 그대로 유지.
  */
 import { Platform } from 'react-native';
 import { APP_WEB_ORIGIN } from '@/constants/appUrl';
@@ -74,6 +76,42 @@ describe('웹 origin 우선', () => {
 
     expect(getOpsWebOrigin()).toBe('https://uniqn-app.pages.dev');
     expect(getOpsPlayerUrl('tok')).toBe('https://uniqn-app.pages.dev/live/tok');
+  });
+
+  it('EXPO_PUBLIC_OPS_URL 이 설정되면 웹에서도 서빙 origin 보다 우선한다(ops.uniqn.app 개통)', () => {
+    setPlatform('web');
+    (globalThis as { window?: unknown }).window = {
+      location: { origin: 'https://uniqn.app' },
+    };
+    mockGetEnv.mockReturnValue({
+      EXPO_PUBLIC_OPS_URL: 'https://ops.uniqn.app',
+    } as ReturnType<typeof getEnv>);
+
+    expect(getOpsWebOrigin()).toBe('https://ops.uniqn.app');
+    expect(getOpsMonitorUrl('tok')).toBe('https://ops.uniqn.app/monitor/tok');
+    expect(getOpsPlayerUrl('tok')).toBe('https://ops.uniqn.app/live/tok');
+  });
+
+  it('EXPO_PUBLIC_OPS_URL 끝 슬래시는 떼어 이중 슬래시 링크를 만들지 않는다', () => {
+    setPlatform('ios');
+    mockGetEnv.mockReturnValue({
+      EXPO_PUBLIC_OPS_URL: 'https://ops.uniqn.app/',
+    } as ReturnType<typeof getEnv>);
+
+    expect(getOpsMonitorUrl('tok')).toBe('https://ops.uniqn.app/monitor/tok');
+    expect(getOpsBaseUrl()).toBe('https://ops.uniqn.app');
+  });
+
+  it('웹에서 env 가 던지면 서빙 origin 으로 흡수한다', () => {
+    setPlatform('web');
+    (globalThis as { window?: unknown }).window = {
+      location: { origin: 'https://uniqn.app' },
+    };
+    mockGetEnv.mockImplementation(() => {
+      throw new Error('env not initialized');
+    });
+
+    expect(getOpsWebOrigin()).toBe('https://uniqn.app');
   });
 
   it('window 가 없는 웹 SSR 경로에서는 폴백을 쓴다', () => {

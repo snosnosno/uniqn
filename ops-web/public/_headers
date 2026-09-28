@@ -5,7 +5,21 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  X-Robots-Tag: noindex, nofollow
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# 공개 대회 뷰 — 개통(W8) 후에도 색인 차단 유지(모바일 _headers 의 F2-① 악용 방어 결정 승계).
+# 토큰 URL 이 검색에 노출되면 전광판·플레이어 정보가 누구에게나 열린다.
+/monitor/*
+  X-Robots-Tag: noindex
+
+/live/*
+  X-Robots-Tag: noindex
+
+# 비밀번호 화면 — 검색 결과에 뜰 이유가 없다(토큰은 hash/query 라 크롤러가 못 받지만 품질상 차단)
+/forgot-password
+  X-Robots-Tag: noindex
+
+/reset-password
+  X-Robots-Tag: noindex

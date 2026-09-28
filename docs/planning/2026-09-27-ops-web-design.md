@@ -177,6 +177,14 @@ T-HOLDEM/
 - 1.0.6 함대는 OTA 를 못 받아 옛 링크를 계속 만든다 → `_redirects` 규칙은 **영구 유지**.
 - **플레이어 claim UX**(리뷰 M3): 지금은 uniqn.app 에 로그인된 선수가 바로 claim 한다. ops 도메인에선 한 번 더 로그인해야 한다 → claim 버튼이 ops 로그인으로 보냈다가 `/live/:token` 으로 돌아오는 흐름을 W7 완료 기준에 넣는다.
 - App Links/AASA 는 이미 `/monitor`·`/live` 를 가로채지 않는다(확인됨) → 변경 없음.
+- **개통 순서(W8 코드 리뷰 — 어기면 공개 뷰어가 깨진다)**: `_redirects` 는 머지 후 **아무 모바일 웹 배포에나** 실려 즉시 켜진다. 그래서 순서를 지킨다.
+  1. W7 공개뷰가 ops.uniqn.app prod 에 반영(지금 `/monitor`·`/live` 는 자리표시)
+  2. Cloudflare Access 해제(걸린 채 302 가 켜지면 뷰어가 Access 로그인 벽에 막힘)
+  3. Supabase Auth Redirect URLs 에 `https://ops.uniqn.app/**`
+  4. W8 머지 → 모바일 웹 배포
+  5. prod 실측 `curl -sI https://uniqn.app/monitor/x` → `Location: https://ops.uniqn.app/monitor/x` (로컬 wrangler 는 ops.uniqn.app 로 가는 Location 을 로컬 주소로 바꿔 보여 주므로 증거가 안 된다)
+  6. 그다음에 `EXPO_PUBLIC_OPS_URL` 을 EAS 빌드·`eas update`·웹 빌드 환경에 설정 → OTA·웹 재배포(로컬 `.env.local` 에는 넣지 않는다 — 로컬 토큰은 prod 에서 무효)
+- 색인: 사이트 전체 noindex 는 W8 에 해제하되 `/monitor/*`·`/live/*`(모바일 F2-① 악용 방어 승계)와 비밀번호 화면은 `X-Robots-Tag: noindex` 유지(`ops-web/public/_headers`).
 
 ## 8. 보안 · 운영
 

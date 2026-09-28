@@ -53,6 +53,8 @@
 # app/+html.tsx 신설 대신 헤더 방식 채택: Expo Router는 SPA 단일 진입점이라
 # +html.tsx에 noindex를 넣으면 앱 전체 <head>가 오염됨. _headers는 경로별로
 # 격리되어 /monitor·/live 에만 적용되고 빌드 시 dist/ 로 자동 복사됨.
+# 2026-09-28(ops-web W8): 두 경로는 _redirects 가 ops.uniqn.app 으로 302 한다 — 여기선 302 응답의
+# 보조 차단일 뿐, 실제 서빙 화면의 noindex 는 ops-web/public/_headers 가 맡는다.
 /monitor/*
   X-Robots-Tag: noindex
 

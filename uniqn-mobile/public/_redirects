@@ -14,5 +14,11 @@
 # 308 무한 루프가 나므로 절대 추가하지 말 것(실측: privacy 는 이 줄 없이 200).
 /guide.html  /guide.html  200
 
+# ops 공개뷰(전광판·플레이어뷰) → ops.uniqn.app 이전. 1.0.6 함대는 OTA 를 못 받아 옛 링크를
+# 계속 만들므로 이 규칙은 영구 유지. 안정화 확인 전까지 302(301 은 브라우저가 영구 캐시).
+# 🚨 반드시 아래 SPA 규칙보다 위 — 아래에 두면 /* 가 먼저 매칭된다.
+/monitor/*  https://ops.uniqn.app/monitor/:splat  302
+/live/*  https://ops.uniqn.app/live/:splat  302
+
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200
