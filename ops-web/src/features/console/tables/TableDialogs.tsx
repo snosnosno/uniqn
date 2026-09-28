@@ -28,6 +28,7 @@ import { filterParticipants } from '../players/helpers';
 import {
   LOCK_LABEL,
   STATUS_LABEL,
+  planFingerprint,
   planRedraw,
   unseatedParticipants,
   type RedrawMode,
@@ -198,7 +199,9 @@ export function TableSettingsDialog({
         />
         <p className="label">딜러</p>
         <ul className="flex max-h-48 flex-col overflow-auto border">
-          {staff.length === 0 ? (
+          {roster.isPending ? (
+            <li className="p-3 text-sm text-muted-foreground">로스터를 불러오는 중…</li>
+          ) : staff.length === 0 ? (
             <li className="p-3 text-sm text-muted-foreground">
               스태프 탭에서 로스터를 먼저 채우세요.
             </li>
@@ -360,19 +363,25 @@ export function RedrawDialog({
 }) {
   const fill = useRedrawWaitlistFill(tournamentId);
   const reseat = useReseatParticipants(tournamentId);
-  const [seed, setSeed] = useState(0);
   const [confirming, setConfirming] = useState(false);
   // 좌석이 realtime 으로 바뀌어도 미리보기가 저절로 흔들리지 않게 "다시 계산"을 눌렀을 때만 다시 뽑는다.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const plan = useMemo(() => planRedraw(mode, tables, seats, participants), [mode, seed]);
+  // 대신 계산 뒤 입력이 바뀌면(다른 운영자·새 등록) 확정을 막고 다시 계산을 요구한다(리뷰 W5 — 낡은 계획 재전송).
+  const current = planFingerprint(tables, seats, participants);
+  const compute = () => ({ plan: planRedraw(mode, tables, seats, participants), fp: current });
+  const [planned, setPlanned] = useState(compute);
+  const { plan } = planned;
+  const stale = planned.fp !== current;
   const nameOf = new Map(participants.map((p) => [p.id, p.name] as const));
   const labelOf = new Map(seats.map((s) => [s.id, `T${s.tableNo}-${s.seatNo}`] as const));
   const pending = fill.isPending || reseat.isPending;
-  const canConfirm = plan.assignments.length > 0 && !plan.insufficient && !pending;
+  const canConfirm = plan.assignments.length > 0 && !plan.insufficient && !pending && !stale;
+  const recompute = () => setPlanned(compute());
   const run = () => {
     if (!canConfirm) return;
-    if (plan.mode === 'waitlist_fill') fill.mutate(plan.assignments, { onSuccess: onClose });
-    else reseat.mutate({ assignments: plan.assignments, mode: plan.mode }, { onSuccess: onClose });
+    // 서버가 거절하면(좌석 충돌 등) 같은 계획을 다시 보내지 않게 새로 계산해 둔다
+    const after = { onSuccess: onClose, onError: recompute };
+    if (plan.mode === 'waitlist_fill') fill.mutate(plan.assignments, after);
+    else reseat.mutate({ assignments: plan.assignments, mode: plan.mode }, after);
   };
   const empty = plan.insufficient
     ? '적격 빈 좌석이 부족해 전원을 배치할 수 없어요.'
@@ -410,13 +419,13 @@ export function RedrawDialog({
               ))}
             </ol>
           )}
+          {stale ? (
+            <p role="alert" className="text-sm text-warning">
+              계산한 뒤 좌석이나 참가자가 바뀌었어요. 다시 계산한 뒤 배정하세요.
+            </p>
+          ) : null}
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="h-11"
-              disabled={pending}
-              onClick={() => setSeed((n) => n + 1)}
-            >
+            <Button variant="outline" className="h-11" disabled={pending} onClick={recompute}>
               다시 계산
             </Button>
             <Button

@@ -109,3 +109,15 @@ export function parseSeatLabel(raw: string): [number, number] | null {
   const m = raw.trim().match(/^t?\s*(\d{1,3})\s*[-·.\s]\s*(\d{1,2})$/i);
   return m ? [Number(m[1]), Number(m[2])] : null;
 }
+
+/** 배정 계산 입력의 지문 — 미리보기 뒤 이 값이 바뀌면 계획이 낡은 것이다. */
+export function planFingerprint(
+  tables: readonly OpsTable[],
+  seats: readonly OpsSeat[],
+  participants: readonly OpsParticipant[]
+): string {
+  const t = tables.map((x) => `${x.id}:${x.status}:${x.lockType}`).sort();
+  const s = seats.map((x) => `${x.id}:${x.participantId ?? ''}`).sort();
+  const p = participants.map((x) => `${x.id}:${x.status}`).sort();
+  return `${t.join(',')}|${s.join(',')}|${p.join(',')}`;
+}

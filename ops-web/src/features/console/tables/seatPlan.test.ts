@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { OpsParticipant, OpsSeat, OpsTable } from '@/core/types/ops';
-import { buildRows, parseSeatLabel, planRedraw, unseatedParticipants } from './seatPlan';
+import {
+  buildRows,
+  parseSeatLabel,
+  planFingerprint,
+  planRedraw,
+  unseatedParticipants,
+} from './seatPlan';
 
 const table = (id: string, tableNo: number, over: Partial<OpsTable> = {}): OpsTable => ({
   id,
@@ -103,4 +109,17 @@ describe('parseSeatLabel', () => {
   it.each(['', 'T5', 'abc', '5-', 'T5-2-1'])('%s → null', (raw) =>
     expect(parseSeatLabel(raw)).toBeNull()
   );
+});
+
+describe('planFingerprint', () => {
+  it('좌석 점유·참가자 상태·테이블 잠금이 바뀌면 달라지고, 순서만 바뀌면 같다', () => {
+    const t = [table('a', 1)];
+    const s1 = [seat('a1', 'a', 1, 1, 'p1'), seat('a2', 'a', 1, 2)];
+    const p = [player('p1', 'active'), player('p2', 'active')];
+    const base = planFingerprint(t, s1, p);
+    expect(planFingerprint(t, [...s1].reverse(), [...p].reverse())).toBe(base);
+    expect(planFingerprint(t, [seat('a1', 'a', 1, 1), seat('a2', 'a', 1, 2)], p)).not.toBe(base);
+    expect(planFingerprint(t, s1, [player('p1', 'active'), player('p2', 'busted')])).not.toBe(base);
+    expect(planFingerprint([table('a', 1, { lockType: 'locked' })], s1, p)).not.toBe(base);
+  });
 });

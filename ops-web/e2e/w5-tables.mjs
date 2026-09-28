@@ -109,6 +109,39 @@ await step('빈자리 채우기(W): 대기 1명 → 미리보기 → 배정 → 
   assert(seatOf('가선수') !== 'NONE', '빈자리 채우기 안 됨');
 });
 
+await step(
+  '회귀: 선택한 좌석에 다른 운영자가 다른 사람을 앉혀도 단축키(R)가 그 사람에게 가지 않는다',
+  async () => {
+    const from = seatOf('나선수');
+    await page.locator(`button[data-seat="${from}"]`).click();
+    await page.getByRole('button', { name: '비우기' }).first().waitFor();
+    // 다른 운영자: 나선수를 비우고 가선수를 그 자리에 앉힌다(앱과 같은 RPC)
+    const seatId = (label) =>
+      sql(
+        `select id from ops_seats where tournament_id='${tid}' and 'T'||table_no||'-'||seat_no='${label}'`
+      )[0];
+    const gaSeat = seatOf('가선수');
+    asOwner(`SELECT public.ops_free_seat('${seatId(from)}', '${OWNER_ID}') \\g /dev/null
+SELECT public.ops_free_seat('${seatId(gaSeat)}', '${OWNER_ID}') \\g /dev/null`);
+    const gaId = sql(
+      `select id from ops_participants where tournament_id='${tid}' and name='가선수'`
+    )[0];
+    asOwner(
+      `SELECT public.ops_assign_seat('${seatId(from)}', '${gaId}', '${OWNER_ID}') \\g /dev/null`
+    );
+    await page.getByRole('button', { name: `${from} 가선수` }).waitFor();
+    const rebuys = () => sql(`select rebuys from ops_participants where id='${gaId}'`)[0];
+    const before = rebuys();
+    await page.keyboard.press('KeyR');
+    await page.waitForTimeout(1500);
+    assert(rebuys() === before, `선택하지 않은 가선수에게 리바이가 기록됨(${before}→${rebuys()})`);
+    assert(
+      (await page.locator(`button[data-seat="${from}"]`).getAttribute('aria-pressed')) !== 'true',
+      '다른 사람이 앉은 좌석이 선택된 채로 남음'
+    );
+  }
+);
+
 await step('테이블 설정: T1 잠금 → DB lock_type=locked, 행에 "잠금" 표시', async () => {
   await page.getByRole('button', { name: 'T1 설정' }).click();
   await page.getByRole('dialog').getByRole('radio', { name: '잠금' }).click();
@@ -149,6 +182,28 @@ await step('랜덤 재배치: 미리보기 → 확인창(Enter) → 잠금 T1 �
   );
   assert(seated() === 4, `착석 ${seated()}명(4명이어야 함)`);
 });
+
+await step(
+  '768(태블릿): 좌석 선택 → 시트의 "이동" → 시트가 닫히고 빈 칸 클릭으로 이동',
+  async () => {
+    const ctx = await browser.newContext({ viewport: { width: 768, height: 1024 } });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login?redirect=${encodeURIComponent(`/tournaments/${tid}/tables`)}`);
+    await login(p, OWNER);
+    await p.waitForURL(`${BASE}/tournaments/${tid}/tables`);
+    const from = seatOf('다선수');
+    const [target] = sql(
+      `select 'T'||table_no||'-'||seat_no from ops_seats where tournament_id='${tid}' and table_no=3 and participant_id is null order by seat_no desc limit 1`
+    );
+    await p.locator(`button[data-seat="${from}"]`).click();
+    await p.getByRole('dialog').getByRole('button', { name: /이동/ }).click();
+    await p.getByRole('dialog').waitFor({ state: 'detached', timeout: 3000 });
+    await p.locator(`button[data-seat="${target}"]`).click();
+    for (let i = 0; i < 25 && seatOf('다선수') !== target; i += 1) await p.waitForTimeout(200);
+    assert(seatOf('다선수') === target, `태블릿 이동 안 됨: ${seatOf('다선수')} (목표 ${target})`);
+    await ctx.close();
+  }
+);
 
 await step('스크린샷 375/768/1280 × 다크/라이트', async () => {
   const prepare = async (p) => {

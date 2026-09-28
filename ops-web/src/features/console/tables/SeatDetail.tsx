@@ -32,7 +32,14 @@ export function SeatDetail({
         <Button variant="outline" size="lg" disabled={ctl.busy} onClick={ctl.startMove}>
           이동 <Kbd>M</Kbd>
         </Button>
-        <Button variant="outline" size="lg" disabled={ctl.busy} onClick={ctl.freeSelected}>
+        {/* 비우기는 좌석을 잃는 동작 — 모바일처럼 위험 톤으로 구분 */}
+        <Button
+          variant="outline"
+          size="lg"
+          className="text-destructive"
+          disabled={ctl.busy}
+          onClick={ctl.freeSelected}
+        >
           비우기
         </Button>
       </div>

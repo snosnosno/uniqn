@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Shuffle, UsersRound } from 'lucide-react';
 import { cn } from 'cn';
 import { LoadError, Loading } from '@/components/ops/LoadState';
@@ -60,6 +60,9 @@ export function TablesTab({
   const maxSeats = Math.max(0, ...rows.map((r) => r.seats.length));
   // 좌석이 realtime 으로 비면(다른 운영자가 비움) 선택도 풀린 것으로 본다
   const selected = ctl.occupant ? ctl.selectedSeat : null;
+  // 다른 탭으로 가면 이동 모드를 끝낸다(돌아왔을 때 이동바가 되살아나지 않게)
+  const { cancelMove } = ctl;
+  useEffect(() => cancelMove, [cancelMove]);
 
   const keyed: Record<string, () => void> = { KeyW: () => ctl.openRedraw('waitlist_fill') };
   if (ctl.moveFrom) keyed.Escape = ctl.cancelMove;
@@ -155,7 +158,11 @@ export function TablesTab({
       )}
 
       {!wide ? (
-        <Sheet open={selected !== null} onOpenChange={(open) => !open && ctl.clearSelection()}>
+        // 이동 모드에선 시트를 닫아 행렬표의 빈 칸을 누를 수 있게 한다(리뷰 W5 HIGH — 시트가 표를 가렸다)
+        <Sheet
+          open={selected !== null && !ctl.moveFrom}
+          onOpenChange={(open) => !open && !ctl.moveFrom && ctl.clearSelection()}
+        >
           <SheetContent
             side={phone ? 'bottom' : 'right'}
             className={phone ? 'max-h-[85dvh] overflow-auto' : 'w-full overflow-auto sm:max-w-sm'}
@@ -274,7 +281,7 @@ function SeatCell({
 }) {
   const selected = ctl.selectedSeat?.id === seat.id;
   const isSource = ctl.moveFrom?.id === seat.id;
-  const target = !!ctl.moveFrom && !seat.participantId;
+  const target = !!ctl.moveFrom && ctl.canSeat(seat);
   const label = `T${seat.tableNo}-${seat.seatNo}`;
   return (
     <button
