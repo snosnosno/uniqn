@@ -67,7 +67,10 @@ export async function step(name, fn) {
     process.stdout.write(`  ✔ ${name}\n`);
   } catch (e) {
     failures += 1;
-    process.stdout.write(`  ✖ ${name}\n    ${String(e?.message ?? e).split('\n')[0]}\n`);
+    const lines = String(e?.message ?? e).split('\n');
+    // E2E_VERBOSE=1 이면 Playwright 호출 로그(가로막은 요소 등)까지 보여준다
+    const shown = process.env.E2E_VERBOSE ? lines.slice(0, 14).join('\n    ') : lines[0];
+    process.stdout.write(`  ✖ ${name}\n    ${shown}\n`);
   }
 }
 export function finish() {

@@ -69,14 +69,14 @@ related:
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 테이블 목록(좌석/빈/착석, 잠금·우선순위·상태·딜러) | `TablesTab`·`TableRow` | ⬜ | |
-| 테이블 추가(좌석 1~11) | `AddTableForm` | ⬜ | |
-| 좌석표(점유=이름, 빈=+) | `SeatGrid` | ⬜ | 시안 승인 필요(사람 게이트) |
-| 좌석 배정 / 이동(moveMode) / 비우기 | `useAssignSeat`·`useMoveSeat`·`useFreeSeat` | ⬜ | |
-| 잠금(없음/잠금/피처)·우선순위(없음/1~5)·상태(오픈/대기/마감) | 피커 | ⬜ | |
-| 딜러 지정/해제 | `DealerPickerSheet` | ⬜ | |
-| 빈자리 채움(미리보기·다시 계산) | `RedrawModal` waitlist_fill | ⬜ | |
-| 전원 재배치(랜덤/칩 드래프트, 확인창, 좌석 부족 시 비활성) | `RedrawModal` | ⬜ | |
+| 테이블 목록(좌석/빈/착석, 잠금·우선순위·상태·딜러) | `TablesTab`·`TableRow` | ➕ | 행렬표 한 화면(시안 A 승인 09-28) — 목록→상세 2단계가 없다 · `e2e/w5-tables.mjs` |
+| 테이블 추가(좌석 1~11) | `AddTableForm` | ✅ | `AddTableDialog` |
+| 좌석표(점유=이름, 빈=+) | `SeatGrid` | ➕ | 칸에 칩도 표시 · 빈자리 점선 |
+| 좌석 배정 / 이동(moveMode) / 비우기 | `useAssignSeat`·`useMoveSeat`·`useFreeSeat` | ➕ | 낙관적 반영 · 이동은 M + "T5-2" 입력도 가능 |
+| 잠금(없음/잠금/피처)·우선순위(없음/1~5)·상태(오픈/대기/마감) | 피커 | ✅ | `TableSettingsDialog`(행 머리 클릭) |
+| 딜러 지정/해제 | `DealerPickerSheet` | ✅ | 딜러 우선 정렬 동일 |
+| 빈자리 채움(미리보기·다시 계산) | `RedrawModal` waitlist_fill | ✅ | 단축키 W |
+| 전원 재배치(랜덤/칩 드래프트, 확인창, 좌석 부족 시 비활성) | `RedrawModal` | ✅ | 잠금 테이블 점유자 유지 E2E 확인 |
 
 ## 5. 블라인드 / 클럭 (W4·W5)
 

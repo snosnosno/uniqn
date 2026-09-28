@@ -13,6 +13,9 @@ import { PlayersDetailPanel, PlayersTab } from '@/features/console/players/Playe
 import { usePlayerActions } from '@/features/console/players/usePlayerActions';
 import { LevelsTab } from '@/features/console/levels/LevelsTab';
 import { StatusTab } from '@/features/console/StatusTab';
+import { TablesDetailPanel } from '@/features/console/tables/SeatDetail';
+import { TablesTab } from '@/features/console/tables/TablesTab';
+import { useSeatController } from '@/features/console/tables/useSeatController';
 import { parseConsoleTab, type ConsoleTab } from '@/features/console/tabs';
 import { StatusChip } from '@/features/tournaments/StatusChip';
 import {
@@ -24,6 +27,7 @@ import {
   useOpsTournament,
 } from '@/hooks/ops/useConsoleQueries';
 import { useResyncOnReturn } from '@/hooks/ops/useResyncOnReturn';
+import { useOpsStaff } from '@/hooks/ops/useStaffPrizeHistory';
 import { toUserMessage } from '@/lib/errorMessage';
 import { AuthShell } from '@/routes/auth/AuthShell';
 import { UUID_LIKE_RE } from '@/core/schemas/common';
@@ -100,6 +104,17 @@ function Console({ tournament, tab }: { tournament: OpsTournament; tab: ConsoleT
     seatOf,
     onOpenPayouts: () => navigate(`/tournaments/${id}/payouts`),
   });
+  const roster = useOpsStaff(id);
+  const staffNameOf = useCallback(
+    (staffId: string) => (roster.data ?? []).find((s) => s.staffId === staffId)?.staffName ?? null,
+    [roster.data]
+  );
+  const seatCtl = useSeatController({
+    tournament,
+    tables: tables.data ?? [],
+    seats: seats.data ?? [],
+    participants: list,
+  });
 
   const header = (
     <header className="flex h-12 items-center gap-2 border-b px-2">
@@ -135,6 +150,21 @@ function Console({ tournament, tab }: { tournament: OpsTournament; tab: ConsoleT
             seatOf={seatOf}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            actions={actions}
+          />
+        );
+      case 'tables':
+        return (
+          <TablesTab
+            tournament={tournament}
+            loading={tables.isPending || seats.isPending}
+            loadError={tables.error ?? seats.error}
+            onRetry={() => (void tables.refetch(), void seats.refetch())}
+            tables={tables.data ?? []}
+            seats={seats.data ?? []}
+            participants={list}
+            staffNameOf={staffNameOf}
+            ctl={seatCtl}
             actions={actions}
           />
         );
@@ -186,12 +216,15 @@ function Console({ tournament, tab }: { tournament: OpsTournament; tab: ConsoleT
               seat={selected ? seatOf(selected.id) : null}
               actions={actions}
             />
+          ) : tab === 'tables' ? (
+            <TablesDetailPanel tournament={tournament} ctl={seatCtl} actions={actions} />
           ) : undefined
         }
       >
         {body}
       </ConsoleShell>
       {actions.dialogs}
+      {seatCtl.dialogs}
     </>
   );
 }
