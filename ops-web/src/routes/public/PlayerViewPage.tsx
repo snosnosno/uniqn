@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { useParams } from 'react-router';
+import { cn } from 'cn';
 import { formatHms } from '@/core/domains/ops';
 import type { OpsPlayerView } from '@/core/types/ops';
 import { fmt, formatBb, formatMmSs } from '@/features/console/format';
@@ -17,7 +18,7 @@ import { usePlayerView, useTrackPublicView } from '@/hooks/public/usePublicViews
 const STATUS_LABEL: Record<string, string> = {
   registered: '등록',
   checked_in: '체크인',
-  active: '플레이 중',
+  active: '진행 중',
   busted: '탈락',
   no_show: '불참',
 };
@@ -43,9 +44,13 @@ export function Component() {
       <div className="px-[18px] pt-4 pb-2">
         <p className="label">{view.tournament.venue ?? 'UNIQN OPS'}</p>
         <h1 className="truncate text-lg font-bold">{view.tournament.name}</h1>
+        {/* 비가역 계정 연결 직전에 본인 기록인지 확인할 단서 — 슬립이 뒤바뀌었을 때(리뷰 W7) */}
+        <p className="mt-1 text-base font-semibold">
+          <span className="num text-muted-foreground">#{view.me.entryNumber}</span> {view.me.name}
+        </p>
       </div>
       <InfoTable view={view} />
-      <ClaimSection token={viewToken ?? ''} />
+      <ClaimSection token={viewToken ?? ''} who={`#${view.me.entryNumber} ${view.me.name}`} />
       <ReportLink onClick={() => setReportOpen(true)} />
       <ReportDialog
         open={reportOpen}
@@ -138,7 +143,15 @@ function InfoTable({ view }: { view: OpsPlayerView }) {
             <th scope="row" className="px-[18px] text-left font-normal text-muted-foreground">
               {k}
             </th>
-            <td className="num px-[18px] text-right font-bold">{v}</td>
+            <td
+              className={cn(
+                'px-[18px] text-right font-bold',
+                // 한글 값은 본문 폰트 — 고정폭 숫자 폰트는 한글 간격이 벌어진다
+                /[가-힣]/.test(v) ? '' : 'num'
+              )}
+            >
+              {v}
+            </td>
           </tr>
         ))}
       </tbody>

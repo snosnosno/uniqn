@@ -34,16 +34,24 @@ export function MonitorSection({ tournament }: { tournament: OpsTournament }) {
   const rotate = useRotateMonitorToken(tournament.id);
   const [confirmRotate, setConfirmRotate] = useState(false);
 
-  const withToken = (after: (token: string) => void, force = false) => {
-    if (!force && tournament.monitorToken) return after(tournament.monitorToken);
-    if (rotate.isPending) return;
-    rotate.mutate(force, { onSuccess: (token) => token && after(token) });
-  };
-  const copy = (token: string) =>
+  const token = tournament.monitorToken ?? null;
+  const copy = (t: string) =>
     void navigator.clipboard
-      .writeText(monitorUrl(token))
+      .writeText(monitorUrl(t))
       .then(() => toast.success('전광판 링크를 복사했습니다'))
       .catch(() => toast.error('링크 복사에 실패했습니다'));
+  // 발급은 서버 왕복 뒤라 그 자리에서 복사·새 창을 부르면 Safari 가 사용자 동작이 아니라며 막는다
+  // (리뷰 W7). 발급 결과는 토스트의 [복사] 버튼으로 한 번 더 누르게 한다.
+  const issue = (force: boolean) => {
+    if (rotate.isPending) return;
+    rotate.mutate(force, {
+      onSuccess: (t) =>
+        t &&
+        toast.success(force ? '새 전광판 링크를 만들었어요' : '전광판 링크를 만들었어요', {
+          action: { label: '복사', onClick: () => copy(t) },
+        }),
+    });
+  };
 
   return (
     <section aria-label="전광판" className="flex flex-col gap-3 border bg-card p-4">
@@ -54,31 +62,32 @@ export function MonitorSection({ tournament }: { tournament: OpsTournament }) {
             공개 링크로 큰 화면에 클럭·블라인드·상금을 띄웁니다.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="h-11"
-          disabled={rotate.isPending}
-          onClick={() => withToken(copy)}
-        >
-          <Copy /> 링크 복사
-        </Button>
-        <Button
-          variant="outline"
-          className="h-11"
-          disabled={rotate.isPending}
-          onClick={() => withToken((t) => window.open(monitorUrl(t), '_blank', 'noopener'))}
-        >
-          <ExternalLink /> 새 창
-        </Button>
-        {tournament.monitorToken ? (
-          <Button
-            variant="ghost"
-            className="h-11 text-destructive"
-            onClick={() => setConfirmRotate(true)}
-          >
-            재발급
+        {token ? (
+          <>
+            <Button variant="outline" className="h-11" onClick={() => copy(token)}>
+              <Copy /> 링크 복사
+            </Button>
+            <Button
+              variant="outline"
+              className="h-11"
+              onClick={() => window.open(monitorUrl(token), '_blank', 'noopener')}
+            >
+              <ExternalLink /> 새 창
+            </Button>
+            <Button
+              variant="ghost"
+              className="h-11 text-destructive"
+              disabled={rotate.isPending}
+              onClick={() => setConfirmRotate(true)}
+            >
+              재발급
+            </Button>
+          </>
+        ) : (
+          <Button size="lg" disabled={rotate.isPending} onClick={() => issue(false)}>
+            {rotate.isPending ? '발급 중…' : '링크 발급'}
           </Button>
-        ) : null}
+        )}
       </div>
       {/* 다른 기기에서 저장하면(realtime) 초안을 서버 값으로 다시 맞춘다 — 저장값이 바뀌면 새로 마운트 */}
       <MonitorConfigEditor
@@ -90,10 +99,10 @@ export function MonitorSection({ tournament }: { tournament: OpsTournament }) {
         onOpenChange={setConfirmRotate}
         title="전광판 링크 재발급"
         confirmLabel="재발급"
-        onConfirm={() => withToken(copy, true)}
+        onConfirm={() => issue(true)}
       >
         지금 링크를 띄운 화면은 더 이상 갱신되지 않아요. 링크가 새어 나갔을 때만 재발급하세요. 새
-        링크는 바로 복사됩니다.
+        링크는 [복사]로 바로 가져갈 수 있어요.
       </ConfirmDialog>
     </section>
   );

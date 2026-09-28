@@ -40,6 +40,9 @@ export function usePublicPoll<T extends ClockSnapshot>(
       publicRefetchInterval(q.state.error, q.state.fetchFailureCount, tokenInvalidCode),
     // 전광판은 탭이 가려져 있어도(TV 절전 화면 등) 계속 갱신해야 한다
     refetchIntervalInBackground: true,
+    // 토큰 무효면 창 포커스·재연결로도 다시 묻지 않는다(전역 기본값이 켜 둔다 — 리뷰 W7)
+    refetchOnWindowFocus: (q) => !isTokenInvalidError(q.state.error, tokenInvalidCode),
+    refetchOnReconnect: (q) => !isTokenInvalidError(q.state.error, tokenInvalidCode),
     staleTime: 0,
     retry: (failureCount, error) => publicShouldRetry(failureCount, error, tokenInvalidCode),
   });

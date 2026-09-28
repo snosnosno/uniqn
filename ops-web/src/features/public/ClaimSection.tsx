@@ -26,7 +26,7 @@ import { requireOnline } from '@/lib/online';
 import { trackOpsFunnel } from '@/repositories/analyticsRepository';
 import { normalizePin } from './publicGate';
 
-export function ClaimSection({ token }: { token: string }) {
+export function ClaimSection({ token, who }: { token: string; who: string }) {
   const auth = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -76,8 +76,9 @@ export function ClaimSection({ token }: { token: string }) {
           <DialogHeader>
             <DialogTitle>내 계정에 연결</DialogTitle>
             <DialogDescription>
-              슬립에 적힌 8자리 연결 PIN을 입력해주세요. 연결 후에는 직접 해제할 수 없어요(잘못
-              연결했다면 운영자에게 문의).
+              <b className="text-foreground">{who}</b> 님의 기록을 내 계정에 연결합니다. 슬립에 적힌
+              8자리 연결 PIN을 입력해주세요. 연결 후에는 직접 해제할 수 없어요(잘못 연결했다면
+              운영자에게 문의).
             </DialogDescription>
           </DialogHeader>
           <form

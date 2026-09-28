@@ -19,13 +19,22 @@ export function useScreenAwake(enabled: boolean): void {
     if (!enabled || !wakeLock) return undefined;
     let sentinel: WakeLockSentinelLike | null = null;
     let disposed = false;
+    let requesting = false;
     const acquire = async () => {
+      // 요청 중에 다시 보이면 두 번 잡혀 하나가 풀리지 않고 남는다(리뷰 W7)
+      if (requesting) return;
+      requesting = true;
       try {
         const next = await wakeLock.request('screen');
         if (disposed) void next.release();
-        else sentinel = next;
+        else {
+          void sentinel?.release().catch(() => undefined);
+          sentinel = next;
+        }
       } catch (error) {
         logger.debug('화면 꺼짐 방지 실패(무시)', { error: String(error) });
+      } finally {
+        requesting = false;
       }
     };
     const onVisible = () => {

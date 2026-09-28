@@ -87,7 +87,8 @@ export function StatusTab({
             </div>
           ) : null}
         </section>
-        {isCompleted ? null : <MonitorSection tournament={tournament} />}
+        {/* 완료 대회도 보인다 — 최종 순위·상금을 TV 에 띄워 두는 용도(모바일과 같다, 리뷰 W7) */}
+        <MonitorSection tournament={tournament} />
       </div>
 
       <ConfirmDialog

@@ -61,8 +61,10 @@ await op.waitForURL(`${BASE}/tournaments/${tid}/status`);
 
 let monitorToken = '';
 await step(
-  '운영자: 전광판 "새 창" → 토큰 멱등 발급 → 새 창이 /monitor/<토큰> 을 연다',
+  '운영자: 전광판 "링크 발급" → 토큰 발급 → "새 창"이 /monitor/<토큰> 을 연다',
   async () => {
+    await op.getByRole('button', { name: '링크 발급' }).click();
+    await op.getByRole('button', { name: /새 창/ }).waitFor();
     const [popup] = await Promise.all([
       op.waitForEvent('popup'),
       op.getByRole('button', { name: /새 창/ }).click(),
@@ -134,7 +136,15 @@ await step('무효 토큰: "유효하지 않은 모니터 링크" + 폴링 정�
   await p.goto(`${BASE}/monitor/${'x'.repeat(40)}`);
   await p.getByText('유효하지 않은 모니터 링크입니다').waitFor();
   const settled = calls;
-  await p.waitForTimeout(10_000);
+  await p.waitForTimeout(5_000);
+  // 창 포커스·네트워크 복귀로도 다시 묻지 않아야 한다(전역 refetchOnWindowFocus/Reconnect — 리뷰 W7)
+  await p.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('focus'));
+    window.dispatchEvent(new Event('offline'));
+    window.dispatchEvent(new Event('online'));
+  });
+  await p.waitForTimeout(5_000);
   assert(calls === settled, `무효 토큰인데 폴링 계속: ${settled} → ${calls}`);
   await ctx.close();
 });
@@ -148,16 +158,26 @@ const cred = asOwner(
 ).find((l) => l.includes('|'));
 const [viewToken, claimPin] = (cred ?? '|').split('|');
 
-const pvCtx = await browser.newContext({
-  viewport: { width: 390, height: 844 },
-  colorScheme: 'light',
-});
+const pvCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 이 앱의 테마는 브라우저 선호가 아니라 저장값(ops-web:theme)으로 정한다 — 라이트를 실제로 켠다
+await pvCtx.addInitScript(() => localStorage.setItem('ops-web:theme', 'light'));
 const pv = await pvCtx.newPage();
 await step('플레이어뷰(비로그인): 이름·내 자리·스택·클럭, 로그인 CTA', async () => {
   assert(viewToken && claimPin, `자격 발급 실패: ${cred}`);
   await pv.goto(`${BASE}/live/${viewToken}`);
   await pv.getByText('내 자리').waitFor();
-  await pv.getByText('가선수', { exact: false }).first().waitFor({ state: 'attached' });
+  // 비가역 연결 전에 본인 기록인지 확인할 이름·번호가 화면에 보여야 한다(리뷰 W7)
+  assert(
+    await pv
+      .getByText(/#\d+ 가선수/)
+      .first()
+      .isVisible(),
+    '이름·엔트리 번호가 화면에 안 보임'
+  );
+  assert(
+    (await pv.evaluate(() => document.documentElement.dataset.theme)) === 'light',
+    '라이트 테마가 적용되지 않음'
+  );
   await pv.getByLabel(/^남은 시간 /).waitFor();
   await pv.getByRole('link', { name: '로그인하고 연결하기' }).waitFor();
   await pv.screenshot({ path: `${SHOT_DIR}/w7-player-light-390.png`, fullPage: true });
@@ -215,6 +235,14 @@ await step('플레이어뷰 다크 390 스크린샷 · 무효 뷰 토큰 안내'
 
 asOwner(
   `SELECT public.ops_set_tournament_status('${tid}', '${OWNER_ID}', 'completed') \\g /dev/null`
+);
+await step(
+  '완료 대회도 현황 탭에 전광판 섹션이 보인다(최종 순위를 TV 에 — 모바일과 같다)',
+  async () => {
+    await op.reload();
+    await op.getByRole('region', { name: '전광판' }).waitFor();
+    await op.getByRole('button', { name: /링크 복사/ }).waitFor();
+  }
 );
 archiveAsOwner(OWNER_ID, [tid]);
 await browser.close();
