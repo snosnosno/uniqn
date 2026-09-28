@@ -18,6 +18,7 @@
     "sync:check": "node ../scripts/sync-ops-core.mjs --check",
     "check:local-db": "node scripts/check-local-supabase.mjs",
     "seed:local": "node scripts/seed-local.mjs",
+    "local": "node scripts/local-up.mjs",
     "cf:dev": "wrangler dev --local",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static"
