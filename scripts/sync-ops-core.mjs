@@ -52,6 +52,8 @@ const COPY_FILES = [
   'utils/formatters/currency.ts',
   'components/ops/payoutRows.ts',
   'components/ops/payoutMessages.ts',
+  // W6 — 근태 기록 정산 잠금 문구(단일 소스)
+  'domains/settlement/settledLockMessage.ts',
 ];
 
 /** 디렉터리별 파일명 규칙으로 고르는 사본. `exclude` 는 이유를 주석으로 남긴다. */
@@ -62,8 +64,6 @@ const PATTERN_COPIES = [
   {
     dir: 'services/ops',
     re: /^ops.*Service\.ts$/,
-    // opsStaffService 는 근무표 그리드(services/workSchedule/gridWriteService)에 묶여 있다 — W6 에서 연결.
-    exclude: ['opsStaffService.ts'],
   },
 ];
 
@@ -96,6 +96,8 @@ const REMAP = {
   '@/utils/supabase': '@/lib/supabaseUtils',
   '@/utils/logger': '@/lib/logger',
   '@/lib/supabase': '@/lib/supabase',
+  // opsStaffService 의 근태 기록 → 웹 소유 update_work_log_slot 래퍼(근무표 그리드 전체는 옮기지 않는다)
+  '@/services/workSchedule/gridWriteService': '@/lib/workLogSlot',
 };
 
 /** 웹이 직접 소유하는(사본이 아닌) import 대상 — 폐포 검사에서 존재만 확인한다. */
@@ -104,6 +106,7 @@ const WEB_OWNED = {
   '@/lib/supabaseUtils': webFile('lib/supabaseUtils.ts'),
   '@/lib/logger': webFile('lib/logger.ts'),
   '@/lib/supabase': webFile('lib/supabase.ts'),
+  '@/lib/workLogSlot': webFile('lib/workLogSlot.ts'),
 };
 
 /** 두 앱이 같은 메이저를 써야 하는 런타임 의존(설계 §3.2 — 버전 드리프트 방지). */
@@ -386,6 +389,36 @@ export function buildOutputs() {
       'POSTGREST_ERROR_MAP',
       'KNOWN_ACRONYMS',
     ])}\n\n${extractFunction(supabaseUtils, 'toCamelCase')}\n`
+  );
+
+  // 발췌 5 — 이력 탭 이벤트 한글 라벨 + payload 요약(모바일 HistoryTab.tsx 안에 있다).
+  //   Record<OpsEventType, …> 라 enum 이 늘면 모바일이 먼저 채우고, 사본은 --check 로 따라온다.
+  const historyTab = readSource('components/ops/HistoryTab.tsx');
+  put(
+    'historyLabels.ts',
+    ['components/ops/HistoryTab.tsx'],
+    `import type { OpsEventType } from '@/core/types/ops';
+
+${extractConsts(historyTab, [
+      'EVENT_LABEL',
+    ])}
+
+${extractFunction(historyTab, 'summarizePayload')}
+`
+  );
+
+  // 발췌 6 — 근태 기록 불가 사유 안내(모바일 StaffAttendanceSheet.tsx 안의 상수).
+  const attendanceSheet = readSource('components/ops/StaffAttendanceSheet.tsx');
+  put(
+    'staffAttendanceNotices.ts',
+    ['components/ops/StaffAttendanceSheet.tsx'],
+    `import type { OpsStaffWorkLogReason } from '@/core/types/ops';
+
+${extractConsts(
+      attendanceSheet,
+      ['REASON_NOTICE', 'NO_PERMISSION_NOTICE']
+    )}
+`
   );
 
   // 발췌 3 — authRedirect 가 쓰는 UserProfile 필드

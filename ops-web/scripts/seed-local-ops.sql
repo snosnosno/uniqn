@@ -24,6 +24,11 @@ VALUES
    'authenticated', 'authenticated', 'ops-incomplete@uniqn.test',
    crypt('TestPass1!', gen_salt('bf', 10)), now(), now(), now(),
    '{"provider":"email","providers":["email"],"role":"staff"}', '{"name":"미완성"}',
+   false, '', '', '', ''),
+  ('0a5e0000-0000-4000-8000-000000000003', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'ops-dealer@uniqn.test',
+   crypt('TestPass1!', gen_salt('bf', 10)), now(), now(), now(),
+   '{"provider":"email","providers":["email"],"role":"staff"}', '{"name":"옵스딜러"}',
    false, '', '', '', '')
 ON CONFLICT (id) DO UPDATE
   SET encrypted_password = EXCLUDED.encrypted_password,
@@ -37,7 +42,8 @@ SELECT gen_random_uuid(), u.email, u.id,
        jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
        'email', now(), now(), now()
 FROM auth.users u
-WHERE u.id IN ('0a5e0000-0000-4000-8000-000000000001', '0a5e0000-0000-4000-8000-000000000002')
+WHERE u.id IN ('0a5e0000-0000-4000-8000-000000000001', '0a5e0000-0000-4000-8000-000000000002',
+               '0a5e0000-0000-4000-8000-000000000003')
 ON CONFLICT (provider_id, provider) DO NOTHING;
 
 -- 3. public.users — 진입 판정 4컬럼을 매번 원상태로 되돌린다.
@@ -50,9 +56,13 @@ VALUES
   ('0a5e0000-0000-4000-8000-000000000001', 'ops-owner@uniqn.test', '옵스운영자', 'ops-owner',
    'employer', 'active', true, '+82101110001', true, true, true, true, false, true, now(), now(), now()),
   ('0a5e0000-0000-4000-8000-000000000002', 'ops-incomplete@uniqn.test', '미완성', 'ops-incomplete',
-   'staff', 'active', true, NULL, false, false, true, true, false, false, NULL, now(), now())
+   'staff', 'active', true, NULL, false, false, true, true, false, false, NULL, now(), now()),
+  -- 스태프 수동 추가(닉네임 검색) 검증용 — 완성 프로필
+  ('0a5e0000-0000-4000-8000-000000000003', 'ops-dealer@uniqn.test', '옵스딜러', 'ops-dealer',
+   'staff', 'active', true, '+82101110003', true, true, true, true, false, true, now(), now(), now())
 ON CONFLICT (id) DO UPDATE
-  SET phone_verified = EXCLUDED.phone_verified,
+  SET nickname = EXCLUDED.nickname,
+      phone_verified = EXCLUDED.phone_verified,
       profile_completed = EXCLUDED.profile_completed,
       identity_verified = EXCLUDED.identity_verified,
       role = EXCLUDED.role,
@@ -67,6 +77,12 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.job_postings (id, title, status, owner_id, workspace_id)
 VALUES ('0a5e0000-0000-4000-8000-0000000000b1', '시드 · 금요 토너먼트 딜러 모집', 'active',
+        '0a5e0000-0000-4000-8000-000000000001', '0a5e0000-0000-4000-8000-0000000000a1')
+ON CONFLICT (id) DO UPDATE SET status = 'active', owner_id = EXCLUDED.owner_id, workspace_id = EXCLUDED.workspace_id;
+
+-- 두 번째 공고 — "공고 변경" 후보가 있어야 select 화살표 키 오조작 회귀(E2E w56)가 공허하지 않다.
+INSERT INTO public.job_postings (id, title, status, owner_id, workspace_id)
+VALUES ('0a5e0000-0000-4000-8000-0000000000b2', '시드 · 토요 대회 플로어 모집', 'active',
         '0a5e0000-0000-4000-8000-000000000001', '0a5e0000-0000-4000-8000-0000000000a1')
 ON CONFLICT (id) DO UPDATE SET status = 'active', owner_id = EXCLUDED.owner_id, workspace_id = EXCLUDED.workspace_id;
 

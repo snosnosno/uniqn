@@ -27,12 +27,10 @@ export const router = createBrowserRouter([
             children: [
               { path: 'tournaments', lazy: () => import('./tournaments/TournamentsPage') },
               { path: 'tournaments/new', lazy: () => import('./tournaments/NewTournamentPage') },
-              {
-                path: 'tournaments/:id/:tab?',
-                lazy: () => import('./placeholders/TournamentConsolePage'),
-              },
             ],
           },
+          // 콘솔은 전체 높이를 쓰는 자체 머리줄(목록으로·대회명)이 있어 AppLayout 밖에 둔다.
+          { path: 'tournaments/:id/:tab?', lazy: () => import('./tournaments/ConsolePage') },
         ],
       },
       { path: 'monitor/:token', lazy: () => import('./placeholders/MonitorPage') },

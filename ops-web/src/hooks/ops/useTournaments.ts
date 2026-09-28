@@ -160,6 +160,8 @@ export function useSetTournamentPosting(tournamentId: string) {
     onSuccess: (_data, jobPostingId) => {
       const previous = qc.getQueryData<OpsTournament>(opsKeys.tournamentDetail(tournamentId));
       void qc.invalidateQueries({ queryKey: opsKeys.staff(tournamentId) });
+      // 근태 해석은 연결 공고 기준 — 안 비우면 이전 공고의 근무 기록에 시각이 박힌다(리뷰 W6)
+      void qc.invalidateQueries({ queryKey: opsKeys.staffWorkLogs(tournamentId) });
       void qc.invalidateQueries({ queryKey: opsKeys.tournamentDetail(tournamentId) });
       void qc.invalidateQueries({ queryKey: opsKeys.tournaments() });
       if (previous?.jobPostingId) {

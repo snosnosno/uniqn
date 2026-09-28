@@ -18,4 +18,6 @@ export const opsKeys = {
   tables: (id: string) => [...opsKeys.all, 'tables', id] as const,
   seats: (id: string) => [...opsKeys.all, 'seats', id] as const,
   prizes: (id: string) => [...opsKeys.all, 'prizes', id] as const,
+  blindPresets: () => [...opsKeys.all, 'blindPresets'] as const,
+  staffWorkLogs: (id: string) => [...opsKeys.all, 'staffWorkLogs', id] as const,
 };

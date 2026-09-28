@@ -42,6 +42,10 @@ on:
       - 'uniqn-mobile/src/services/ops/**'
       - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
       - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/domains/settlement/settledLockMessage.ts'
+      - 'uniqn-mobile/src/components/ops/HistoryTab.tsx'
+      - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
+      - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
       - 'uniqn-mobile/src/components/ops/payout*.ts'
       - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
   push:
@@ -79,6 +83,10 @@ on:
       - 'uniqn-mobile/src/services/ops/**'
       - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
       - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/domains/settlement/settledLockMessage.ts'
+      - 'uniqn-mobile/src/components/ops/HistoryTab.tsx'
+      - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
+      - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
       - 'uniqn-mobile/src/components/ops/payout*.ts'
       - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
 

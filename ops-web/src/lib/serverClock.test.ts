@@ -44,3 +44,27 @@ describe('serverClock 오프셋 추정', () => {
     expect(offsetOf(null)).toBe(0);
   });
 });
+
+describe('mergeRobust — 이상치 1건에 무너지지 않는다', () => {
+  it('모순 샘플 1건은 무시, 같은 쪽 2연속이면 갈아탄다', async () => {
+    const { mergeRobust, resetServerClockForTest, recordClockSample, getServerOffsetMs } =
+      await import('./serverClock');
+    resetServerClockForTest();
+    // 오프셋 0 근처로 수렴
+    for (const t of [1_000_100, 1_003_600, 1_007_300]) {
+      recordClockSample({
+        sentAt: t - 20,
+        receivedAt: t + 20,
+        serverDate: Math.floor(t / 1000) * 1000,
+      });
+    }
+    const settled = getServerOffsetMs();
+    expect(Math.abs(settled)).toBeLessThan(600);
+    // 낡은 Date(60초 과거) 한 건 → 무시
+    const far = { lo: -61_000, hi: -59_000 };
+    expect(mergeRobust(far)).not.toEqual(far);
+    // 같은 쪽이 한 번 더 오면 갈아탄다
+    expect(mergeRobust({ lo: -60_500, hi: -59_500 })).toEqual({ lo: -60_500, hi: -59_500 });
+    resetServerClockForTest();
+  });
+});

@@ -46,13 +46,15 @@ export function offsetOf(interval: OffsetInterval | null): number {
 // ─── 브라우저 전역 저장소 ────────────────────────────────────────────────────────
 
 let current: OffsetInterval | null = null;
+/** 기존 추정과 모순된 샘플 — 다음 샘플도 같은 쪽이면 그때 갈아탄다(이상치 1건에 무너지지 않게). */
+let contradicting: OffsetInterval | null = null;
 let currentOffset = 0;
 const listeners = new Set<() => void>();
 
 export function recordClockSample(sample: ClockSample): void {
   const next = sampleInterval(sample);
   if (!next) return;
-  current = mergeInterval(current, next);
+  current = mergeRobust(next);
   const offset = offsetOf(current);
   // 50ms 미만 변화는 알리지 않는다 — 초 단위 클럭에 의미가 없고 재렌더만 늘린다.
   if (Math.abs(offset - currentOffset) >= 50) {
@@ -70,12 +72,45 @@ export function subscribeServerOffset(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/**
+ * 교집합이 비면 곧바로 갈아타지 않는다 — 직전 모순 샘플과 이번 샘플이 서로 맞을 때만(2연속) 교체.
+ * 캐시·프록시가 준 낡은 Date 한 건이 수렴된 추정을 날리지 않게(리뷰 W4).
+ */
+export function mergeRobust(next: OffsetInterval): OffsetInterval {
+  if (!current) return next;
+  const lo = Math.max(current.lo, next.lo);
+  const hi = Math.min(current.hi, next.hi);
+  if (lo <= hi) {
+    contradicting = null;
+    return { lo, hi };
+  }
+  if (contradicting) {
+    const clo = Math.max(contradicting.lo, next.lo);
+    const chi = Math.min(contradicting.hi, next.hi);
+    if (clo <= chi) {
+      contradicting = null;
+      return { lo: clo, hi: chi };
+    }
+  }
+  contradicting = next;
+  return current;
+}
+
+/** 테스트 전용 — 모듈 상태 초기화. */
+export function resetServerClockForTest(): void {
+  current = null;
+  contradicting = null;
+  currentOffset = 0;
+}
+
 /** fetch 래퍼 — 응답의 Date 헤더로 샘플을 남긴다(본문은 건드리지 않는다). */
 export function createTimedFetch(base: typeof fetch = fetch): typeof fetch {
   return async (input, init) => {
     const sentAt = Date.now();
     const response = await base(input, init);
     const receivedAt = Date.now();
+    // Age 가 붙은 응답은 캐시에서 온 것이라 Date 가 과거다 — 샘플로 쓰지 않는다.
+    if (response.headers.get('age')) return response;
     const header = response.headers.get('date');
     const serverDate = header ? Date.parse(header) : NaN;
     if (Number.isFinite(serverDate)) recordClockSample({ sentAt, receivedAt, serverDate });

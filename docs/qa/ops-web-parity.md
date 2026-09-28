@@ -38,33 +38,32 @@ related:
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 상시 클럭 스트립(레벨·남은 시간, 탭→제어) | `OpsClockStrip` | ⬜ | |
-| 서버시각 offset 보정 | 운영자 클럭 `serverOffsetMs=0` | ⬜ ➕ | 설계 §5 — 웹은 보정 적용 |
-| 상시 요약(PLAYING·ENTRY·AVG BB) | `OpsSummaryStrip` | ⬜ | |
-| 탭 7종(현황·테이블·참가·블라인드·스태프·상금·이력) | 폰 5+더보기 2 / 태블릿 7 | ⬜ | DESIGN.md 3단 레이아웃 |
-| 대회 상태 전환(예정→진행→종료, 한 방향) | `OpsStatusTab` | ⬜ | |
-| 등록 열림/마감 토글(완료 대회 숨김) | `OpsStatusTab` | ⬜ | |
-| 라이브 통계 패널(9~10칸, 바운티면 KO POOL) | `LiveStatsPanel` | ⬜ | |
-| realtime 8종 구독 + 재접속·탭 복귀 무효화 | `createRealtimeSubscription` | ⬜ | 설계 §5 |
+| 상시 클럭 스트립(레벨·남은 시간, 탭→제어), 완료 대회 숨김 | `OpsClockStrip` | ✅ | `ConsoleClock.tsx` · e2e/w4 |
+| 서버시각 offset 보정 | 운영자 클럭 `serverOffsetMs=0` | ➕ | 응답 Date 헤더 구간 교집합(새 RPC 0). e2e/w4: 기기 시계 +90초 브라우저가 ±2초 이내(레드: 보정 끄면 90초 차) |
+| 상시 요약(PLAYING·ENTRY·AVG) | `OpsSummaryStrip` | ✅ | 클럭 스트립에 통합(남은 인원·평균 스택·상금 풀) |
+| 탭 7종 | 폰 5+더보기 2 / 태블릿 7 | ✅ ➕ | ≥1024 레일 · 640–1023 상단 탭 · <640 하단 5+더보기, 숫자키 1–7 |
+| 대회 상태 전환(한 방향) | `OpsStatusTab` | ✅ ➕ | 웹은 **종료에 확인창**(되돌릴 수 없음) |
+| 등록 열림/마감 토글(완료 대회 숨김) | `OpsStatusTab` | ✅ | 낙관적 반영 |
+| 라이브 통계 패널(9~10칸) | `LiveStatsPanel` | ✅ | 같은 항목·순서 |
+| realtime 8종 + 재접속·탭 복귀 무효화 | `createRealtimeSubscription` | ✅ ➕ | e2e/w4: 두 브라우저 반영 · 오프라인→복귀 동기화 · 66분 방치 후 반영(`e2e/w4-idle.mjs`) · 연결 상태 표시 |
 
 ## 3. 참가자 (W4)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 목록(엔트리·칩·리바이/애드온·KO·노쇼·탈락 배지) | `PlayersTab` | ⬜ | |
-| 참가 등록(이름 필수, 국적/전화/바이인) | `OpsRegisterParticipantSheet` | ⬜ | |
-| 리바이 / 애드온(확인창 없음) | 액션시트 | ⬜ | |
-| 탈락(확인창, 우승/ITM/일반 안내) | `useBustParticipant` | ⬜ | ConfirmDialog + 되돌리기 토스트 |
-| 탈락(바운티 KO 지정, 2단 확인) | 피커→확인 | ⬜ | |
-| 탈락 취소(확인창, 완료 대회 숨김) | `useUndoBust` | ⬜ | 5초 되돌리기 토스트 병행 |
-| 재진입(확인창 없음) | `useReenterParticipant` | ⬜ | |
-| 노쇼 표시(확인) / 취소(즉시) | `useSetParticipantNoShow` | ⬜ | |
-| 칩 카운트(절대값·델타 미리보기·동일값 no-op) | `ChipCountSheet` | ⬜ | |
-| 정보 수정(빈칸=지움, no-op 안내) | `ParticipantEditSheet` | ⬜ | |
-| 등록 취소(오등록, 비가역, 조건부 노출) | `useDeleteParticipant` | ⬜ | |
-| 플레이어 링크/PIN 발급·재발급(재발급 확인, PIN 1회 노출) | `PlayerClaimButton` | ⬜ | |
-| 플레이어 계정 연결 해제(확인) | `useUnclaimParticipant` | ⬜ | |
-| ITM 탈락 후 "상금 화면 보기" | 액션시트 | ⬜ | |
+| 목록(엔트리·칩·R/A·KO·노쇼·탈락 순위) | `PlayersTab` | ✅ ➕ | 표 + 검색(`/`), ↑↓ 선택 |
+| 참가 등록 | 시트 | ✅ ➕ | `N` · **연속 등록**(창 유지·이름 칸 초기화) · e2e/w4 두 브라우저 |
+| 리바이 / 애드온(확인 없음) | 액션시트 | ✅ ➕ | `R`/`A` 단축키 · 낙관적 +1 · e2e/w4 |
+| 탈락(확인창, 우승/ITM/일반 안내) | `useBustParticipant` | ✅ ➕ | `X` · 확인창에 **예상 순위·상금**(서버 산식과 같음) · 결과 토스트 |
+| 탈락(바운티 KO 지정, 2단 확인) | 피커→확인 | ✅ | KO 검색 대화상자 → 확인창 |
+| 탈락 취소(확인창, 완료 대회 숨김) | `useUndoBust` | ✅ ➕ | + 탈락 직후 **5초 되돌리기 토스트**(우승 확정 탈락 제외) · e2e/w4 |
+| 재진입 / 노쇼 표시(확인) / 노쇼 취소(즉시) | 액션시트 | ✅ | `participantActions` 테스트로 노출 조건 고정 |
+| 칩 카운트(델타 미리보기·동일값 no-op) | `ChipCountSheet` | ✅ | `C` · e2e/w4 |
+| 정보 수정(빈칸=지움) | `ParticipantEditSheet` | ✅ | `E` |
+| 등록 취소(비가역, 조건부) | 액션시트 | ✅ | 확인창 |
+| 플레이어 링크·PIN 발급/재발급(재발급 확인, PIN 1회) | `PlayerClaimButton` | ✅ | + 링크만 복사(PIN 유지) |
+| 플레이어 계정 연결 해제(확인) | 액션시트 | ✅ | |
+| ITM 탈락 후 "상금 화면 보기" | 액션시트 | ✅ | |
 
 ## 4. 테이블 / 좌석 (W5)
 
@@ -79,46 +78,44 @@ related:
 | 빈자리 채움(미리보기·다시 계산) | `RedrawModal` waitlist_fill | ⬜ | |
 | 전원 재배치(랜덤/칩 드래프트, 확인창, 좌석 부족 시 비활성) | `RedrawModal` | ⬜ | |
 
-## 5. 블라인드 / 클럭 (W5)
+## 5. 블라인드 / 클럭 (W4·W5)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 레벨 목록(로컬 draft, 최대 100) | `BlindLevelsTab` | ⬜ | |
-| 레벨 추가/편집/삭제 | `BlindLevelForm` | ⬜ | |
-| 구조 저장(진행 중이면 재계산 확인) | `useSetBlindLevels` | ⬜ | |
-| 프리셋 적용(앱 기본/내 프리셋, 교체 확인) · 저장 · 삭제(확인) | `BlindPresetSheet` | ⬜ | |
-| 클럭 시작/일시정지 · 이전/다음 레벨 · ±1분 | `ClockControl` | ⬜ | |
-| 다음 브레이크 카운트다운 | `findNextBreakFromLevels` | ⬜ | |
+| 레벨 편집(추가/수정/삭제, 최대 100, 휴식 행) | `BlindLevelsTab`·`BlindLevelForm` | ✅ ➕ | 행마다 폼 대신 **표에서 바로 편집** · e2e/w56 |
+| 구조 저장(진행 중이면 재계산 확인) | `useSetBlindLevels` | ✅ | e2e/w56 |
+| 프리셋 적용(교체 확인)·저장·삭제(확인) | `BlindPresetSheet` | ✅ | e2e/w56(기본 30레벨 적용→저장) |
+| 클럭 시작/일시정지·이전/다음·±1분 | `ClockControl` | ✅ | 스트립 클릭·현황 탭 |
+| 다음 브레이크 카운트다운 | `findNextBreakFromLevels` | ✅ | `clock.ts` 테스트 |
 
 ## 6. 상금 / 지급 (W6)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 구조 편집(금액/% 모드, 풀 기준 환산) | `PayoutStructureEditor` | ⬜ | |
-| 템플릿 추천(ITM 10/15/20%) | `recommendPayoutCurve` | ⬜ | |
-| 구조 저장(진행 중 소급 안 됨 확인) | `useSetPrizeStructure` | ⬜ | |
-| 지급 대장(정정 행 강조) | `PayoutLedger` | ⬜ | |
-| 지급 완료 토글(확인 없음, 왕복) | `useSetPrizePaid` | ⬜ | |
-| 상금 정정(사유) · 회수(확인) | `PrizeCorrectSheet` | ⬜ | |
-| 바운티 적립 섹션 | `PayoutLedger` | ⬜ | |
-| 완료 대회 결과 카드 | `TournamentResultCard` | ⬜ | |
+| 구조 편집(금액/% 모드, 풀 기준 환산) | `PayoutStructureEditor` | ✅ | `payoutDraft` 테스트 · e2e/w56 |
+| 템플릿 추천(ITM 10/15/20%) | `recommendPayoutCurve` | ✅ | 사본 함수 |
+| 구조 저장(진행 중 소급 안 됨 확인) | `useSetPrizeStructure` | ✅ | e2e/w56 |
+| 지급 대장(정정 행 강조) | `PayoutLedger` | ✅ | 사본 `buildLedgerRows` |
+| 지급 완료 토글(확인 없음, 배정 행만) | `useSetPrizePaid` | ✅ | e2e/w56 |
+| 상금 정정(사유) · 회수(확인) | `PrizeCorrectSheet` | ✅ | e2e/w56 정정 |
+| 바운티 적립 섹션 | `PayoutLedger` | ✅ | |
+| 완료 대회 결과(우승 = 1위만) | `TournamentResultCard` | ✅ | 상금 탭 상단 |
 
 ## 7. 스태프 (W6)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 연결 공고 표시 · 연결/변경(owner) · 해제(확인) | `StaffTab`·`PostingPickerSheet` | ⬜ | 훅 `useSetTournamentPosting` 은 W3 에 준비됨 |
-| 확정 스태프 가져오기(확인, 전체 기간 토글) | `useImportOpsStaff` | ⬜ | |
-| 로스터 · 행 액션(근태/테이블/삭제) | `StaffTab` | ⬜ | |
-| 근태 기록(출근/퇴근, 확인, 사유 코드 fail-closed) · 취소(3상 계약) | `StaffAttendanceSheet` | ⬜ | `opsStaffService` 사본 연결(근무표 그리드 의존) |
-| 테이블 지정(스태프→테이블) · 로스터 삭제(확인, cascade) | `StaffTab` | ⬜ | |
-| 수동 추가(닉네임 검색, 역할·기타 커스텀) | `StaffAddSheet` | ⬜ | |
+| 연결 공고 표시 · 연결/변경(owner) · 해제(확인) | `StaffTab` | ✅ | e2e/w56 표시 |
+| 확정 스태프 가져오기(확인, 전체 기간 토글) | `useImportOpsStaff` | ✅ | |
+| 로스터 · 근태 · 테이블 지정 · 삭제(확인, 배정 해제 동반) | `StaffTab` | ✅ | e2e/w56 |
+| 근태 기록(fail-closed 사유 안내 · 확인 · 알림 경고) · 취소 | `StaffAttendanceSheet` | ✅ | 사유 문구 **동기화 발췌** · e2e/w56(수동 추가 → not_linked 안내·버튼 없음) |
+| 수동 추가(닉네임 검색 2~15자, 역할·기타) | `StaffAddSheet` | ✅ | e2e/w56 |
 
 ## 8. 이력 (W6)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 이벤트 로그(한글 라벨+요약, 구독 없음·30s·변이 후 refetch) | `HistoryTab` | ⬜ | 이벤트 36종 라벨 |
+| 이벤트 로그(한글 라벨+요약, 30s + 변이 후 무효화) | `HistoryTab` | ✅ | 라벨표·요약 함수 **동기화 발췌** · e2e/w56 |
 
 ## 9. 전광판 (W7)
 
@@ -143,7 +140,8 @@ related:
 
 ## 진행 요약
 
-| 영역 | 동등 | 전체 |
-|---|---|---|
-| 목록/생성 | 13 (+⏭2) | 15 |
-| 나머지 | 0 | — |
+| 영역 | 상태 |
+|---|---|
+| 목록/생성 · 콘솔 셸 · 참가자 · 블라인드/클럭 · 상금 · 스태프 · 이력 | ✅ 동등 이상 |
+| 테이블/좌석(§4) | ⬜ 좌석표 시안 승인 대기(사람 게이트) |
+| 전광판 · 플레이어뷰(§9·§10) | ⬜ W7(시안 승인 대기) |

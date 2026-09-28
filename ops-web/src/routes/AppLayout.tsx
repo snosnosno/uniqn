@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/auth/authContext';
 import { useSignOut } from '@/hooks/useSignOut';
 
-/** 로그인 후 공통 틀 — 상단 한 줄(서비스명·계정·로그아웃). 콘솔 셸은 W4 에서 이 안에 들어간다. */
+/** 로그인 후 공통 틀(목록·생성) — 상단 한 줄(서비스명·계정·로그아웃). 콘솔은 전체 높이를 쓰는 자체 틀. */
 export function AppLayout() {
   const auth = useAuth();
   const signOut = useSignOut();

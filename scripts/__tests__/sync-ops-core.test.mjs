@@ -204,3 +204,21 @@ test('extractFunction: 본문 끝까지 발췌하고 export 를 붙인다', () =
   );
   assert.throws(() => extractFunction(src, 'nope'), /nope/);
 });
+
+// 🔑 손 이식본(ops-web/src/lib/workLogSlotMapping.ts) 표류 카나리 — --check 대상이 아니라서
+//    모바일 원본 toUpdateSlotError 가 바뀌면 여기서 멈춰 세운다(리뷰 W6 LOW).
+test('손 이식본 카나리: 모바일 toUpdateSlotError 해시가 이식본 기록과 같다', async () => {
+  const { createHash } = await import('node:crypto');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const src = fs.readFileSync(
+    path.join(root, 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'),
+    'utf8'
+  );
+  const port = fs.readFileSync(path.join(root, 'ops-web/src/lib/workLogSlotMapping.ts'), 'utf8');
+  const recorded = port.match(/원본 해시\(sha256 앞 16자\): ([0-9a-f]{16})/)?.[1];
+  const actual = createHash('sha256')
+    .update(extractFunction(src, 'toUpdateSlotError'))
+    .digest('hex')
+    .slice(0, 16);
+  assert.equal(actual, recorded, '모바일 toUpdateSlotError 가 바뀌었습니다 — 이식본을 맞춘 뒤 해시를 갱신하세요');
+});

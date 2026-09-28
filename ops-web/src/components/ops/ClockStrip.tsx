@@ -1,7 +1,8 @@
 import { cn } from 'cn';
 
 export interface ClockStripData {
-  level: number;
+  /** 레벨 번호. 휴식이면 '휴식', 블라인드 미설정이면 '—'. */
+  level: number | string;
   smallBlind: number;
   bigBlind: number;
   ante: number;
@@ -32,10 +33,43 @@ function Cell({
   );
 }
 
-/** 콘솔 상단 고정 클럭 스트립 — 모든 콘솔 화면에서 항상 보인다(DESIGN.md 레이아웃). */
-export function ClockStrip({ data }: { data: ClockStripData }) {
+/**
+ * 콘솔 상단 고정 클럭 스트립 — 모든 콘솔 화면에서 항상 보인다(DESIGN.md 레이아웃).
+ * `onActivate` 를 주면 스트립 전체가 클럭 제어를 여는 버튼이 된다(모바일: 스트립 탭 → 제어 시트).
+ */
+export function ClockStrip({
+  data,
+  onActivate,
+  paused = false,
+}: {
+  data: ClockStripData;
+  onActivate?: () => void;
+  /** 일시정지면 남은 시간을 경고색으로(모바일 ClockControl 과 같음). */
+  paused?: boolean;
+}) {
+  const body = <ClockStripCells data={data} paused={paused} />;
+  if (onActivate) {
+    return (
+      <button
+        type="button"
+        onClick={onActivate}
+        className="block w-full text-left hover:bg-muted/40"
+        aria-label={`클럭 제어 열기 — 레벨 ${data.level}, 남은 시간 ${data.remaining}${paused ? ', 일시정지' : ''}${data.connected ? '' : ', 실시간 재연결 중'}`}
+      >
+        {body}
+      </button>
+    );
+  }
   return (
-    <div className="flex items-stretch border-b bg-card" role="status" aria-label="대회 진행 상태">
+    <div role="status" aria-label="대회 진행 상태">
+      {body}
+    </div>
+  );
+}
+
+function ClockStripCells({ data, paused }: { data: ClockStripData; paused: boolean }) {
+  return (
+    <div className="flex items-stretch border-b bg-card">
       <Cell
         label="LEVEL"
         className="bg-primary text-primary-foreground [&_.label]:text-primary-foreground/75"
@@ -53,7 +87,13 @@ export function ClockStrip({ data }: { data: ClockStripData }) {
         </span>
       </Cell>
       <Cell label="남은 시간" className="flex-1 sm:flex-none">
-        <span className="clock text-[40px] sm:text-[44px]">{data.remaining}</span>
+        <span className={cn('clock text-[40px] sm:text-[44px]', paused && 'text-destructive')}>
+          {data.remaining}
+        </span>
+        {/* 폰은 오른쪽 연결 표시가 숨으므로 끊겼을 때만 여기 작게 알린다 */}
+        {!data.connected ? (
+          <span className="text-[11px] font-semibold text-warning sm:hidden">재연결 중</span>
+        ) : null}
       </Cell>
       <Cell label="남은 인원" className="border-r-0 sm:border-r">
         <span className="num text-xl font-semibold whitespace-nowrap">

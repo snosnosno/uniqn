@@ -60,7 +60,12 @@ await step('로그인 → 원래 경로(쿼리 포함)로 복귀', async () => {
   await page.waitForURL(/\/login/);
   await login(page, OWNER);
   await page.waitForURL(`${BASE}/tournaments/abc/players?x=1`);
-  await page.getByText(OWNER).waitFor();
+  // 콘솔은 AppLayout(이메일 머리줄) 밖이라 로그인 폼이 사라졌는지로 판정한다(없는 id 면 콘솔이 안내를 띄운다).
+  await page.getByRole('link', { name: '대회 목록으로' }).first().waitFor();
+  assert(
+    (await page.getByRole('heading', { name: '로그인' }).count()) === 0,
+    '로그인 폼이 남아 있음'
+  );
   await page.context().close();
 });
 

@@ -247,6 +247,12 @@
       ],
       "sha256": "d7b641d826becb11ccb9ffc2f4adc33fa9dcc48dca0b628f2e09cf3799125e18"
     },
+    "domains/settlement/settledLockMessage.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/settlement/settledLockMessage.ts"
+      ],
+      "sha256": "7184345744c7aedd60cf025181d294a2d6c7da3287adb764207e8ed10a84423e"
+    },
     "errors/AppError.ts": {
       "sources": [
         "uniqn-mobile/src/errors/AppError.ts"
@@ -264,6 +270,12 @@
         "uniqn-mobile/src/errors/serviceErrorHandler.ts"
       ],
       "sha256": "85bb442b868a8af1efd33e9833502bee41681938d4dac92a030d030c6d03c245"
+    },
+    "historyLabels.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/HistoryTab.tsx"
+      ],
+      "sha256": "be5273306d47dcc58205e2b244f12954a3667d3ccde804a18f04b9d95da64bc0"
     },
     "hooks/ops/__tests__/publicPollingPolicy.test.ts": {
       "sources": [
@@ -577,6 +589,12 @@
       ],
       "sha256": "27324cb99c58cdc554f536853da1adcb948aa650cf8b885c27e178f62226fa0b"
     },
+    "services/ops/opsStaffService.ts": {
+      "sources": [
+        "uniqn-mobile/src/services/ops/opsStaffService.ts"
+      ],
+      "sha256": "52925f74358e97f4f169f3acd3e42047a0c71c4ac1441841f4ac7dc8e24a9383"
+    },
     "services/ops/opsTableService.ts": {
       "sources": [
         "uniqn-mobile/src/services/ops/opsTableService.ts"
@@ -600,6 +618,12 @@
         "uniqn-mobile/src/shared/navigation/authRedirect.ts"
       ],
       "sha256": "f33a7b7afacd145382657531df073c604d2400698f80913fd999516a23da6f6c"
+    },
+    "staffAttendanceNotices.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx"
+      ],
+      "sha256": "0015cff0ca658ff0fe44f8f0f6179311a459ed57a3062924e65b0ccf33b95c6d"
     },
     "supabaseTables.ts": {
       "sources": [
