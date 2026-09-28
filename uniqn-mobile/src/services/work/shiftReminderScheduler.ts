@@ -12,6 +12,7 @@
 import {
   scheduleLocalNotification,
   cancelScheduledNotification,
+  getScheduledNotificationIdsByType,
 } from '@/services/notifications/internal/pushNotificationHandlers';
 import { createNotificationMessage } from '@/constants/notificationTemplates';
 import { NotificationType } from '@/types/notification';
@@ -95,6 +96,39 @@ function writeLedger(ledger: ReminderLedger): void {
 }
 
 /**
+ * 원장을 읽고 쓰는 작업을 한 줄로 세운다.
+ *
+ * 🔴 스케줄 탭의 useEffect 는 refetch·오프라인 토글마다 sync 를 fire-and-forget 으로 다시 부른다.
+ *    직렬화가 없던 시절, 각 호출이 원장을 읽고 OS 예약을 await 하는 사이 다음 호출도 같은
+ *    (아직 빈) 원장을 읽어 같은 키를 또 예약했다 — 09-28 실기기에서 확정 근무 1건에
+ *    '출근 하루 전' 이 3번 울렸다. 원장엔 마지막 쓰기만 남아 나머지는 취소 불가능한 고아가 됐다.
+ */
+let ledgerQueue: Promise<void> = Promise.resolve();
+
+function runExclusive(task: () => Promise<void>): Promise<void> {
+  const run = ledgerQueue.then(task, task);
+  ledgerQueue = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * 원장에 없는 근무 리마인더를 OS 에서 취소한다.
+ *
+ * 직렬화 이전에 생긴 고아 중복(식별자를 잃어 원장으로는 취소 불가)을 치유한다. 이 타입의 로컬
+ * 알림을 예약하는 주체는 이 모듈뿐이고 원장은 창 밖 예약까지 모두 보관하므로, 원장에 없는
+ * `CHECKIN_REMINDER` 예약은 전부 고아다.
+ */
+async function cancelOrphanReminders(ledger: ReminderLedger): Promise<number> {
+  const known = new Set(Object.values(ledger).map((entry) => entry.id));
+  const scheduledIds = await getScheduledNotificationIdsByType(NotificationType.CHECKIN_REMINDER);
+  const orphans = scheduledIds.filter((identifier) => !known.has(identifier));
+  for (const identifier of orphans) {
+    await cancelScheduledNotification(identifier);
+  }
+  return orphans.length;
+}
+
+/**
  * 계획에 없는 원장 항목을 **취소해도 되는가**.
  *
  * 🔴 이 판정이 없던 시절, 스케줄러는 '이번 입력의 계획에 없음' 을 그대로 '취소됨' 으로 읽었다.
@@ -157,16 +191,20 @@ function canCancel(
  *
  * fire-and-forget: 정리 실패가 로그아웃을 막아선 안 된다.
  */
-export async function clearShiftReminders(): Promise<void> {
-  try {
-    const ledger = readLedger();
-    for (const entry of Object.values(ledger)) {
-      await cancelScheduledNotification(entry.id);
+export function clearShiftReminders(): Promise<void> {
+  return runExclusive(async () => {
+    try {
+      const ledger = readLedger();
+      for (const entry of Object.values(ledger)) {
+        await cancelScheduledNotification(entry.id);
+      }
+      removeStorageItem(STORAGE_KEYS.SHIFT_REMINDERS);
+      // 원장이 모르는 고아 예약도 이전 계정 것이므로 함께 지운다.
+      await cancelOrphanReminders({});
+    } catch (error) {
+      logger.warn('근무 리마인더 원장 정리 실패', { message: (error as Error).message });
     }
-    removeStorageItem(STORAGE_KEYS.SHIFT_REMINDERS);
-  } catch (error) {
-    logger.warn('근무 리마인더 원장 정리 실패', { message: (error as Error).message });
-  }
+  });
 }
 
 async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
@@ -205,7 +243,15 @@ async function scheduleOne(reminder: ShiftReminder): Promise<string | null> {
  *    `offline` 은 "본 것을 믿어도 되나" 다. 필수로 두어 호출자가 조용히 빠뜨리지 못하게 한다
  *    (기본값을 주면 새 호출부가 아무 말 없이 '온라인' 으로 취급된다).
  */
-export async function syncShiftReminders(
+export function syncShiftReminders(
+  schedules: readonly ScheduleEvent[],
+  coverage: ShiftReminderCoverage,
+  options: { offline: boolean; now?: Date }
+): Promise<void> {
+  return runExclusive(() => syncShiftRemindersNow(schedules, coverage, options));
+}
+
+async function syncShiftRemindersNow(
   schedules: readonly ScheduleEvent[],
   coverage: ShiftReminderCoverage,
   options: { offline: boolean; now?: Date }
@@ -249,10 +295,14 @@ export async function syncShiftReminders(
 
     writeLedger(next);
 
-    if (cancelled > 0 || planned.length > 0) {
+    // 3. 원장이 모르는 예약(직렬화 이전에 생긴 고아 중복)을 정리한다.
+    const orphans = await cancelOrphanReminders(next);
+
+    if (cancelled > 0 || orphans > 0 || planned.length > 0) {
       logger.info('근무 리마인더 동기화', {
         planned: planned.length,
         cancelled,
+        orphans,
         active: Object.keys(next).length,
         coverage: `${coverage.start}~${coverage.end}`,
         offline,

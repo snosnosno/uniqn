@@ -28,9 +28,12 @@ jest.mock('@/lib/mmkvStorage', () => ({
 
 const mockScheduleLocalNotification = jest.fn();
 const mockCancelScheduledNotification = jest.fn().mockResolvedValue(undefined);
+const mockGetScheduledNotificationIdsByType = jest.fn().mockResolvedValue([]);
 jest.mock('@/services/notifications/internal/pushNotificationHandlers', () => ({
   scheduleLocalNotification: (...args: unknown[]) => mockScheduleLocalNotification(...args),
   cancelScheduledNotification: (...args: unknown[]) => mockCancelScheduledNotification(...args),
+  getScheduledNotificationIdsByType: (...args: unknown[]) =>
+    mockGetScheduledNotificationIdsByType(...args),
 }));
 
 // 알림 문구는 이 테스트의 관심사가 아니다 — 템플릿이 바뀌어도 원장 규칙 검증이 흔들리면 안 된다.
@@ -74,6 +77,7 @@ beforeEach(() => {
   mockStore = {};
   mockScheduleLocalNotification.mockReset();
   mockCancelScheduledNotification.mockReset().mockResolvedValue(undefined);
+  mockGetScheduledNotificationIdsByType.mockReset().mockResolvedValue([]);
   let seq = 0;
   mockScheduleLocalNotification.mockImplementation(() => Promise.resolve(`os-${++seq}`));
 });
@@ -242,5 +246,35 @@ describe('clearShiftReminders — 공용 기기 계정 전환', () => {
   it('원장이 비어 있어도 안전하다(로그아웃을 막지 않는다)', async () => {
     await expect(clearShiftReminders()).resolves.toBeUndefined();
     expect(mockCancelScheduledNotification).not.toHaveBeenCalled();
+  });
+});
+
+// 🔴 09-28 실기기: 확정 근무 1건(DB 실측)에 '출근 하루 전' 이 **3번** 울렸다.
+//    스케줄 탭의 useEffect 가 refetch·오프라인 토글마다 sync 를 fire-and-forget 으로 다시 부르는데,
+//    각 호출이 원장을 읽은 뒤 OS 예약을 await 하는 사이 다음 호출도 빈 원장을 읽어 같은 키를 또 예약했다.
+//    원장은 마지막 쓰기만 남으므로 나머지 예약은 식별자를 잃은 고아가 되어 취소도 불가능했다.
+describe('syncShiftReminders — 동시 호출 중복 예약', () => {
+  it('동시에 여러 번 불려도 같은 근무는 한 번만 예약한다', async () => {
+    await Promise.all([
+      syncShiftReminders([julyShift], JULY, { offline: false, now: NOW }),
+      syncShiftReminders([julyShift], JULY, { offline: false, now: NOW }),
+      syncShiftReminders([julyShift], JULY, { offline: false, now: NOW }),
+    ]);
+
+    expect(mockScheduleLocalNotification).toHaveBeenCalledTimes(1);
+    expect(Object.keys(ledger())).toEqual(['wl-jul:day-before']);
+  });
+
+  it('원장에 없는 근무 리마인더(이미 생긴 고아 중복)는 OS 에서 취소한다', async () => {
+    await syncShiftReminders([julyShift], JULY, { offline: false, now: NOW });
+    const keptId = ledger()['wl-jul:day-before']?.id;
+    mockGetScheduledNotificationIdsByType.mockResolvedValue([keptId, 'orphan-1', 'orphan-2']);
+    mockCancelScheduledNotification.mockClear();
+
+    await syncShiftReminders([julyShift], JULY, { offline: false, now: NOW });
+
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('orphan-1');
+    expect(mockCancelScheduledNotification).toHaveBeenCalledWith('orphan-2');
+    expect(mockCancelScheduledNotification).not.toHaveBeenCalledWith(keptId);
   });
 });

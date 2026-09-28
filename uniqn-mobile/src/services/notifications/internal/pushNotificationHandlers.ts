@@ -330,6 +330,25 @@ export async function cancelScheduledNotification(identifier: string): Promise<v
 }
 
 /**
+ * 예약된 로컬 알림 중 `data.type` 이 일치하는 것들의 식별자.
+ * 조회 실패 시 빈 배열 — 호출자는 "없음" 으로 읽고 아무것도 취소하지 않는다.
+ */
+export async function getScheduledNotificationIdsByType(type: string): Promise<string[]> {
+  const Notifications = getNotifications();
+  if (!Notifications || Platform.OS === 'web') return [];
+
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    return scheduled
+      .filter((request) => request.content.data?.type === type)
+      .map((request) => request.identifier);
+  } catch (error) {
+    logger.error('스케줄 알림 조회 실패', toError(error));
+    return [];
+  }
+}
+
+/**
  * 모든 스케줄된 알림 취소
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {
