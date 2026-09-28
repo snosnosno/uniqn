@@ -33,8 +33,8 @@ export const router = createBrowserRouter([
           { path: 'tournaments/:id/:tab?', lazy: () => import('./tournaments/ConsolePage') },
         ],
       },
-      { path: 'monitor/:token', lazy: () => import('./placeholders/MonitorPage') },
-      { path: 'live/:viewToken', lazy: () => import('./placeholders/PlayerViewPage') },
+      { path: 'monitor/:token', lazy: () => import('./public/MonitorPage') },
+      { path: 'live/:viewToken', lazy: () => import('./public/PlayerViewPage') },
       // 디자인 견본(D1) — 운영 빌드에는 넣지 않는다.
       ...(import.meta.env.MODE === 'production'
         ? []

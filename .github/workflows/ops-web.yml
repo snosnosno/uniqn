@@ -47,6 +47,7 @@ on:
       - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
       - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
       - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/monitor/registry.ts'
       - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
   push:
     branches: [master]
@@ -88,6 +89,7 @@ on:
       - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
       - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
       - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/monitor/registry.ts'
       - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
 
 defaults:

@@ -6,6 +6,7 @@ import { useSetTournamentStatus, useToggleRegistration } from '@/hooks/ops/useCo
 import type { useOpsClock } from '@/hooks/ops/useConsoleQueries';
 import { ClockControlPanel } from './ClockControlPanel';
 import { fmt, formatBb } from './format';
+import { MonitorSection } from './MonitorSection';
 
 /** 현황 탭 상태 라벨(모바일 OpsStatusTab — 목록의 '예정'과 달리 '시작 전'). */
 const STATUS_LABEL: Record<OpsTournament['status'], string> = {
@@ -86,6 +87,7 @@ export function StatusTab({
             </div>
           ) : null}
         </section>
+        {isCompleted ? null : <MonitorSection tournament={tournament} />}
       </div>
 
       <ConfirmDialog

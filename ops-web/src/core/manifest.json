@@ -13,6 +13,12 @@
       ],
       "sha256": "db2a44f2940c2f2fa5e6b2afba6cc18245117caa31b421d5b468f3091e0120aa"
     },
+    "components/ops/monitor/registry.ts": {
+      "sources": [
+        "uniqn-mobile/src/components/ops/monitor/registry.ts"
+      ],
+      "sha256": "d3951537ed7f0120dfac368f2b916256e7c6a4e9c4dfce80b4980a33cd8a48f5"
+    },
     "components/ops/payoutMessages.ts": {
       "sources": [
         "uniqn-mobile/src/components/ops/payoutMessages.ts"

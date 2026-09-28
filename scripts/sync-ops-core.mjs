@@ -54,6 +54,8 @@ const COPY_FILES = [
   'components/ops/payoutMessages.ts',
   // W6 — 근태 기록 정산 잠금 문구(단일 소스)
   'domains/settlement/settledLockMessage.ts',
+  // W7 — 전광판 슬롯 모듈 레지스트리(라벨·값 포맷·골드 톤). RN 의존 0.
+  'components/ops/monitor/registry.ts',
 ];
 
 /** 디렉터리별 파일명 규칙으로 고르는 사본. `exclude` 는 이유를 주석으로 남긴다. */

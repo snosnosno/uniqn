@@ -6,7 +6,12 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-export type OpsFunnelEvent = 'ops_hub_entered' | 'ops_tournament_created';
+export type OpsFunnelEvent =
+  | 'ops_hub_entered'
+  | 'ops_tournament_created'
+  // W7 공개뷰 — anon 은 RLS 상 ops_public_view_opened 만 넣을 수 있다(props.tk = 토큰 앞 8자)
+  | 'ops_public_view_opened'
+  | 'ops_claim_converted';
 
 export function trackOpsFunnel(
   event: OpsFunnelEvent,

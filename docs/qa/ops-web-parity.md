@@ -121,27 +121,27 @@ related:
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 모니터 링크 발급/공유(멱등) | `MonitorLinkButton` | ⬜ | |
-| TV 구성(프리셋 3종 + 5슬롯, 9종 모듈) | `MonitorConfigCard` | ⬜ | 시안 승인 필요 |
-| 공개 전광판(anon 폴링 4s, 항상 다크, Wake Lock) | `monitor/[token].tsx` | ⬜ | anon RPC 2개 불변 |
-| 프라이즈 패널 · 연결 불안정 배너(토큰 무효 vs 일시 장애) | 전광판 | ⬜ | `publicPollingPolicy` 사본 |
-| 익명 신고(사유 3종, rate limit) | `PublicReportSheet` | ⬜ | |
+| 모니터 링크 발급/공유(멱등) | `MonitorLinkButton` | ➕ | 복사 + 새 창 열기 + 강제 재발급(확인창) · `e2e/w7-public.mjs` |
+| TV 구성(프리셋 3종 + 5슬롯, 9종 모듈) | `MonitorConfigCard` | ✅ | 저장값 같음 · 클래식 전환이 폴링으로 반영 E2E |
+| 공개 전광판(anon 폴링 4s, 항상 다크, Wake Lock) | `monitor/[token].tsx` | ✅ | 시안 A′(09-28 승인: 배경 없는 양옆·제목 가운데) · 새 RPC 0 |
+| 프라이즈 패널 · 연결 불안정 배너(토큰 무효 vs 일시 장애) | 전광판 | ✅ | 무효 토큰 폴링 정지(10초 요청 0) E2E |
+| 익명 신고(사유 3종, rate limit) | `PublicReportSheet` | ✅ | DB 1건 E2E |
 
 ## 10. 플레이어뷰 (W7)
 
 | 기능 | 모바일 | 웹 | 근거 |
 |---|---|---|---|
-| 공개 플레이어뷰(본인 안전 필드만) | `live/[view_token].tsx` | ⬜ | |
-| 내 자리·스택·상태·리바이/애드온/재진입·바운티 | 화면 | ⬜ | |
-| 탈락 시 순위+상금 | 화면 | ⬜ | |
-| 라이브 클럭(모니터와 같은 offset) | 화면 | ⬜ | |
-| 계정 연결(claim, PIN 8자, 비가역) | `useClaimParticipant` | ⬜ | 웹: ops 로그인 → 복귀 왕복 |
-| 익명 신고 | `PublicReportSheet` | ⬜ | |
+| 공개 플레이어뷰(본인 안전 필드만) | `live/[view_token].tsx` | ✅ | 시안 B(09-28 승인: 클럭 상단 고정 + 표) |
+| 내 자리·스택·상태·리바이/애드온/재진입·바운티 | 화면 | ➕ | BB 표시 추가 |
+| 탈락 시 순위+상금 | 화면 | ✅ | |
+| 라이브 클럭(모니터와 같은 offset) | 화면 | ✅ | 같은 훅(`usePublicPoll`) |
+| 계정 연결(claim, PIN 8자, 비가역) | `useClaimParticipant` | ✅ | ops 로그인 → /live 복귀 → PIN → DB 연결 E2E |
+| 익명 신고 | `PublicReportSheet` | ✅ | |
 
 ## 진행 요약
 
 | 영역 | 상태 |
 |---|---|
 | 목록/생성 · 콘솔 셸 · 참가자 · 블라인드/클럭 · 상금 · 스태프 · 이력 | ✅ 동등 이상 |
-| 테이블/좌석(§4) | ⬜ 좌석표 시안 승인 대기(사람 게이트) |
-| 전광판 · 플레이어뷰(§9·§10) | ⬜ W7(시안 승인 대기) |
+| 테이블/좌석(§4) | ✅ W5 좌석 행렬표(시안 A) · `e2e/w5-tables.mjs` |
+| 전광판 · 플레이어뷰(§9·§10) | ✅ W7(시안 A′·B) · `e2e/w7-public.mjs` |
