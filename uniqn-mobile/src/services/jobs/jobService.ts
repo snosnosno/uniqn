@@ -35,8 +35,11 @@ export type { PaginatedJobPostings } from '@/repositories';
 
 const DEFAULT_PAGE_SIZE = 20;
 
-/** 서버 검색 후보 상한 — 근무일 임박순 상위 N건을 받아 클라이언트가 관련도 순으로 정렬한다. */
-const SEARCH_CANDIDATE_LIMIT = 100;
+/**
+ * 서버 검색 후보 상한 — 근무일 임박순으로 "일치하는" 공고 N건을 받아 클라이언트가 관련도 순으로
+ * 정렬한다. 예전 300건(일치 여부 무관)과 같은 크기라, 예전보다 좁아지는 경우는 없다.
+ */
+const SEARCH_CANDIDATE_LIMIT = 300;
 
 // ============================================================================
 // Job Service

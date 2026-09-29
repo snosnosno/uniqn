@@ -85,7 +85,7 @@ describe('JobPostingRepository.search — 서버측 검색', () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);
 
-    await repo.search('강남 홀덤', 100);
+    await repo.search('강남 홀덤', 300);
 
     const orArgs = chain.or.mock.calls.map((c) => c[0] as string);
     expect(orArgs).toContain(
@@ -97,7 +97,7 @@ describe('JobPostingRepository.search — 서버측 검색', () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);
 
-    await repo.search('딜러', 100);
+    await repo.search('딜러', 300);
 
     expect(chain.in).toHaveBeenCalledWith('status', ['active', 'capacity_full']);
     expect(chain.neq).toHaveBeenCalledWith('status', 'container');
@@ -111,28 +111,58 @@ describe('JobPostingRepository.search — 서버측 검색', () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);
 
-    await repo.search('딜러', 100);
+    await repo.search('딜러', 300);
 
-    expect(chain.range).toHaveBeenCalledWith(0, 100);
+    expect(chain.range).toHaveBeenCalledWith(0, 300);
   });
 
-  it('PostgREST 구분자·와일드카드 문자는 제거한다 (필터 인젝션 방지)', async () => {
+  it('미승인 대회는 서버에서 거른다 — 후보 상한 자리를 헛되이 차지하지 않게', async () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);
 
-    await repo.search('홀덤),status.eq.closed%*', 100);
+    await repo.search('딜러', 300);
 
     const orArgs = chain.or.mock.calls.map((c) => c[0] as string);
-    const searchArg = orArgs.find((arg) => arg.startsWith('title.ilike.'));
-    expect(searchArg).toBe(
-      'title.ilike.%홀덤status.eq.closed%,location->>name.ilike.%홀덤status.eq.closed%,owner_name.ilike.%홀덤status.eq.closed%,description.ilike.%홀덤status.eq.closed%'
+    expect(orArgs).toContain(
+      'posting_type.is.null,posting_type.neq.tournament,tournament_config->>approvalStatus.eq.approved'
     );
   });
 
-  it('안전화 후 남는 글자가 없으면 조회하지 않고 빈 목록을 돌려준다', async () => {
-    const result = await repo.search('%*()', 100);
+  // 특수문자를 "지우면" `(주)포커` → `주포커` 가 되어 `(주)포커엔터` 와 연속 일치하지 않는다.
+  // 특수문자를 경계로 나눠 가장 긴 조각만 서버에 보내고, 정밀 판정은 서비스가 원문으로 한다.
+  it('특수문자로 나뉜 조각 중 가장 긴 것만 서버 패턴으로 쓴다 — (주)포커 → 포커', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
 
-    expect(result).toEqual([]);
-    expect(mockFrom).not.toHaveBeenCalled();
+    await repo.search('(주)포커', 300);
+
+    const orArgs = chain.or.mock.calls.map((c) => c[0] as string);
+    expect(orArgs.find((arg) => arg.startsWith('title.ilike.'))).toBe(
+      'title.ilike.%포커%,location->>name.ilike.%포커%,owner_name.ilike.%포커%,description.ilike.%포커%'
+    );
   });
+
+  it('구분자·와일드카드(_ 포함)는 서버 패턴에 남지 않는다 (필터 인젝션 방지)', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    await repo.search('홀덤),status.eq.closed%*_x', 300);
+
+    const orArgs = chain.or.mock.calls.map((c) => c[0] as string);
+    const searchArg = orArgs.find((arg) => arg.startsWith('title.ilike.')) ?? '';
+    expect(searchArg).toBe(
+      'title.ilike.%status.eq.closed%,location->>name.ilike.%status.eq.closed%,owner_name.ilike.%status.eq.closed%,description.ilike.%status.eq.closed%'
+    );
+    expect(searchArg.split(',')).toHaveLength(4);
+  });
+
+  it.each(['%*()', '((a', '_'])(
+    '서버에 보낼 조각이 2글자 미만이면 조회하지 않는다: %s',
+    async (term) => {
+      const result = await repo.search(term, 300);
+
+      expect(result).toEqual([]);
+      expect(mockFrom).not.toHaveBeenCalled();
+    }
+  );
 });

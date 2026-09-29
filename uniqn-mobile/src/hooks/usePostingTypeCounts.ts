@@ -87,7 +87,7 @@ export interface UsePostingTypeCountsOptions {
   salarySort?: SalarySortDirection | null;
   /**
    * 필터 변경으로 캐시 키가 바뀌어도 직전 카운트를 placeholder 로 유지.
-   * 필터 시트의 "공고 N건 보기" 라벨 플리커 방지용 — 목록 화면 칩은 기본값(false) 유지.
+   * 필터 시트의 "공고 N건 보기" 라벨과 구인구직 목록 칩의 개수 플리커(칩 폭 흔들림) 방지용.
    */
   keepPreviousCounts?: boolean;
 }

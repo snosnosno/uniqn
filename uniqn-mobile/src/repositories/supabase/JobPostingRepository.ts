@@ -72,7 +72,7 @@ import {
 } from './JobPostingRepositorySettlement';
 import * as venue from './JobPostingRepositoryVenue';
 import { notFound } from '@/constants/messages';
-import { sanitizeOrFilterTerm } from './postgrestFilter';
+import { pickServerSearchToken } from './postgrestFilter';
 
 export { buildSlotRoleKey } from './JobPostingRepositoryHelpers';
 
@@ -563,16 +563,18 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
    *
    * 예전에는 공고 300건을 통째로 내려받아 클라이언트에서 걸렀다(301번째부터 누락).
    * 가시성 술어는 getList 기본 경로와 같다 — active+capacity_full · 컨테이너 제외 · 끝난 공고 제외.
-   * 대회 승인 여부 등 스키마 가시성 후처리는 서비스(isSearchVisiblePosting)가 맡는다.
-   * @param term 사용자 검색어 — PostgREST 구분자·와일드카드는 제거한다
+   * 미승인 대회는 서버에서도 걸러 후보 상한 자리를 차지하지 않게 한다. 스키마 가시성 후처리는
+   * 서비스(isSearchVisiblePosting)가 맡는다.
+   * @param term 사용자 검색어 — 특수문자를 경계로 나눈 가장 긴 조각만 서버 패턴에 쓴다
+   *   (원문 일치 판정은 서비스가 클라이언트에서 한다). 조각이 2글자 미만이면 조회하지 않는다.
    * @param limit 최대 행 수(근무일 임박순)
    */
   async search(term: string, limit: number): Promise<JobPosting[]> {
-    const safeTerm = sanitizeOrFilterTerm(term);
-    if (!safeTerm) {
+    const token = pickServerSearchToken(term);
+    if (token.length < 2) {
       return [];
     }
-    const pattern = `%${safeTerm}%`;
+    const pattern = `%${token}%`;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const applySearchFilters = (q: any) =>
@@ -588,6 +590,11 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
                 `description.ilike.${pattern}`,
               ].join(',')
             )
+            // 대회는 승인된 것만 — getList 대회 탭의 approvalStatus 게이트와 같다.
+            // posting_type 이 NULL 인 구형 행은 neq 에서 빠지므로 is.null 을 따로 둔다.
+            .or(
+              'posting_type.is.null,posting_type.neq.tournament,tournament_config->>approvalStatus.eq.approved'
+            )
         );
       const result = await offsetSortedPage(
         applySearchFilters,
@@ -598,7 +605,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       );
       return result.items;
     } catch (error) {
-      rethrowOrHandle(error, '공고 검색', { term: safeTerm });
+      rethrowOrHandle(error, '공고 검색', { term: token });
     }
   }
 

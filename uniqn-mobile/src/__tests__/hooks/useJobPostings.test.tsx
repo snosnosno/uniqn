@@ -119,9 +119,10 @@ jest.mock('@/hooks/useNetworkStatus', () => ({
 }));
 
 const mockGetCriticalOfflineCache = jest.fn((..._args: unknown[]) => null);
+const mockSetCriticalOfflineCache = jest.fn();
 jest.mock('@/services/offline/criticalOfflineCache', () => ({
   getCriticalOfflineCache: (...args: unknown[]) => mockGetCriticalOfflineCache(...args),
-  setCriticalOfflineCache: jest.fn(),
+  setCriticalOfflineCache: (...args: unknown[]) => mockSetCriticalOfflineCache(...args),
 }));
 
 jest.mock('@/lib/queryClient', () => ({
@@ -270,6 +271,24 @@ describe('useJobPostings', () => {
         expect.arrayContaining(['public-job-postings:default-list:urgent'])
       );
       expect(readKeys()).not.toContain('public-job-postings:default-list:tournament');
+    });
+
+    // 페이지가 붙을 때마다 누적 전체를 직렬화하면 스크롤 중 JS 스레드가 막힌다 —
+    // 오프라인 첫 화면에 필요한 첫 페이지 분량만 쓴다.
+    it('종류별 키로 첫 페이지 분량만 쓴다', async () => {
+      const items = Array.from({ length: 25 }, (_, i) =>
+        createMockJobPosting(String(i + 1), '2099-02-01')
+      );
+      mockGetJobPostings.mockResolvedValue({ items, lastDoc: null, hasMore: false });
+
+      renderHook(() => useJobPostings({ filters: { postingType: 'urgent' }, limit: 20 }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(mockSetCriticalOfflineCache).toHaveBeenCalled());
+      const [key, data] = mockSetCriticalOfflineCache.mock.calls.at(-1) as [string, unknown[]];
+      expect(key).toBe('public-job-postings:default-list:urgent');
+      expect(data).toHaveLength(20);
     });
 
     it('지역·역할 등 좁히는 필터가 있으면 캐시를 읽지 않는다', () => {

@@ -100,10 +100,12 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       return;
     }
 
-    setCriticalOfflineCache(offlineCacheKey, jobs, {
+    // 첫 페이지 분량만 쓴다 — 오프라인에서 필요한 건 첫 화면이고, 페이지가 붙을 때마다
+    // 누적 전체를 직렬화하면 스크롤 중 JS 스레드가 막힌다.
+    setCriticalOfflineCache(offlineCacheKey, jobs.slice(0, limit), {
       schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
     });
-  }, [offlineCacheKey, jobs, query.data]);
+  }, [offlineCacheKey, jobs, limit, query.data]);
 
   const effectiveJobs = query.data !== undefined ? jobs : cachedJobs;
 
