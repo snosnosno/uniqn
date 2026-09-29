@@ -8,6 +8,7 @@ import type { PrizeCorrectionInput, PrizeStructureInput } from '@/core/schemas/o
 import * as participantService from '@/core/services/ops/opsParticipantService';
 import * as opsPrizeService from '@/core/services/ops/opsPrizeService';
 import * as opsStaffService from '@/core/services/ops/opsStaffService';
+import { NICKNAME_SEARCH_MAX, NICKNAME_SEARCH_MIN } from '@/core/staffNicknameSearch';
 import type { StaffRole } from '@/core/types/role';
 import { searchUsersByNickname } from '@/repositories/userSearchRepository';
 import { useActorId } from '../useActorId';
@@ -126,13 +127,13 @@ export function useCorrectPrize(id: string) {
   });
 }
 
-/** 닉네임 검색(스태프 수동 추가) — 2~15자만 RPC 로 보낸다(모바일 searchStaffByNickname 경계). */
+/** 닉네임 검색(스태프 수동 추가) — 경계 안(2~15자)만 RPC 로 보낸다. 경계는 모바일 정본 발췌 사본. */
 export function useNicknameSearch(query: string) {
   const q = query.trim();
   return useQuery({
     queryKey: ['ops', 'nicknameSearch', q],
     queryFn: () => searchUsersByNickname(q),
-    enabled: q.length >= 2 && q.length <= 15,
+    enabled: q.length >= NICKNAME_SEARCH_MIN && q.length <= NICKNAME_SEARCH_MAX,
     staleTime: 30_000,
   });
 }

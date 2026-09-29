@@ -4,7 +4,7 @@
  * classic(가운데 클럭 + 하단 슬롯 줄). 세로·좁은 화면은 프리셋과 무관하게 세로로 쌓는다.
  * 항상 다크 · 4초 폴링 · 화면 꺼짐 방지 · 비-PII 스냅샷만(모바일 monitor/[token].tsx).
  */
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { cn } from 'cn';
 import { resolveMonitorSlots, type ResolvedSlot } from '@/core/components/ops/monitor/registry';
@@ -196,7 +196,7 @@ const SLOT_SIZE = {
   sm: { label: 'text-sm', value: 'text-2xl break-words' },
   md: {
     label: 'text-[clamp(13px,1.05vw,22px)]',
-    value: 'text-[clamp(22px,2vw,44px)] whitespace-nowrap',
+    value: 'text-[clamp(22px,2vw,44px)]',
   },
 } as const;
 
@@ -222,7 +222,19 @@ function Slot({
           slot.tone === 'gold' && 'text-prize'
         )}
       >
-        {slot.value}
+        {/* md(TV 좁은 열)는 " · " 구분자에서만 줄바꿈 — 1280 에서 AVG STACK(스택 · BB)이 열을 넘지 않게,
+            숫자는 안 쪼갠다. sm(폰 2열)은 원문 그대로 — "100,000 / 200,000" 같은 값이 공백에서 꺾여야 한다(리뷰). */}
+        {size === 'md'
+          ? slot.value.split(' · ').map((part, i) => (
+              <Fragment key={i}>
+                {i > 0 ? ' ' : null}
+                <span className="inline-block whitespace-nowrap">
+                  {i > 0 ? '· ' : null}
+                  {part}
+                </span>
+              </Fragment>
+            ))
+          : slot.value}
       </p>
     </div>
   );

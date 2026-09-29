@@ -423,6 +423,16 @@ ${extractConsts(
 `
   );
 
+  // 발췌 7 — 닉네임 검색 입력 경계(모바일 searchStaffByNickname). 웹 훅이 하드코딩 사본을 두지 않게(리뷰 W6).
+  put(
+    'staffNicknameSearch.ts',
+    ['services/work/confirmedStaffService.ts'],
+    `${extractConsts(readSource('services/work/confirmedStaffService.ts'), [
+      'NICKNAME_SEARCH_MIN',
+      'NICKNAME_SEARCH_MAX',
+    ])}\n`
+  );
+
   // 발췌 3 — authRedirect 가 쓰는 UserProfile 필드
   const fields = extractInterfaceFields(readSource('types/user.ts'), 'UserProfile', ['socialProvider']);
   put(

@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import type { OpsParticipant, OpsSeat, OpsTable, OpsTableLockType } from '@/core/types/ops';
 import { STAFF_ROLE_LABELS, type StaffRole } from '@/core/types/role';
 import { useAssignTableStaff, useOpsStaff } from '@/hooks/ops/useStaffPrizeHistory';
+import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
 import {
   useAddTable,
   useCloseTable,
@@ -43,21 +44,35 @@ function Segmented<T extends string>({
   options,
   onChange,
   disabled,
+  immediate = false,
 }: {
   label: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
   disabled?: boolean;
+  /** 고르는 즉시 서버에 쓰는 그룹 — 화살표는 포커스만, 확정은 Space/Enter */
+  immediate?: boolean;
 }) {
+  const values = options.map((o) => o.value);
   return (
-    <div role="radiogroup" aria-label={label} className="flex border">
-      {options.map((o) => (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      onKeyDown={
+        disabled
+          ? undefined
+          : radioGroupKeyDown(values, value, onChange, { selectOnMove: !immediate })
+      }
+      className="flex border"
+    >
+      {options.map((o, i) => (
         <button
           key={o.value}
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          tabIndex={radioTabIndex(i, values.indexOf(value))}
           disabled={disabled}
           onClick={() => value !== o.value && onChange(o.value)}
           className={cn(
@@ -174,6 +189,7 @@ export function TableSettingsDialog({
           value={table.lockType}
           options={opts(LOCK_LABEL)}
           disabled={busy}
+          immediate
           onChange={(v) => lock.mutate({ tableId: table.id, lockType: v })}
         />
         <p className="label">상태</p>
@@ -182,6 +198,7 @@ export function TableSettingsDialog({
           value={table.status}
           options={opts(STATUS_LABEL)}
           disabled={busy}
+          immediate
           onChange={(v) => status.mutate({ tableId: table.id, status: v })}
         />
         <p className="label">우선순위</p>
@@ -193,6 +210,7 @@ export function TableSettingsDialog({
             label: v === 'none' ? '없음' : v,
           }))}
           disabled={busy}
+          immediate
           onChange={(v) =>
             priority.mutate({ tableId: table.id, priority: v === 'none' ? null : Number(v) })
           }

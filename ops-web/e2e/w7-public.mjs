@@ -201,7 +201,7 @@ await step(
   }
 );
 
-await step('익명 신고: 사유 선택 → 접수 → DB 1건', async () => {
+await step('익명 신고: 사유를 화살표 키로 선택(끝에서 돈다) → 접수 → DB 1건', async () => {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
   const before = Number(
@@ -209,7 +209,24 @@ await step('익명 신고: 사유 선택 → 접수 → DB 1건', async () => {
   );
   await p.goto(`${BASE}/live/${viewToken}`);
   await p.getByRole('button', { name: '이 대회 신고하기' }).click();
-  await p.getByRole('radio', { name: '기타' }).click();
+  const radios = p.getByRole('radio');
+  const checkedIndex = () =>
+    radios.evaluateAll((els) => els.findIndex((e) => e.getAttribute('aria-checked') === 'true'));
+  const tabStops = () =>
+    radios.evaluateAll((els) => els.filter((e) => e.getAttribute('tabindex') === '0').length);
+  assert((await checkedIndex()) === 0, '처음엔 첫 사유가 선택');
+  assert((await tabStops()) === 1, 'Tab 으로 들어오는 칸은 하나');
+  await radios.nth(0).focus();
+  await p.keyboard.press('ArrowDown');
+  assert((await checkedIndex()) === 1, 'ArrowDown → 두 번째');
+  await p.keyboard.press('ArrowUp');
+  await p.keyboard.press('ArrowUp');
+  assert((await checkedIndex()) === 2, '처음에서 ArrowUp → 끝(기타)');
+  const focusedIsOther = await p.evaluate(
+    () => document.activeElement?.textContent?.trim() === '기타'
+  );
+  assert(focusedIsOther, '포커스도 선택된 칸(기타)으로 옮겨 간다');
+  assert((await tabStops()) === 1, '이동 후에도 Tab 칸은 하나');
   await p.getByRole('button', { name: '신고', exact: true }).click();
   await p.getByText('신고가 접수됐어요').waitFor();
   const after = Number(

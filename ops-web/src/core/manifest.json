@@ -631,6 +631,12 @@
       ],
       "sha256": "0015cff0ca658ff0fe44f8f0f6179311a459ed57a3062924e65b0ccf33b95c6d"
     },
+    "staffNicknameSearch.ts": {
+      "sources": [
+        "uniqn-mobile/src/services/work/confirmedStaffService.ts"
+      ],
+      "sha256": "2f7ea2217ae727e98094dcee408158692dc0aa3a3b582b53e13acfa40540fb4d"
+    },
     "supabaseTables.ts": {
       "sources": [
         "uniqn-mobile/src/utils/supabase.ts"

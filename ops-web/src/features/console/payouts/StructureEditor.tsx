@@ -9,9 +9,11 @@ import { recommendPayoutCurve, type ItmRatio } from '@/core/domains/ops';
 import type { PrizeStructureInput } from '@/core/schemas/opsPrize.schema';
 import type { OpsPrize, OpsTournament } from '@/core/types/ops';
 import { useSetPrizeStructure } from '@/hooks/ops/useStaffPrizeHistory';
+import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
 import { buildPayload, displaySum, percentPreview, type PayoutMode } from './payoutDraft';
 
 const ITM_RATIOS: ItmRatio[] = [0.1, 0.15, 0.2];
+const MODES: readonly PayoutMode[] = ['amount', 'percent'];
 
 /**
  * 상금 구조 편집 — 모바일 PayoutStructureEditor: 금액 | % 모드, ITM 템플릿 추천, 현재 풀 대비 합계,
@@ -70,13 +72,19 @@ export function StructureEditor({
   return (
     <section aria-label="상금 구조" className="flex flex-col gap-3 border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="radiogroup" aria-label="입력 방식" className="flex border">
-          {(['amount', 'percent'] as const).map((m) => (
+        <div
+          role="radiogroup"
+          aria-label="입력 방식"
+          onKeyDown={radioGroupKeyDown(MODES, mode, setMode)}
+          className="flex border"
+        >
+          {MODES.map((m, i) => (
             <button
               key={m}
               type="button"
               role="radio"
               aria-checked={mode === m}
+              tabIndex={radioTabIndex(i, MODES.indexOf(mode))}
               onClick={() => setMode(m)}
               className={cn(
                 'h-11 px-4 text-sm font-semibold',

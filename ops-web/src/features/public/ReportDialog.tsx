@@ -17,6 +17,7 @@ import { isAppError } from '@/core/errors/AppError';
 import * as opsReportService from '@/core/services/ops/opsReportService';
 import { OPS_REPORT_REASON_LABELS, type OpsReportReason } from '@/core/types/ops';
 import { logger } from '@/lib/logger';
+import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
 
 const REASONS: OpsReportReason[] = ['gambling', 'illegal_gambling', 'other'];
 const DETAILS_MAX = 500;
@@ -93,13 +94,19 @@ export function ReportDialog({
           </DialogFooter>
         ) : (
           <>
-            <div role="radiogroup" aria-label="신고 사유" className="flex flex-col gap-2">
-              {REASONS.map((r) => (
+            <div
+              role="radiogroup"
+              aria-label="신고 사유"
+              onKeyDown={radioGroupKeyDown(REASONS, reason, setReason)}
+              className="flex flex-col gap-2"
+            >
+              {REASONS.map((r, i) => (
                 <button
                   key={r}
                   type="button"
                   role="radio"
                   aria-checked={reason === r}
+                  tabIndex={radioTabIndex(i, REASONS.indexOf(reason))}
                   onClick={() => setReason(r)}
                   className={cn(
                     'flex h-11 items-center border px-3 text-left text-sm',

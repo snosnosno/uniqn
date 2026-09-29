@@ -20,6 +20,7 @@ import {
 } from '@/core/domains/ops';
 import type { OpsTournament } from '@/core/types/ops';
 import { useRotateMonitorToken, useSetMonitorConfig } from '@/hooks/ops/useMonitorMutations';
+import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
 
 const PRESET_LABEL: Record<MonitorPreset, string> = {
   full: '풀 · 정보 좌 · 상금 우',
@@ -121,13 +122,19 @@ function MonitorConfigEditor({ tournament }: { tournament: OpsTournament }) {
   return (
     <div className="flex flex-col gap-3 border-t pt-3">
       <p className="label">TV 구성</p>
-      <div role="radiogroup" aria-label="레이아웃 프리셋" className="grid gap-1 sm:grid-cols-3">
-        {MONITOR_PRESETS.map((p) => (
+      <div
+        role="radiogroup"
+        aria-label="레이아웃 프리셋"
+        onKeyDown={radioGroupKeyDown(MONITOR_PRESETS, preset, setPreset)}
+        className="grid gap-1 sm:grid-cols-3"
+      >
+        {MONITOR_PRESETS.map((p, i) => (
           <button
             key={p}
             type="button"
             role="radio"
             aria-checked={preset === p}
+            tabIndex={radioTabIndex(i, MONITOR_PRESETS.indexOf(preset))}
             onClick={() => setPreset(p)}
             className={cn(
               'h-11 border px-3 text-left text-sm',

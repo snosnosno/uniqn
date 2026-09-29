@@ -21,6 +21,7 @@ import { attendanceState } from './attendanceState';
 import type { OpsStaff, OpsStaffWorkLogLink, OpsTable } from '@/core/types/ops';
 import { STAFF_ROLE_LABELS, VALID_STAFF_ROLES, type StaffRole } from '@/core/types/role';
 import { toUserMessage } from '@/lib/errorMessage';
+import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
 import {
   useAddOpsStaff,
   useAssignTableStaff,
@@ -312,13 +313,19 @@ export function AddStaffDialog({
             <li className="p-3 text-sm text-muted-foreground">찾는 사람이 없어요.</li>
           ) : null}
         </ul>
-        <div role="radiogroup" aria-label="역할" className="flex flex-wrap gap-1.5">
-          {VALID_STAFF_ROLES.map((r) => (
+        <div
+          role="radiogroup"
+          aria-label="역할"
+          onKeyDown={radioGroupKeyDown(VALID_STAFF_ROLES, role || null, setRole)}
+          className="flex flex-wrap gap-1.5"
+        >
+          {VALID_STAFF_ROLES.map((r, i) => (
             <button
               key={r}
               type="button"
               role="radio"
               aria-checked={role === r}
+              tabIndex={radioTabIndex(i, role ? VALID_STAFF_ROLES.indexOf(role) : -1)}
               onClick={() => setRole(r)}
               className={cn(
                 'h-11 rounded-lg border px-3 text-sm',

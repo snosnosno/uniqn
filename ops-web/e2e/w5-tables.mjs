@@ -142,16 +142,39 @@ SELECT public.ops_free_seat('${seatId(gaSeat)}', '${OWNER_ID}') \\g /dev/null`);
   }
 );
 
-await step('테이블 설정: T1 잠금 → DB lock_type=locked, 행에 "잠금" 표시', async () => {
-  await page.getByRole('button', { name: 'T1 설정' }).click();
-  await page.getByRole('dialog').getByRole('radio', { name: '잠금' }).click();
-  const lock = () =>
-    sql(`select lock_type from ops_tables where tournament_id='${tid}' and table_no=1`)[0];
-  await until(() => lock() === 'locked');
-  assert(lock() === 'locked', `잠금 안 됨: ${lock()}`);
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'T1 설정' }).getByText('잠금').waitFor();
-});
+await step(
+  '테이블 설정: 화살표는 서버에 안 씀 · T1 잠금 → DB lock_type=locked, 행에 "잠금" 표시',
+  async () => {
+    await page.getByRole('button', { name: 'T1 설정' }).click();
+    // 즉시 저장 그룹: 화살표는 포커스만 — 오픈에서 ← 로 순환해도 '마감'이 기록되면 안 된다(리뷰 HIGH)
+    const status = () =>
+      sql(`select status from ops_tables where tournament_id='${tid}' and table_no=1`)[0];
+    const statusBefore = status();
+    const statusGroup = page.getByRole('dialog').getByRole('radiogroup', { name: '상태' });
+    await statusGroup.getByRole('radio', { checked: true }).focus();
+    // DB 불변만으론 부족 — 점유 테이블은 서버가 마감을 거절해 상태가 그대로다. 요청 자체가 없어야 한다.
+    const rpcCalls = [];
+    const onRequest = (req) => {
+      if (/\/rpc\/ops_(close_table|set_table_lock|set_table_priority)/.test(req.url()))
+        rpcCalls.push(req.url());
+    };
+    page.on('request', onRequest);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(1000);
+    page.off('request', onRequest);
+    assert(rpcCalls.length === 0, `화살표만으로 RPC 호출: ${rpcCalls.join(', ')}`);
+    assert(status() === statusBefore, `화살표만으로 상태가 바뀜: ${statusBefore} → ${status()}`);
+    const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
+    assert(focused === '마감', `포커스가 끝 칸(마감)으로 가야 함: ${focused}`);
+    await page.getByRole('dialog').getByRole('radio', { name: '잠금' }).click();
+    const lock = () =>
+      sql(`select lock_type from ops_tables where tournament_id='${tid}' and table_no=1`)[0];
+    await until(() => lock() === 'locked');
+    assert(lock() === 'locked', `잠금 안 됨: ${lock()}`);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'T1 설정' }).getByText('잠금').waitFor();
+  }
+);
 
 await step('테이블 추가(6석) → DB 3테이블 · 행 추가', async () => {
   await page.getByRole('button', { name: '테이블', exact: true }).click();
