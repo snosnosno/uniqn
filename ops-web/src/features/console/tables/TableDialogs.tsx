@@ -1,5 +1,6 @@
 /** 테이블 탭 대화상자 — 좌석 배정·테이블 설정(잠금/우선순위/상태/딜러)·테이블 추가·배정 미리보기. */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { cn } from 'cn';
 import { ConfirmDialog } from '@/components/ops/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ERROR_CODES, ERROR_MESSAGES } from '@/core/errors/AppError';
 import type { OpsParticipant, OpsSeat, OpsTable, OpsTableLockType } from '@/core/types/ops';
 import { STAFF_ROLE_LABELS, type StaffRole } from '@/core/types/role';
 import { useAssignTableStaff, useOpsStaff } from '@/hooks/ops/useStaffPrizeHistory';
@@ -49,12 +51,27 @@ function Segmented<T extends string>({
   label: string;
   value: T;
   options: { value: T; label: string }[];
-  onChange: (v: T) => void;
+  /** immediate 그룹은 변이가 끝날 때 풀리는 promise 를 돌려준다(mutateAsync) — 동기 가드 해제 시점 */
+  onChange: (v: T) => void | Promise<unknown>;
   disabled?: boolean;
   /** 고르는 즉시 서버에 쓰는 그룹 — 화살표는 포커스만, 확정은 Space/Enter */
   immediate?: boolean;
 }) {
   const values = options.map((o) => o.value);
+  // 즉시 저장 그룹의 동기 가드 — 확정 직후 React 가 busy·낙관적 값으로 다시 그리기 전(수 ms)에 들어온
+  // Enter 반복이 옛 렌더의 가드를 통과해 같은 변이를 또 보냈다(E2E: 연타 6회 → 마감 기록 2건).
+  // 보낸 값은 변이가 끝날 때까지 다시 보내지 않는다 — 해제는 렌더 전이가 아니라 변이 결과(promise)로 해서,
+  // pending·error 가 한 번에 끝나 disabled 가 그려지지 않아도 풀린다(재리뷰). 성공 뒤 틈은 낙관적 반영이 막는다.
+  const sentRef = useRef<T | null>(null);
+  const commit = (next: T) => {
+    if (disabled || next === value || next === sentRef.current) return;
+    const result = onChange(next);
+    if (!immediate) return;
+    sentRef.current = next;
+    void Promise.resolve(result).finally(() => {
+      if (sentRef.current === next) sentRef.current = null;
+    });
+  };
   return (
     <div
       role="radiogroup"
@@ -73,13 +90,15 @@ function Segmented<T extends string>({
           role="radio"
           aria-checked={value === o.value}
           tabIndex={radioTabIndex(i, values.indexOf(value))}
-          disabled={disabled}
-          onClick={() => value !== o.value && onChange(o.value)}
+          // disabled 대신 aria-disabled — 저장 중 버튼을 진짜로 끄면 방금 Space 로 확정한 버튼에서
+          // 포커스가 body 로 빠져 키보드 조작이 끊긴다(리뷰 LOW, E2E 로 재현)
+          aria-disabled={disabled || undefined}
+          onClick={() => commit(o.value)}
           className={cn(
-            'h-11 flex-1 px-3 text-sm font-semibold',
+            'h-11 flex-1 px-3 text-sm font-semibold aria-disabled:cursor-not-allowed aria-disabled:opacity-60',
             value === o.value
               ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:bg-muted'
+              : 'text-muted-foreground hover:bg-muted aria-disabled:hover:bg-transparent'
           )}
         >
           {o.label}
@@ -153,10 +172,13 @@ export function AssignSeatDialog({
 export function TableSettingsDialog({
   tournamentId,
   table,
+  occupied,
   onClose,
 }: {
   tournamentId: string;
   table: OpsTable;
+  /** 이 테이블의 점유 좌석 수 — 마감은 서버가 거부하므로 요청 전에 안내(낙관적 '마감' 깜빡임 방지) */
+  occupied: number;
   onClose: () => void;
 }) {
   const lock = useSetTableLock(tournamentId);
@@ -190,7 +212,9 @@ export function TableSettingsDialog({
           options={opts(LOCK_LABEL)}
           disabled={busy}
           immediate
-          onChange={(v) => lock.mutate({ tableId: table.id, lockType: v })}
+          onChange={(v) =>
+            lock.mutateAsync({ tableId: table.id, lockType: v }).catch(() => undefined)
+          }
         />
         <p className="label">상태</p>
         <Segmented
@@ -199,7 +223,13 @@ export function TableSettingsDialog({
           options={opts(STATUS_LABEL)}
           disabled={busy}
           immediate
-          onChange={(v) => status.mutate({ tableId: table.id, status: v })}
+          onChange={(v) => {
+            if (v === 'closed' && occupied > 0) {
+              toast.error(ERROR_MESSAGES[ERROR_CODES.OPS_TABLE_HAS_OCCUPANTS]);
+              return;
+            }
+            return status.mutateAsync({ tableId: table.id, status: v }).catch(() => undefined);
+          }}
         />
         <p className="label">우선순위</p>
         <Segmented
@@ -212,7 +242,9 @@ export function TableSettingsDialog({
           disabled={busy}
           immediate
           onChange={(v) =>
-            priority.mutate({ tableId: table.id, priority: v === 'none' ? null : Number(v) })
+            priority
+              .mutateAsync({ tableId: table.id, priority: v === 'none' ? null : Number(v) })
+              .catch(() => undefined)
           }
         />
         <p className="label">딜러</p>

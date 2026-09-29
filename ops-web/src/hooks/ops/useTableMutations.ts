@@ -5,7 +5,7 @@
 import type { SeatAssignment, WaitlistAssignment } from '@/core/domains/ops';
 import * as opsSeatService from '@/core/services/ops/opsSeatService';
 import * as opsTableService from '@/core/services/ops/opsTableService';
-import type { OpsSeat, OpsTableLockType, OpsTableStatus } from '@/core/types/ops';
+import type { OpsSeat, OpsTable, OpsTableLockType, OpsTableStatus } from '@/core/types/ops';
 import { opsKeys } from './keys';
 import { useOpsMutation } from './opsMutation';
 
@@ -26,12 +26,28 @@ export function useAddTable(id: string) {
   });
 }
 
+/**
+ * 테이블 캐시에서 한 테이블만 바꾼 새 배열(원본 불변). 설정 대화상자의 즉시 저장 3종(잠금·상태·우선순위)은
+ * 낙관적으로 반영한다 — 누르는 순간 값이 바뀌어야 성공 후 재조회 전 틈에 같은 값을 또 보내지 않는다
+ * (리뷰: Enter 를 누르고 있으면 ops_close_table 이 한 번 더 나가 table_closed 이벤트가 중복).
+ */
+const withTable = (
+  tables: OpsTable[] | undefined,
+  tableId: string,
+  patch: Partial<Pick<OpsTable, 'lockType' | 'status' | 'priority'>>
+): OpsTable[] | undefined => tables?.map((t) => (t.id === tableId ? { ...t, ...patch } : t));
+
 export function useSetTableLock(id: string) {
   return useOpsMutation({
     op: 'ops.setTableLock',
     run: (v: { tableId: string; lockType: OpsTableLockType }, actor) =>
       opsTableService.setLock(v.tableId, actor, v.lockType),
     invalidate: [opsKeys.tables(id), opsKeys.events(id)],
+    optimistic: {
+      key: opsKeys.tables(id),
+      update: (data: OpsTable[] | undefined, v) =>
+        withTable(data, v.tableId, { lockType: v.lockType }),
+    },
     success: () => '테이블 잠금을 변경했습니다',
   });
 }
@@ -42,6 +58,11 @@ export function useSetTablePriority(id: string) {
     run: (v: { tableId: string; priority: number | null }, actor) =>
       opsTableService.setPriority(v.tableId, actor, v.priority),
     invalidate: [opsKeys.tables(id), opsKeys.events(id)],
+    optimistic: {
+      key: opsKeys.tables(id),
+      update: (data: OpsTable[] | undefined, v) =>
+        withTable(data, v.tableId, { priority: v.priority }),
+    },
     success: () => '테이블 우선순위를 변경했습니다',
   });
 }
@@ -52,6 +73,10 @@ export function useCloseTable(id: string) {
     run: (v: { tableId: string; status: OpsTableStatus }, actor) =>
       opsTableService.closeTable(v.tableId, actor, v.status),
     invalidate: [opsKeys.tables(id), opsKeys.seats(id), opsKeys.events(id)],
+    optimistic: {
+      key: opsKeys.tables(id),
+      update: (data: OpsTable[] | undefined, v) => withTable(data, v.tableId, { status: v.status }),
+    },
     success: () => '테이블 상태를 변경했습니다',
   });
 }

@@ -166,11 +166,32 @@ await step(
     assert(status() === statusBefore, `화살표만으로 상태가 바뀜: ${statusBefore} → ${status()}`);
     const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
     assert(focused === '마감', `포커스가 끝 칸(마감)으로 가야 함: ${focused}`);
-    await page.getByRole('dialog').getByRole('radio', { name: '잠금' }).click();
+    // 점유 테이블에서 '마감' 확정 → 요청 없이 안내, 선택은 '오픈' 그대로(낙관적 '마감' 깜빡임 없음)
+    page.on('request', onRequest);
+    await page.keyboard.press('Enter');
+    await page.getByText('점유된 좌석이 있어 닫을 수 없습니다').first().waitFor();
+    page.off('request', onRequest);
+    assert(rpcCalls.length === 0, `점유 테이블 마감이 서버로 감: ${rpcCalls.join(', ')}`);
+    const checkedStatus = await statusGroup.getByRole('radio', { checked: true }).textContent();
+    assert(checkedStatus?.trim() === '오픈', `선택이 오픈이어야 함: ${checkedStatus}`);
+    // 키보드 확정: 잠금 그룹 '없음' → → '잠금' → Space. 저장 중 버튼이 잠겨도 포커스가 대화상자에 남아야 한다
+    const lockGroup = page.getByRole('dialog').getByRole('radiogroup', { name: '잠금' });
+    await lockGroup.getByRole('radio', { checked: true }).focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Space');
     const lock = () =>
       sql(`select lock_type from ops_tables where tournament_id='${tid}' and table_no=1`)[0];
     await until(() => lock() === 'locked');
     assert(lock() === 'locked', `잠금 안 됨: ${lock()}`);
+    await page.waitForTimeout(500);
+    const focusInDialog = await page.evaluate(() => ({
+      inDialog: Boolean(document.activeElement?.closest('[role="dialog"]')),
+      text: document.activeElement?.textContent?.trim().slice(0, 20),
+    }));
+    assert(
+      focusInDialog.inDialog && focusInDialog.text === '잠금',
+      `확정 뒤 포커스가 '잠금'에 남아야 함: ${JSON.stringify(focusInDialog)}`
+    );
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'T1 설정' }).getByText('잠금').waitFor();
   }
@@ -185,6 +206,33 @@ await step('테이블 추가(6석) → DB 3테이블 · 행 추가', async () =>
   assert(count(`select count(*) from ops_tables where tournament_id='${tid}'`) === 3, '추가 안 됨');
   await page.getByRole('button', { name: 'T3 설정' }).waitFor();
 });
+
+await step(
+  '빈 T3: "마감"에서 Enter 연타 → 마감 기록은 1건(낙관적 반영으로 재발화 차단) → 다시 오픈',
+  async () => {
+    const t3 = sql(`select id from ops_tables where tournament_id='${tid}' and table_no=3`)[0];
+    const closedEvents = () =>
+      count(
+        `select count(*) from ops_events where tournament_id='${tid}' and type='table_closed'
+       and payload->>'table_id'='${t3}' and payload->>'status'='closed'`
+      );
+    const t3Status = () => sql(`select status from ops_tables where id='${t3}'`)[0];
+    const before = closedEvents();
+    await page.getByRole('button', { name: 'T3 설정' }).click();
+    const statusGroup = page.getByRole('dialog').getByRole('radiogroup', { name: '상태' });
+    await statusGroup.getByRole('radio', { checked: true }).focus();
+    await page.keyboard.press('ArrowLeft'); // 오픈 → (순환) 마감에 포커스만
+    for (let i = 0; i < 6; i += 1) await page.keyboard.press('Enter');
+    await until(() => t3Status() === 'closed');
+    await page.waitForTimeout(1500); // 재조회가 끝날 때까지 — 그 틈의 재발화까지 잡는다
+    assert(t3Status() === 'closed', `T3 마감 안 됨: ${t3Status()}`);
+    assert(closedEvents() === before + 1, `마감 기록 ${closedEvents() - before}건(1건이어야 함)`);
+    await statusGroup.getByRole('radio', { name: '오픈' }).click();
+    await until(() => t3Status() === 'open');
+    assert(t3Status() === 'open', `T3 다시 오픈 안 됨: ${t3Status()}`);
+    await page.keyboard.press('Escape');
+  }
+);
 
 await step('랜덤 재배치: 미리보기 → 확인창(Enter) → 잠금 T1 점유자는 그대로', async () => {
   const lockedBefore = sql(

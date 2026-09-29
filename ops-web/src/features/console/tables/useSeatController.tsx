@@ -115,6 +115,7 @@ export function useSeatController(o: Options) {
           key={settingsFor.id}
           tournamentId={id}
           table={o.tables.find((t) => t.id === settingsFor.id) ?? settingsFor}
+          occupied={o.seats.filter((s) => s.tableId === settingsFor.id && s.participantId).length}
           onClose={() => setSettingsFor(null)}
         />
       ) : null}

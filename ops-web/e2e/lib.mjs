@@ -11,7 +11,15 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(here, '..', '..', 'uniqn-mobile', 'package.json'));
-export const { chromium } = require('playwright');
+/**
+ * 엔진 선택 — `OPS_E2E_BROWSER=webkit node e2e/w7-public.mjs` 로 Safari 엔진(WebKit) 대체 검증.
+ * 이름은 기존 호출부 호환으로 `chromium` 그대로 둔다. 실제 Safari(팝업·클립보드 정책)와 같지는 않다.
+ */
+const ENGINE = process.env.OPS_E2E_BROWSER ?? 'chromium';
+if (!['chromium', 'webkit', 'firefox'].includes(ENGINE)) {
+  throw new Error(`OPS_E2E_BROWSER 는 chromium|webkit|firefox: ${ENGINE}`);
+}
+export const chromium = require('playwright')[ENGINE];
 
 export const BASE = process.env.OPS_E2E_BASE ?? 'http://localhost:4173';
 if (!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(BASE)) {
