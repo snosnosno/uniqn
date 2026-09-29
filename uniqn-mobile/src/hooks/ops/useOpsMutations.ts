@@ -721,6 +721,8 @@ export function useSetTournamentPosting(tournamentId: string) {
       const oldJobPostingId = previous?.jobPostingId ?? null;
 
       qc.invalidateQueries({ queryKey: queryKeys.ops.staff(tournamentId) });
+      // 근태 해석은 연결 공고 기준 — 안 비우면 공고를 바꾼 뒤에도 이전 공고의 근무 기록에 출퇴근이 찍힌다
+      qc.invalidateQueries({ queryKey: queryKeys.ops.staffWorkLogs(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournaments() });
       if (oldJobPostingId) {
