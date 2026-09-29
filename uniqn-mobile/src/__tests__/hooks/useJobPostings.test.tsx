@@ -246,6 +246,43 @@ describe('useJobPostings', () => {
     expect(ttls.every((ttl) => ttl === 24 * 60 * 60 * 1000)).toBe(true);
   });
 
+  // 구인구직 탭은 종류 칩(급구/대회/지원/고정)이 항상 하나 선택돼 있다. "필터 없음"일 때만
+  // 캐시하면 탭에서는 한 번도 적중하지 않아 오프라인 화면이 비었다 — 종류별 키로 캐시한다.
+  describe('오프라인 캐시 적중 범위', () => {
+    const readKeys = () => mockGetCriticalOfflineCache.mock.calls.map((call) => call[0]);
+
+    it('공고 종류만 고른 둘러보기는 종류별 키로 캐시를 읽는다', () => {
+      mockIsOnline = false;
+      renderHook(() => useJobPostings({ filters: { postingType: 'tournament' } }), {
+        wrapper: createWrapper(),
+      });
+
+      expect(readKeys()).toContain('public-job-postings:default-list:tournament');
+    });
+
+    it('종류가 다르면 다른 키를 쓴다 — 급구 캐시가 대회 탭에 섞이지 않는다', () => {
+      mockIsOnline = false;
+      renderHook(() => useJobPostings({ filters: { postingType: 'urgent' } }), {
+        wrapper: createWrapper(),
+      });
+
+      expect(readKeys()).toEqual(
+        expect.arrayContaining(['public-job-postings:default-list:urgent'])
+      );
+      expect(readKeys()).not.toContain('public-job-postings:default-list:tournament');
+    });
+
+    it('지역·역할 등 좁히는 필터가 있으면 캐시를 읽지 않는다', () => {
+      mockIsOnline = false;
+      renderHook(
+        () => useJobPostings({ filters: { postingType: 'urgent', regions: ['seoul-gangnam'] } }),
+        { wrapper: createWrapper() }
+      );
+
+      expect(mockGetCriticalOfflineCache).not.toHaveBeenCalled();
+    });
+  });
+
   describe('기본 기능', () => {
     it('공고 목록을 조회한다', async () => {
       const mockData = [

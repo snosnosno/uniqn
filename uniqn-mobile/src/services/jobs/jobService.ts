@@ -35,6 +35,9 @@ export type { PaginatedJobPostings } from '@/repositories';
 
 const DEFAULT_PAGE_SIZE = 20;
 
+/** 서버 검색 후보 상한 — 근무일 임박순 상위 N건을 받아 클라이언트가 관련도 순으로 정렬한다. */
+const SEARCH_CANDIDATE_LIMIT = 100;
+
 // ============================================================================
 // Job Service
 // ============================================================================
@@ -181,10 +184,12 @@ export async function searchJobPostings(
     const { ClientSideSearchProvider } = await import('./searchService');
 
     const searchProvider = new ClientSideSearchProvider(async () => {
-      // 브라우즈(getList) 기본값과 정합: status 미지정 → active + capacity_full 노출.
-      // (EF-jobsearch-1: 정원 마감 공고가 검색에서 증발하던 read-disappearance 회귀)
-      const { items } = await getJobPostings(undefined, 300);
+      // 부분일치는 서버가 거른다 — 예전엔 공고 300건을 통째로 받아 폰에서 걸러 301번째부터
+      // 누락됐다. 가시성은 브라우즈(getList) 기본 경로와 같다: active + capacity_full 노출
+      // (EF-jobsearch-1: 정원 마감 공고가 검색에서 증발하던 read-disappearance 회귀).
+      const items = await jobPostingRepository.search(trimmed, SEARCH_CANDIDATE_LIMIT);
       // 가시성 후처리도 브라우즈와 통일 — fixed 포함 + 미승인 대회 제외.
+      // 프로바이더는 이 후보를 한 번 더 거르고 제목 가중치로 관련도 순 정렬만 한다.
       return items.filter(isSearchVisiblePosting);
     });
 

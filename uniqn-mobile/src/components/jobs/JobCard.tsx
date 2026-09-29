@@ -1,11 +1,9 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { ShareIcon } from '@/components/icons';
 import { Badge, type CardStripeTone } from '@/components/ui';
-import { useShare } from '@/hooks/useShare';
-import { extractPostingFilledSubmap } from '@/hooks/usePostingFilledCounts';
 import type { JobPostingCard } from '@/types';
 import { PostingCardSurface } from './shared/PostingCardSurface';
 
@@ -21,33 +19,34 @@ const STRIPE_TONE_BY_STATUS: Record<ApplicationStatusType, CardStripeTone> = {
 interface JobCardProps {
   job: JobPostingCard;
   onPress: (jobId: string) => void;
+  /**
+   * 공유 — 목록이 하나만 만들어 내려준다. 카드마다 useShare 를 부르면 카드 수만큼
+   * 인증 스토어·토스트·쿼리 클라이언트 구독이 생긴다.
+   */
+  onShare: (jobId: string) => void;
   applicationStatus?: ApplicationStatusType;
-  filledCounts?: Map<string, number>;
+  /** 이 공고의 확정 서브맵(`date__slot__role`). 목록이 groupPostingFilledCounts 로 한 번에 묶어 넘긴다. */
+  filledSubmap?: Map<string, number>;
 }
 
 export const JobCard = memo(function JobCard({
   job,
   onPress,
+  onShare,
   applicationStatus,
-  filledCounts,
+  filledSubmap,
 }: JobCardProps) {
-  const { shareJobById, isSharing } = useShare();
-  const cardFilledCounts = useMemo(
-    () => extractPostingFilledSubmap(filledCounts, job.id),
-    [filledCounts, job.id]
-  );
-
   const handlePress = useCallback(() => {
     onPress(job.id);
   }, [job.id, onPress]);
 
-  // 카드는 trim 된 view model 만 갖고 있으므로 id 로 전체 공고를 조회한 뒤 공유한다.
+  // 카드는 trim 된 view model 만 갖고 있으므로 id 만 넘긴다 — 목록이 전체 공고를 조회해 공유한다.
   const handleSharePress = useCallback(
     (event?: GestureResponderEvent | React.MouseEvent) => {
       event?.stopPropagation?.();
-      void shareJobById(job.id);
+      onShare(job.id);
     },
-    [job.id, shareJobById]
+    [job.id, onShare]
   );
 
   const stripeTone: CardStripeTone = applicationStatus
@@ -71,7 +70,6 @@ export const JobCard = memo(function JobCard({
     ) : (
       <Pressable
         onPress={handleSharePress}
-        disabled={isSharing}
         hitSlop={HIT_SLOP.medium}
         className="-my-1 p-1"
         accessibilityLabel="공고 공유하기"
@@ -85,7 +83,7 @@ export const JobCard = memo(function JobCard({
       card={job}
       onPress={handlePress}
       stripeTone={stripeTone}
-      filledCounts={cardFilledCounts}
+      filledCounts={filledSubmap}
       topStatus={
         applicationStatus ? (
           // 라벨은 SCHEDULE_STATUS 에서 가져오면서 색은 골드로 덮어쓰고 있었다 —

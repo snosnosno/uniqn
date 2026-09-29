@@ -26,12 +26,26 @@ interface UseJobPostingsOptions {
 
 const PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION = 2;
 
+/**
+ * 오프라인 캐시 대상 = 필터가 없거나 공고 종류(postingType)만 고른 기본 둘러보기.
+ * 구인구직 탭은 종류 칩이 항상 하나 선택돼 있어 "필터 없음"만 캐시하면 한 번도 적중하지
+ * 않았다. 지역·역할·급여·날짜처럼 좁히는 필터는 조합이 무한해 캐시하지 않는다(null).
+ */
+function getOfflineCacheKey(normalizedFilters: Record<string, unknown>): string | null {
+  const keys = Object.keys(normalizedFilters);
+  if (keys.some((key) => key !== 'postingType')) {
+    return null;
+  }
+  const postingType = normalizedFilters.postingType;
+  return `public-job-postings:default-list:${typeof postingType === 'string' ? postingType : 'all'}`;
+}
+
 export function useJobPostings(options: UseJobPostingsOptions = {}) {
   const { filters = {}, limit = 20, enabled = true } = options;
   const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
   const normalizedFilters = stableFilters(filters);
-  const isDefaultFilter = Object.keys(normalizedFilters).length === 0;
+  const offlineCacheKey = getOfflineCacheKey(normalizedFilters);
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.jobPostings.list(normalizedFilters),
@@ -66,30 +80,30 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
     return preserveServerOrder ? focusedJobs : sortJobPostings(focusedJobs);
   }, [filters.salarySort, filters.workDate, query.data?.pages]);
 
-  const shouldUseCachedJobs = enabled && isDefaultFilter && !isOnline && query.data === undefined;
+  const cacheKeyToRead = enabled && !isOnline && query.data === undefined ? offlineCacheKey : null;
 
   const cachedJobs = useMemo(() => {
-    if (!shouldUseCachedJobs) {
+    if (!cacheKeyToRead) {
       return [];
     }
 
     return (
-      getCriticalOfflineCache<JobPostingCard[]>('public-job-postings:default-list', {
+      getCriticalOfflineCache<JobPostingCard[]>(cacheKeyToRead, {
         ttlMs: offlineCachePolicies.jobPostings,
         schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
       })?.data ?? []
     );
-  }, [shouldUseCachedJobs]);
+  }, [cacheKeyToRead]);
 
   useEffect(() => {
-    if (!isDefaultFilter || query.data === undefined) {
+    if (!offlineCacheKey || query.data === undefined) {
       return;
     }
 
-    setCriticalOfflineCache('public-job-postings:default-list', jobs, {
+    setCriticalOfflineCache(offlineCacheKey, jobs, {
       schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
     });
-  }, [isDefaultFilter, jobs, query.data]);
+  }, [offlineCacheKey, jobs, query.data]);
 
   const effectiveJobs = query.data !== undefined ? jobs : cachedJobs;
 

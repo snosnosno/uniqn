@@ -7,16 +7,8 @@ import { fireEvent, render } from '@testing-library/react-native';
 import type { JobPostingCard } from '@/types';
 import { JobCard } from '../JobCard';
 
-const mockShareJobById = jest.fn();
-
-jest.mock('@/hooks/useShare', () => ({
-  useShare: () => ({
-    shareJob: jest.fn(),
-    shareJobById: mockShareJobById,
-    share: jest.fn(),
-    isSharing: false,
-  }),
-}));
+// 공유 동작은 목록(JobList)이 하나만 만들어 내려준다 — 카드는 useShare 를 부르지 않는다.
+const mockOnShare = jest.fn();
 
 jest.mock('@/components/ui/Badge', () => ({
   Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => {
@@ -192,21 +184,27 @@ describe('JobCard', () => {
   });
 
   it('renders the title and location', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText('테스트 공고')).toBeTruthy();
     expect(getByText(/서울 강남구/)).toBeTruthy();
   });
 
   it('renders date and time from schedule display', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText(/1\/15\(수\)/)).toBeTruthy();
     expect(getByText(/18:00/)).toBeTruthy();
   });
 
   it('renders salary using the shared salary projection', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText(/일급 ₩150,000/)).toBeTruthy();
   });
@@ -219,15 +217,19 @@ describe('JobCard', () => {
       defaultSalary: { type: 'monthly', amount: 3000000 },
     });
 
-    const hourly = render(<JobCard job={hourlyJob} onPress={mockOnPress} />);
-    const monthly = render(<JobCard job={monthlyJob} onPress={mockOnPress} />);
+    const hourly = render(<JobCard job={hourlyJob} onPress={mockOnPress} onShare={mockOnShare} />);
+    const monthly = render(
+      <JobCard job={monthlyJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(hourly.getByText(/시급 ₩15,000/)).toBeTruthy();
     expect(monthly.getByText(/월급 ₩3,000,000/)).toBeTruthy();
   });
 
   it('renders role counts from the schedule projection', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText(/딜러 3명 \(1\/3\)/)).toBeTruthy();
     expect(getByText(/매니저 2명 \(0\/2\)/)).toBeTruthy();
@@ -236,8 +238,8 @@ describe('JobCard', () => {
   it('renders the urgent badge only when urgent', () => {
     const urgentJob = createJobCard({ isUrgent: true });
 
-    const urgent = render(<JobCard job={urgentJob} onPress={mockOnPress} />);
-    const normal = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const urgent = render(<JobCard job={urgentJob} onPress={mockOnPress} onShare={mockOnShare} />);
+    const normal = render(<JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />);
 
     expect(urgent.getByText('긴급')).toBeTruthy();
     expect(normal.queryByText('긴급')).toBeNull();
@@ -252,7 +254,9 @@ describe('JobCard', () => {
       allowanceLabels: ['식비 10,000원', '교통비 5,000원'],
     });
 
-    const { getByText } = render(<JobCard job={jobWithAllowances} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={jobWithAllowances} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText(/식비 10,000원/)).toBeTruthy();
     expect(getByText(/교통비 5,000원/)).toBeTruthy();
@@ -282,14 +286,18 @@ describe('JobCard', () => {
       ],
     });
 
-    const { getByText } = render(<JobCard job={multiDateJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={multiDateJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     expect(getByText(/1\/15\(수\)/)).toBeTruthy();
     expect(getByText(/1\/16\(목\)/)).toBeTruthy();
   });
 
   it('calls onPress with the job id', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     fireEvent.press(getByText('테스트 공고'));
 
@@ -329,7 +337,7 @@ describe('JobCard role labels', () => {
 
   it('renders dealer as 딜러', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('dealer')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('dealer')} onPress={mockOnPress} onShare={mockOnShare} />
     );
 
     expect(getByText(/딜러/)).toBeTruthy();
@@ -337,7 +345,7 @@ describe('JobCard role labels', () => {
 
   it('renders manager as 매니저', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('manager')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('manager')} onPress={mockOnPress} onShare={mockOnShare} />
     );
 
     expect(getByText(/매니저/)).toBeTruthy();
@@ -345,7 +353,7 @@ describe('JobCard role labels', () => {
 
   it('renders serving as 서빙', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('serving')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('serving')} onPress={mockOnPress} onShare={mockOnShare} />
     );
 
     expect(getByText(/서빙/)).toBeTruthy();
@@ -356,7 +364,7 @@ describe('JobCard role labels', () => {
   // 보이는 불일치였다 (2026-07-19 정리).
   it('renders staff as 직원', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('staff')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('staff')} onPress={mockOnPress} onShare={mockOnShare} />
     );
 
     expect(getByText(/직원/)).toBeTruthy();
@@ -364,7 +372,7 @@ describe('JobCard role labels', () => {
 
   it('renders custom roles as-is', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('custom')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('custom')} onPress={mockOnPress} onShare={mockOnShare} />
     );
 
     expect(getByText(/custom/)).toBeTruthy();
@@ -401,10 +409,46 @@ describe('JobCard accessibility', () => {
   });
 
   it('remains pressable', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+    const { getByText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
 
     fireEvent.press(getByText('테스트 공고'));
 
     expect(mockOnPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('JobCard 목록 주입 props', () => {
+  const mockOnPress = jest.fn();
+  const mockJob = createJobCard();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('공유 버튼은 목록이 넘긴 onShare(job.id)를 부르고 카드 이동은 일으키지 않는다', () => {
+    const { getByLabelText } = render(
+      <JobCard job={mockJob} onPress={mockOnPress} onShare={mockOnShare} />
+    );
+
+    fireEvent.press(getByLabelText('공고 공유하기'));
+
+    expect(mockOnShare).toHaveBeenCalledWith(mockJob.id);
+    expect(mockOnPress).not.toHaveBeenCalled();
+  });
+
+  it('공고별 서브맵(filledSubmap)의 확정 수로 역할 인원을 보여 준다', () => {
+    const filledSubmap = new Map<string, number>([['2025-01-15__18:00__dealer', 2]]);
+    const { getByText } = render(
+      <JobCard
+        job={mockJob}
+        onPress={mockOnPress}
+        onShare={mockOnShare}
+        filledSubmap={filledSubmap}
+      />
+    );
+
+    expect(getByText(/딜러 3명 \(2\/3\)/)).toBeTruthy();
   });
 });
