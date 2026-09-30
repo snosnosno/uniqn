@@ -4,17 +4,95 @@ name: ops-web
 # ⚠️ 이 워크플로는 branch protection 의 required check 가 **아니다** → pull_request 에도
 #    paths 필터를 둔다(ci.yml 의 "required check + paths = 영원히 pending" 함정과 무관).
 #    required 로 승격할 때는 ci.yml 처럼 changes 잡 + 애그리게이터 구조로 바꿔야 한다.
+#
+# 🔑 paths 에 동기화 정본(uniqn-mobile/src 의 ops 도메인·의존)을 넣어 둔다 — 모바일만 고친 PR 도
+#    `sync-ops-core --check` 를 타야 드리프트가 머지 전에 잡힌다. 정본 목록은 scripts/sync-ops-core.mjs 와 맞춘다.
 on:
   pull_request:
     branches: [master]
     paths:
       - 'ops-web/**'
       - '.github/workflows/ops-web.yml'
+      - 'scripts/sync-ops-core.mjs'
+      - 'scripts/__tests__/sync-ops-core.test.mjs'
+      - 'uniqn-mobile/package.json'
+      - 'uniqn-mobile/src/domains/ops/**'
+      - 'uniqn-mobile/src/types/ops.ts'
+      - 'uniqn-mobile/src/types/role.ts'
+      - 'uniqn-mobile/src/types/supabase.ts'
+      - 'uniqn-mobile/src/types/user.ts'
+      - 'uniqn-mobile/src/utils/security.ts'
+      - 'uniqn-mobile/src/utils/text/josa.ts'
+      - 'uniqn-mobile/src/constants/messages/**'
+      - 'uniqn-mobile/src/errors/AppError.ts'
+      - 'uniqn-mobile/src/errors/errorUtils.ts'
+      - 'uniqn-mobile/src/utils/supabase.ts'
+      - 'uniqn-mobile/src/schemas/ops*.schema.ts'
+      - 'uniqn-mobile/src/schemas/common.ts'
+      - 'uniqn-mobile/src/schemas/auth.schema.ts'
+      - 'uniqn-mobile/src/schemas/__tests__/ops*.test.ts'
+      - 'uniqn-mobile/src/hooks/ops/publicPollingPolicy.ts'
+      - 'uniqn-mobile/src/hooks/ops/__tests__/publicPollingPolicy.test.ts'
+      - 'uniqn-mobile/src/shared/navigation/authRedirect.ts'
+      - 'uniqn-mobile/src/shared/navigation/__tests__/authRedirect.test.ts'
+      - 'uniqn-mobile/src/repositories/supabase/opsRpcError.ts'
+      - 'uniqn-mobile/src/repositories/supabase/Ops*Repository.ts'
+      - 'uniqn-mobile/src/repositories/interfaces/IOps*Repository.ts'
+      - 'uniqn-mobile/src/repositories/ops.ts'
+      - 'uniqn-mobile/src/services/ops/**'
+      - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
+      - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/domains/settlement/settledLockMessage.ts'
+      - 'uniqn-mobile/src/components/ops/HistoryTab.tsx'
+      - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
+      - 'uniqn-mobile/src/services/work/confirmedStaffService.ts'
+      - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
+      - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/monitor/registry.ts'
+      - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
   push:
     branches: [master]
+    # pull_request 와 같은 목록(앵커 대신 복제 — 바꿀 때 두 곳 모두)
     paths:
       - 'ops-web/**'
       - '.github/workflows/ops-web.yml'
+      - 'scripts/sync-ops-core.mjs'
+      - 'scripts/__tests__/sync-ops-core.test.mjs'
+      - 'uniqn-mobile/package.json'
+      - 'uniqn-mobile/src/domains/ops/**'
+      - 'uniqn-mobile/src/types/ops.ts'
+      - 'uniqn-mobile/src/types/role.ts'
+      - 'uniqn-mobile/src/types/supabase.ts'
+      - 'uniqn-mobile/src/types/user.ts'
+      - 'uniqn-mobile/src/utils/security.ts'
+      - 'uniqn-mobile/src/utils/text/josa.ts'
+      - 'uniqn-mobile/src/constants/messages/**'
+      - 'uniqn-mobile/src/errors/AppError.ts'
+      - 'uniqn-mobile/src/errors/errorUtils.ts'
+      - 'uniqn-mobile/src/utils/supabase.ts'
+      - 'uniqn-mobile/src/schemas/ops*.schema.ts'
+      - 'uniqn-mobile/src/schemas/common.ts'
+      - 'uniqn-mobile/src/schemas/auth.schema.ts'
+      - 'uniqn-mobile/src/schemas/__tests__/ops*.test.ts'
+      - 'uniqn-mobile/src/hooks/ops/publicPollingPolicy.ts'
+      - 'uniqn-mobile/src/hooks/ops/__tests__/publicPollingPolicy.test.ts'
+      - 'uniqn-mobile/src/shared/navigation/authRedirect.ts'
+      - 'uniqn-mobile/src/shared/navigation/__tests__/authRedirect.test.ts'
+      - 'uniqn-mobile/src/repositories/supabase/opsRpcError.ts'
+      - 'uniqn-mobile/src/repositories/supabase/Ops*Repository.ts'
+      - 'uniqn-mobile/src/repositories/interfaces/IOps*Repository.ts'
+      - 'uniqn-mobile/src/repositories/ops.ts'
+      - 'uniqn-mobile/src/services/ops/**'
+      - 'uniqn-mobile/src/errors/serviceErrorHandler.ts'
+      - 'uniqn-mobile/src/utils/formatters/currency.ts'
+      - 'uniqn-mobile/src/domains/settlement/settledLockMessage.ts'
+      - 'uniqn-mobile/src/components/ops/HistoryTab.tsx'
+      - 'uniqn-mobile/src/components/ops/StaffAttendanceSheet.tsx'
+      - 'uniqn-mobile/src/services/work/confirmedStaffService.ts'
+      - 'uniqn-mobile/src/repositories/supabase/WorkLogRepositoryVenue.ts'
+      - 'uniqn-mobile/src/components/ops/payout*.ts'
+      - 'uniqn-mobile/src/components/ops/monitor/registry.ts'
+      - 'uniqn-mobile/src/components/ops/__tests__/payout*.test.ts'
 
 defaults:
   run:
@@ -42,6 +120,12 @@ jobs:
           cache-dependency-path: ops-web/package-lock.json
 
       - run: npm ci
+
+      # 동기화 스크립트 자체 테스트 — 레포 루트엔 node_modules 가 없어 Node 내장 test runner 를 쓴다.
+      - name: sync-ops-core unit tests
+        run: node --test ../scripts/__tests__/sync-ops-core.test.mjs
+
+      # quality 가 sync:check(정본 ↔ ops-web/src/core 일치)를 포함한다.
       - run: npm run quality
 
       # CI 에는 로컬 Supabase 가 없다 — 가짜 로컬 URL 로 번들이 만들어지는지만 본다.

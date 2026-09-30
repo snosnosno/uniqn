@@ -28,3 +28,6 @@ dist-ssr
 
 # Storybook 빌드 산출물
 storybook-static
+
+# E2E 스크린샷(로컬 관찰용)
+e2e-output
