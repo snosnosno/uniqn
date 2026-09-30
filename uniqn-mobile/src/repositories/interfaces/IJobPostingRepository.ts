@@ -288,6 +288,14 @@ export interface IJobPostingRepository {
    */
   getPostingFilledCounts(jobPostingIds: string[]): Promise<Map<string, number>>;
 
+  /**
+   * 공고 검색 (서버측 부분일치 — 제목·장소명·구인처·본문).
+   * 가시성은 getList 기본 경로와 같다(active+capacity_full · 컨테이너 제외 · 끝난 공고 제외).
+   * @param term 사용자 검색어 (PostgREST 구분자·와일드카드는 구현이 제거)
+   * @param limit 최대 결과 수 (근무일 임박순)
+   */
+  search(term: string, limit: number): Promise<JobPosting[]>;
+
   // ==========================================================================
   // 변경 (Write) - 단순 업데이트
   // ==========================================================================

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { LIST_CONTAINER_STYLES } from '@/constants';
@@ -8,6 +8,8 @@ import { JobCard, type ApplicationStatusType } from './JobCard';
 import { PostingSurfaceState } from './shared';
 import { ScreenSkeleton } from '@/components/ui';
 import { loadFailed } from '@/constants/messages';
+import { useShare } from '@/hooks/useShare';
+import { groupPostingFilledCounts } from '@/hooks/usePostingFilledCounts';
 
 interface JobListProps {
   jobs: JobPostingCard[];
@@ -50,16 +52,38 @@ export function JobList({
   onEmptyAction,
   contentBottomPadding,
 }: JobListProps) {
+  // 공유 훅은 목록에 하나만 둔다(카드마다 두면 카드 수만큼 스토어·토스트 구독이 생긴다).
+  // shareJobById 는 isSharing 에 따라 identity 가 바뀌므로 ref 로 감싸 renderItem 을 안정시킨다
+  // — 그렇지 않으면 공유 한 번에 모든 카드가 두 번씩 다시 그려진다.
+  const { shareJobById } = useShare();
+  const shareRef = useRef(shareJobById);
+  useEffect(() => {
+    shareRef.current = shareJobById;
+  }, [shareJobById]);
+  // 훅의 isSharing 가드는 리렌더 뒤에야 반영된다 — 같은 프레임 연타는 동기 ref 로 막는다.
+  const sharingRef = useRef(false);
+  const handleShare = useCallback((jobId: string) => {
+    if (sharingRef.current) return;
+    sharingRef.current = true;
+    void shareRef.current(jobId).finally(() => {
+      sharingRef.current = false;
+    });
+  }, []);
+
+  // 전역 확정맵을 공고별로 한 번만 묶는다 — 카드마다 전역맵을 훑으면 카드 수 × 맵 크기.
+  const filledByPosting = useMemo(() => groupPostingFilledCounts(filledCounts), [filledCounts]);
+
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => (
       <JobCard
         job={item}
         onPress={onJobPress}
-        filledCounts={filledCounts}
+        onShare={handleShare}
+        filledSubmap={filledByPosting.get(item.id)}
         applicationStatus={applicationStatuses?.get(item.id)}
       />
     ),
-    [onJobPress, filledCounts, applicationStatuses]
+    [onJobPress, handleShare, filledByPosting, applicationStatuses]
   );
 
   const renderFooter = useCallback(() => {

@@ -107,6 +107,9 @@ export default function JobsScreen() {
     salaryType: salaryFilter?.type ?? null,
     salaryMin: salaryFilter?.min ?? null,
     salarySort: salaryFilter?.sort ?? null,
+    // 필터를 바꿀 때 칩 개수가 사라졌다 나타나며 칩 폭이 흔들리지 않게 직전 값을 유지한다
+    // (필터 시트 3종과 같은 설정).
+    keepPreviousCounts: true,
   });
 
   useEffect(() => {
@@ -230,7 +233,8 @@ export default function JobsScreen() {
     () => (isSearchMode ? filteredSearchJobs : jobs).map((job) => job.id),
     [isSearchMode, filteredSearchJobs, jobs]
   );
-  const filledCountsQuery = usePostingFilledCounts(visibleJobIds);
+  // 무한 스크롤로 ID 가 늘 때마다 키가 바뀐다 — 직전 값을 유지해 확정 수 깜빡임을 막는다.
+  const filledCountsQuery = usePostingFilledCounts(visibleJobIds, { keepPrevious: true });
 
   useEffect(() => {
     if (debouncedSearch) {
