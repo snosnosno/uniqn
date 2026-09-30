@@ -1,0 +1,472 @@
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/types/ops.ts
+// 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
+/**
+ * 라이브 운영(ops) 도메인 타입 — 슬라이스 1a.
+ * enum 은 생성된 Supabase Constants 를 단일출처(SSOT)로 파생 (인라인 하드코딩 금지).
+ * 앱은 camelCase, DB 는 snake_case (Repository 가 매핑).
+ */
+import { Constants } from '@/core/opsEnums';
+import type { StaffRole } from '@/core/types/role';
+import type { OpsBlindLevelInput } from '@/core/schemas/opsBlindLevel.schema';
+
+export type OpsTournamentStatus = (typeof Constants.public.Enums.ops_tournament_status)[number];
+export type OpsParticipantStatus = (typeof Constants.public.Enums.ops_participant_status)[number];
+export type OpsEventType = (typeof Constants.public.Enums.ops_event_type)[number];
+
+/** 대회(라이브 운영) */
+export interface OpsTournament {
+  id: string;
+  ownerId: string;
+  jobPostingId?: string | null;
+  name: string;
+  venue?: string | null;
+  eventDate?: string | null;
+  gameType: string;
+  status: OpsTournamentStatus;
+  seatsPerTable: number;
+  startingChips: number;
+  color?: string | null;
+  buyInChips: number;
+  rebuyChips: number;
+  addonChips: number;
+  buyInCost: number;
+  feeCost: number;
+  rebuyCost: number;
+  addonCost: number;
+  bountyCost?: number | null;
+  registrationOpen: boolean;
+  autoSeatOnRegister: boolean;
+  reentryAllowed: boolean;
+  maxReentries?: number | null;
+  monitorToken?: string | null;
+  /** TV 모니터 구성(S1 C6) jsonb. NULL=기본. 소비는 parseMonitorConfig 경유. */
+  monitorConfig?: unknown;
+  nextEntrySeq: number;
+  /**
+   * 보관 시각(NULL/undefined=활성) — 결함③. 목록 기본 필터에서 제외된다.
+   * status(upcoming/active/completed)와 **직교**다 — 보관해도 원래 상태를 잃지 않는다.
+   * hard DELETE 는 ops_events append-only 트리거와 충돌해 불가능하므로 이것이 "치우기"의 유일 경로.
+   */
+  archivedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 참가자(엔트리). view_token 포함(D8 운영자 읽기). claim_pin_hash 는 절대 미포함. */
+export interface OpsParticipant {
+  id: string;
+  tournamentId: string;
+  entryNumber: number;
+  name: string;
+  nationality?: string | null;
+  phone?: string | null;
+  playerUserId?: string | null;
+  /** 읽기 능력 토큰(운영자 read·D8). 미발급 시 null. */
+  viewToken: string | null;
+  status: OpsParticipantStatus;
+  chips: number;
+  buyInAmount?: number | null;
+  rebuys: number;
+  addOns: number;
+  reentries: number;
+  knockouts: number;
+  finishPosition?: number | null;
+  bustedAt?: string | null;
+  prizeAmount?: number | null;
+  /** 상금 지급 완료 시각(S1 C4). null=미지급. 쓰기는 ops_set_prize_paid 전용. */
+  prizePaidAt?: string | null;
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 순위별 고정 상금(1d). */
+export interface OpsPrize {
+  id: string;
+  tournamentId: string;
+  rank: number;
+  amount: number;
+}
+
+/** bust RPC 반환(camelCase 매핑됨). */
+export interface OpsBustResult {
+  finishPosition: number;
+  prizeAmount: number | null;
+  winnerFinalized: boolean;
+  winner: { participantId: string; finishPosition: number; prizeAmount: number | null } | null;
+}
+
+/** 1f: 탈락 취소 결과(bust 직전 상태 복원 — reentries 불변·칩 복원). */
+export interface OpsUndoBustResult {
+  participantId: string;
+  restoredChips: number;
+  status: OpsParticipant['status'];
+  seated: boolean;
+  tableNo: number | null;
+  seatNo: number | null;
+}
+
+/** 1f: 상금 정정/회수 결과. */
+export interface OpsPrizeCorrectionResult {
+  participantId: string;
+  amountBefore: number | null;
+  amountAfter: number | null;
+}
+
+/** 결함① 칩 카운트 수동 입력 RPC 반환. 동일값 재입력(no-op)이면 chips === chipsBefore. */
+export interface OpsChipCountResult {
+  participantId: string;
+  chips: number;
+  chipsBefore: number;
+}
+
+/** 노쇼 표시/취소 RPC 반환(결함②). checked_in ↔ no_show 왕복만 발생한다. */
+export interface OpsNoShowResult {
+  participantId: string;
+  status: OpsParticipantStatus;
+  statusBefore: OpsParticipantStatus;
+}
+
+/** 참가자 정정 RPC 반환(결함③). changed=false 면 무변경 저장(이벤트 0행). */
+export interface OpsParticipantUpdateResult {
+  participantId: string;
+  name: string;
+  nationality: string | null;
+  phone: string | null;
+  changed: boolean;
+}
+
+/** 오등록 참가자 제거 RPC 반환(결함③). 비가역 — entry_number 는 빈 번호로 남는다. */
+export interface OpsParticipantDeleteResult {
+  participantId: string;
+  entryNumber: number | null;
+  name: string;
+  deleted: boolean;
+}
+
+/** 대회 보관/복원 RPC 반환(결함③). changed=false 면 이미 목표 상태(이벤트 0행). */
+export interface OpsTournamentArchiveResult {
+  tournamentId: string;
+  archivedAt: string | null;
+  changed: boolean;
+}
+
+/** reenter RPC 반환. */
+export interface OpsReenterResult {
+  participantId: string;
+  reentries: number;
+  status: OpsParticipantStatus;
+  seated: boolean;
+}
+
+/** 감사 이벤트 로그 (append-only) */
+export interface OpsEvent {
+  id: string;
+  tournamentId: string;
+  type: OpsEventType;
+  actorId?: string | null;
+  actorDevice?: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export type OpsTableStatus = (typeof Constants.public.Enums.ops_table_status)[number];
+export type OpsTableLockType = (typeof Constants.public.Enums.ops_table_lock_type)[number];
+
+/** 라이브 운영 테이블 */
+export interface OpsTable {
+  id: string;
+  tournamentId: string;
+  tableNo: number;
+  name?: string | null;
+  status: OpsTableStatus;
+  assignedStaffId?: string | null;
+  lockType: OpsTableLockType;
+  priority?: number | null;
+  position?: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 좌석(단일 점유원) */
+export interface OpsSeat {
+  id: string;
+  tournamentId: string;
+  tableId: string;
+  tableNo: number;
+  seatNo: number;
+  participantId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** ops_staff.source — 로스터 편입 경로(1e). */
+export type OpsStaffSource = 'snapshot_import' | 'manual';
+
+/**
+ * 대회 스태프 로스터(1e) — 확정 스태프 스냅샷(import) 또는 수동 추가(manual).
+ * source_work_log_id 는 snapshot_import 출처에서만 채워짐(work_logs 는 SSOT·읽기전용, 여기엔 스냅샷만 보관).
+ */
+export interface OpsStaff {
+  id: string;
+  tournamentId: string;
+  staffId: string;
+  role: StaffRole;
+  customRole: string | null;
+  staffName: string;
+  staffNickname: string | null;
+  source: OpsStaffSource;
+  sourceWorkLogId: string | null;
+  createdAt: string;
+}
+
+/**
+ * ops 스태프 ↔ work_logs 근태 행 해석 사유 (결함 ⑦-2).
+ *
+ * `ok` 외에는 전부 **쓸 대상을 특정하지 못했다**는 뜻이다. 화면은 사유별로 다른 안내를 띄우고
+ * 근태 컨트롤을 숨긴다 — 애매한 상태에서 버튼을 열어 두면 틀린 행에 시각이 박힌다.
+ */
+export type OpsStaffWorkLogReason =
+  /** 유일 행 해석됨 — 쓰기 가능 */
+  | 'ok'
+  /** 대회에 공고가 연결되지 않음 */
+  | 'no_posting'
+  /** 대회 운영일(event_date)이 비어 있음 */
+  | 'no_event_date'
+  /** 해당 날짜에 대응 work_log 없음(수동 추가 스태프 등) */
+  | 'not_linked'
+  /** 후보는 있으나 전부 취소/노쇼 */
+  | 'cancelled'
+  /** 같은 (공고, 스태프, 날짜)에 살아있는 행이 2건 이상 — 자동 선택하지 않는다 */
+  | 'ambiguous'
+  /** 정산 완료 — 서버가 ALREADY_SETTLED 로 거부한다 */
+  | 'settled';
+
+/**
+ * 해석기 `ops_resolve_staff_work_logs` 의 행.
+ *
+ * 🔴 `writeAllowed` 는 **화면 힌트일 뿐 권한의 근거가 아니다.** 실제 가드는
+ *    `update_work_log_slot` 이 자기 술어로 재검증한다. 이 값이 true 라고 쓰기가 보장되지 않고,
+ *    false 인데 우회 호출하면 서버가 PERMISSION_DENIED 로 막는다.
+ * 🔴 ops 축(대회 멤버)과 공고 축(정산 권한)은 **다르다**. 이 값은 공고 축이다.
+ */
+export interface OpsStaffWorkLogLink {
+  opsStaffId: string;
+  staffId: string;
+  staffName: string;
+  /** 해석된 work_log. `reason !== 'ok' && reason !== 'settled'` 면 null 이다. */
+  workLogId: string | null;
+  wlStatus: string | null;
+  payrollStatus: string | null;
+  checkInTs: string | null;
+  checkOutTs: string | null;
+  writeAllowed: boolean;
+  reason: OpsStaffWorkLogReason;
+}
+
+/** STATUS 부분통계 (1a — 참가자 파생만, 클라이언트 계산). 좌석/블라인드 의존 값은 1b/1c. */
+export interface OpsPartialStats {
+  playing: number;
+  entries: number;
+  totalChips: number;
+  averageStack: number;
+  prizePool: number;
+}
+
+/** 블라인드 레벨(1c). sort 1..N 연속(ops_set_blind_levels 전체교체가 보장). */
+export interface OpsBlindLevel {
+  id: string;
+  tournamentId: string;
+  level: number;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  durationSec: number;
+  isBreak: boolean;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 블라인드 프리셋(계획 B) — owner 스코프 재사용 템플릿. levels 는 jsonb(camelCase 입력).
+ * RLS owner 스코프 → listMine 은 자동 필터(별도 owner 조건 불요).
+ */
+export interface OpsBlindPreset {
+  id: string;
+  ownerId: string;
+  name: string;
+  levels: OpsBlindLevelInput[];
+  createdAt: string;
+}
+
+/** 서버 동기 클럭(대회당 1행, 1c). 남은시간은 서버 앵커(levelStartedAt) 파생. */
+export interface OpsClock {
+  tournamentId: string;
+  currentLevelSort: number;
+  /** 현재 레벨 시작 서버 시각(ISO). 일시정지/미시작이면 null */
+  levelStartedAt: string | null;
+  isRunning: boolean;
+  /** 일시정지 시 남은 초 스냅샷 */
+  pausedRemainingSec: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 파생 라이브 통계(대회당 1행, 1c — 트리거 재계산).
+ * DB 의 bigint 컬럼(totalChips/averageStack/prizePool)·numeric(avgStackBb)은 앱에서 number 취급.
+ */
+export interface OpsLiveStats {
+  tournamentId: string;
+  playing: number;
+  entries: number;
+  uniquePlayers: number;
+  reentriesTotal: number;
+  tablesOpen: number;
+  seatsTotal: number;
+  seatsFree: number;
+  totalChips: number;
+  averageStack: number;
+  avgStackBb: number;
+  prizePool: number;
+  knockoutPool: number | null;
+  updatedAt: string;
+}
+
+/** 공개뷰 신고 사유 택소노미(S1 B2/D7) — 서버 CHECK 와 1:1. */
+export type OpsReportReason = 'gambling' | 'illegal_gambling' | 'other';
+
+export const OPS_REPORT_REASON_LABELS: Record<OpsReportReason, string> = {
+  gambling: '사행성 우려',
+  illegal_gambling: '불법 도박',
+  other: '기타',
+};
+
+/**
+ * 다음 브레이크 정보(S1 C1) — 현재 레벨 시작 앵커(levelStartedAt) 기준 브레이크 시작까지 누적 초.
+ * 카운트다운 = secondsFromLevelStart − 현재 레벨 경과(클럭과 동일 앵커·offset — 표면별 드리프트 0).
+ */
+export interface OpsNextBreak {
+  level: number;
+  sort: number;
+  secondsFromLevelStart: number;
+}
+
+/** 프라이즈 패널 payout 행(S1 C6/T4 — 상위 5). */
+export interface OpsPayoutEntry {
+  position: number;
+  amount: number;
+}
+
+/** 모니터 스냅샷 블라인드 레벨(공개 RPC 부분집합 — 비-PII). */
+export interface OpsMonitorLevel {
+  level: number;
+  smallBlind: number;
+  bigBlind: number;
+  ante: number;
+  durationSec: number;
+  isBreak: boolean;
+}
+
+/**
+ * 공개 모니터(전광판) 스냅샷 (1c-3) — `ops_get_monitor_snapshot(p_monitor_token)` anon RPC 반환.
+ * **비-PII 화이트리스트 투영**: 참가자 PII·view_token·monitor_token·owner 미포함(집계만).
+ * RPC 가 camelCase 키로 직접 반환(toCamelCase shallow 회피) → 그대로 소비.
+ */
+export interface OpsMonitorSnapshot {
+  tournament: {
+    name: string;
+    venue: string | null;
+    eventDate: string | null;
+    gameType: string;
+    status: string;
+    color: string | null;
+    registrationOpen: boolean;
+  };
+  clock: {
+    currentLevelSort: number;
+    levelStartedAt: string | null;
+    isRunning: boolean;
+    pausedRemainingSec: number | null;
+  };
+  currentLevel: OpsMonitorLevel | null;
+  nextLevel: OpsMonitorLevel | null;
+  stats: {
+    playing: number;
+    entries: number;
+    reentriesTotal: number;
+    tablesOpen: number;
+    seatsTotal: number;
+    seatsFree: number;
+    totalChips: number;
+    averageStack: number;
+    avgStackBb: number;
+    prizePool: number;
+    knockoutPool: number | null;
+  };
+  /** 다음 브레이크(S1 C1). 남은 브레이크 없으면 null. */
+  nextBreak: OpsNextBreak | null;
+  /** 상위 5 payout(S1 C6). 상금 구조 없으면 빈 배열(프라이즈 패널 자동 숨김). */
+  payouts: OpsPayoutEntry[];
+  /**
+   * TV 모니터 구성(S1 C6) — 서버가 화이트리스트로 재조립 저장한 jsonb 원본.
+   * 소비는 반드시 parseMonitorConfig 경유(미지 preset→full 폴백·미지 id 무시·중복 첫 항목만).
+   */
+  monitorConfig: unknown;
+  /** 서버 시각(ISO) — 클라 offset 보정용(기기 시계 오차 보정). */
+  serverNow: string;
+}
+
+/** 운영자 발급 결과(평문 PIN은 1회만 노출 — 슬립용). */
+export interface OpsPlayerCredentials {
+  participantId: string;
+  viewToken: string;
+  claimPin: string;
+}
+
+/**
+ * 공개 플레이어뷰 (1c-4) — `ops_get_player_view(p_view_token)` anon RPC 반환.
+ * **본인 안전필드만**: 타 참가자·phone·nationality·view_token·claim_pin_hash·player_user_id 미포함.
+ * RPC 가 camelCase 키로 직접 반환 → 그대로 소비.
+ */
+export interface OpsPlayerView {
+  me: {
+    entryNumber: number;
+    name: string;
+    status: string;
+    chips: number;
+    finishPosition: number | null;
+    prizeAmount: number | null;
+    bountyAccrued: number | null;
+    rebuys: number;
+    addOns: number;
+    reentries: number;
+    knockouts: number;
+    /** 본인 좌석(미착석이면 null). */
+    tableNo: number | null;
+    seatNo: number | null;
+  };
+  tournament: {
+    name: string;
+    venue: string | null;
+    gameType: string;
+    status: string;
+  };
+  clock: {
+    currentLevelSort: number;
+    levelStartedAt: string | null;
+    isRunning: boolean;
+    pausedRemainingSec: number | null;
+  };
+  currentLevel: OpsMonitorLevel | null;
+  stats: {
+    playing: number;
+    entries: number;
+    averageStack: number;
+    avgStackBb: number;
+  };
+  /** 다음 브레이크(S1 C1) — 모니터 스냅샷과 동일 산식(드리프트 0). */
+  nextBreak: OpsNextBreak | null;
+  serverNow: string;
+}

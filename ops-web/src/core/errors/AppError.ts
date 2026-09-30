@@ -1,0 +1,677 @@
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/errors/AppError.ts
+// 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
+/**
+ * UNIQN Mobile - 에러 클래스 시스템
+ *
+ * @description 구조화된 에러 처리를 위한 에러 클래스 계층
+ * @version 1.0.0
+ *
+ * 현재 상태:
+ * - Sentry 연동 완료 (@sentry/react-native, sentryService.ts)
+ * - 에러 자동 보고 활성화됨
+ *
+ * TODO [P2]: 에러 클래스 단위 테스트 추가 (커버리지 향상)
+ */
+
+import { loadFailed, notFound } from '@/core/constants/messages';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * 에러 카테고리
+ */
+export type ErrorCategory =
+  | 'network'
+  | 'auth'
+  | 'validation'
+  | 'permission'
+  | 'infrastructure'
+  | 'security'
+  | 'business'
+  | 'unknown';
+
+/**
+ * 에러 심각도
+ */
+export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+/**
+ * 서비스/관측성 레이어가 따르는 AppError 분류
+ *
+ * recoverable-business:
+ * - 사용자 액션이나 도메인 규칙으로 복구 가능한 에러
+ * - Sentry 전송 대상이 아님
+ *
+ * infra:
+ * - 인프라/네트워크/Firebase/보안/알 수 없는 에러
+ * - 비치명(non-fatal) telemetry 대상
+ *
+ * critical-telemetry:
+ * - 명시적으로 치명적(critical)로 분류된 에러
+ * - fatal telemetry 대상
+ */
+export type AppErrorHandlingKind = 'recoverable-business' | 'infra' | 'critical-telemetry';
+
+/**
+ * 관측성 전송 채널
+ */
+export type AppErrorTelemetryChannel = 'none' | 'error' | 'fatal';
+
+/**
+ * AppError 처리/전송 정책
+ */
+export interface AppErrorTelemetryPolicy {
+  kind: AppErrorHandlingKind;
+  telemetryChannel: AppErrorTelemetryChannel;
+  shouldReport: boolean;
+}
+
+/**
+ * 에러 코드 범위
+ * E1xxx: 네트워크 에러
+ * E2xxx: 인증 에러
+ * E3xxx: 검증 에러
+ * E4xxx: 인프라 에러 (DB·권한·가용성 등, INFRA_* 코드)
+ * E5xxx: 보안 에러
+ * E6xxx: 비즈니스 에러
+ * E7xxx: 알 수 없는 에러
+ */
+export type ErrorCode = `E${1 | 2 | 3 | 4 | 5 | 6 | 7}${string}`;
+
+// ============================================================================
+// Error Codes
+// ============================================================================
+
+export const ERROR_CODES = {
+  // 네트워크 에러 (E1xxx)
+  NETWORK_OFFLINE: 'E1001',
+  NETWORK_TIMEOUT: 'E1002',
+  NETWORK_SERVER_UNREACHABLE: 'E1003',
+  NETWORK_REQUEST_FAILED: 'E1004',
+  NETWORK_REALTIME_TRANSIENT: 'E1005',
+
+  // 인증 에러 (E2xxx)
+  AUTH_INVALID_CREDENTIALS: 'E2001',
+  AUTH_USER_NOT_FOUND: 'E2002',
+  AUTH_EMAIL_ALREADY_EXISTS: 'E2003',
+  AUTH_WEAK_PASSWORD: 'E2004',
+  AUTH_TOKEN_EXPIRED: 'E2005',
+  AUTH_SESSION_EXPIRED: 'E2006',
+  AUTH_ACCOUNT_DISABLED: 'E2007',
+  AUTH_EMAIL_NOT_VERIFIED: 'E2008',
+  AUTH_TOO_MANY_REQUESTS: 'E2009',
+  AUTH_REQUIRES_RECENT_LOGIN: 'E2010',
+  AUTH_RATE_LIMITED: 'E2011',
+  AUTH_REQUIRED: 'E2012',
+  AUTH_CAPTCHA_FAILED: 'E2013',
+  AUTH_CLAIMS_NOT_SET: 'E2014',
+  AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL: 'E2015',
+
+  // 검증 에러 (E3xxx)
+  VALIDATION_REQUIRED: 'E3001',
+  VALIDATION_FORMAT: 'E3002',
+  VALIDATION_MIN_LENGTH: 'E3003',
+  VALIDATION_MAX_LENGTH: 'E3004',
+  VALIDATION_SCHEMA: 'E3005',
+  VALIDATION_BULK_SHARE_LIMIT: 'E3006', // 묶음 공유 선택 상한(MAX_BULK_SHARE_COUNT) 초과
+
+  // 인프라 에러 (E4xxx)
+  INFRA_PERMISSION_DENIED: 'E4001',
+  INFRA_NOT_FOUND: 'E4002',
+  INFRA_QUOTA_EXCEEDED: 'E4003',
+  INFRA_UNAVAILABLE: 'E4004',
+  INFRA_ABORTED: 'E4005',
+  INFRA_SYNC_FAILED: 'E4006',
+
+  // 보안 에러 (E5xxx)
+  SECURITY_XSS_DETECTED: 'E5001',
+  SECURITY_UNAUTHORIZED_ACCESS: 'E5002',
+  SECURITY_RATE_LIMIT: 'E5003',
+
+  // 비즈니스 에러 (E6xxx)
+  BUSINESS_ALREADY_APPLIED: 'E6002',
+  BUSINESS_APPLICATION_CLOSED: 'E6003',
+  BUSINESS_MAX_CAPACITY_REACHED: 'E6004',
+  BUSINESS_ALREADY_CHECKED_IN: 'E6005',
+  BUSINESS_NOT_CHECKED_IN: 'E6006',
+  BUSINESS_INVALID_QR: 'E6007',
+  BUSINESS_EXPIRED_QR: 'E6008',
+  BUSINESS_ALREADY_SETTLED: 'E6009',
+  BUSINESS_INVALID_WORKLOG: 'E6010',
+  BUSINESS_QR_SECURITY_MISMATCH: 'E6011',
+  BUSINESS_QR_WRONG_EVENT: 'E6012',
+  BUSINESS_QR_WRONG_DATE: 'E6013',
+  BUSINESS_PARTIAL_SCHEDULE_FETCH: 'E6020',
+  // 신고 관련
+  BUSINESS_DUPLICATE_REPORT: 'E6030',
+  BUSINESS_REPORT_NOT_FOUND: 'E6031',
+  BUSINESS_REPORT_ALREADY_REVIEWED: 'E6032',
+  BUSINESS_CANNOT_REPORT_SELF: 'E6033',
+  BUSINESS_REPORT_COOLDOWN: 'E6034',
+
+  // 취소 관련
+  BUSINESS_ALREADY_CANCELLED: 'E6040',
+  BUSINESS_CANNOT_CANCEL_CONFIRMED: 'E6041',
+  BUSINESS_INVALID_STATE: 'E6042',
+  BUSINESS_ALREADY_REQUESTED: 'E6043',
+  BUSINESS_PREVIOUSLY_REJECTED: 'E6044',
+
+  // 동시 편집 충돌 (낙관적 잠금)
+  BUSINESS_EDIT_CONFLICT: 'E6045',
+
+  // 알림 관련 (E6050~)
+  NOTIFICATION_PERMISSION_DENIED: 'E6050',
+  NOTIFICATION_TOKEN_FAILED: 'E6051',
+  NOTIFICATION_SEND_FAILED: 'E6052',
+  NOTIFICATION_INVALID_LINK: 'E6053',
+
+  // 리뷰/평가 관련 (E6060~)
+  BUSINESS_ALREADY_REVIEWED: 'E6060',
+  BUSINESS_REVIEW_PERIOD_EXPIRED: 'E6061',
+  BUSINESS_CANNOT_REVIEW_SELF: 'E6062',
+  BUSINESS_REVIEW_NOT_FOUND: 'E6063',
+  BUSINESS_UNAUTHORIZED_REVIEW: 'E6064',
+
+  // 구인자 등록 신청 관련 (E6070~)
+  BUSINESS_EMPLOYER_APP_PENDING_EXISTS: 'E6070', // 이미 심사 중인 신청 있음
+  BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED: 'E6071', // 이미 처리된 신청 (동시성 충돌)
+  BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
+  BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
+  BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED: 'E6074', // 본인인증 미완료 (신청/승인 서버 게이트)
+
+  // 대회 공고 승인 게이트 (E6080~)
+  BUSINESS_TOURNAMENT_NOT_APPROVED: 'E6080', // 미승인(pending/rejected/누락) 대회 공고 지원 시도
+
+  // 라이브 운영(ops) 관련 (E6100~)
+  OPS_REGISTRATION_CLOSED: 'E6101', // 등록 마감 상태에서 등록 시도
+  OPS_INVALID_TOURNAMENT_TRANSITION: 'E6102', // 불법 대회 상태 전이
+  OPS_PARTICIPANT_NOT_ACTIVE: 'E6103', // 비활성 참가자에 리바이/애드온
+  OPS_TOURNAMENT_NOT_FOUND: 'E6104', // 대회/공고 없음
+  OPS_PARTICIPANT_NOT_FOUND: 'E6105', // 참가자 없음
+  OPS_SEAT_TAKEN: 'E6106', // 점유 좌석 배정/이동
+  OPS_SEAT_NOT_OCCUPIED: 'E6107', // 빈 좌석 이동/비우기
+  OPS_TABLE_NOT_FOUND: 'E6108', // 테이블 없음
+  OPS_SEAT_VERSION_CONFLICT: 'E6109', // redraw TOCTOU 충돌
+  OPS_NO_EMPTY_SEAT: 'E6110', // 빈좌석 없음
+  OPS_TABLE_HAS_OCCUPANTS: 'E6111', // 점유 좌석 있는 테이블 close
+  OPS_PARTICIPANT_ALREADY_SEATED: 'E6112', // 이미 착석
+  OPS_TABLE_NOT_OPEN: 'E6113', // redraw/assign 대상 테이블이 open·unlocked 아님
+  OPS_INVALID_SEAT_COUNT: 'E6114', // 테이블 좌석수 범위(1~11) 위반
+  OPS_INVALID_ASSIGNMENTS: 'E6115', // redraw 배정 목록이 비어 있음
+  // 라이브 운영(ops) 1c — 블라인드/클럭
+  OPS_BLIND_LEVELS_INVALID: 'E6116', // 블라인드 레벨 설정 부정확(빈 배열·duration<=0·음수)
+  OPS_NO_BLIND_LEVELS: 'E6117', // 블라인드 레벨 미설정 상태에서 클럭 시작 시도
+  OPS_INVALID_LEVEL: 'E6118', // 존재하지 않는 레벨 sort 로 이동
+  OPS_MONITOR_TOKEN_INVALID: 'E6119', // 모니터(전광판) 토큰 무효/만료(NULL·길이<32·미존재)
+  OPS_VIEW_TOKEN_INVALID: 'E6120', // 플레이어뷰 읽기 토큰 무효(구 OPS_CLAIM_TOKEN_INVALID rename)
+  OPS_CLAIM_ALREADY_CLAIMED: 'E6121', // 이미 다른 계정에 연결된 참가자 재클레임
+  OPS_CLAIM_PIN_INVALID: 'E6122', // claim PIN 불일치/형식오류/미발급(오라클 회피 통합)
+  OPS_PARTICIPANT_ALREADY_BUSTED: 'E6123', // 이미 탈락 처리된 참가자 재-bust
+  OPS_PARTICIPANT_NOT_BUSTED: 'E6124', // 비-탈락 참가자 재진입 시도
+  OPS_REENTRY_NOT_ALLOWED: 'E6125', // 재진입 비허용 대회
+  OPS_MAX_REENTRIES_EXCEEDED: 'E6126', // 최대 재진입 초과
+  OPS_PRIZE_STRUCTURE_INVALID: 'E6127', // 상금 구조 형식/중복/음수
+  OPS_PARTICIPANT_LAST_SURVIVOR: 'E6128', // 마지막 생존자 bust 시도
+  // 배정 2종 (E6129~)
+  OPS_SEAT_ASSIGNMENT_INVALID: 'E6129', // 좌석 배정 정보 무효(중복·누락·비적격 테이블)
+  OPS_INSUFFICIENT_SEATS: 'E6130', // 빈 적격 좌석 부족
+  OPS_INVALID_REDRAW_MODE: 'E6131', // 지원하지 않는 배정 방식
+  // 1f — 넉아웃/탈락취소/상금정정 (E6132~)
+  OPS_ELIMINATOR_INVALID: 'E6132', // 1f: 넉아웃 상대 무효(자기자신/미존재/타대회/비활성)
+  OPS_UNDO_INVALID_STATE: 'E6133', // 1f: 탈락 취소 불가 상태
+  OPS_PRIZE_CORRECTION_INVALID: 'E6134', // 1f: 상금 정정 대상/값 무효
+  // 전면 개방 S1 (E6135~)
+  OPS_MONITOR_CONFIG_INVALID: 'E6135', // S1 C6: TV 모니터 구성 화이트리스트 위반
+  OPS_PRIZE_NOT_ASSIGNED: 'E6136', // S1 C4: 상금 미배정 참가자 지급 마킹
+  OPS_REPORT_TOKEN_INVALID: 'E6137', // S1 B2: 신고 대상 토큰 무효
+  OPS_REPORT_RATE_LIMITED: 'E6138', // S1 B2: 신고 rate limit
+  OPS_CHIPS_INVALID: 'E6139', // 결함①: 칩 카운트 값 범위 위반(0·음수·상한 초과)
+
+  // 묶음 공유 (E6140~)
+  BUSINESS_BULK_SHARE_NONE_SHAREABLE: 'E6140', // 선택한 공고가 전부 공유 불가 상태
+
+  // 알 수 없는 에러 (E7xxx)
+  UNKNOWN: 'E7000',
+} as const;
+
+// ============================================================================
+// User-friendly Messages (한글)
+// ============================================================================
+
+export const ERROR_MESSAGES: Record<string, string> = {
+  // 라이브 운영(ops)
+  [ERROR_CODES.OPS_REGISTRATION_CLOSED]: '등록이 마감되었습니다',
+  [ERROR_CODES.OPS_INVALID_TOURNAMENT_TRANSITION]: '현재 대회 상태에서 허용되지 않는 변경입니다',
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_ACTIVE]: '활성 상태의 참가자만 가능합니다',
+  [ERROR_CODES.OPS_TOURNAMENT_NOT_FOUND]: notFound('대회'),
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_FOUND]: notFound('참가자'),
+  [ERROR_CODES.OPS_SEAT_TAKEN]: '이미 사용 중인 좌석입니다',
+  [ERROR_CODES.OPS_SEAT_NOT_OCCUPIED]: '비어 있는 좌석입니다',
+  [ERROR_CODES.OPS_TABLE_NOT_FOUND]: notFound('테이블'),
+  [ERROR_CODES.OPS_SEAT_VERSION_CONFLICT]: '좌석 상태가 변경되었습니다. 다시 시도해 주세요',
+  [ERROR_CODES.OPS_NO_EMPTY_SEAT]: '빈 좌석이 없습니다',
+  [ERROR_CODES.OPS_TABLE_HAS_OCCUPANTS]: '점유된 좌석이 있어 닫을 수 없습니다',
+  [ERROR_CODES.OPS_PARTICIPANT_ALREADY_SEATED]: '이미 좌석이 배정된 참가자입니다',
+  [ERROR_CODES.OPS_TABLE_NOT_OPEN]: '테이블이 열려 있지 않습니다',
+  [ERROR_CODES.OPS_INVALID_SEAT_COUNT]: '좌석 수는 1~11 사이여야 합니다',
+  [ERROR_CODES.OPS_INVALID_ASSIGNMENTS]: '배정할 좌석이 없습니다',
+  [ERROR_CODES.OPS_BLIND_LEVELS_INVALID]: '블라인드 레벨 설정이 올바르지 않습니다',
+  [ERROR_CODES.OPS_NO_BLIND_LEVELS]: '블라인드 레벨을 먼저 설정해주세요',
+  [ERROR_CODES.OPS_INVALID_LEVEL]: '존재하지 않는 레벨입니다',
+  [ERROR_CODES.OPS_MONITOR_TOKEN_INVALID]: '유효하지 않은 모니터 링크입니다',
+  [ERROR_CODES.OPS_VIEW_TOKEN_INVALID]: '유효하지 않은 플레이어 링크입니다',
+  [ERROR_CODES.OPS_CLAIM_ALREADY_CLAIMED]: '이미 다른 계정에 연결된 참가자입니다',
+  [ERROR_CODES.OPS_CLAIM_PIN_INVALID]: '연결 PIN이 올바르지 않습니다',
+  [ERROR_CODES.OPS_PARTICIPANT_ALREADY_BUSTED]: '이미 탈락 처리된 참가자예요.',
+  [ERROR_CODES.OPS_PARTICIPANT_NOT_BUSTED]: '탈락 상태가 아니어서 재진입할 수 없어요.',
+  [ERROR_CODES.OPS_REENTRY_NOT_ALLOWED]: '이 대회는 재진입이 허용되지 않아요.',
+  [ERROR_CODES.OPS_MAX_REENTRIES_EXCEEDED]: '최대 재진입 횟수를 초과했어요.',
+  [ERROR_CODES.OPS_PRIZE_STRUCTURE_INVALID]: '상금 구조가 올바르지 않아요(순위·금액 확인).',
+  [ERROR_CODES.OPS_PARTICIPANT_LAST_SURVIVOR]:
+    '마지막 생존자는 탈락 처리할 수 없어요(우승 처리 대상).',
+  [ERROR_CODES.OPS_SEAT_ASSIGNMENT_INVALID]: '좌석 배정 정보가 올바르지 않아요.',
+  [ERROR_CODES.OPS_INSUFFICIENT_SEATS]: '빈 좌석이 부족해 전원을 앉힐 수 없어요.',
+  [ERROR_CODES.OPS_INVALID_REDRAW_MODE]: '지원하지 않는 배정 방식이에요.',
+  [ERROR_CODES.OPS_ELIMINATOR_INVALID]: '넉아웃 상대가 올바르지 않아요.',
+  [ERROR_CODES.OPS_UNDO_INVALID_STATE]: '탈락 취소를 할 수 없는 상태예요.',
+  [ERROR_CODES.OPS_PRIZE_CORRECTION_INVALID]: '상금 정정 대상이나 값이 올바르지 않아요.',
+  [ERROR_CODES.OPS_MONITOR_CONFIG_INVALID]: 'TV 모니터 구성이 올바르지 않아요.',
+  [ERROR_CODES.OPS_PRIZE_NOT_ASSIGNED]: '상금이 배정되지 않은 참가자예요.',
+  [ERROR_CODES.OPS_REPORT_TOKEN_INVALID]: notFound('신고 대상'),
+  [ERROR_CODES.OPS_REPORT_RATE_LIMITED]:
+    '신고가 이미 접수되어 처리 중이에요. 잠시 후 다시 시도해주세요.',
+  [ERROR_CODES.OPS_CHIPS_INVALID]:
+    '칩은 1 이상 20억 이하로 입력해주세요. 칩이 0이 된 참가자는 탈락 처리를 사용해주세요.',
+
+  // 네트워크
+  [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
+  [ERROR_CODES.NETWORK_TIMEOUT]: '요청 시간이 초과되었습니다. 다시 시도해주세요',
+  [ERROR_CODES.NETWORK_SERVER_UNREACHABLE]: '서버에 연결할 수 없습니다',
+  [ERROR_CODES.NETWORK_REQUEST_FAILED]: '요청에 실패했습니다. 다시 시도해주세요',
+  [ERROR_CODES.NETWORK_REALTIME_TRANSIENT]: '실시간 연결이 일시 중단되었습니다. 자동 재연결 중...',
+
+  // 인증
+  [ERROR_CODES.AUTH_INVALID_CREDENTIALS]: '이메일 또는 비밀번호가 올바르지 않습니다',
+  [ERROR_CODES.AUTH_USER_NOT_FOUND]: '등록되지 않은 사용자입니다',
+  [ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS]: '이미 사용 중인 이메일입니다',
+  [ERROR_CODES.AUTH_WEAK_PASSWORD]: '비밀번호가 너무 약합니다',
+  [ERROR_CODES.AUTH_TOKEN_EXPIRED]: '로그인이 만료되었습니다. 다시 로그인해주세요',
+  [ERROR_CODES.AUTH_SESSION_EXPIRED]: '세션이 만료되었습니다. 다시 로그인해주세요',
+  [ERROR_CODES.AUTH_ACCOUNT_DISABLED]: '비활성화된 계정입니다. 고객센터에 문의해주세요',
+  [ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]: '본인인증이 필요합니다', // 휴대폰 본인인증
+  [ERROR_CODES.AUTH_TOO_MANY_REQUESTS]: '너무 많은 시도입니다. 잠시 후 다시 시도해주세요',
+  [ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN]: '보안을 위해 다시 로그인해주세요',
+  [ERROR_CODES.AUTH_RATE_LIMITED]: '로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요',
+  [ERROR_CODES.AUTH_REQUIRED]: '로그인이 필요합니다',
+  [ERROR_CODES.AUTH_CAPTCHA_FAILED]: '보안 확인에 실패했습니다. 다시 시도해주세요',
+  [ERROR_CODES.AUTH_CLAIMS_NOT_SET]: '권한 정보를 가져올 수 없습니다. 다시 로그인해주세요',
+  [ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL]:
+    '이미 다른 로그인 방식으로 가입된 계정입니다. 기존 로그인 방법으로 먼저 로그인해주세요',
+
+  // 검증
+  [ERROR_CODES.VALIDATION_REQUIRED]: '필수 입력 항목입니다',
+  [ERROR_CODES.VALIDATION_FORMAT]: '올바른 형식이 아닙니다',
+  [ERROR_CODES.VALIDATION_MIN_LENGTH]: '입력값이 너무 짧습니다',
+  [ERROR_CODES.VALIDATION_MAX_LENGTH]: '입력값이 너무 깁니다',
+  [ERROR_CODES.VALIDATION_SCHEMA]: '입력값을 확인해주세요',
+  [ERROR_CODES.VALIDATION_BULK_SHARE_LIMIT]: '한 번에 공유할 수 있는 공고 수를 넘었습니다',
+  [ERROR_CODES.BUSINESS_BULK_SHARE_NONE_SHAREABLE]:
+    '선택한 공고를 지금은 공유할 수 없어요. (마감·승인 대기 상태)',
+
+  // 인프라
+  [ERROR_CODES.INFRA_PERMISSION_DENIED]: '권한이 없습니다',
+  [ERROR_CODES.INFRA_NOT_FOUND]: notFound('데이터'),
+  [ERROR_CODES.INFRA_QUOTA_EXCEEDED]: '요청 한도를 초과했습니다',
+  [ERROR_CODES.INFRA_UNAVAILABLE]: '서비스를 일시적으로 사용할 수 없습니다',
+  [ERROR_CODES.INFRA_ABORTED]: '작업이 중단되었습니다',
+  [ERROR_CODES.INFRA_SYNC_FAILED]: '데이터 동기화에 실패했습니다. 앱을 재시작해주세요',
+
+  // 보안
+  [ERROR_CODES.SECURITY_XSS_DETECTED]: '잘못된 입력이 감지되었습니다',
+  [ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS]: '접근 권한이 없습니다',
+  [ERROR_CODES.SECURITY_RATE_LIMIT]: '요청이 너무 많습니다. 잠시 후 시도해주세요',
+
+  // 비즈니스
+  [ERROR_CODES.BUSINESS_ALREADY_APPLIED]: '이미 지원한 공고입니다',
+  [ERROR_CODES.BUSINESS_APPLICATION_CLOSED]: '지원이 마감되었습니다',
+  [ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED]: '모집 인원이 마감되었습니다',
+  [ERROR_CODES.BUSINESS_ALREADY_CHECKED_IN]: '이미 출근 처리되었습니다',
+  [ERROR_CODES.BUSINESS_NOT_CHECKED_IN]: '출근 기록이 없습니다',
+  [ERROR_CODES.BUSINESS_INVALID_QR]: '유효하지 않은 QR 코드입니다',
+  [ERROR_CODES.BUSINESS_EXPIRED_QR]: 'QR 코드가 만료되었습니다',
+  [ERROR_CODES.BUSINESS_ALREADY_SETTLED]: '이미 정산 완료되었습니다',
+  [ERROR_CODES.BUSINESS_INVALID_WORKLOG]: '유효하지 않은 근무 기록입니다',
+  [ERROR_CODES.BUSINESS_QR_SECURITY_MISMATCH]: 'QR 코드 보안 검증에 실패했습니다',
+  [ERROR_CODES.BUSINESS_QR_WRONG_EVENT]: '해당 공고의 QR 코드가 아닙니다',
+  [ERROR_CODES.BUSINESS_QR_WRONG_DATE]: '오늘 날짜의 QR 코드가 아닙니다',
+  [ERROR_CODES.BUSINESS_PARTIAL_SCHEDULE_FETCH]: loadFailed('일부 스케줄 정보'),
+  // 신고 관련
+  [ERROR_CODES.BUSINESS_DUPLICATE_REPORT]: '이미 해당 건에 대해 신고하셨습니다',
+  [ERROR_CODES.BUSINESS_REPORT_NOT_FOUND]: notFound('신고 내역'),
+  [ERROR_CODES.BUSINESS_REPORT_ALREADY_REVIEWED]: '이미 처리된 신고입니다',
+  [ERROR_CODES.BUSINESS_CANNOT_REPORT_SELF]: '본인을 신고할 수 없습니다',
+  [ERROR_CODES.BUSINESS_REPORT_COOLDOWN]: '동일 대상에 대한 신고는 24시간 후 가능합니다',
+
+  // 취소 관련
+  [ERROR_CODES.BUSINESS_ALREADY_CANCELLED]: '이미 취소된 지원입니다',
+  [ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED]: '확정된 지원은 취소할 수 없습니다',
+  [ERROR_CODES.BUSINESS_INVALID_STATE]: '현재 상태에서는 이 작업을 수행할 수 없습니다',
+  [ERROR_CODES.BUSINESS_ALREADY_REQUESTED]: '이미 취소 요청이 진행 중입니다',
+  [ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED]: '이전에 거절된 요청입니다',
+  [ERROR_CODES.BUSINESS_EDIT_CONFLICT]:
+    '다른 사람이 이 공고를 먼저 수정했습니다. 다시 저장하면 내 내용으로 덮어씁니다.',
+
+  // 알림 관련
+  [ERROR_CODES.NOTIFICATION_PERMISSION_DENIED]: '알림 권한이 필요합니다',
+  [ERROR_CODES.NOTIFICATION_TOKEN_FAILED]: '푸시 토큰 발급에 실패했습니다',
+  [ERROR_CODES.NOTIFICATION_SEND_FAILED]: '알림 전송에 실패했습니다',
+  [ERROR_CODES.NOTIFICATION_INVALID_LINK]: '유효하지 않은 알림 링크입니다',
+
+  // 리뷰/평가 관련
+  [ERROR_CODES.BUSINESS_ALREADY_REVIEWED]: '이미 평가를 완료하셨습니다',
+  [ERROR_CODES.BUSINESS_REVIEW_PERIOD_EXPIRED]: '평가 기한이 만료되었습니다',
+  [ERROR_CODES.BUSINESS_CANNOT_REVIEW_SELF]: '본인을 평가할 수 없습니다',
+  [ERROR_CODES.BUSINESS_REVIEW_NOT_FOUND]: notFound('평가 대상'),
+  [ERROR_CODES.BUSINESS_UNAUTHORIZED_REVIEW]: '평가 권한이 없습니다',
+
+  // 구인자 등록 신청 관련
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_PENDING_EXISTS]: '이미 심사 중인 구인자 신청이 있습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: notFound('구인자 신청 내역'),
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_IDENTITY_NOT_VERIFIED]:
+    '본인인증이 완료되지 않아 처리할 수 없습니다',
+  // 대회 공고 승인 게이트
+  [ERROR_CODES.BUSINESS_TOURNAMENT_NOT_APPROVED]:
+    '승인 대기 중인 대회 공고에는 지원할 수 없습니다.',
+  // 알 수 없는 에러
+  [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',
+};
+
+// ============================================================================
+// Base AppError Class
+// ============================================================================
+
+/**
+ * 앱 에러 베이스 클래스
+ * 모든 커스텀 에러는 이 클래스를 상속받음
+ */
+export class AppError extends Error {
+  /** Babel wrapNativeSuper 환경에서 instanceof 대신 사용하는 브랜드 */
+  readonly __isAppError = true as const;
+  readonly code: string;
+  readonly category: ErrorCategory;
+  readonly severity: ErrorSeverity;
+  readonly userMessage: string;
+  readonly isRetryable: boolean;
+  readonly originalError?: Error;
+  readonly metadata?: Record<string, unknown>;
+
+  constructor(options: {
+    code: string;
+    category: ErrorCategory;
+    severity?: ErrorSeverity;
+    message?: string;
+    userMessage?: string;
+    isRetryable?: boolean;
+    originalError?: Error;
+    metadata?: Record<string, unknown>;
+  }) {
+    const userMessage =
+      options.userMessage ?? ERROR_MESSAGES[options.code] ?? ERROR_MESSAGES[ERROR_CODES.UNKNOWN];
+
+    super(options.message ?? userMessage);
+
+    this.name = 'AppError';
+    this.code = options.code;
+    this.category = options.category;
+    this.severity = options.severity || 'medium';
+    this.userMessage = userMessage;
+    this.isRetryable = options.isRetryable ?? false;
+    this.originalError = options.originalError;
+    this.metadata = options.metadata;
+
+    // Error 프로토타입 체인 유지
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
+
+  /**
+   * 로깅용 JSON 변환
+   */
+  toJSON() {
+    return {
+      name: this.name,
+      code: this.code,
+      category: this.category,
+      severity: this.severity,
+      message: this.message,
+      userMessage: this.userMessage,
+      isRetryable: this.isRetryable,
+      metadata: this.metadata,
+      stack: this.stack,
+    };
+  }
+}
+
+// ============================================================================
+// Specialized Error Classes
+// ============================================================================
+
+/**
+ * 네트워크 에러
+ */
+export class NetworkError extends AppError {
+  constructor(
+    code: string = ERROR_CODES.NETWORK_REQUEST_FAILED,
+    options?: Partial<ConstructorParameters<typeof AppError>[0]>
+  ) {
+    super({
+      code,
+      category: 'network',
+      severity: 'medium',
+      isRetryable: true,
+      ...options,
+    });
+    this.name = 'NetworkError';
+    Object.setPrototypeOf(this, NetworkError.prototype);
+  }
+}
+
+/**
+ * 인증 에러
+ */
+export class AuthError extends AppError {
+  constructor(
+    code: string = ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+    options?: Partial<ConstructorParameters<typeof AppError>[0]>
+  ) {
+    super({
+      code,
+      category: 'auth',
+      severity: 'medium',
+      isRetryable: false,
+      ...options,
+    });
+    this.name = 'AuthError';
+    Object.setPrototypeOf(this, AuthError.prototype);
+  }
+}
+
+/**
+ * 검증 에러
+ */
+export class ValidationError extends AppError {
+  readonly field?: string;
+  readonly errors?: Record<string, string[]>;
+
+  constructor(
+    code: string = ERROR_CODES.VALIDATION_SCHEMA,
+    options?: Partial<ConstructorParameters<typeof AppError>[0]> & {
+      field?: string;
+      errors?: Record<string, string[]>;
+    }
+  ) {
+    super({
+      code,
+      category: 'validation',
+      severity: 'low',
+      isRetryable: false,
+      ...options,
+    });
+    this.name = 'ValidationError';
+    this.field = options?.field;
+    this.errors = options?.errors;
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
+
+/**
+ * 권한 에러
+ */
+export class PermissionError extends AppError {
+  constructor(
+    code: string = ERROR_CODES.INFRA_PERMISSION_DENIED,
+    options?: Partial<ConstructorParameters<typeof AppError>[0]>
+  ) {
+    super({
+      code,
+      category: 'permission',
+      severity: 'medium',
+      isRetryable: false,
+      ...options,
+    });
+    this.name = 'PermissionError';
+    Object.setPrototypeOf(this, PermissionError.prototype);
+  }
+}
+
+/**
+ * 비즈니스 에러
+ */
+export class BusinessError extends AppError {
+  constructor(code: string, options?: Partial<ConstructorParameters<typeof AppError>[0]>) {
+    super({
+      code,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      ...options,
+    });
+    this.name = 'BusinessError';
+    Object.setPrototypeOf(this, BusinessError.prototype);
+  }
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+/**
+ * AppError 여부 판별 (Babel wrapNativeSuper 환경에서도 안전)
+ *
+ * React Native + Babel 환경에서 Error 서브클래스의 instanceof가 실패할 수 있어
+ * __isAppError 브랜드 속성으로 추가 판별합니다.
+ */
+export const isAppError = (error: unknown): error is AppError => {
+  if (error instanceof AppError) return true;
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    '__isAppError' in error &&
+    (error as { __isAppError: unknown }).__isAppError === true
+  );
+};
+
+export const isNetworkError = (error: unknown): error is NetworkError => {
+  if (error instanceof NetworkError) return true;
+  return isAppError(error) && error.category === 'network';
+};
+
+export const isAuthError = (error: unknown): error is AuthError => {
+  if (error instanceof AuthError) return true;
+  return isAppError(error) && error.category === 'auth';
+};
+
+export const isValidationError = (error: unknown): error is ValidationError => {
+  if (error instanceof ValidationError) return true;
+  return isAppError(error) && error.category === 'validation';
+};
+
+export const isPermissionError = (error: unknown): error is PermissionError => {
+  if (error instanceof PermissionError) return true;
+  return isAppError(error) && error.category === 'permission';
+};
+
+export const isBusinessError = (error: unknown): error is BusinessError => {
+  if (error instanceof BusinessError) return true;
+  return isAppError(error) && error.category === 'business';
+};
+
+const RECOVERABLE_BUSINESS_CATEGORIES: readonly ErrorCategory[] = [
+  'auth',
+  'validation',
+  'permission',
+  'business',
+];
+
+const INFRA_CATEGORIES: readonly ErrorCategory[] = [
+  'network',
+  'infrastructure',
+  'security',
+  'unknown',
+];
+
+/**
+ * AppError가 복구 가능한 비즈니스/UX 에러인지 판별
+ */
+export const isRecoverableBusinessAppError = (error: AppError): boolean => {
+  return (
+    RECOVERABLE_BUSINESS_CATEGORIES.includes(error.category) &&
+    (error.severity === 'low' || error.severity === 'medium')
+  );
+};
+
+/**
+ * AppError가 인프라/플랫폼 계열 에러인지 판별
+ */
+export const isInfraAppError = (error: AppError): boolean => {
+  if (error.severity === 'critical') {
+    return false;
+  }
+
+  return INFRA_CATEGORIES.includes(error.category) || error.severity === 'high';
+};
+
+/**
+ * AppError 처리/telemetry 정책 계산
+ *
+ * 규칙:
+ * - recoverable-business: auth/validation/permission/business의 low~medium
+ * - infra: network/firebase/security/unknown 또는 severity=high
+ * - critical-telemetry: severity=critical
+ */
+export const getAppErrorTelemetryPolicy = (error: AppError): AppErrorTelemetryPolicy => {
+  if (error.severity === 'critical') {
+    return {
+      kind: 'critical-telemetry',
+      telemetryChannel: 'fatal',
+      shouldReport: true,
+    };
+  }
+
+  if (isInfraAppError(error)) {
+    return {
+      kind: 'infra',
+      telemetryChannel: 'error',
+      shouldReport: true,
+    };
+  }
+
+  return {
+    kind: 'recoverable-business',
+    telemetryChannel: 'none',
+    shouldReport: false,
+  };
+};
