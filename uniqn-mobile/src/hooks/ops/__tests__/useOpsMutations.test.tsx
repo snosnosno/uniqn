@@ -184,6 +184,24 @@ describe('useSetTournamentPosting', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.tournaments() });
   });
 
+  // 근태 해석(ops_resolve_staff_work_logs)은 연결 공고 기준 — 비우지 않으면 공고를 바꾼 뒤에도
+  // 이전 공고의 근무 기록으로 출퇴근이 찍힌다(ops-web W6 리뷰에서 발견, 웹은 이미 수정).
+  it('성공 시 ops.staffWorkLogs(근태 해석)도 invalidate', async () => {
+    mockSetTournamentPosting.mockResolvedValueOnce(undefined);
+    const client = createClient();
+    const invalidateSpy = jest.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useSetTournamentPosting(TID), {
+      wrapper: createWrapper(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync('posting-2');
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.ops.staffWorkLogs(TID) });
+  });
+
   // 리뷰 후속 — 연결 변경 시 old·new 양쪽 공고 상세 ActionCard(useOpsTournamentsForPosting)를 갱신해
   // 화면 간 staleness 를 제거한다. old 는 invalidate 전에 캐시(tournamentDetail)에서 확보.
   it('연결 변경 성공 시 old·new 양쪽 ops.forPosting 을 invalidate', async () => {
