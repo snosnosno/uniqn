@@ -78,3 +78,18 @@ export function levelAlert(prev: ClockSample | null, next: ClockSample): LevelAl
   }
   return null;
 }
+
+/** 시간 맞추기 입력 상한 — 99:59. 그보다 긴 레벨은 블라인드 탭에서 길이를 바꾼다. */
+export const SEEK_MAX_SEC = 99 * 60 + 59;
+
+/**
+ * 남은 시간 직접 입력 → 초. `12:30`·`2:05`·`12`(분만) 허용. 범위 밖·형식 오류는 null.
+ * 레벨 안 초 단위 시크 — 서버 RPC(ops_clock_adjust)는 임의 초 증감을 받으므로 새 RPC 가 필요 없다.
+ */
+export function parseClockInput(raw: string): number | null {
+  const s = raw.trim().replace('：', ':');
+  const m = /^(\d{1,2})(?::([0-5]\d))?$/.exec(s);
+  if (!m) return null;
+  const sec = Number(m[1]) * 60 + (m[2] ? Number(m[2]) : 0);
+  return sec <= SEEK_MAX_SEC ? sec : null;
+}

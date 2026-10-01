@@ -163,7 +163,7 @@ await step('PIN 발급 → QR 표시 · 인쇄하면 슬립만(대회명·이름
 });
 
 await step(
-  '레벨 알림: 켜기 → 1분 이하 경고색 + 1음 → 00:00 시간 종료 3음 → 다음 레벨 2음',
+  '레벨 알림: 켜기 → 1분 이하 경고색 + 1음 → 00:00 시간 종료 3음 → 다음 레벨 2음 → 남은 시간 5:00 맞추기',
   async () => {
     await page.getByRole('button', { name: /클럭 제어 열기/ }).click();
     const dlg = page.getByRole('dialog');
@@ -196,6 +196,23 @@ await step(
     await until(async () => (await page.evaluate(() => window.__osc)) >= 7, 40);
     const afterLevel = await page.evaluate(() => window.__osc);
     assert(afterLevel === 7, `레벨 전환 2음: ${afterLevel}`);
+    // 남은 시간 직접 맞추기 — 기존 보정 RPC 로 차이만큼 증감(새 RPC 없음)
+    const seek = page.getByRole('dialog').getByLabel('남은 시간 맞추기');
+    await seek.fill('5:00');
+    await seek.press('Enter');
+    const remainingSec = async () => {
+      const label = await page
+        .getByRole('dialog')
+        .getByLabel(/^남은 시간 \d/)
+        .getAttribute('aria-label');
+      const [mm, ss] = label.replace('남은 시간 ', '').split(':').map(Number);
+      return mm * 60 + ss;
+    };
+    await until(async () => Math.abs((await remainingSec()) - 300) <= 2, 40);
+    assert(Math.abs((await remainingSec()) - 300) <= 2, `시간 맞추기: ${await remainingSec()}초`);
+    await seek.fill('1:5');
+    await seek.press('Enter');
+    await page.getByRole('dialog').getByRole('alert').waitFor();
     await page.keyboard.press('Escape');
   }
 );

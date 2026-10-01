@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
@@ -13,7 +14,7 @@ import {
 } from '@/hooks/ops/useConsoleMutations';
 import { opsKeys } from '@/hooks/ops/keys';
 import type { useOpsClock } from '@/hooks/ops/useConsoleQueries';
-import { clockView } from './clock';
+import { clockView, parseClockInput } from './clock';
 import { fmt, formatMmSs } from './format';
 
 type ClockState = ReturnType<typeof useOpsClock>;
@@ -96,6 +97,11 @@ export function ClockControlPanel({
         </Button>
       </div>
 
+      {/* 시작 전에는 남은 시간 개념이 없다(서버가 일시정지 상태를 새로 만든다) — 진행·일시정지에서만 */}
+      {v.isRunning || v.isPaused ? (
+        <SeekForm disabled={busy} onSeek={(target) => adjust.mutate(target - clock.remainingSec)} />
+      ) : null}
+
       <div className="grid grid-cols-[1fr_2fr_1fr] gap-2">
         <Button
           variant="outline"
@@ -154,5 +160,55 @@ export function ClockControlPanel({
         ) : null}
       </dl>
     </div>
+  );
+}
+
+/** 남은 시간 직접 맞추기 — 입력값과 지금 남은 시간의 차이만큼 기존 보정 RPC 로 증감한다. */
+function SeekForm({
+  disabled,
+  onSeek,
+}: {
+  disabled: boolean;
+  onSeek: (targetSec: number) => void;
+}) {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <form
+      className="flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const target = parseClockInput(value);
+        if (target === null) {
+          setError('12:30 처럼 분:초로 입력하세요(최대 99:59)');
+          return;
+        }
+        onSeek(target);
+        setValue('');
+        setError(null);
+      }}
+    >
+      <label htmlFor="clock-seek" className="text-sm">
+        남은 시간 맞추기
+      </label>
+      <input
+        id="clock-seek"
+        inputMode="numeric"
+        placeholder="12:30"
+        value={value}
+        onChange={(e) => (setValue(e.target.value), setError(null))}
+        aria-invalid={error !== null}
+        aria-describedby={error ? 'clock-seek-error' : undefined}
+        className="num h-11 w-24 rounded-lg border border-input bg-background px-2 dark:bg-input/30"
+      />
+      <Button type="submit" variant="outline" className="h-11" disabled={disabled || !value.trim()}>
+        적용
+      </Button>
+      {error ? (
+        <span id="clock-seek-error" role="alert" className="w-full text-sm text-destructive">
+          {error}
+        </span>
+      ) : null}
+    </form>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { levelAlert } from './clock';
+import { levelAlert, parseClockInput } from './clock';
 
 const s = (sort: number, remainingSec: number, isRunning = true) => ({
   sort,
@@ -44,5 +44,22 @@ describe('levelAlert', () => {
 
   it('+1분 보정으로 60초 위로 올라갔다 다시 내려오면 다시 울린다', () => {
     expect(levelAlert(s(1, 110), s(1, 60))).toBe('oneMinute');
+  });
+});
+
+describe('parseClockInput', () => {
+  it.each([
+    ['12:30', 750],
+    ['2:05', 125],
+    ['12', 720],
+    ['0:00', 0],
+    [' 99:59 ', 5999],
+    ['05：10', 310],
+  ])('%s → %d초', (raw, sec) => {
+    expect(parseClockInput(raw)).toBe(sec);
+  });
+
+  it.each(['', '12:60', '1:5', '100', '1:2:3', '-1', 'abc', '12:3a'])('%s 는 거절', (raw) => {
+    expect(parseClockInput(raw)).toBeNull();
   });
 });
