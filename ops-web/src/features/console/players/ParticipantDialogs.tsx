@@ -3,7 +3,7 @@
  * 문구·검증은 모바일 시트와 같다(스키마는 동기화 사본). 확정형 작업은 ConfirmDialog 가 따로 맡는다.
  */
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { PrintSlip } from '@/components/ops/PrintSlip';
+import { QrCode } from '@/components/ops/QrCode';
 import { parseAmount } from '@/core/components/ops/payoutRows';
 import {
   chipCountSchema,
@@ -379,12 +381,20 @@ export function KoPickerDialog({
 
 // ─── 플레이어 링크 / PIN ─────────────────────────────────────────────────────────
 
-/** 발급 결과 — PIN 은 이번 한 번만 보인다(서버는 해시만 보관). 슬립·QR 에 함께 적도록 안내. */
+/** 발급 결과 — PIN 은 이번 한 번만 보인다(서버는 해시만 보관). QR·PIN 을 슬립으로 인쇄해 건넨다. */
+export interface IssuedCredentials {
+  tournamentName: string;
+  entryNumber: number;
+  name: string;
+  viewToken: string;
+  claimPin: string;
+}
+
 export function CredentialsDialog({
   credentials,
   onOpenChange,
 }: {
-  credentials: { name: string; viewToken: string; claimPin: string } | null;
+  credentials: IssuedCredentials | null;
   onOpenChange: (open: boolean) => void;
 }) {
   if (!credentials) return null;
@@ -395,13 +405,19 @@ export function CredentialsDialog({
         <DialogHeader>
           <DialogTitle>{credentials.name} · 연결 PIN 발급됨</DialogTitle>
           <DialogDescription>
-            슬립/QR 에 PIN 을 함께 적어 주세요. 이 창을 닫으면 PIN 은 다시 볼 수 없고, 재발급하면 이
+            슬립을 인쇄해 선수에게 건네 주세요. 이 창을 닫으면 PIN 은 다시 볼 수 없고, 재발급하면 이
             PIN 은 무효가 됩니다.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center justify-between border px-3 py-2">
-          <span className="label">연결 PIN</span>
-          <b className="num text-2xl tracking-[0.2em]">{credentials.claimPin}</b>
+        <div className="flex items-center gap-4 border p-3">
+          <QrCode value={url} size={128} label={`${credentials.name} 플레이어 화면 QR`} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="label">연결 PIN</span>
+            <b className="num text-2xl tracking-[0.2em]">{credentials.claimPin}</b>
+            <span className="text-xs text-muted-foreground">
+              QR 을 찍으면 내 자리·스택이 보이고, 로그인 후 PIN 을 넣으면 계정에 연결돼요.
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Input readOnly value={url} aria-label="플레이어 링크" className="num text-xs" />
@@ -415,11 +431,40 @@ export function CredentialsDialog({
           </Button>
         </div>
         <DialogFooter>
+          <Button variant="outline" size="lg" onClick={() => window.print()}>
+            <Printer />
+            슬립 인쇄
+          </Button>
           <Button size="lg" onClick={() => onOpenChange(false)}>
             확인
           </Button>
         </DialogFooter>
+        <PrintSlip>
+          <PlayerSlip credentials={credentials} url={url} />
+        </PrintSlip>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** 인쇄 슬립 — 영수증 프린터(58/80mm)와 A4 모두에서 읽히도록 폭 72mm 고정. */
+function PlayerSlip({ credentials, url }: { credentials: IssuedCredentials; url: string }) {
+  return (
+    <div style={{ width: '72mm', fontFamily: 'sans-serif', lineHeight: 1.35 }}>
+      <p style={{ fontSize: '11pt', fontWeight: 700, margin: 0 }}>{credentials.tournamentName}</p>
+      <p style={{ fontSize: '14pt', fontWeight: 800, margin: '2mm 0' }}>
+        #{credentials.entryNumber} {credentials.name}
+      </p>
+      <QrCode value={url} size={200} label="플레이어 화면 QR" />
+      <p style={{ fontSize: '9pt', margin: '2mm 0 0' }}>연결 PIN</p>
+      <p style={{ fontSize: '20pt', fontWeight: 800, letterSpacing: '0.2em', margin: 0 }}>
+        {credentials.claimPin}
+      </p>
+      <p style={{ fontSize: '8pt', margin: '2mm 0 0' }}>
+        QR 을 찍으면 내 자리·스택·순위를 볼 수 있어요. UNIQN 계정으로 로그인한 뒤 PIN 을 넣으면 이
+        기록이 내 계정에 연결돼요. PIN 은 다른 사람에게 보여 주지 마세요.
+      </p>
+      <p style={{ fontSize: '7pt', margin: '1mm 0 0', wordBreak: 'break-all' }}>{url}</p>
+    </div>
   );
 }

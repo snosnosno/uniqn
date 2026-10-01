@@ -1,16 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Shuffle, UsersRound } from 'lucide-react';
 import { cn } from 'cn';
 import { LoadError, Loading } from '@/components/ops/LoadState';
 import { Button } from '@/components/ui/button';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { Kbd } from '@/components/ui/kbd';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { OpsParticipant, OpsSeat, OpsTournament } from '@/core/types/ops';
 import { useHotkeyMap } from '@/lib/useHotkey';
 import { useMediaQuery } from '@/lib/useMediaQuery';
 import { fmt } from '../format';
-import { participantActions } from '../participantActions';
-import { ACTION_KEYS } from '../players/helpers';
+import { participantActions, type ParticipantAction } from '../participantActions';
+import { ACTION_KEYS, ACTION_LABEL } from '../players/helpers';
 import type { usePlayerActions } from '../players/usePlayerActions';
 import {
   LOCK_LABEL,
@@ -27,6 +35,7 @@ type Actions = ReturnType<typeof usePlayerActions>;
 /**
  * 테이블 — 좌석 행렬표(시안 A 승인 2026-09-28): 테이블=행, 좌석=열. 한 화면에 전체 좌석·칩, 빈자리는 점선.
  * 단축키: W 빈자리 채우기 · M 이동 · Esc 이동 취소 · R/A/C/X/E 참가자 액션(선택 좌석).
+ * 좌석 메뉴: 앉은 칸을 우클릭(태블릿은 길게 누르기)하면 선택 없이 바로 리바이·칩·탈락·이동·비우기.
  */
 export function TablesTab({
   tournament,
@@ -150,6 +159,8 @@ export function TablesTab({
                   byId={byId}
                   staffNameOf={staffNameOf}
                   ctl={ctl}
+                  tournament={tournament}
+                  actions={actions}
                 />
               ))}
             </tbody>
@@ -221,12 +232,16 @@ function MatrixRow({
   byId,
   staffNameOf,
   ctl,
+  tournament,
+  actions,
 }: {
   row: TableRowView;
   maxSeats: number;
   byId: Map<string, OpsParticipant>;
   staffNameOf: (staffId: string) => string | null;
   ctl: SeatController;
+  tournament: OpsTournament;
+  actions: Actions;
 }) {
   const t = row.table;
   const flags = [
@@ -258,6 +273,8 @@ function MatrixRow({
                 seat={seat}
                 occupant={seat.participantId ? byId.get(seat.participantId) : undefined}
                 ctl={ctl}
+                tournament={tournament}
+                actions={actions}
               />
             ) : null}
           </td>
@@ -270,26 +287,38 @@ function MatrixRow({
   );
 }
 
+/** 좌석 메뉴에 올리는 빠른 동작 — 현장에서 가장 잦은 것만. 나머지는 상세에서. */
+const QUICK: ParticipantAction[] = ['rebuy', 'addon', 'chips', 'bust'];
+
 function SeatCell({
   seat,
   occupant,
   ctl,
+  tournament,
+  actions,
 }: {
   seat: OpsSeat;
   occupant?: OpsParticipant;
   ctl: SeatController;
+  tournament: OpsTournament;
+  actions: Actions;
 }) {
   const selected = ctl.selectedSeat?.id === seat.id;
   const isSource = ctl.moveFrom?.id === seat.id;
   const target = !!ctl.moveFrom && ctl.canSeat(seat);
   const label = `T${seat.tableNo}-${seat.seatNo}`;
-  return (
+  // 터치 길게 누르기로 메뉴가 열린 직후 손을 떼면 click 이 이어 와 좌석이 선택되고 시트가 메뉴 위로 뜬다 — 그 click 은 버린다
+  const menuOpenedAt = useRef(0);
+  const cell = (
     <button
       type="button"
       data-seat={label}
       aria-pressed={seat.participantId ? selected : undefined}
       aria-label={occupant ? `${label} ${occupant.name}` : `${label} 빈 좌석`}
-      onClick={() => ctl.pressSeat(seat)}
+      onClick={() => {
+        if (Date.now() - menuOpenedAt.current < 600) return;
+        ctl.pressSeat(seat);
+      }}
       className={cn(
         'flex h-14 w-full min-w-[58px] flex-col items-center justify-center border px-1 text-xs',
         selected || isSource
@@ -312,5 +341,39 @@ function SeatCell({
         <span aria-hidden>+</span>
       )}
     </button>
+  );
+  // 빈 칸·이동 모드에는 메뉴가 없다(이동 모드의 우클릭은 그냥 무시 — 이동 대상 고르기와 섞이지 않게)
+  if (!occupant || !seat.participantId || ctl.moveFrom) return cell;
+  const busy = ctl.busy || actions.busy;
+  const quick = participantActions(occupant, tournament).filter((a) => QUICK.includes(a));
+  return (
+    <ContextMenu onOpenChange={(open) => open && (menuOpenedAt.current = Date.now())}>
+      <ContextMenuTrigger asChild>{cell}</ContextMenuTrigger>
+      <ContextMenuContent aria-label={`${label} ${occupant.name} 메뉴`}>
+        <ContextMenuLabel>
+          <span className="num">{label}</span> · {occupant.name}
+        </ContextMenuLabel>
+        {quick.map((a) => (
+          <ContextMenuItem
+            key={a}
+            disabled={busy}
+            destructive={a === 'bust'}
+            onSelect={() => actions.run(a, occupant)}
+          >
+            {ACTION_LABEL[a]}
+            {ACTION_KEYS[a] ? <Kbd className="ml-auto">{ACTION_KEYS[a]}</Kbd> : null}
+          </ContextMenuItem>
+        ))}
+        <ContextMenuSeparator />
+        <ContextMenuItem disabled={busy} onSelect={() => ctl.startMoveFrom(seat)}>
+          이동<Kbd className="ml-auto">M</Kbd>
+        </ContextMenuItem>
+        <ContextMenuItem disabled={busy} destructive onSelect={() => ctl.freeSeat(seat)}>
+          비우기
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onSelect={() => ctl.selectSeat(seat)}>상세 열기</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

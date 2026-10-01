@@ -138,6 +138,16 @@ related:
 | 계정 연결(claim, PIN 8자, 비가역) | `useClaimParticipant` | ✅ | ops 로그인 → /live 복귀 → PIN → DB 연결 E2E |
 | 익명 신고 | `PublicReportSheet` | ✅ | |
 
+## 11. 웹 전용 추가 기능 (2026-10-01)
+
+| 기능 | 모바일 | 웹 | 근거 |
+|---|---|---|---|
+| 플레이어 QR 표시 + 인쇄 슬립(대회명·엔트리·이름·QR·PIN, 72mm) | 링크만 | ➕ | `CredentialsDialog`·`PrintSlip` · `e2e/w9-console-tools.mjs`(인쇄 매체에서 슬립만) |
+| 참가자·결과 CSV(BOM·수식 주입 차단·연락처 제외) | — | ➕ | `exportCsv.ts` 단위 테스트 · e2e/w9 |
+| 좌석 우클릭/길게 누르기 메뉴(리바이·애드온·칩·탈락·이동·비우기) | — | ➕ | e2e/w9 DB 반영 |
+| 레벨 알림(1분 전 경고색·알림음, 레벨 전환 알림음, 기기별 켜기) | — | ➕ | `levelAlert` 단위 테스트 · e2e/w9 오실레이터 계수 |
+| 이력 분류 필터 + 100건씩 더 보기(최대 1,000) | 최근 100건 | ➕ | `historyFilter` 단위 테스트 · e2e/w9 |
+
 ## 진행 요약
 
 | 영역 | 상태 |

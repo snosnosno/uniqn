@@ -51,3 +51,30 @@ export function clockView(
     playLabel: isRunning ? '일시정지' : isPaused ? '재개' : '시작',
   };
 }
+
+/**
+ * 레벨 알림 — 1분 전 경고·시간 종료·레벨 전환. 진행 중일 때만 울린다(일시정지·시작 전·첫 렌더는 조용히).
+ * 레벨은 자동으로 넘어가지 않는다(서버·모바일 모두 운영자가 "다음"을 누른다) — 그래서 00:00 순간의
+ * '시간 종료'가 운영자에게 가장 중요한 알림이다.
+ */
+export type LevelAlert = 'oneMinute' | 'timeUp' | 'levelChange';
+
+export interface ClockSample {
+  sort: number;
+  remainingSec: number;
+  isRunning: boolean;
+}
+
+/** 경고를 띄우는 남은 시간(초). */
+export const WARN_AT_SEC = 60;
+
+/** 직전 틱 → 이번 틱으로 넘어오며 생긴 알림. 같은 상태가 이어지면 null(한 번만 울린다). */
+export function levelAlert(prev: ClockSample | null, next: ClockSample): LevelAlert | null {
+  if (!prev || !next.isRunning) return null;
+  if (prev.sort !== next.sort) return 'levelChange';
+  if (prev.isRunning && prev.remainingSec > 0 && next.remainingSec <= 0) return 'timeUp';
+  if (prev.isRunning && prev.remainingSec > WARN_AT_SEC && next.remainingSec <= WARN_AT_SEC) {
+    return 'oneMinute';
+  }
+  return null;
+}

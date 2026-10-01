@@ -34,6 +34,7 @@ import {
 import {
   ChipCountDialog,
   CredentialsDialog,
+  type IssuedCredentials,
   EditParticipantDialog,
   KoPickerDialog,
   RegisterDialog,
@@ -73,16 +74,18 @@ export function usePlayerActions(o: Options) {
   const [chipFor, setChipFor] = useState<OpsParticipant | null>(null);
   const [editFor, setEditFor] = useState<OpsParticipant | null>(null);
   const [koFor, setKoFor] = useState<OpsParticipant | null>(null);
-  const [credentials, setCredentials] = useState<{
-    name: string;
-    viewToken: string;
-    claimPin: string;
-  } | null>(null);
+  const [credentials, setCredentials] = useState<IssuedCredentials | null>(null);
 
   const issueCredentials = (p: OpsParticipant) =>
     issue.mutate(p.id, {
       onSuccess: (c) =>
-        setCredentials({ name: p.name, viewToken: c.viewToken, claimPin: c.claimPin }),
+        setCredentials({
+          tournamentName: o.tournament.name,
+          entryNumber: p.entryNumber,
+          name: p.name,
+          viewToken: c.viewToken,
+          claimPin: c.claimPin,
+        }),
     });
 
   const run = (action: RunnableAction, p: OpsParticipant) => {

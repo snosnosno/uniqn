@@ -64,7 +64,7 @@ export function TablesDetailPanel(props: {
     return (
       <p className="p-4 text-sm text-muted-foreground">
         좌석을 누르면 여기서 이동·비우기·탈락을 바로 처리해요. 빈 칸을 누르면 대기 참가자를
-        앉힙니다.
+        앉힙니다. 앉은 칸을 우클릭(태블릿은 길게 누르기)하면 메뉴로 바로 처리할 수 있어요.
       </p>
     );
   }
