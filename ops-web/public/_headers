@@ -5,6 +5,23 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# 개통(W8) 후 검색 노출 정책 — 로그인 입구(/)만 노출한다.
+# 공개뷰 URL 에는 토큰이 들어 있어 색인되면 링크가 퍼진다. 콘솔·인증 화면은 노출할 이유가 없다.
+# (SPA 라 index.html 의 <meta robots> 는 모든 경로에 똑같이 붙는다 → 경로별 차단은 헤더로만 한다.)
+/monitor/*
+  X-Robots-Tag: noindex, nofollow
+
+/live/*
+  X-Robots-Tag: noindex, nofollow
+
+/tournaments*
+  X-Robots-Tag: noindex, nofollow
+
+/reset-password*
+  X-Robots-Tag: noindex, nofollow
+
+/forgot-password*
   X-Robots-Tag: noindex, nofollow
 
 /assets/*

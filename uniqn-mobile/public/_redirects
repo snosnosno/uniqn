@@ -14,5 +14,13 @@
 # 308 무한 루프가 나므로 절대 추가하지 말 것(실측: privacy 는 이 줄 없이 200).
 /guide.html  /guide.html  200
 
+# ops 공개뷰(전광판·플레이어뷰) → 대회 운영 웹(ops.uniqn.app)으로 이전 (W8 개통).
+# ⚠️ 반드시 아래 SPA fallback 보다 **위**에 둔다 — 아래에 두면 /* 가 먼저 매칭돼 영영 안 넘어간다.
+# 302(임시)로 시작해 안정화(W9) 후 301 로 올린다 — 301 은 브라우저가 영구 캐시해 되돌리기 어렵다.
+# 1.0.6 함대는 OTA 를 못 받아 옛 링크를 계속 만들므로 이 규칙은 **영구 유지**한다.
+# 배포 전 scripts/check-redirect-targets.js 가 대상 도메인이 실제로 응답하는지 실측한다.
+/monitor/*  https://ops.uniqn.app/monitor/:splat  302
+/live/*  https://ops.uniqn.app/live/:splat  302
+
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200

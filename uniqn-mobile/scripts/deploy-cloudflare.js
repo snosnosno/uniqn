@@ -146,6 +146,17 @@ try {
   process.exit(1);
 }
 
+// 3.6 외부 리다이렉트 대상 실측 — 안 열린 도메인으로 302 를 내보내 옛 링크를 죽이지 않게(ops W8)
+console.log('\n🔍 Step 3.6: _redirects 외부 대상 실측...');
+try {
+  execSync(
+    `node "${path.join(__dirname, 'check-redirect-targets.js')}" "${path.join(DIST_DIR, '_redirects')}"`,
+    { stdio: 'inherit', cwd: ROOT_DIR }
+  );
+} catch (error) {
+  process.exit(1);
+}
+
 // 4. Wrangler 배포 (wrangler.toml 설정 사용)
 console.log('\n🌐 Step 4: Cloudflare Pages 배포...');
 const commitDirtyFlag = forceFlag ? ' --commit-dirty=true' : '';

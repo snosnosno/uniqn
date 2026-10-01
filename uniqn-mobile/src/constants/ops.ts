@@ -1,36 +1,61 @@
 /** 라이브 운영(ops) 상수. */
 import { Platform } from 'react-native';
-import { APP_WEB_ORIGIN } from '@/constants/appUrl';
 import { getEnv } from '@/lib/env';
 
 /**
- * ops 공개 링크의 베이스 URL.
+ * ops 전용 웹 origin — 대회 운영 웹(`ops-web/`)이 서빙되는 정본 주소.
  *
- * 기본값이 **메인 웹앱 origin**(`APP_WEB_ORIGIN`)인 이유: 별도 ops 도메인은
- * 1c 설계에서 "브랜딩용·비차단"으로 잡혔다가 끝내 만들어지지 않았다(2026-08-07 실측:
- * `ops.uniqn.app` DNS 미해석). 공개 라우트(`/monitor/*`·`/live/*`)는 메인 도메인의
- * SPA fallback(`public/_redirects`)으로 이미 서빙되므로 메인 origin 이 유일한 실주소다.
+ * 이력: 2026-08-07 에는 이 도메인이 만들어지지 않아(DNS 미해석) 메인 웹앱 origin 으로
+ * 폴백했었다. ops 웹 개통(W8, 설계 `docs/planning/2026-09-27-ops-web-design.md` §7·§9)으로
+ * 공개뷰(`/monitor/*`·`/live/*`)의 정본이 이 도메인으로 옮겨졌다.
+ * 옛 링크(`uniqn.app/monitor/*`·`/live/*`)는 `public/_redirects` 의 302 가 이리로 넘긴다.
  *
- * 나중에 별도 도메인을 붙이면 `EXPO_PUBLIC_OPS_URL` 만 채우면 된다(탈출구 유지).
+ * ⚠️ 이 값을 바꾸는 배포는 대상 도메인이 실제로 응답할 때만 나가야 한다 —
+ * `scripts/deploy-cloudflare.js` 가 `_redirects` 의 외부 대상을 배포 전에 실측한다.
+ */
+export const OPS_WEB_ORIGIN = 'https://ops.uniqn.app';
+
+/**
+ * ops 공개 링크의 베이스 URL. `EXPO_PUBLIC_OPS_URL` 이 있으면 그 값(탈출구), 없으면 정본.
  */
 export function getOpsBaseUrl(): string {
   try {
-    return getEnv().EXPO_PUBLIC_OPS_URL ?? APP_WEB_ORIGIN;
+    return getEnv().EXPO_PUBLIC_OPS_URL ?? OPS_WEB_ORIGIN;
   } catch {
-    return APP_WEB_ORIGIN;
+    return OPS_WEB_ORIGIN;
+  }
+}
+
+/** 로컬 개발 서버 origin 인지 — 개발 중 만든 링크는 자기 서버로 열려야 로컬 DB 토큰이 통한다. */
+function isLocalDevOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
   }
 }
 
 /**
  * 공개 링크(모니터/플레이어뷰)용 웹 origin.
- * 웹은 실제 서빙 origin(window.location.origin) 우선 — 어느 배포 호스트에서 열어도 그 호스트로 링크가 나간다(§0.5 B2 경성의존 제거).
- * 네이티브(운영 앱)는 getOpsBaseUrl() 폴백.
+ * - 네이티브·운영 웹(uniqn.app 등): ops 정본 도메인(`getOpsBaseUrl`).
+ * - 웹 로컬 개발(localhost·127.0.0.1)이고 `EXPO_PUBLIC_OPS_URL` 미설정: 자기 origin.
+ *   (로컬 서버의 `/monitor`·`/live` 라우트가 로컬 Supabase 토큰을 해석한다.)
  */
 export function getOpsWebOrigin(): string {
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
+  let override: string | undefined;
+  try {
+    override = getEnv().EXPO_PUBLIC_OPS_URL;
+  } catch {
+    override = undefined;
   }
-  return getOpsBaseUrl();
+  if (override) return override;
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+    const origin = window.location.origin;
+    if (isLocalDevOrigin(origin)) return origin;
+  }
+  return OPS_WEB_ORIGIN;
 }
 
 /** 공개 모니터(전광판) URL. */

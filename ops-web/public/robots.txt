@@ -1,0 +1,7 @@
+# ops.uniqn.app — 로그인 입구만 노출. 공개뷰 URL 에는 토큰이 있어 크롤링 금지.
+User-agent: *
+Disallow: /monitor/
+Disallow: /live/
+Disallow: /tournaments
+Disallow: /reset-password
+Disallow: /forgot-password
