@@ -110,6 +110,8 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬 조합
 - `@storybook/react-vite`(MIT) — ops-web W0 에서 devDependency.
 - `21st-dev/magic-mcp`(ISC) **제외(2026-09-27 사용자 결정)** — oss-vet 은 조건부 통과(무료 키 필요, AI 생성은 크레딧 과금·검색은 무료)였으나 쓰지 않기로 함.
 - 제외: `cosscom/coss`(옛 Origin UI) — **AGPL-3.0**.
+- `uqr`(unjs, MIT, 2026-10-01 `/oss-vet` 통과) — ops-web 플레이어 QR. 의존성 0·설치 스크립트 없음·관리자 pi0/antfu(사칭 아님).
+  행렬만 받아 React SVG 로 그린다(innerHTML 없음). 탈락: `qrcode`(soldair) — yargs·pngjs 등 노드 의존을 끌고 온다.
 
 **graphify 운영** — 재색인은 수동이고 **그래프는 조용히 낡는다**(MCP 툴은 낡은 그래프에도 정상
 응답한다). `graphify update uniqn-mobile`(레포 루트, ~3분). 머지 웨이브 직후·대규모 리팩터링 후·

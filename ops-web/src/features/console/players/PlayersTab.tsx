@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, UserPlus } from 'lucide-react';
+import { Download, Search, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -7,6 +7,7 @@ import type { OpsParticipant, OpsTournament } from '@/core/types/ops';
 import { LoadError, Loading } from '@/components/ops/LoadState';
 import { useHotkeyMap } from '@/lib/useHotkey';
 import { useMediaQuery } from '@/lib/useMediaQuery';
+import { buildParticipantsCsv, csvFileName, downloadCsv } from '../exportCsv';
 import { isBountyTournament, participantActions } from '../participantActions';
 import { ACTION_KEYS, filterParticipants } from './helpers';
 import { ParticipantDetail } from './ParticipantDetail';
@@ -88,7 +89,18 @@ export function PlayersTab({
         <span className="label">
           {tournament.registrationOpen ? '등록 열림' : '등록 마감'} · {participants.length}명
         </span>
-        <Button size="lg" className="ml-auto" onClick={actions.openRegister}>
+        <Button
+          variant="outline"
+          size="lg"
+          className="ml-auto"
+          disabled={participants.length === 0}
+          onClick={() =>
+            downloadCsv(csvFileName(tournament.name), buildParticipantsCsv(participants, seatOf))
+          }
+        >
+          <Download /> CSV
+        </Button>
+        <Button size="lg" onClick={actions.openRegister}>
           <UserPlus /> 등록 <Kbd>N</Kbd>
         </Button>
       </div>

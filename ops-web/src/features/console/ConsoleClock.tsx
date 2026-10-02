@@ -1,5 +1,7 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Bell, BellOff } from 'lucide-react';
 import { ClockStrip } from '@/components/ops/ClockStrip';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -9,8 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import type { OpsLiveStats } from '@/core/types/ops';
 import { useOpsClock } from '@/hooks/ops/useConsoleQueries';
+import { playChime, setChimeEnabled, useChimeEnabled } from '@/lib/chime';
 import { isRealtimeConnected, subscribeRealtimeStatus } from '@/lib/realtime';
 import { ClockControlPanel } from './ClockControlPanel';
+import { levelAlert, WARN_AT_SEC, type ClockSample } from './clock';
 import { formatMmSs } from './format';
 
 /**
@@ -28,12 +32,30 @@ export function ConsoleClock({
   const clock = useOpsClock(tournamentId);
   const connected = useSyncExternalStore(subscribeRealtimeStatus, isRealtimeConnected);
   const [open, setOpen] = useState(false);
+  const chime = useChimeEnabled();
   const level = clock.currentLevel;
+  const isRunning = clock.clock?.isRunning ?? false;
+  const sort = clock.clock?.currentLevelSort ?? 0;
+
+  // 레벨 알림 — 틱마다 직전 표본과 비교해 1분 전·레벨 전환을 한 번씩 울린다(판정은 순수 함수 levelAlert).
+  const prevSample = useRef<ClockSample | null>(null);
+  // 다른 대회로 옮기면 직전 표본을 버린다 — 이전 대회의 레벨 번호와 비교해 "전환"으로 울리지 않게.
+  useEffect(() => {
+    prevSample.current = null;
+  }, [tournamentId]);
+  useEffect(() => {
+    const next: ClockSample = { sort, remainingSec: clock.remainingSec, isRunning };
+    const alert = clock.blindLevels.length > 0 ? levelAlert(prevSample.current, next) : null;
+    prevSample.current = next;
+    if (alert) playChime(alert);
+  }, [sort, clock.remainingSec, isRunning, clock.blindLevels.length]);
+
   return (
     <>
       <ClockStrip
         onActivate={() => setOpen(true)}
-        paused={!clock.clock?.isRunning && clock.clock?.pausedRemainingSec != null}
+        paused={!isRunning && clock.clock?.pausedRemainingSec != null}
+        warning={isRunning && clock.remainingSec <= WARN_AT_SEC}
         data={{
           level:
             clock.blindLevels.length === 0 ? '—' : level?.isBreak ? '휴식' : (level?.level ?? '—'),
@@ -55,6 +77,26 @@ export function ConsoleClock({
             <DialogDescription className="sr-only">클럭 시작·정지·레벨·시간 보정</DialogDescription>
           </DialogHeader>
           <ClockControlPanel tournamentId={tournamentId} clock={clock} />
+          <div className="flex items-center gap-2 border-t px-4 py-3">
+            <span className="text-sm">
+              레벨 알림음
+              <span className="block text-xs text-muted-foreground">
+                1분 전 1번 · 시간 종료 3번 · 레벨이 바뀔 때 2번 (이 기기에만 저장)
+              </span>
+            </span>
+            <Button
+              variant={chime ? 'default' : 'outline'}
+              className="ml-auto h-11"
+              aria-pressed={chime}
+              onClick={() => {
+                setChimeEnabled(!chime);
+                if (!chime) playChime('oneMinute');
+              }}
+            >
+              {chime ? <Bell /> : <BellOff />}
+              {chime ? '켜짐' : '꺼짐'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

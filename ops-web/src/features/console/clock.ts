@@ -51,3 +51,45 @@ export function clockView(
     playLabel: isRunning ? '일시정지' : isPaused ? '재개' : '시작',
   };
 }
+
+/**
+ * 레벨 알림 — 1분 전 경고·시간 종료·레벨 전환. 진행 중일 때만 울린다(일시정지·시작 전·첫 렌더는 조용히).
+ * 레벨은 자동으로 넘어가지 않는다(서버·모바일 모두 운영자가 "다음"을 누른다) — 그래서 00:00 순간의
+ * '시간 종료'가 운영자에게 가장 중요한 알림이다.
+ */
+export type LevelAlert = 'oneMinute' | 'timeUp' | 'levelChange';
+
+export interface ClockSample {
+  sort: number;
+  remainingSec: number;
+  isRunning: boolean;
+}
+
+/** 경고를 띄우는 남은 시간(초). */
+export const WARN_AT_SEC = 60;
+
+/** 직전 틱 → 이번 틱으로 넘어오며 생긴 알림. 같은 상태가 이어지면 null(한 번만 울린다). */
+export function levelAlert(prev: ClockSample | null, next: ClockSample): LevelAlert | null {
+  if (!prev || !next.isRunning) return null;
+  if (prev.sort !== next.sort) return 'levelChange';
+  if (prev.isRunning && prev.remainingSec > 0 && next.remainingSec <= 0) return 'timeUp';
+  if (prev.isRunning && prev.remainingSec > WARN_AT_SEC && next.remainingSec <= WARN_AT_SEC) {
+    return 'oneMinute';
+  }
+  return null;
+}
+
+/** 시간 맞추기 입력 상한 — 99:59. 그보다 긴 레벨은 블라인드 탭에서 길이를 바꾼다. */
+export const SEEK_MAX_SEC = 99 * 60 + 59;
+
+/**
+ * 남은 시간 직접 입력 → 초. `12:30`·`2:05`·`12`(분만) 허용. 범위 밖·형식 오류는 null.
+ * 레벨 안 초 단위 시크 — 서버 RPC(ops_clock_adjust)는 임의 초 증감을 받으므로 새 RPC 가 필요 없다.
+ */
+export function parseClockInput(raw: string): number | null {
+  const s = raw.trim().replace('：', ':');
+  const m = /^(\d{1,2})(?::([0-5]\d))?$/.exec(s);
+  if (!m) return null;
+  const sec = Number(m[1]) * 60 + (m[2] ? Number(m[2]) : 0);
+  return sec <= SEEK_MAX_SEC ? sec : null;
+}

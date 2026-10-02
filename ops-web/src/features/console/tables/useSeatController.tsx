@@ -153,6 +153,23 @@ export function useSeatController(o: Options) {
       free.mutate(selectedSeat.id);
       setSelected(null);
     },
+    /** 좌석 메뉴(우클릭·길게 누르기) — 선택을 거치지 않고 그 좌석에서 바로 이동을 시작한다. */
+    startMoveFrom: (seat: OpsSeat) => {
+      if (!seat.participantId || busy) return;
+      const pin = { seatId: seat.id, participantId: seat.participantId };
+      setSelected(pin);
+      setMoveFromPin(pin);
+    },
+    /** 좌석 메뉴 — 그 좌석을 바로 비운다. */
+    freeSeat: (seat: OpsSeat) => {
+      if (!seat.participantId || busy) return;
+      free.mutate(seat.id);
+      if (selectedSeat?.id === seat.id) setSelected(null);
+    },
+    /** 좌석 메뉴 — 상세(우측 패널·시트)를 연다. */
+    selectSeat: (seat: OpsSeat) => {
+      if (seat.participantId) setSelected({ seatId: seat.id, participantId: seat.participantId });
+    },
     openTable: (t: OpsTable) => setSettingsFor(t),
     openAdd: () => setAddOpen(true),
     openRedraw: (mode: RedrawMode) => setRedrawMode(mode),

@@ -186,3 +186,24 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 인쇄 — PrintSlip(body 직속 포털)만 인쇄한다. 테마와 무관하게 흰 종이·검은 글자. */
+.print-slip {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 8mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body > *:not(.print-slip) {
+    display: none !important;
+  }
+  .print-slip {
+    display: block;
+  }
+}

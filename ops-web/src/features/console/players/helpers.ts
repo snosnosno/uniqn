@@ -3,6 +3,22 @@ import { toast } from 'sonner';
 import type { OpsParticipant } from '@/core/types/ops';
 import type { ParticipantAction } from '../participantActions';
 
+/** 액션 표시 이름 — 상세 패널·좌석 메뉴가 같은 말을 쓴다. */
+export const ACTION_LABEL: Record<ParticipantAction, string> = {
+  rebuy: '리바이',
+  addon: '애드온',
+  chips: '칩 카운트',
+  bust: '탈락',
+  noShow: '노쇼 처리',
+  undoNoShow: '노쇼 취소',
+  reenter: '재진입',
+  undoBust: '탈락 취소',
+  openPayouts: '상금 화면 보기',
+  edit: '정보 수정',
+  delete: '등록 취소 (기록 삭제)',
+  unclaim: '플레이어 연결 해제',
+};
+
 /** 단축키 — DESIGN.md: X 탈락 · R 리바이 · C 칩 (+ A 애드온 · E 수정). */
 export const ACTION_KEYS: Partial<Record<ParticipantAction, string>> = {
   rebuy: 'R',
