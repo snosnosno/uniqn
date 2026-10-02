@@ -135,6 +135,10 @@ jobs:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: ci-placeholder
 
+      # 공개뷰(TV·선수 폰) 첫 화면 JS 예산 — 설계 §11 "SPA 첫 로딩 속도" 리스크 대응.
+      - name: Bundle size budget
+        run: npm run check:bundle
+
   deploy:
     name: ops-web deploy (Cloudflare)
     needs: quality

@@ -3,23 +3,8 @@ import { Kbd } from '@/components/ui/kbd';
 import type { OpsParticipant, OpsTournament } from '@/core/types/ops';
 import { PARTICIPANT_STATUS_LABEL, fmt } from '../format';
 import { participantActions, type ParticipantAction } from '../participantActions';
-import { ACTION_KEYS, copyToClipboard, playerViewUrl } from './helpers';
+import { ACTION_KEYS, ACTION_LABEL as LABEL, copyToClipboard, playerViewUrl } from './helpers';
 import type { RunnableAction } from './usePlayerActions';
-
-const LABEL: Record<ParticipantAction, string> = {
-  rebuy: '리바이',
-  addon: '애드온',
-  chips: '칩 카운트',
-  bust: '탈락',
-  noShow: '노쇼 처리',
-  undoNoShow: '노쇼 취소',
-  reenter: '재진입',
-  undoBust: '탈락 취소',
-  openPayouts: '상금 화면 보기',
-  edit: '정보 수정',
-  delete: '등록 취소 (기록 삭제)',
-  unclaim: '플레이어 연결 해제',
-};
 
 const DANGER: ParticipantAction[] = ['bust', 'noShow', 'undoBust', 'delete', 'unclaim'];
 

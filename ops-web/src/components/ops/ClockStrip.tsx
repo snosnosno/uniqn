@@ -41,13 +41,16 @@ export function ClockStrip({
   data,
   onActivate,
   paused = false,
+  warning = false,
 }: {
   data: ClockStripData;
   onActivate?: () => void;
   /** 일시정지면 남은 시간을 경고색으로(모바일 ClockControl 과 같음). */
   paused?: boolean;
+  /** 진행 중 1분 이하 — 레벨이 곧 바뀐다는 주의색. */
+  warning?: boolean;
 }) {
-  const body = <ClockStripCells data={data} paused={paused} />;
+  const body = <ClockStripCells data={data} paused={paused} warning={warning} />;
   if (onActivate) {
     return (
       <button
@@ -67,7 +70,15 @@ export function ClockStrip({
   );
 }
 
-function ClockStripCells({ data, paused }: { data: ClockStripData; paused: boolean }) {
+function ClockStripCells({
+  data,
+  paused,
+  warning,
+}: {
+  data: ClockStripData;
+  paused: boolean;
+  warning: boolean;
+}) {
   return (
     <div className="flex items-stretch border-b bg-card">
       <Cell
@@ -87,7 +98,12 @@ function ClockStripCells({ data, paused }: { data: ClockStripData; paused: boole
         </span>
       </Cell>
       <Cell label="남은 시간" className="flex-1 sm:flex-none">
-        <span className={cn('clock text-[40px] sm:text-[44px]', paused && 'text-destructive')}>
+        <span
+          className={cn(
+            'clock text-[40px] sm:text-[44px]',
+            paused ? 'text-destructive' : warning && 'text-warning'
+          )}
+        >
           {data.remaining}
         </span>
         {/* 폰은 오른쪽 연결 표시가 숨으므로 끊겼을 때만 여기 작게 알린다 */}

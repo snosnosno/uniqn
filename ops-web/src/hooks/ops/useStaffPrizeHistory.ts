@@ -2,7 +2,7 @@
  * W6 — 스태프·상금·이력 훅. 모바일 useOpsStaff·useOpsStaffWorkLogs·useOpsEvents·useOpsPrizes·
  * useOpsMutations(스태프 5종·상금 지급/정정) 대응. 무효화 범위·토스트 문구는 모바일과 같다.
  */
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { opsEventRepository, opsStaffRepository } from '@/core/repositories/ops';
 import type { PrizeCorrectionInput, PrizeStructureInput } from '@/core/schemas/opsPrize.schema';
 import * as participantService from '@/core/services/ops/opsParticipantService';
@@ -34,9 +34,12 @@ export function useOpsStaffWorkLogs(id: string) {
 /** 이력 — ops_events 는 realtime publication 밖이라 구독 없이 30s + 변이 후 무효화(모바일과 같음). */
 export function useOpsEvents(id: string, limit = 100) {
   return useQuery({
-    queryKey: opsKeys.events(id),
+    // limit 을 키 끝에 붙인다 — 변이 후 무효화(opsKeys.events(id))는 접두 일치라 그대로 닿는다.
+    queryKey: [...opsKeys.events(id), limit],
     queryFn: () => opsEventRepository.listByTournament(id, limit),
     staleTime: 30_000,
+    // "더 보기"로 limit 이 바뀌는 동안 목록이 비었다가 다시 차지 않게 직전 결과를 유지한다.
+    placeholderData: keepPreviousData,
   });
 }
 
