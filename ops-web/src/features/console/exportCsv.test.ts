@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { OpsParticipant } from '@/core/types/ops';
-import { buildParticipantsCsv, csvCell, csvFileName } from './exportCsv';
+import type { OpsEvent, OpsParticipant } from '@/core/types/ops';
+import { buildHistoryCsv, buildParticipantsCsv, csvCell, csvFileName } from './exportCsv';
 
 const p = (o: Partial<OpsParticipant>): OpsParticipant => ({
   id: 'id',
@@ -77,7 +77,69 @@ describe('buildParticipantsCsv', () => {
   });
 });
 
+describe('buildHistoryCsv', () => {
+  const event = (o: Partial<OpsEvent>): OpsEvent => ({
+    id: 'e',
+    tournamentId: 't',
+    type: 'player_busted',
+    payload: {},
+    createdAt: '2026-10-03T15:00:05Z',
+    ...o,
+  });
+  const csv = buildHistoryCsv([
+    event({ payload: { finish_position: 3, prize: 500000 }, actorDevice: '등록데스크 1' }),
+    event({ type: 'level_set', payload: { level_sort: 4 }, createdAt: '2026-10-03T14:00:00Z' }),
+  ]);
+  const lines = csv.replace(/^﻿/, '').trimEnd().split('\r\n');
+
+  it('BOM 과 머리줄로 시작한다', () => {
+    expect(csv.startsWith('﻿')).toBe(true);
+    expect(lines[0]).toBe('시각,분류,내용,요약,기기');
+  });
+
+  it('시각은 한국 시각, 분류·내용은 화면과 같은 한글 라벨', () => {
+    expect(lines[1]).toBe(
+      '2026-10-04 00:00:05,참가자,탈락,finish position 3 · prize 500000,등록데스크 1'
+    );
+    expect(lines[2]).toBe('2026-10-03 23:00:00,클럭,레벨 변경,level sort 4,');
+  });
+
+  it('받은 순서를 그대로 둔다', () => {
+    expect(lines).toHaveLength(3);
+  });
+
+  it('이름·연락처·국적·메모는 요약에서 뺀다', () => {
+    const edited = buildHistoryCsv([
+      event({
+        type: 'player_updated',
+        payload: {
+          name_after: '홍길동',
+          name_before: '홍길순',
+          phone_after: '01012345678',
+          phone_before: '01000000000',
+          nationality_after: 'KR',
+          note: '비밀',
+          participant_id: 'p1',
+        },
+      }),
+      event({ type: 'player_deleted', payload: { name: '삭제된사람', entry_number: 7 } }),
+    ]);
+    expect(edited).not.toMatch(/홍길동|홍길순|01012345678|01000000000|KR|비밀|삭제된사람/);
+    expect(edited).toContain('participant id p1');
+    expect(edited).toContain('entry number 7');
+  });
+
+  it('기기 이름이 수식으로 읽히지 않게 막는다', () => {
+    const injected = buildHistoryCsv([event({ actorDevice: '=HYPERLINK("x")' })]);
+    expect(injected).toContain(`"'=HYPERLINK(""x"")"`);
+  });
+});
+
 describe('csvFileName', () => {
+  it('이력 파일은 이름에 이력이 들어간다', () => {
+    expect(csvFileName('대회', new Date(2026, 9, 1), '이력')).toBe('대회_이력_20261001.csv');
+  });
+
   it('파일명에 못 쓰는 문자를 바꾸고 날짜를 붙인다', () => {
     expect(csvFileName('주말 대회: A/B', new Date(2026, 9, 1))).toBe(
       '주말_대회_A_B_명단_20261001.csv'

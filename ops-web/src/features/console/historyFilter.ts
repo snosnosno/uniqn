@@ -32,6 +32,6 @@ export function filterEvents<T extends { type: OpsEventType }>(
   return category === 'all' ? [...list] : list.filter((e) => eventCategory(e.type) === category);
 }
 
-/** 한 번에 더 불러오는 건수와 상한 — 상한 너머는 화면에서 찾을 일이 드물다(이력 CSV 는 후속). */
+/** 한 번에 더 불러오는 건수와 상한 — 상한 너머는 화면에서 찾을 일이 드물다. */
 export const HISTORY_PAGE = 100;
 export const HISTORY_MAX = 1000;

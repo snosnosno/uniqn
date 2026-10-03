@@ -4,8 +4,12 @@
  * `= + - @` 탭·CR 로 시작하는 칸은 앞에 `'` 를 붙인다(OWASP 권고).
  * 개인정보 최소화 — 연락처·국적·메모는 넣지 않는다.
  */
-import type { OpsParticipant } from '@/core/types/ops';
+import { EVENT_LABEL, summarizePayload } from '@/core/historyLabels';
+import type { OpsEvent, OpsParticipant } from '@/core/types/ops';
 import { PARTICIPANT_STATUS_LABEL } from './format';
+import { eventCategory, HISTORY_CATEGORIES } from './historyFilter';
+
+const CATEGORY_LABEL = Object.fromEntries(HISTORY_CATEGORIES.map((c) => [c.value, c.label]));
 
 const HEADERS = [
   '엔트리',
@@ -64,11 +68,53 @@ export function buildParticipantsCsv(
   return '﻿' + [HEADERS.join(','), ...rows].join('\r\n') + '\r\n';
 }
 
+const HISTORY_HEADERS = ['시각', '분류', '내용', '요약', '기기'] as const;
+
+/** 엑셀이 날짜로 읽는 `YYYY-MM-DD HH:mm:ss`, 기기 시간대와 무관하게 한국 시각. */
+const KST_FORMAT = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Asia/Seoul',
+  dateStyle: 'short',
+  timeStyle: 'medium',
+});
+
+/**
+ * 파일로 나가면 안 되는 payload 키 — 참가자 정보 수정·삭제 이벤트는 이름·연락처·국적·메모를
+ * `name_after`·`phone_before` 같은 키로 싣는다(jsonb 는 키를 길이순으로 저장해 이 값들이 요약 맨 앞에 온다).
+ */
+const PII_KEY_RE = /^(name|phone|nationality|note)(_|$)/;
+
+function withoutPii(payload: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => !PII_KEY_RE.test(key)));
+}
+
+/**
+ * 이력 CSV — 화면에 불러온 이벤트를 받은 순서(최신순) 그대로 내보낸다.
+ * 요약은 화면과 같은 `summarizePayload` 를 쓰되, 이름·연락처·국적·메모는 먼저 걷어 낸다(명단 CSV 와 같은 원칙).
+ */
+export function buildHistoryCsv(events: readonly OpsEvent[]): string {
+  const rows = events.map((e) =>
+    [
+      KST_FORMAT.format(new Date(e.createdAt)),
+      CATEGORY_LABEL[eventCategory(e.type)],
+      EVENT_LABEL[e.type] ?? e.type,
+      summarizePayload(withoutPii(e.payload)),
+      e.actorDevice ?? null,
+    ]
+      .map(csvCell)
+      .join(',')
+  );
+  return '﻿' + [HISTORY_HEADERS.join(','), ...rows].join('\r\n') + '\r\n';
+}
+
 /** 파일명에 쓸 수 없는 문자를 걷어 낸다. */
-export function csvFileName(tournamentName: string, date = new Date()): string {
+export function csvFileName(
+  tournamentName: string,
+  date = new Date(),
+  kind: '명단' | '이력' = '명단'
+): string {
   const safe = tournamentName.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 60) || '대회';
   const ymd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-  return `${safe}_명단_${ymd}.csv`;
+  return `${safe}_${kind}_${ymd}.csv`;
 }
 
 export function downloadCsv(fileName: string, text: string): void {

@@ -3,6 +3,7 @@
  * `app/(ops)/tournaments/new.tsx` 와 같다(검증 자체는 서비스의 동기화 사본 zod 스키마가 한다).
  */
 import type { CreateOpsTournamentInput } from '@/core/repositories/interfaces/IOpsTournamentRepository';
+import type { OpsTournament } from '@/core/types/ops';
 
 export interface CreateFormState {
   name: string;
@@ -43,6 +44,37 @@ export function initialCreateForm(
     bountyCost: '',
     jobPostingId,
   };
+}
+
+/**
+ * 지난 대회 설정 불러오기 — 장소·게임·칩·좌석·금액을 채운다.
+ * 이름·날짜·공고 연결은 이번 대회의 것이라 건드리지 않는다. 블라인드 구조는 폼에 없어 가져오지 않는다(복제가 맡는다).
+ */
+export function prefillFromTournament(
+  form: CreateFormState,
+  source: OpsTournament
+): CreateFormState {
+  return {
+    ...form,
+    // 장소가 없는 대회를 불러와도 이미 적은 장소는 지우지 않는다.
+    venue: source.venue ?? form.venue,
+    gameType: source.gameType,
+    startingChips: String(source.startingChips),
+    seatsPerTable: String(source.seatsPerTable),
+    buyInChips: String(source.buyInChips),
+    buyInCost: String(source.buyInCost),
+    feeCost: String(source.feeCost),
+    rebuyChips: String(source.rebuyChips),
+    rebuyCost: String(source.rebuyCost),
+    addonChips: String(source.addonChips),
+    addonCost: String(source.addonCost),
+    bountyCost: source.bountyCost == null ? '' : String(source.bountyCost),
+  };
+}
+
+/** 불러오기 후보 — 최근에 만든 대회부터 최대 20개(보관한 대회도 설정은 쓸 수 있다). */
+export function prefillSources(tournaments: readonly OpsTournament[]): OpsTournament[] {
+  return [...tournaments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
 }
 
 /** 숫자만 남긴다(쉼표·단위 허용). 빈칸이면 0. */

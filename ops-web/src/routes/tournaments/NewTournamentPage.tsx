@@ -6,10 +6,17 @@ import { kstDateString } from '@/core/domains/ops';
 import { createOpsTournamentSchema } from '@/core/schemas/opsTournament.schema';
 import {
   initialCreateForm,
+  prefillFromTournament,
+  prefillSources,
   toCreateInput,
   type CreateFormState,
 } from '@/features/tournaments/createForm';
-import { useCreateOpsTournament, useManagedPostings } from '@/hooks/ops/useTournaments';
+import { formatTournamentMeta } from '@/features/tournaments/tournamentList';
+import {
+  useCreateOpsTournament,
+  useManagedPostings,
+  useOpsTournaments,
+} from '@/hooks/ops/useTournaments';
 import { toUserMessage } from '@/lib/errorMessage';
 import { focusFirstError } from '@/lib/formErrors';
 import { UUID_LIKE_RE } from '@/core/schemas/common';
@@ -37,6 +44,16 @@ export function Component() {
   const [formError, setFormError] = useState<string | null>(null);
   const create = useCreateOpsTournament();
   const postings = useManagedPostings();
+  const sources = prefillSources(useOpsTournaments().data ?? []);
+  const [sourceId, setSourceId] = useState('');
+
+  // 고르는 것과 채우는 것을 나눈다 — select 는 화살표 키만으로도 값이 바뀌어 입력을 말없이 덮어쓴다.
+  const onPrefill = () => {
+    const source = sources.find((t) => t.id === sourceId);
+    if (!source) return;
+    setForm((f) => prefillFromTournament(f, source));
+    setFieldErrors({});
+  };
 
   const set = <K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -97,6 +114,40 @@ export function Component() {
       </div>
 
       <form className="flex flex-col gap-5" onSubmit={onSubmit} noValidate>
+        {sources.length > 0 ? (
+          <Section title="지난 대회 설정 불러오기(선택)">
+            <Field id="prefillSource" label="대회">
+              <div className="flex gap-2">
+                <select
+                  id="prefillSource"
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
+                  value={sourceId}
+                  onChange={(e) => setSourceId(e.target.value)}
+                >
+                  <option value="">대회 선택</option>
+                  {sources.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} · {formatTournamentMeta(t)}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 shrink-0"
+                  disabled={!sourceId}
+                  onClick={onPrefill}
+                >
+                  불러오기
+                </Button>
+              </div>
+            </Field>
+            <p className="text-xs text-muted-foreground">
+              아래 장소·게임·칩·좌석·금액 칸을 이 대회 값으로 바꿔요. 블라인드 구조까지 같게 하려면
+              대회 목록에서 복제를 쓰세요.
+            </p>
+          </Section>
+        ) : null}
         <Section title="기본">
           <Field id="name" label="대회 이름 *" error={fieldErrors.name}>
             <Input

@@ -136,7 +136,14 @@ function Console({ tournament, tab }: { tournament: OpsTournament; tab: ConsoleT
       case 'status':
         return (
           <WithClock tournamentId={id}>
-            {(clock) => <StatusTab tournament={tournament} stats={statsData} clock={clock} />}
+            {(clock) => (
+              <StatusTab
+                tournament={tournament}
+                stats={statsData}
+                participants={list}
+                clock={clock}
+              />
+            )}
           </WithClock>
         );
       case 'players':
@@ -188,7 +195,7 @@ function Console({ tournament, tab }: { tournament: OpsTournament; tab: ConsoleT
           />
         );
       case 'history':
-        return <HistoryTab tournamentId={id} />;
+        return <HistoryTab tournamentId={id} tournamentName={tournament.name} />;
       default:
         return (
           <p className="p-6 text-sm text-muted-foreground">이 영역은 다음 단계에서 열립니다.</p>
