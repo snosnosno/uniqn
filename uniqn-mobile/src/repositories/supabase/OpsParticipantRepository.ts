@@ -7,6 +7,7 @@ import { mapOpsRpcError } from './opsRpcError';
 import type {
   IOpsParticipantRepository,
   RegisterParticipantInput,
+  BulkRegisterParticipantsInput,
 } from '../interfaces/IOpsParticipantRepository';
 import type {
   OpsParticipant,
@@ -161,6 +162,42 @@ export class SupabaseOpsParticipantRepository implements IOpsParticipantReposito
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 참가자 등록' });
+    }
+  }
+
+  async registerBulk(
+    input: BulkRegisterParticipantsInput,
+    actorId: string
+  ): Promise<{ participantId: string; entryNumber: number }[]> {
+    try {
+      logger.info('ops 참가자 일괄 등록 시작', {
+        actorId,
+        tournamentId: input.tournamentId,
+        count: input.rows.length,
+      });
+      const { data, error } = await supabase.rpc('ops_register_participants_bulk', {
+        p_tournament_id: input.tournamentId,
+        p_actor_id: actorId,
+        p_rows: input.rows.map((r) => ({
+          name: r.name,
+          nationality: r.nationality ?? null,
+          phone: r.phone ?? null,
+        })),
+        ...(input.buyInAmount !== undefined ? { p_buy_in_amount: input.buyInAmount } : {}),
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 참가자 일괄 등록' });
+      const result = data as {
+        participants?: { participant_id: string; entry_number: number }[];
+      } | null;
+      const registered = (result?.participants ?? []).map((p) => ({
+        participantId: p.participant_id,
+        entryNumber: p.entry_number,
+      }));
+      logger.info('ops 참가자 일괄 등록 완료', { count: registered.length });
+      return registered;
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 참가자 일괄 등록' });
     }
   }
 

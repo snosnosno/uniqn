@@ -146,6 +146,30 @@ export async function setArchived(id: string, actorId: string, archived: boolean
   }
 }
 
+/** 레이트 등록 자동 마감 기준(레벨 sort) 설정, null = 해제. */
+export async function setRegistrationCutoff(
+  id: string,
+  actorId: string,
+  afterSort: number | null
+): Promise<void> {
+  try {
+    logger.info('ops 등록 자동 마감 설정', { component: COMPONENT, id, afterSort });
+    if (afterSort !== null && (!Number.isInteger(afterSort) || afterSort < 1)) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '마감 기준 레벨을 다시 골라 주세요.',
+      });
+    }
+    await opsTournamentRepository.setRegistrationCutoff(id, actorId, afterSort);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '등록 자동 마감 설정',
+      component: COMPONENT,
+      context: { id },
+    });
+  }
+}
+
 export async function toggleRegistration(
   id: string,
   actorId: string,

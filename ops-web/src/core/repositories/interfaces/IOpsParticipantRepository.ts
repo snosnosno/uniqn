@@ -20,6 +20,19 @@ export interface RegisterParticipantInput {
   buyInAmount?: number;
 }
 
+/** 일괄 등록 입력 — 명단 한 줄. */
+export interface BulkRegisterRow {
+  name: string;
+  nationality?: string;
+  phone?: string;
+}
+
+export interface BulkRegisterParticipantsInput {
+  tournamentId: string;
+  rows: BulkRegisterRow[];
+  buyInAmount?: number;
+}
+
 /**
  * ops 참가자 Repository.
  * 구현체: SupabaseOpsParticipantRepository. 읽기는 RLS 필터(view_token 포함(D8)·claim_pin_hash 제외), 쓰기는 SECDEF RPC.
@@ -31,6 +44,14 @@ export interface IOpsParticipantRepository {
     input: RegisterParticipantInput,
     actorId: string
   ): Promise<{ participantId: string; entryNumber: number }>;
+  /**
+   * 일괄 등록 (ops_register_participants_bulk). 최대 200명, 전부 성공하거나 전부 취소된다.
+   * 반환 순서 = 입력 순서(엔트리 번호도 그 순서로 이어진다).
+   */
+  registerBulk(
+    input: BulkRegisterParticipantsInput,
+    actorId: string
+  ): Promise<{ participantId: string; entryNumber: number }[]>;
   addRebuy(participantId: string, actorId: string): Promise<void>;
   addAddon(participantId: string, actorId: string): Promise<void>;
   bustParticipant(

@@ -8,6 +8,7 @@ import { computeChipAudit } from './chipAudit';
 import { ClockControlPanel } from './ClockControlPanel';
 import { fmt, formatBb } from './format';
 import { MonitorSection } from './MonitorSection';
+import { RegistrationCutoff } from './RegistrationCutoffSetting';
 
 /** 현황 탭 상태 라벨(모바일 OpsStatusTab — 목록의 '예정'과 달리 '시작 전'). */
 const STATUS_LABEL: Record<OpsTournament['status'], string> = {
@@ -89,6 +90,13 @@ export function StatusTab({
                 {tournament.registrationOpen ? '등록 마감하기' : '등록 열기'}
               </Button>
             </div>
+          ) : null}
+          {!isCompleted ? (
+            <RegistrationCutoff
+              tournament={tournament}
+              levels={clock.blindLevels}
+              currentSort={clock.clock?.currentLevelSort ?? 1}
+            />
           ) : null}
         </section>
         {/* 완료 대회도 보인다 — 최종 순위·상금을 TV 에 띄워 두는 용도(모바일과 같다, 리뷰 W7) */}

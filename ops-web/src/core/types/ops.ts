@@ -35,6 +35,12 @@ export interface OpsTournament {
   addonCost: number;
   bountyCost?: number | null;
   registrationOpen: boolean;
+  /**
+   * 레이트 등록 자동 마감 기준(블라인드 레벨 sort). 이 순번의 레벨·브레이크가 끝나 다음으로 넘어가면
+   * 서버가 등록을 닫는다. null/undefined = 자동 마감 없음. 쓰기는 ops_set_registration_cutoff 전용이고,
+   * 등록을 수동으로 다시 열면 서버가 null 로 되돌린다.
+   */
+  registrationCloseAfterSort?: number | null;
   autoSeatOnRegister: boolean;
   reentryAllowed: boolean;
   maxReentries?: number | null;

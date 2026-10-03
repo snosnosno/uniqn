@@ -33,6 +33,28 @@ export const registerParticipantSchema = z.object({
 });
 export type RegisterParticipantData = z.infer<typeof registerParticipantSchema>;
 
+/** 일괄 등록 한도 — 서버(ops_register_participants_bulk)와 같은 값. */
+export const BULK_REGISTER_MAX = 200;
+
+/**
+ * 일괄 등록(명단 붙여넣기). 한 줄 = 단건 등록과 같은 규칙. 전부 성공하거나 전부 취소된다(서버 원자성).
+ */
+export const bulkRegisterParticipantsSchema = z.object({
+  tournamentId: z.string().uuid({ message: '올바른 대회 ID가 아닙니다' }),
+  rows: z
+    .array(
+      z.object({
+        name: participantNameSchema,
+        nationality: optionalXssText(40),
+        phone: optionalXssText(30),
+      })
+    )
+    .min(1, { message: '등록할 명단을 입력해주세요' })
+    .max(BULK_REGISTER_MAX, { message: `한 번에 ${BULK_REGISTER_MAX}명까지 등록할 수 있어요` }),
+  buyInAmount: z.number().int().min(0).optional(),
+});
+export type BulkRegisterParticipantsData = z.infer<typeof bulkRegisterParticipantsSchema>;
+
 /**
  * 결함① 칩 카운트 수동 입력. 서버(ops_set_participant_chips) 의 1~20억 범위와 동일 경계.
  * 0 을 막는 이유: 0칩 active 참가자는 live_stats 의 playing/average_stack 을 오염시킨다 —

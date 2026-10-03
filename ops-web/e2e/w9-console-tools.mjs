@@ -163,7 +163,7 @@ await step('PIN 발급 → QR 표시 · 인쇄하면 슬립만(대회명·이름
 });
 
 await step(
-  '레벨 알림: 켜기 → 1분 이하 경고색 + 1음 → 00:00 시간 종료 3음 → 다음 레벨 2음 → 남은 시간 5:00 맞추기',
+  '레벨 알림: 켜기 → 1분 이하 경고색 + 1음 → 00:00 자동 전환 2음 → 남은 시간 5:00 맞추기',
   async () => {
     await page.getByRole('button', { name: /클럭 제어 열기/ }).click();
     const dlg = page.getByRole('dialog');
@@ -187,15 +187,17 @@ await step(
     assert(clockClass?.includes('text-warning'), `경고색 아님: ${clockClass}`);
     await page.screenshot({ path: path.join(SHOT_DIR, 'w9-clock-warning.png') });
     await page.getByRole('button', { name: /클럭 제어 열기/ }).click();
-    // 1분 남짓에서 1분 더 단축 → 00:00 → 시간 종료 3음(레벨은 자동으로 안 넘어간다)
+    // 1분 남짓에서 1분 더 단축 → 00:00 → 서버가 다음 레벨로 자동 전환 → 전환 2음
+    // (다음 레벨이 있으면 '시간 종료' 3음은 울리지 않는다 — 두 소리가 겹치지 않게)
     await page.getByRole('dialog').getByRole('button', { name: '1분 단축' }).click();
-    await until(async () => (await page.evaluate(() => window.__osc)) >= 5, 40);
-    const afterTimeUp = await page.evaluate(() => window.__osc);
-    assert(afterTimeUp === 5, `시간 종료 3음: ${afterTimeUp}`);
-    await page.getByRole('dialog').getByRole('button', { name: '다음 레벨로 이동' }).click();
-    await until(async () => (await page.evaluate(() => window.__osc)) >= 7, 40);
+    await until(async () => (await page.evaluate(() => window.__osc)) >= 4, 60);
+    await page.waitForTimeout(600);
     const afterLevel = await page.evaluate(() => window.__osc);
-    assert(afterLevel === 7, `레벨 전환 2음: ${afterLevel}`);
+    assert(afterLevel === 4, `자동 전환 2음(시간 종료음 없음): ${afterLevel}`);
+    assert(
+      one(`select current_level_sort from ops_clock where tournament_id='${tid}'`) === '2',
+      '00:00 뒤 레벨 2 로 자동 전환되지 않았다'
+    );
     // 남은 시간 직접 맞추기 — 기존 보정 RPC 로 차이만큼 증감(새 RPC 없음)
     const seek = page.getByRole('dialog').getByLabel('남은 시간 맞추기');
     await seek.fill('5:00');

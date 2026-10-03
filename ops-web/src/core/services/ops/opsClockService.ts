@@ -1,7 +1,7 @@
 // ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/services/ops/opsClockService.ts
 // 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
 /**
- * ops 클럭 서비스 — 시작/일시정지/레벨이동/보정 위임 (1c).
+ * ops 클럭 서비스 — 시작/일시정지/레벨이동/보정/동기화(자동 전환) 위임 (1c).
  * 검증할 텍스트 입력 없음(숫자/식별자만) → Zod 없이 Repository(SECDEF RPC) 위임.
  */
 import { handleServiceError } from '@/core/errors/serviceErrorHandler';
@@ -47,5 +47,15 @@ export async function adjust(
   } catch (error) {
     if (isAppError(error)) throw error;
     throw handleServiceError(error, { operation: '클럭 보정', component: COMPONENT });
+  }
+}
+
+/** 끝난 레벨 따라잡기(자동 전환). 반환 = 넘어간 레벨 수. */
+export async function sync(tournamentId: string, actorId: string): Promise<number> {
+  try {
+    return await opsClockRepository.sync(tournamentId, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, { operation: '클럭 동기화', component: COMPONENT });
   }
 }

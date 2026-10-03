@@ -15,4 +15,9 @@ export interface IOpsClockRepository {
   setLevel(tournamentId: string, actorId: string, sort: number): Promise<void>;
   /** ±N초 보정 — deltaSec>0 = 잔여시간 증가 (ops_clock_adjust). */
   adjust(tournamentId: string, actorId: string, deltaSec: number): Promise<void>;
+  /**
+   * 끝난 레벨 따라잡기 (ops_clock_sync) — 시간이 0 이 된 레벨을 서버가 다음 레벨로 넘긴다.
+   * 반환 = 넘어간 레벨 수(0 이면 넘어갈 것이 없었다: 아직 시간이 남았거나, 일시정지거나, 마지막 레벨).
+   */
+  sync(tournamentId: string, actorId: string): Promise<number>;
 }

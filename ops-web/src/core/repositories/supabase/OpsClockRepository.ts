@@ -82,4 +82,19 @@ export class SupabaseOpsClockRepository implements IOpsClockRepository {
       mapOpsRpcError(error, { operation: 'ops 클럭 보정' });
     }
   }
+
+  async sync(tournamentId: string, actorId: string): Promise<number> {
+    try {
+      const { data, error } = await supabase.rpc('ops_clock_sync', {
+        p_tournament_id: tournamentId,
+        p_actor_id: actorId,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 클럭 동기화' });
+      const advanced = (data as { advanced?: unknown } | null)?.advanced;
+      return typeof advanced === 'number' ? advanced : 0;
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 클럭 동기화' });
+    }
+  }
 }

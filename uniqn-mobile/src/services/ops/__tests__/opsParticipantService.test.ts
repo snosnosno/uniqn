@@ -2,6 +2,7 @@ import * as svc from '../opsParticipantService';
 
 // babel-jest-hoist 규칙: jest.mock 팩토리가 참조하는 외부변수는 `mock` 접두사 필수.
 const mockRegisterWithEvent = jest.fn();
+const mockRegisterBulk = jest.fn();
 const mockAddRebuy = jest.fn();
 const mockAddAddon = jest.fn();
 const mockBustParticipant = jest.fn();
@@ -14,6 +15,7 @@ const mockUnclaim = jest.fn();
 jest.mock('@/repositories/ops', () => ({
   opsParticipantRepository: {
     registerWithEvent: (...args: unknown[]) => mockRegisterWithEvent(...args),
+    registerBulk: (...args: unknown[]) => mockRegisterBulk(...args),
     addRebuy: (...args: unknown[]) => mockAddRebuy(...args),
     addAddon: (...args: unknown[]) => mockAddAddon(...args),
     bustParticipant: (...args: unknown[]) => mockBustParticipant(...args),
@@ -51,6 +53,74 @@ describe('opsParticipantService.registerParticipant', () => {
       expect((e as { code: string }).code).toBe('E3005');
     }
     expect(mockRegisterWithEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('opsParticipantService.registerParticipantsBulk (일괄 등록)', () => {
+  beforeEach(() => {
+    mockRegisterBulk.mockReset();
+    mockRegisterBulk.mockResolvedValue([{ participantId: 'p1', entryNumber: 2 }]);
+  });
+
+  it('유효 명단 → 앞뒤 공백을 다듬어 Repository 에 한 번만 위임', async () => {
+    const r = await svc.registerParticipantsBulk(
+      {
+        tournamentId: TID,
+        rows: [{ name: '  가선수 ', phone: '01011112222' }, { name: '나선수' }],
+      },
+      'actor-1'
+    );
+    expect(r).toEqual([{ participantId: 'p1', entryNumber: 2 }]);
+    expect(mockRegisterBulk).toHaveBeenCalledTimes(1);
+    expect(mockRegisterBulk).toHaveBeenCalledWith(
+      { tournamentId: TID, rows: [{ name: '가선수', phone: '01011112222' }, { name: '나선수' }] },
+      'actor-1'
+    );
+  });
+
+  it('빈 이름이 섞이면 몇 번째 사람인지 알려 주고 Repository 를 부르지 않는다', async () => {
+    expect.assertions(3);
+    try {
+      await svc.registerParticipantsBulk(
+        { tournamentId: TID, rows: [{ name: '가선수' }, { name: '   ' }] },
+        'actor-1'
+      );
+    } catch (e) {
+      expect((e as { code: string }).code).toBe('E3005');
+      expect((e as { userMessage: string }).userMessage).toMatch(/^2번째 사람: /);
+    }
+    expect(mockRegisterBulk).not.toHaveBeenCalled();
+  });
+
+  it('빈 명단 → ValidationError, Repository 미호출', async () => {
+    await expect(
+      svc.registerParticipantsBulk({ tournamentId: TID, rows: [] }, 'actor-1')
+    ).rejects.toMatchObject({ code: 'E3005', userMessage: '등록할 명단을 입력해주세요' });
+    expect(mockRegisterBulk).not.toHaveBeenCalled();
+  });
+
+  it('201명 → 서버 한도(200)와 같은 경계로 거부', async () => {
+    const rows = Array.from({ length: 201 }, (_, i) => ({ name: `P${i}` }));
+    await expect(
+      svc.registerParticipantsBulk({ tournamentId: TID, rows }, 'actor-1')
+    ).rejects.toMatchObject({ code: 'E3005' });
+    expect(mockRegisterBulk).not.toHaveBeenCalled();
+  });
+
+  it('200명은 통과한다(경계)', async () => {
+    const rows = Array.from({ length: 200 }, (_, i) => ({ name: `P${i}` }));
+    await svc.registerParticipantsBulk({ tournamentId: TID, rows }, 'actor-1');
+    expect(mockRegisterBulk).toHaveBeenCalledTimes(1);
+  });
+
+  it('스크립트가 든 이름은 거부(xss 검증은 단건 등록과 같은 규칙)', async () => {
+    await expect(
+      svc.registerParticipantsBulk(
+        { tournamentId: TID, rows: [{ name: '<script>alert(1)</script>' }] },
+        'actor-1'
+      )
+    ).rejects.toMatchObject({ code: 'E3005' });
+    expect(mockRegisterBulk).not.toHaveBeenCalled();
   });
 });
 

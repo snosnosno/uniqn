@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { Download } from 'lucide-react';
+import { Download, MonitorSmartphone } from 'lucide-react';
 import { cn } from 'cn';
 import { LoadError } from '@/components/ops/LoadState';
 import { Button } from '@/components/ui/button';
 import { EVENT_LABEL, summarizePayload } from '@/core/historyLabels';
 import { useOpsEvents } from '@/hooks/ops/useStaffPrizeHistory';
+import { useDeviceName } from '@/lib/deviceName';
 import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
+import { DeviceNameDialog } from './DeviceNameDialog';
 import { buildHistoryCsv, csvFileName, downloadCsv } from './exportCsv';
 import {
   HISTORY_CATEGORIES,
@@ -22,7 +24,7 @@ const CATEGORY_VALUES = HISTORY_CATEGORIES.map((c) => c.value);
 /**
  * 이력 — 모바일 HistoryTab: 이벤트 한글 라벨(사본)·상대 시각·payload 요약. 최신순.
  * 웹 추가: 분류 필터(참가자·좌석·클럭·상금·설정) + "더 보기"(100건씩, 최대 1,000건)
- * + CSV(지금 화면에 보이는 분류·건수 그대로).
+ * + CSV(지금 화면에 보이는 분류·건수 그대로) + 조작한 기기 이름 표시·이 기기 이름 정하기.
  */
 export function HistoryTab({
   tournamentId,
@@ -33,6 +35,8 @@ export function HistoryTab({
 }) {
   const [limit, setLimit] = useState(HISTORY_PAGE);
   const [category, setCategory] = useState<HistoryCategory>('all');
+  const [deviceOpen, setDeviceOpen] = useState(false);
+  const deviceName = useDeviceName();
   const events = useOpsEvents(tournamentId, limit);
   const all = events.data ?? [];
   const list = filterEvents(all, category);
@@ -89,6 +93,16 @@ export function HistoryTab({
           ))}
         </div>
         <Button
+          variant="ghost"
+          className="hidden h-11 max-w-56 shrink-0 sm:inline-flex"
+          aria-label={`이 기기 이름: ${deviceName} — 바꾸기`}
+          title="이력에 남는 이 기기의 이름"
+          onClick={() => setDeviceOpen(true)}
+        >
+          <MonitorSmartphone />
+          <span className="truncate">{deviceName}</span>
+        </Button>
+        <Button
           variant="outline"
           className="h-11 shrink-0"
           aria-label="이력 CSV 내려받기"
@@ -112,6 +126,9 @@ export function HistoryTab({
               <li key={e.id} className="flex flex-col gap-0.5 border-b px-4 py-2.5">
                 <div className="flex items-baseline gap-2">
                   <span className="font-semibold">{EVENT_LABEL[e.type] ?? e.type}</span>
+                  {e.actorDevice ? (
+                    <span className="truncate text-xs text-muted-foreground">{e.actorDevice}</span>
+                  ) : null}
                   <time
                     dateTime={e.createdAt}
                     title={new Date(e.createdAt).toLocaleString('ko-KR')}
@@ -145,6 +162,7 @@ export function HistoryTab({
           최근 {HISTORY_MAX.toLocaleString('ko-KR')}건까지 보여요.
         </p>
       ) : null}
+      <DeviceNameDialog open={deviceOpen} onOpenChange={setDeviceOpen} />
     </div>
   );
 }

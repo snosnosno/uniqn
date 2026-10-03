@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { withDeviceInfo } from './deviceName';
 import { parseEnv } from './env';
 import { createTimedFetch } from './serverClock';
 
@@ -9,6 +10,7 @@ const env = parseEnv(import.meta.env);
  * 쓰기는 반드시 기존 `ops_*` SECDEF RPC 경유(설계 §5). 테이블 직접 DML 금지.
  *
  * fetch 는 응답 Date 헤더로 서버시각 오프셋을 추정하는 래퍼를 쓴다(운영자 클럭 보정, lib/serverClock.ts).
+ * 요청마다 이 기기의 이름을 `x-client-info` 에 붙여 보낸다 — 이력에 어느 기기의 조작인지 남기는 참고 정보(lib/deviceName.ts).
  */
 export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
   auth: {
@@ -17,6 +19,6 @@ export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_AN
     detectSessionInUrl: true,
   },
   global: {
-    fetch: createTimedFetch((...args) => fetch(...args)),
+    fetch: createTimedFetch(withDeviceInfo((...args) => fetch(...args))),
   },
 });

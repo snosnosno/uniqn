@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell, BellOff } from 'lucide-react';
 import { ClockStrip } from '@/components/ops/ClockStrip';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import * as opsClockService from '@/core/services/ops/opsClockService';
 import type { OpsLiveStats } from '@/core/types/ops';
+import { opsKeys } from '@/hooks/ops/keys';
 import { useOpsClock } from '@/hooks/ops/useConsoleQueries';
+import { useActorId } from '@/hooks/useActorId';
 import { playChime, setChimeEnabled, useChimeEnabled } from '@/lib/chime';
+import { logger } from '@/lib/logger';
 import { isRealtimeConnected, subscribeRealtimeStatus } from '@/lib/realtime';
 import { ClockControlPanel } from './ClockControlPanel';
-import { levelAlert, WARN_AT_SEC, type ClockSample } from './clock';
+import { levelAlert, shouldSyncClock, WARN_AT_SEC, type ClockSample } from './clock';
 import { formatMmSs } from './format';
 
 /**
@@ -37,6 +42,8 @@ export function ConsoleClock({
   const isRunning = clock.clock?.isRunning ?? false;
   const sort = clock.clock?.currentLevelSort ?? 0;
 
+  const hasNext = clock.blindLevels.some((l) => l.sort === sort + 1);
+
   // 레벨 알림 — 틱마다 직전 표본과 비교해 1분 전·레벨 전환을 한 번씩 울린다(판정은 순수 함수 levelAlert).
   const prevSample = useRef<ClockSample | null>(null);
   // 다른 대회로 옮기면 직전 표본을 버린다 — 이전 대회의 레벨 번호와 비교해 "전환"으로 울리지 않게.
@@ -45,10 +52,57 @@ export function ConsoleClock({
   }, [tournamentId]);
   useEffect(() => {
     const next: ClockSample = { sort, remainingSec: clock.remainingSec, isRunning };
-    const alert = clock.blindLevels.length > 0 ? levelAlert(prevSample.current, next) : null;
+    const alert =
+      clock.blindLevels.length > 0 ? levelAlert(prevSample.current, next, hasNext) : null;
     prevSample.current = next;
     if (alert) playChime(alert);
-  }, [sort, clock.remainingSec, isRunning, clock.blindLevels.length]);
+  }, [sort, clock.remainingSec, isRunning, clock.blindLevels.length, hasNext]);
+
+  // 자동 전환 — 레벨 시간이 0 이 되면 서버에 "끝난 레벨을 따라잡아 달라"고 요청한다(다음 레벨로 넘어간다).
+  // 이 콘솔이 꺼져 있어도 전광판 폴링·매분 크론이 넘기지만, 콘솔이 켜져 있으면 00:00 즉시 넘어간다.
+  const actorId = useActorId();
+  const qc = useQueryClient();
+  const syncState = useRef({ lastAt: null as number | null, attempts: 0, inFlight: false });
+  // 레벨이 바뀌면 재시도 기록을 푼다(새 레벨이 곧바로 끝난 상태일 수 있다 — 오래 꺼 뒀다 켠 경우).
+  useEffect(() => {
+    syncState.current = { lastAt: null, attempts: 0, inFlight: syncState.current.inFlight };
+  }, [tournamentId, sort]);
+  useEffect(() => {
+    const state = syncState.current;
+    const due = shouldSyncClock({
+      isRunning,
+      isExpired: clock.isExpired,
+      hasNext,
+      online: typeof navigator === 'undefined' || navigator.onLine !== false,
+      nowMs: clock.nowMs,
+      lastAttemptMs: state.lastAt,
+      attempts: state.attempts,
+      inFlight: state.inFlight,
+    });
+    if (!due) return;
+    state.lastAt = clock.nowMs;
+    state.attempts += 1;
+    state.inFlight = true;
+    void opsClockService
+      .sync(tournamentId, actorId)
+      .then((advanced) => {
+        // 시계는 항상 다시 읽는다 — 이 요청이 0 이어도 다른 화면·전광판이 먼저 넘겼을 수 있다.
+        void qc.invalidateQueries({ queryKey: opsKeys.clock(tournamentId) });
+        if (advanced > 0) {
+          // 넘어갔을 때만 딸린 값(등록 자동 마감·평균 BB·이력)을 다시 받는다 — 재시도마다 이력을 다시 받지 않게.
+          void qc.invalidateQueries({ queryKey: opsKeys.tournamentDetail(tournamentId) });
+          void qc.invalidateQueries({ queryKey: opsKeys.liveStats(tournamentId) });
+          void qc.invalidateQueries({ queryKey: opsKeys.events(tournamentId) });
+        }
+      })
+      .catch((error: unknown) => {
+        // 조용히 다시 시도한다 — 매번 토스트를 띄우면 운영 화면을 가린다.
+        logger.warn('레벨 자동 전환 요청 실패', { error: String(error) });
+      })
+      .finally(() => {
+        syncState.current.inFlight = false;
+      });
+  }, [isRunning, clock.isExpired, clock.nowMs, hasNext, tournamentId, actorId, qc]);
 
   return (
     <>
@@ -81,7 +135,7 @@ export function ConsoleClock({
             <span className="text-sm">
               레벨 알림음
               <span className="block text-xs text-muted-foreground">
-                1분 전 1번 · 시간 종료 3번 · 레벨이 바뀔 때 2번 (이 기기에만 저장)
+                1분 전 1번 · 다음 레벨로 넘어갈 때 2번 · 마지막 레벨 종료 3번 (이 기기에만 저장)
               </span>
             </span>
             <Button
