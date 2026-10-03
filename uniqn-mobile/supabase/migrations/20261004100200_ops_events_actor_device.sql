@@ -8,6 +8,8 @@
 --   · HTTP 헤더에는 한글을 그대로 실을 수 없어 base64 로 감싼다.
 -- 이 값은 **클라이언트가 보낸 참고 정보**다 — 위조할 수 있으므로 권한·판정에 쓰지 않는다.
 -- 헤더가 없거나(크론·구 앱·SQL 직접 호출) 해석에 실패하면 NULL 로 두고, 이벤트 기록 자체는 절대 막지 않는다.
+-- **actor 가 없는 이벤트(자동 전환·자동 마감)에는 붙이지 않는다** — 그 이벤트는 공개 전광판·플레이어뷰 폴링이
+--   일으킬 수 있어, 붙이면 공개 링크만 아는 익명 방문자가 헤더로 임의의 글자를 운영 이력에 남길 수 있다.
 -- 같은 테이블의 기존 트리거는 trg_ops_events_append_only(BEFORE DELETE OR UPDATE) 하나라 이벤트가 겹치지 않는다.
 
 CREATE OR REPLACE FUNCTION public.fn_ops_events_stamp_device() RETURNS trigger
@@ -19,7 +21,7 @@ DECLARE
   v_b64 text;
   v_name text;
 BEGIN
-  IF NEW.actor_device IS NOT NULL THEN
+  IF NEW.actor_device IS NOT NULL OR NEW.actor_id IS NULL THEN
     RETURN NEW;
   END IF;
   BEGIN

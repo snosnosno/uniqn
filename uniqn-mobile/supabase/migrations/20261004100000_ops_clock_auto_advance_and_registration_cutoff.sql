@@ -12,7 +12,16 @@
 --     b. 전광판·플레이어뷰 폴링(ops_get_monitor_snapshot / ops_get_player_view, 4초 간격)
 --     c. 참가 등록(ops_register_participant) — 아무도 화면을 안 보고 있어도 마감 판정이 정확하도록
 --     d. pg_cron 매분 — 위 셋이 모두 없을 때(구 앱만 켜 둔 경우)의 안전망
+--     e. 일시정지·시간 보정(ops_clock_pause / ops_clock_adjust) — 끝난 레벨 위에서 조작하지 않게 먼저 따라잡는다
 --   앵커는 `level_started_at += 끝난 레벨 길이` 로 옮긴다 — 늦게 따라잡아도 시계가 밀리지 않는다.
+--
+-- 락: 넘어갈 것이 없으면(시간이 남음·일시정지·마지막 레벨·종료된 대회) **락을 잡지 않고** 돌아온다.
+--   폴링(b)·크론(d)은 대회 행이 잠겨 있으면 기다리지 않고 건너뛴다(SKIP LOCKED) — 다음 폴링이 따라잡는다.
+--   공개 폴링이 운영자 쓰기 RPC 뒤에 줄 서서 anon statement_timeout 에 걸리는 일을 막는다.
+--
+-- prod 적용 순간: 종전에는 "가동 중 + 00:00" 이 사실상 정지였다. 그대로 두면 적용 직후 그동안 흐른 시간을
+--   소급해 여러 레벨을 한꺼번에 뛴다 → 적용 시점에 이미 끝나 있는 가동 중 시계는 **일시정지(잔여 0)** 로 바꿔 둔다.
+--   운영자가 재개하면 그때 다음 레벨로 넘어간다.
 --
 -- 계약: anon-executable ops SECDEF = 2 유지. 새 함수는 전부 PUBLIC/anon REVOKE, fn_* 는 authenticated 도 REVOKE.
 --       ops_get_* 는 CREATE OR REPLACE 라 기존 ACL(anon GRANT)이 보존된다.
@@ -67,7 +76,11 @@ GRANT EXECUTE ON FUNCTION public.fn_ops_apply_registration_cutoff(uuid, integer,
 -- ── ③ 자동 전환(내부) ────────────────────────────────────────────────────────
 -- 반환 = 넘어간 레벨 수(0 이면 아무 일도 없음). 락 순서는 다른 클럭 RPC 와 같다(대회 행 → 클럭 행).
 -- 폴링이 4초마다 부르므로, 락을 잡기 전에 "넘어갈 게 있는지"를 락 없이 먼저 본다.
-CREATE OR REPLACE FUNCTION public.fn_ops_clock_roll_forward(p_tournament_id uuid) RETURNS integer
+-- p_wait=false(폴링·크론): 대회 행이 잠겨 있으면 기다리지 않고 0 을 돌려준다 — 다음 호출이 따라잡는다.
+DROP FUNCTION IF EXISTS public.fn_ops_clock_roll_forward(uuid);
+CREATE OR REPLACE FUNCTION public.fn_ops_clock_roll_forward(
+  p_tournament_id uuid, p_wait boolean DEFAULT true
+) RETURNS integer
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public', 'extensions', 'pg_temp'
     AS $$
@@ -79,20 +92,30 @@ DECLARE
   v_started timestamptz;
   v_advanced int := 0;
 BEGIN
-  -- 락 없는 선검사 — 대부분의 호출은 여기서 끝난다.
-  SELECT c.current_level_sort, c.level_started_at, c.is_running, bl.duration_sec
+  -- 락 없는 선검사 — 대부분의 호출은 여기서 끝난다. 넘어갈 곳이 없는 경우(마지막 레벨·종료된 대회)도
+  -- 여기서 걸러야 한다: 종료된 대회의 시계는 가동 중인 채 00:00 에 남아 있어, 안 거르면 폴링마다 락을 잡는다.
+  SELECT c.current_level_sort, c.level_started_at, c.is_running, bl.duration_sec, t.status
     INTO v_clock
     FROM public.ops_clock c
+    JOIN public.ops_tournaments t ON t.id = c.tournament_id
     LEFT JOIN public.ops_blind_levels bl
       ON bl.tournament_id = c.tournament_id AND bl.sort = c.current_level_sort
    WHERE c.tournament_id = p_tournament_id;
   IF NOT FOUND OR NOT v_clock.is_running OR v_clock.level_started_at IS NULL
+     OR v_clock.status = 'completed'
      OR v_clock.duration_sec IS NULL
-     OR now() < v_clock.level_started_at + make_interval(secs => v_clock.duration_sec) THEN
+     OR now() < v_clock.level_started_at + make_interval(secs => v_clock.duration_sec)
+     OR NOT EXISTS (SELECT 1 FROM public.ops_blind_levels n
+                     WHERE n.tournament_id = p_tournament_id
+                       AND n.sort = v_clock.current_level_sort + 1) THEN
     RETURN 0;
   END IF;
 
-  PERFORM 1 FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  IF p_wait THEN
+    PERFORM 1 FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  ELSE
+    PERFORM 1 FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE SKIP LOCKED;
+  END IF;
   IF NOT FOUND THEN
     RETURN 0;
   END IF;
@@ -140,9 +163,9 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION public.fn_ops_clock_roll_forward(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.fn_ops_clock_roll_forward(uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.fn_ops_clock_roll_forward(uuid) TO service_role;
+ALTER FUNCTION public.fn_ops_clock_roll_forward(uuid, boolean) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_ops_clock_roll_forward(uuid, boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_ops_clock_roll_forward(uuid, boolean) TO service_role;
 
 -- ── ④ 콘솔용 동기화 RPC ──────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.ops_clock_sync(p_tournament_id uuid, p_actor_id uuid) RETURNS jsonb
@@ -205,6 +228,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM public.ops_blind_levels
                     WHERE tournament_id = p_tournament_id AND sort = p_after_sort) THEN
       RAISE EXCEPTION 'OPS_INVALID_LEVEL: 존재하지 않는 레벨 (sort=%)', p_after_sort USING ERRCODE = 'P0001';
+    END IF;
+    -- 마지막 순번은 끝나도 넘어갈 레벨이 없어 영영 발동하지 않는다.
+    IF NOT EXISTS (SELECT 1 FROM public.ops_blind_levels
+                    WHERE tournament_id = p_tournament_id AND sort = p_after_sort + 1) THEN
+      RAISE EXCEPTION 'OPS_INVALID_LEVEL: 마지막 레벨은 마감 기준이 될 수 없습니다 (sort=%)', p_after_sort
+        USING ERRCODE = 'P0001';
     END IF;
     SELECT current_level_sort INTO v_cur_sort FROM public.ops_clock WHERE tournament_id = p_tournament_id;
     IF v_cur_sort IS NOT NULL AND v_cur_sort > p_after_sort THEN
@@ -278,14 +307,16 @@ CREATE OR REPLACE FUNCTION public.ops_toggle_registration(p_tournament_id uuid, 
 DECLARE
   v_id uuid;
   v_cutoff int;
+  v_was_open boolean;
+  v_clear boolean;
 BEGIN
   IF auth.uid() IS NULL
      OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
     RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
   END IF;
 
-  SELECT id, registration_close_after_sort INTO v_id, v_cutoff FROM public.ops_tournaments
-    WHERE id = p_tournament_id FOR UPDATE;
+  SELECT id, registration_close_after_sort, registration_open INTO v_id, v_cutoff, v_was_open
+    FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 대회를 찾을 수 없습니다 (%)', p_tournament_id
       USING ERRCODE = 'P0001';
@@ -295,15 +326,17 @@ BEGIN
     RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 수동으로 여는 것은 "자동 마감을 따르지 않겠다"는 뜻 — 설정을 지운다(안 지우면 다음 레벨 전환에 다시 닫힌다).
+  -- 닫힌 등록을 수동으로 여는 것은 "자동 마감을 따르지 않겠다"는 뜻 — 설정을 지운다(안 지우면 다음 레벨 전환에
+  -- 다시 닫힌다). 이미 열려 있는데 또 "열기"가 온 것(연타·다른 기기의 중복 요청)은 설정을 건드리지 않는다.
+  v_clear := p_open AND NOT v_was_open AND v_cutoff IS NOT NULL;
   UPDATE public.ops_tournaments SET
     registration_open = p_open,
-    registration_close_after_sort = CASE WHEN p_open THEN NULL ELSE registration_close_after_sort END
+    registration_close_after_sort = CASE WHEN v_clear THEN NULL ELSE registration_close_after_sort END
   WHERE id = p_tournament_id;
 
   INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
   VALUES (p_tournament_id, 'registration_toggled', p_actor_id,
-          CASE WHEN p_open AND v_cutoff IS NOT NULL
+          CASE WHEN v_clear
                THEN jsonb_build_object('open', p_open, 'cutoff_cleared', true)
                ELSE jsonb_build_object('open', p_open) END);
 
@@ -455,9 +488,10 @@ BEGIN
     END IF;
   END IF;
 
-  -- 자동 마감 기준이 가리키던 순번이 구조에서 사라졌으면 설정을 지운다(영영 발동하지 않는 설정이 남지 않게).
+  -- 자동 마감 기준이 가리키던 순번이 구조에서 사라졌거나 마지막 순번이 됐으면 설정을 지운다
+  -- (마지막 레벨은 넘어갈 곳이 없어 영영 발동하지 않는다).
   UPDATE public.ops_tournaments SET registration_close_after_sort = NULL
-   WHERE id = p_tournament_id AND registration_close_after_sort > v_count;
+   WHERE id = p_tournament_id AND registration_close_after_sort >= v_count;
 
   INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
   VALUES (p_tournament_id, 'level_set', p_actor_id,
@@ -486,8 +520,8 @@ BEGIN
     RAISE EXCEPTION 'OPS_MONITOR_TOKEN_INVALID: 유효하지 않은 모니터 토큰' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 끝난 레벨을 따라잡는다(자동 전환). 넘어갈 게 없으면 락 없이 바로 돌아온다.
-  PERFORM public.fn_ops_clock_roll_forward(v_t.id);
+  -- 끝난 레벨을 따라잡는다(자동 전환). 넘어갈 게 없으면 락 없이, 대회 행이 잠겨 있으면 기다리지 않고 돌아온다.
+  PERFORM public.fn_ops_clock_roll_forward(v_t.id, false);
 
   SELECT id, name, venue, event_date, game_type, status, color, registration_open, monitor_config
     INTO v_t FROM public.ops_tournaments WHERE monitor_token = p_monitor_token;
@@ -580,8 +614,8 @@ BEGIN
     RAISE EXCEPTION 'OPS_VIEW_TOKEN_INVALID: 유효하지 않은 플레이어 토큰' USING ERRCODE = 'P0001';
   END IF;
 
-  -- 끝난 레벨을 따라잡는다(자동 전환). 넘어갈 게 없으면 락 없이 바로 돌아온다.
-  PERFORM public.fn_ops_clock_roll_forward(v_p.tournament_id);
+  -- 끝난 레벨을 따라잡는다(자동 전환). 넘어갈 게 없으면 락 없이, 대회 행이 잠겨 있으면 기다리지 않고 돌아온다.
+  PERFORM public.fn_ops_clock_roll_forward(v_p.tournament_id, false);
 
   SELECT t.table_no, s.seat_no
     INTO v_seat
@@ -651,7 +685,129 @@ BEGIN
 END;
 $$;
 
--- ── ⑫ 안전망 크론 — 매분. 화면이 하나도 열려 있지 않거나 구 앱만 켜 둔 대회용 ───
+-- ── ⑪-2 일시정지 — 본문은 baseline 과 같고 "시계 따라잡기" 1줄 추가 ────────────
+--    끝난 레벨 위에서 멈추면 잔여 0 으로 굳고, 재개할 때 초과분만큼 일정이 밀린다.
+CREATE OR REPLACE FUNCTION public.ops_clock_pause(p_tournament_id uuid, p_actor_id uuid) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions', 'pg_temp'
+    AS $$
+DECLARE
+  v_clock record;
+  v_duration int;
+  v_remaining int;
+BEGIN
+  IF auth.uid() IS NULL OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+  PERFORM 1 FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 대회를 찾을 수 없습니다 (%)', p_tournament_id USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT (public.is_ops_member(p_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 끝난 레벨이 있으면 먼저 넘긴 뒤, 지금 레벨의 잔여로 멈춘다.
+  PERFORM public.fn_ops_clock_roll_forward(p_tournament_id);
+
+  SELECT * INTO v_clock FROM public.ops_clock WHERE tournament_id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 클럭 행 없음 (%)', p_tournament_id USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT v_clock.is_running THEN
+    RETURN jsonb_build_object('tournament_id', p_tournament_id, 'is_running', false, 'noop', true);
+  END IF;
+
+  SELECT duration_sec INTO v_duration FROM public.ops_blind_levels
+    WHERE tournament_id = p_tournament_id AND sort = v_clock.current_level_sort;
+
+  v_remaining := GREATEST(0,
+    COALESCE(v_duration, 0)
+    - COALESCE(FLOOR(EXTRACT(EPOCH FROM (now() - v_clock.level_started_at)))::int, 0));
+
+  UPDATE public.ops_clock SET
+    is_running           = false,
+    paused_remaining_sec = v_remaining
+  WHERE tournament_id = p_tournament_id;
+
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (p_tournament_id, 'level_pause', p_actor_id,
+          jsonb_build_object('remaining_sec', v_remaining));
+
+  RETURN jsonb_build_object('tournament_id', p_tournament_id, 'is_running', false,
+                            'paused_remaining_sec', v_remaining);
+END;
+$$;
+
+-- ── ⑪-3 시간 보정 — baseline 본문 + "시계 따라잡기" + 보정을 현재 레벨 안으로 묶기 ──
+--    자동 전환이 생긴 뒤로는 음수 보정이 레벨 길이를 넘으면 그 초과분이 다음 레벨로 흘러 들어가
+--    (한 번의 큰 음수로 마지막 레벨까지 뛸 수 있다) 등록 자동 마감까지 일으킨다.
+--    → 가동 중 보정은 잔여 0 까지만 줄인다. 그러면 다음 레벨은 처음부터 시작한다.
+CREATE OR REPLACE FUNCTION public.ops_clock_adjust(p_tournament_id uuid, p_actor_id uuid, p_delta_sec integer) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions', 'pg_temp'
+    AS $$
+DECLARE
+  v_clock record;
+  v_duration int;
+BEGIN
+  IF auth.uid() IS NULL OR (auth.uid() IS DISTINCT FROM p_actor_id AND NOT public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 호출자 인증 불일치' USING ERRCODE = 'P0001';
+  END IF;
+  PERFORM 1 FROM public.ops_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 대회를 찾을 수 없습니다 (%)', p_tournament_id USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT (public.is_ops_member(p_tournament_id, p_actor_id) OR public.is_admin()) THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED: 대회 관리 권한 없음' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- 끝난 레벨이 있으면 먼저 넘긴다 — 보정이 "화면에 보이는 지금 레벨"에 적용되게.
+  PERFORM public.fn_ops_clock_roll_forward(p_tournament_id);
+
+  SELECT * INTO v_clock FROM public.ops_clock WHERE tournament_id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'TOURNAMENT_NOT_FOUND: 클럭 행 없음 (%)', p_tournament_id USING ERRCODE = 'P0001';
+  END IF;
+
+  IF v_clock.is_running THEN
+    SELECT duration_sec INTO v_duration FROM public.ops_blind_levels
+      WHERE tournament_id = p_tournament_id AND sort = v_clock.current_level_sort;
+    UPDATE public.ops_clock SET
+      level_started_at = CASE
+        WHEN v_duration IS NULL THEN level_started_at + make_interval(secs => p_delta_sec)
+        -- 앵커를 "레벨 길이만큼 전" 보다 과거로 보내지 않는다 = 잔여가 0 아래로 내려가지 않는다.
+        ELSE GREATEST(level_started_at + make_interval(secs => p_delta_sec),
+                      now() - make_interval(secs => v_duration))
+      END
+    WHERE tournament_id = p_tournament_id;
+  ELSE
+    UPDATE public.ops_clock SET
+      paused_remaining_sec = GREATEST(COALESCE(paused_remaining_sec, 0) + p_delta_sec, 0)
+    WHERE tournament_id = p_tournament_id;
+  END IF;
+
+  INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+  VALUES (p_tournament_id, 'level_set', p_actor_id,
+          jsonb_build_object('action', 'adjust', 'adjust_sec', p_delta_sec));
+
+  RETURN jsonb_build_object('tournament_id', p_tournament_id, 'adjust_sec', p_delta_sec);
+END;
+$$;
+
+-- ── ⑫ 적용 시점 정규화 + 안전망 크론 ────────────────────────────────────────
+-- 종전에는 "가동 중 + 00:00" 이 사실상 정지였다. 이미 끝나 있는 가동 중 시계를 그대로 두면 적용 직후
+-- 그동안 흐른 시간을 소급해 여러 레벨을 뛴다 → 일시정지(잔여 0)로 바꿔 둔다. 운영자가 재개하면 그때 넘어간다.
+-- (종료된 대회의 시계도 여기서 멈춘다. 이 UPDATE 는 재실행해도 같은 결과다.)
+UPDATE public.ops_clock c
+   SET is_running = false, paused_remaining_sec = 0
+  FROM public.ops_blind_levels bl
+ WHERE bl.tournament_id = c.tournament_id AND bl.sort = c.current_level_sort
+   AND c.is_running AND c.level_started_at IS NOT NULL
+   AND now() >= c.level_started_at + make_interval(secs => bl.duration_sec);
+
+-- 안전망 크론 — 매분. 화면이 하나도 열려 있지 않거나 구 앱만 켜 둔 대회용.
+-- 종료된 대회는 대상에서 빼고, 잠긴 대회는 기다리지 않는다(한 대회의 락 대기가 그 분의 전 대회를 붙잡지 않게).
 DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'ops-clock-roll-forward') THEN
@@ -661,8 +817,10 @@ BEGIN
   PERFORM cron.schedule(
     'ops-clock-roll-forward',
     '* * * * *',
-    $cron$ SELECT public.fn_ops_clock_roll_forward(c.tournament_id)
-             FROM public.ops_clock c WHERE c.is_running; $cron$
+    $cron$ SELECT public.fn_ops_clock_roll_forward(c.tournament_id, false)
+             FROM public.ops_clock c
+             JOIN public.ops_tournaments t ON t.id = c.tournament_id
+            WHERE c.is_running AND t.status <> 'completed' AND t.archived_at IS NULL; $cron$
   );
 EXCEPTION
   -- 로컬 Docker 에 pg_cron 이 없을 때 db:reset 이 통째로 실패하지 않게(20260813110000 선례)

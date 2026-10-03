@@ -1,7 +1,7 @@
 -- ops 이력 기기 이름(마이그 20261004100200): 헤더의 device=base64 → actor_device · 헤더 없음/깨짐은 NULL(기록은 막지 않음) ·
 --   40자 절단 · 제어문자 제거 · 내부 함수 직접 실행 불가.
 BEGIN;
-SELECT plan(9);
+SELECT plan(11);
 
 DO $$
 DECLARE s RECORD;
@@ -49,8 +49,12 @@ SELECT pg_temp.set_client_info('supabase-js-web/2.117.2; device=' || pg_temp.b64
 SELECT is(pg_temp.device_after_toggle(), '등록데스크 1', 'base64 로 실린 한글 기기 이름이 그대로 기록된다');
 
 -- ─── (5) 40자 절단 ───
-SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64(repeat('가', 50)));
-SELECT is(char_length(pg_temp.device_after_toggle()), 40, '기기 이름은 40자로 자른다');
+-- ASCII 50자(base64 68자) — 정규식 길이 제한이 아니라 left(…, 40) 이 자르는 경로를 탄다.
+SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64(repeat('a', 50)));
+SELECT is(pg_temp.device_after_toggle(), repeat('a', 40), '기기 이름은 40자로 자른다');
+-- 헤더에 실린 base64 가 서버 한도(160자)를 넘으면 문자 중간이 잘려 해석할 수 없다 → 이름 없이 기록한다.
+SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64('a' || repeat('가', 60)));
+SELECT is(pg_temp.device_after_toggle(), 'NULL', '한도를 넘는 값은 기기 이름만 포기한다(이벤트는 남는다)');
 
 -- ─── (6) 제어문자 제거 ───
 SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64(E'플로어\t태블릿\n'));
@@ -69,6 +73,18 @@ SELECT lives_ok(
 -- ─── (9) 공백뿐인 이름 → NULL ───
 SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64('   '));
 SELECT is(pg_temp.device_after_toggle(), 'NULL', '공백뿐인 이름은 기록하지 않는다');
+
+
+-- ─── actor 가 없는 이벤트(자동 전환·자동 마감)에는 헤더가 있어도 붙이지 않는다 ───
+--     이런 이벤트는 공개 폴링이 일으킬 수 있어, 붙이면 익명 방문자가 운영 이력에 글자를 남길 수 있다.
+SELECT pg_temp.set_client_info('x; device=' || pg_temp.b64('본부 데스크'));
+SELECT set_config('role', 'postgres', true);
+INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
+VALUES (pg_temp.tid(), 'level_set', NULL, '{"action":"auto_advance"}'::jsonb);
+SELECT is(
+  (SELECT COALESCE(actor_device, 'NULL') FROM public.ops_events
+    WHERE tournament_id = pg_temp.tid() ORDER BY seq DESC LIMIT 1),
+  'NULL', 'actor 없는 이벤트에는 기기 이름을 붙이지 않는다');
 
 SELECT * FROM finish();
 ROLLBACK;
