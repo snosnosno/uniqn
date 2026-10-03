@@ -211,7 +211,7 @@ T-HOLDEM/
 | **W5** 콘솔 2 ✅ | 테이블/좌석 — **좌석 행렬표(시안 A, 09-28 승인)**·이동(M·"T5-2")·배정·비우기·빈자리 채우기(W)·전원 재배치, 블라인드/프리셋. ⤷ 검증: `e2e/w5-tables.mjs` 8/8, `e2e/w56-console.mjs` | 좌석 이동 후 모바일 화면 동기화 |
 | **W6** 콘솔 3 ✅ | 상금 구조·지급 장부·보정, 스태프(공고 가져오기·출퇴근 연결), 이력. ⤷ 검증: `e2e/w56-console.mjs`(근태 ok 경로 기록→취소, select 화살표 오조작 회귀 레드-그린) | 동등성 체크리스트 100% |
 | **W7** 공개뷰 ✅ | 전광판(프리셋 3종·슬롯·신고 링크) — **시안 A′(09-28 승인: 양옆 배경 없음·제목 가운데)**, 플레이어뷰(claim → ops 로그인 → 복귀) — **시안 B(클럭 상단 고정 + 표)**, 운영자 전광판 섹션(링크·새 창·재발급·TV 구성). ⤷ 검증: `e2e/w7-public.mjs` 9/9. ⏳ SUIT 서브셋은 미도입(`/oss-vet` 선행 — 지금은 시스템 한글 폰트) | 비로그인 접근, claim 왕복 흐름, 토큰 무효 시 폴링 정지 |
-| **W8** 개통 | noindex 해제, Supabase Redirect URL, uniqn.app `_redirects` 302 추가, `EXPO_PUBLIC_OPS_URL` 설정 + 웹 origin 분기 수정 → OTA·웹 배포 | 옛 URL → 새 URL 302 실측, 새로 발급된 링크가 ops 도메인, 실기기 3종 화면 크기 QA |
+| **W8** 개통 🔶 코드 완료 · 사람 작업 대기 | noindex 해제, Supabase Redirect URL, uniqn.app `_redirects` 302 추가, `EXPO_PUBLIC_OPS_URL` 설정 + 웹 origin 분기 수정 → OTA·웹 배포. ⤷ 구현: 링크 정본을 env 대신 **코드 기본값** `OPS_WEB_ORIGIN`(`src/constants/ops.ts`)으로 — env 를 EAS 빌드·`eas update` 셸·웹 `.env.local` 3곳에 맞춰 넣는 누락 위험 제거(env 는 탈출구로 유지). 웹도 uniqn.app 에서 정본으로 직접 링크(302 우회), 로컬 개발(localhost)만 자기 origin. 검색 노출은 **로그인 입구만** — 공개뷰·콘솔·인증 경로는 `_headers` X-Robots-Tag + `robots.txt`. **배포 가드**: `scripts/check-redirect-targets.js`(uniqn.app 배포 Step 3.6)가 `_redirects` 외부 대상을 실측해 안 열렸으면(DNS 미해석·비2xx·접근 제한으로 다른 호스트) 배포 차단. 사람 작업 순서 = `ops-web/README.md` "개통 런북" | 옛 URL → 새 URL 302 실측, 새로 발급된 링크가 ops 도메인, 실기기 3종 화면 크기 QA |
 | **W9** 안정화 | 302 → 301 승격, 앱 내 `(ops)` 진입점 전환 여부 결정 | — |
 
 ## 10. 후속 과제 (범위 밖, 기록만)
