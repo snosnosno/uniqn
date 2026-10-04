@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/ops/ConfirmDialog';
 import { Button } from '@/components/ui/button';
-import type { OpsLiveStats, OpsTournament } from '@/core/types/ops';
+import type { OpsLiveStats, OpsParticipant, OpsTournament } from '@/core/types/ops';
 import { useSetTournamentStatus, useToggleRegistration } from '@/hooks/ops/useConsoleMutations';
 import type { useOpsClock } from '@/hooks/ops/useConsoleQueries';
+import { computeChipAudit } from './chipAudit';
 import { ClockControlPanel } from './ClockControlPanel';
 import { fmt, formatBb } from './format';
 import { MonitorSection } from './MonitorSection';
@@ -22,10 +23,12 @@ const STATUS_LABEL: Record<OpsTournament['status'], string> = {
 export function StatusTab({
   tournament,
   stats,
+  participants,
   clock,
 }: {
   tournament: OpsTournament;
   stats: OpsLiveStats | null;
+  participants: readonly OpsParticipant[];
   clock: ReturnType<typeof useOpsClock>;
 }) {
   const toggle = useToggleRegistration(tournament.id);
@@ -45,6 +48,7 @@ export function StatusTab({
 
       <div className="flex flex-col gap-4">
         <LiveStatsGrid stats={stats} />
+        <ChipAuditRow tournament={tournament} participants={participants} />
 
         <section aria-label="대회 상태" className="flex flex-col gap-3 border bg-card p-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -103,6 +107,57 @@ export function StatusTab({
         순위는 확정되지 않을 수 있어요.
       </ConfirmDialog>
     </div>
+  );
+}
+
+/**
+ * 칩 검산 — 발행된 칩과 참가자별 기록의 합을 견준다. 칩 카운트를 다시 적기 전에는 차이가 나는 것이
+ * 정상이라 경고창이 아니라 한 줄 값으로 둔다. 기록이 발행보다 많을 때만(입력 실수) 주의색.
+ */
+function ChipAuditRow({
+  tournament,
+  participants,
+}: {
+  tournament: OpsTournament;
+  participants: readonly OpsParticipant[];
+}) {
+  const audit = computeChipAudit(participants, tournament);
+  if (audit.expected === 0) return null;
+  const matched = audit.diff === 0;
+  return (
+    <section aria-label="칩 검산" className="flex flex-col gap-1 border bg-card px-3 py-2.5">
+      <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+        <div className="flex items-baseline gap-2">
+          <dt className="label">발행 칩</dt>
+          <dd className="num font-semibold">{fmt(audit.expected)}</dd>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <dt className="label">기록 칩</dt>
+          <dd className="num font-semibold">{fmt(audit.recorded)}</dd>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <dt className="label">차이</dt>
+          <dd
+            className={
+              matched
+                ? 'num font-semibold text-success'
+                : audit.diff > 0
+                  ? 'num font-semibold text-warning'
+                  : 'num font-semibold'
+            }
+          >
+            {matched ? '맞음' : `${audit.diff > 0 ? '+' : '−'}${fmt(Math.abs(audit.diff))}`}
+          </dd>
+        </div>
+      </dl>
+      {matched ? null : (
+        <p className="text-xs text-muted-foreground">
+          {audit.diff < 0
+            ? '기록된 칩이 모자라요. 탈락자의 칩을 받은 참가자의 칩 카운트를 다시 적으면 맞춰져요.'
+            : '기록된 칩이 발행한 칩보다 많아요. 칩 카운트나 리바이·애드온 입력을 확인해 주세요.'}
+        </p>
+      )}
+    </section>
   );
 }
 

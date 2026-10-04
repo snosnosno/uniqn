@@ -65,18 +65,17 @@ export function TournamentTable({
             <td className="num hidden sm:table-cell">{t.eventDate ?? '—'}</td>
             {showActions ? (
               <td className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                {t.status === 'completed' ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`${t.name} 설정으로 새 대회 복제`}
-                    title="복제"
-                    disabled={busy}
-                    onClick={() => onDuplicate(t)}
-                  >
-                    <Copy />
-                  </Button>
-                ) : null}
+                {/* 예정·진행 대회도 복제한다 — 매주 같은 대회를 미리 여러 개 만들어 두는 운영(서버는 상태를 가리지 않는다) */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`${t.name} 설정으로 새 대회 복제`}
+                  title="복제"
+                  disabled={busy}
+                  onClick={() => onDuplicate(t)}
+                >
+                  <Copy />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

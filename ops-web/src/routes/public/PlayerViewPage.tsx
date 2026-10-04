@@ -1,6 +1,7 @@
 /**
  * 공개 플레이어뷰 — 시안 B(2026-09-28 사용자 승인): 라임 클럭 머리줄 상단 고정 + 내 정보 표.
  * 본인 안전 필드만(타 참가자·연락처·토큰 미노출) · 4초 폴링 · 모바일 live/[view_token].tsx 동등.
+ * 웹 추가: 자리·레벨 변화 배너 + 선택형 알림음·진동(`features/public/usePlayerAlerts`).
  * 테마는 사용자 설정을 따른다(전광판만 다크 고정). 라임 머리줄 글자는 검정(라이트에서도 대비 확보).
  */
 import { useState } from 'react';
@@ -10,6 +11,8 @@ import { formatHms } from '@/core/domains/ops';
 import type { OpsPlayerView } from '@/core/types/ops';
 import { fmt, formatBb, formatMmSs } from '@/features/console/format';
 import { ClaimSection } from '@/features/public/ClaimSection';
+import { PlayerAlertBanners, PlayerAlertToggle } from '@/features/public/PlayerAlertBanners';
+import { usePlayerAlerts } from '@/features/public/usePlayerAlerts';
 import { gateOf } from '@/features/public/publicGate';
 import { GateNotice, ReconnectingBadge } from '@/features/public/PublicStates';
 import { ReportDialog, ReportLink } from '@/features/public/ReportDialog';
@@ -28,6 +31,7 @@ export function Component() {
   useTrackPublicView('player', viewToken);
   const s = usePlayerView(viewToken);
   const [reportOpen, setReportOpen] = useState(false);
+  const alerts = usePlayerAlerts(viewToken, s.data);
 
   const gate = gateOf({ ...s, hasData: !!s.data });
   if (gate || !s.data) return <GateNotice kind="player" gate={gate ?? 'loading'} />;
@@ -41,6 +45,11 @@ export function Component() {
           <ReconnectingBadge />
         </div>
       ) : null}
+      <PlayerAlertBanners
+        seat={alerts.seat}
+        level={alerts.level}
+        onDismissSeat={alerts.dismissSeat}
+      />
       <div className="px-[18px] pt-4 pb-2">
         <p className="label">{view.tournament.venue ?? 'UNIQN OPS'}</p>
         <h1 className="truncate text-lg font-bold">{view.tournament.name}</h1>
@@ -50,6 +59,7 @@ export function Component() {
         </p>
       </div>
       <InfoTable view={view} />
+      <PlayerAlertToggle />
       <ClaimSection token={viewToken ?? ''} who={`#${view.me.entryNumber} ${view.me.name}`} />
       <ReportLink onClick={() => setReportOpen(true)} />
       <ReportDialog

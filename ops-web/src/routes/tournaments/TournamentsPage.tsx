@@ -23,7 +23,7 @@ type PendingConfirm =
 
 /**
  * 대회 목록(허브) — 모바일 `app/(ops)/tournaments/index.tsx` 와 같은 규칙:
- * 재개 행(진행 중 최신 우선) · 보관함 토글(보관분 있을 때만) · 완료 대회 복제 · 보관/복원 · `?postingId=` 필터.
+ * 재개 행(진행 중 최신 우선) · 보관함 토글(보관분 있을 때만) · 대회 복제(웹은 전 상태) · 보관/복원 · `?postingId=` 필터.
  */
 export function Component() {
   const navigate = useNavigate();

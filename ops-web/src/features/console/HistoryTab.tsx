@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
+import { Download } from 'lucide-react';
 import { cn } from 'cn';
 import { LoadError } from '@/components/ops/LoadState';
 import { Button } from '@/components/ui/button';
 import { EVENT_LABEL, summarizePayload } from '@/core/historyLabels';
 import { useOpsEvents } from '@/hooks/ops/useStaffPrizeHistory';
 import { radioGroupKeyDown, radioTabIndex } from '@/lib/radioGroup';
+import { buildHistoryCsv, csvFileName, downloadCsv } from './exportCsv';
 import {
   HISTORY_CATEGORIES,
   HISTORY_MAX,
@@ -19,9 +21,16 @@ const CATEGORY_VALUES = HISTORY_CATEGORIES.map((c) => c.value);
 
 /**
  * 이력 — 모바일 HistoryTab: 이벤트 한글 라벨(사본)·상대 시각·payload 요약. 최신순.
- * 웹 추가: 분류 필터(참가자·좌석·클럭·상금·설정) + "더 보기"(100건씩, 최대 1,000건).
+ * 웹 추가: 분류 필터(참가자·좌석·클럭·상금·설정) + "더 보기"(100건씩, 최대 1,000건)
+ * + CSV(지금 화면에 보이는 분류·건수 그대로).
  */
-export function HistoryTab({ tournamentId }: { tournamentId: string }) {
+export function HistoryTab({
+  tournamentId,
+  tournamentName,
+}: {
+  tournamentId: string;
+  tournamentName: string;
+}) {
   const [limit, setLimit] = useState(HISTORY_PAGE);
   const [category, setCategory] = useState<HistoryCategory>('all');
   const events = useOpsEvents(tournamentId, limit);
@@ -53,30 +62,43 @@ export function HistoryTab({ tournamentId }: { tournamentId: string }) {
   }
   return (
     <div className="flex flex-col">
-      <div
-        role="radiogroup"
-        aria-label="이력 분류"
-        onKeyDown={radioGroupKeyDown(CATEGORY_VALUES, category, setCategory)}
-        className="flex gap-1 overflow-x-auto border-b px-3 py-2"
-      >
-        {HISTORY_CATEGORIES.map((c, i) => (
-          <button
-            key={c.value}
-            type="button"
-            role="radio"
-            aria-checked={category === c.value}
-            tabIndex={radioTabIndex(i, CATEGORY_VALUES.indexOf(category))}
-            onClick={() => setCategory(c.value)}
-            className={cn(
-              'h-11 shrink-0 border px-3 text-sm whitespace-nowrap',
-              category === c.value
-                ? 'border-primary font-semibold'
-                : 'text-muted-foreground hover:bg-muted'
-            )}
-          >
-            {c.label}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 border-b px-3 py-2">
+        <div
+          role="radiogroup"
+          aria-label="이력 분류"
+          onKeyDown={radioGroupKeyDown(CATEGORY_VALUES, category, setCategory)}
+          className="flex min-w-0 flex-1 gap-1 overflow-x-auto"
+        >
+          {HISTORY_CATEGORIES.map((c, i) => (
+            <button
+              key={c.value}
+              type="button"
+              role="radio"
+              aria-checked={category === c.value}
+              tabIndex={radioTabIndex(i, CATEGORY_VALUES.indexOf(category))}
+              onClick={() => setCategory(c.value)}
+              className={cn(
+                'h-11 shrink-0 border px-3 text-sm whitespace-nowrap',
+                category === c.value
+                  ? 'border-primary font-semibold'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          className="h-11 shrink-0"
+          aria-label="이력 CSV 내려받기"
+          disabled={list.length === 0}
+          onClick={() =>
+            downloadCsv(csvFileName(tournamentName, new Date(), '이력'), buildHistoryCsv(list))
+          }
+        >
+          <Download /> CSV
+        </Button>
       </div>
       {list.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">

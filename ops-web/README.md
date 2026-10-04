@@ -32,7 +32,7 @@ npm run dev              # http://localhost:5173
 ## E2E (로컬 · CI)
 
 로컬: Supabase + `npm run seed:local` + `npm run build && npx vite preview --port 4173` 후 `node e2e/<이름>.mjs`.
-CI(`.github/workflows/ops-web-e2e.yml`)는 PR 마다 w4·w5·w56·w7·w9 를 돈다(ops 관련 변경이 있을 때만).
+CI(`.github/workflows/ops-web-e2e.yml`)는 PR 마다 w4·w5·w56·w7·w9·w10 을 돈다(ops 관련 변경이 있을 때만).
 w2(메일 왕복)·w4-idle(66분 방치)은 로컬 전용이다.
 
 ## 안전장치
