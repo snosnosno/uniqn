@@ -273,6 +273,15 @@
 --       renew_fixed_posting(서버 시각 연장·재오픈 RPC, SECURITY INVOKER).
 --     정책 106 불변. (20260927100000 notify_employer_application_change 는 CREATE OR REPLACE 라 0)
 --
+--   2026-10-04 ops 레벨 자동 전환·자동 마감·일괄 등록·기기 이름(마이그 20261004100000·100100·100200, prod 미적용 — 머지·prod 적용과 동기):
+--     함수 257 = 251 + 6 — fn_ops_clock_roll_forward(끝난 레벨 따라잡기, 내부) ·
+--       fn_ops_apply_registration_cutoff(자동 마감 판정, 내부) · ops_clock_sync(콘솔 동기화 RPC) ·
+--       ops_set_registration_cutoff(자동 마감 설정 RPC) · ops_register_participants_bulk(일괄 등록 RPC) ·
+--       fn_ops_events_stamp_device(ops_events BEFORE INSERT 트리거 fn).
+--     정책 106 불변(RLS 미변경). ops_clock_set_level·ops_toggle_registration·ops_register_participant·
+--       ops_set_blind_levels·ops_get_monitor_snapshot·ops_get_player_view 는 CREATE OR REPLACE 라 0.
+--     anon-executable ops SECDEF = 2 불변(ops_clock_auto_advance.test.sql 이 단언).
+--
 -- 🔴 2026-09-12 실측 — 이 단언은 **근무표 PR 이전부터 이미 red** 다(선행 과제).
 --   · CI 로컬(마이그 전량 적용): 함수 **225** / 정책 **102**
 --   · prod(`list_migrations`·`pg_proc` 실측):   함수 **223** / 정책 **101**
@@ -293,7 +302,7 @@
 --
 -- 기계용 마커 — .github/workflows/parity-smoke.yml 이 prod 대조 기대값으로 파싱한다.
 -- ⚠️아래 단언 리터럴과 반드시 동시 갱신:
--- PARITY_EXPECT_FUNCS=251
+-- PARITY_EXPECT_FUNCS=257
 -- PARITY_EXPECT_POLICIES=106
 -- ============================================================
 BEGIN;
@@ -313,8 +322,8 @@ SELECT is(
                      WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
      AND p.proname NOT LIKE 'jpc\_%'
      AND p.proname NOT LIKE 'ops\_test\_%'),
-  251,
-  'public function count (251 = 238 + 채팅 S4 6 + S5-b 1 + 09-26 QA 4 + 09-27 고정공고 게시기간 2 — 출처는 상단 장부 참조)');
+  257,
+  'public function count (257 = 251 + 10-04 ops 자동 전환·자동 마감·일괄 등록·기기 이름 6 — 출처는 상단 장부 참조)');
 
 -- 3. public RLS 정책 카운트 == prod 실측
 SELECT is(
