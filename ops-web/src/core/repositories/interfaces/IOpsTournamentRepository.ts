@@ -60,6 +60,11 @@ export interface IOpsTournamentRepository {
   updateTournament(id: string, actorId: string, patch: UpdateOpsTournamentPatch): Promise<void>;
   setStatus(id: string, actorId: string, status: OpsTournamentStatus): Promise<void>;
   toggleRegistration(id: string, actorId: string, open: boolean): Promise<void>;
+  /**
+   * 레이트 등록 자동 마감 기준 설정/해제 (ops_set_registration_cutoff).
+   * afterSort = 블라인드 레벨 sort(그 레벨·브레이크가 끝나면 마감), null = 해제. 이미 지난 레벨은 서버가 거부한다.
+   */
+  setRegistrationCutoff(id: string, actorId: string, afterSort: number | null): Promise<void>;
   /** S1 A4: 지난 대회 설정(칩/비용/블라인드 구조/monitor_config) 복사로 새 대회 생성(owner 전용). */
   duplicateTournament(
     sourceTournamentId: string,

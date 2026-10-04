@@ -26,7 +26,8 @@ const TABLE = 'ops_tournaments' as const;
 const COLUMNS =
   'id, owner_id, job_posting_id, name, venue, event_date, game_type, status, seats_per_table, ' +
   'starting_chips, color, buy_in_chips, rebuy_chips, addon_chips, buy_in_cost, fee_cost, ' +
-  'rebuy_cost, addon_cost, bounty_cost, registration_open, auto_seat_on_register, ' +
+  'rebuy_cost, addon_cost, bounty_cost, registration_open, registration_close_after_sort, ' +
+  'auto_seat_on_register, ' +
   'reentry_allowed, max_reentries, monitor_token, monitor_config, next_entry_seq, archived_at, ' +
   'created_at, updated_at';
 
@@ -223,6 +224,25 @@ export class SupabaseOpsTournamentRepository implements IOpsTournamentRepository
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 등록 토글' });
+    }
+  }
+
+  async setRegistrationCutoff(
+    id: string,
+    actorId: string,
+    afterSort: number | null
+  ): Promise<void> {
+    try {
+      // 생성 타입은 p_after_sort 를 number 로만 안다(해제 = NULL 은 서버가 받는다) → 캐스트.
+      const { error } = await supabase.rpc('ops_set_registration_cutoff', {
+        p_tournament_id: id,
+        p_actor_id: actorId,
+        p_after_sort: afterSort as number,
+      });
+      if (error) mapOpsRpcError(error, { operation: 'ops 등록 자동 마감 설정' });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      mapOpsRpcError(error, { operation: 'ops 등록 자동 마감 설정' });
     }
   }
 

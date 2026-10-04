@@ -1708,6 +1708,7 @@ export type Database = {
           rebuy_chips: number;
           rebuy_cost: number;
           reentry_allowed: boolean;
+          registration_close_after_sort: number | null;
           registration_open: boolean;
           seats_per_table: number;
           starting_chips: number;
@@ -1738,6 +1739,7 @@ export type Database = {
           rebuy_chips?: number;
           rebuy_cost?: number;
           reentry_allowed?: boolean;
+          registration_close_after_sort?: number | null;
           registration_open?: boolean;
           seats_per_table?: number;
           starting_chips?: number;
@@ -1768,6 +1770,7 @@ export type Database = {
           rebuy_chips?: number;
           rebuy_cost?: number;
           reentry_allowed?: boolean;
+          registration_close_after_sort?: number | null;
           registration_open?: boolean;
           seats_per_table?: number;
           starting_chips?: number;
@@ -3034,6 +3037,10 @@ export type Database = {
         Args: { p_actor_id: string; p_tournament_id: string };
         Returns: Json;
       };
+      ops_clock_sync: {
+        Args: { p_actor_id: string; p_tournament_id: string };
+        Returns: Json;
+      };
       ops_close_table: {
         Args: {
           p_actor_id: string;
@@ -3113,6 +3120,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      ops_register_participants_bulk: {
+        Args: {
+          p_actor_id: string;
+          p_buy_in_amount?: number;
+          p_rows: Json;
+          p_tournament_id: string;
+        };
+        Returns: Json;
+      };
       ops_remove_staff: {
         Args: {
           p_actor_id: string;
@@ -3156,6 +3172,10 @@ export type Database = {
       };
       ops_set_prize_structure: {
         Args: { p_actor_id: string; p_prizes: Json; p_tournament_id: string };
+        Returns: Json;
+      };
+      ops_set_registration_cutoff: {
+        Args: { p_actor_id: string; p_after_sort: number; p_tournament_id: string };
         Returns: Json;
       };
       ops_set_table_lock: {

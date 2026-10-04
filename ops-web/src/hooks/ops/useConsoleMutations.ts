@@ -2,7 +2,7 @@
  * 콘솔 변이(W4) — 대회 상태·등록 토글·참가자 액션·플레이어 자격·클럭.
  * 무효화 범위·토스트 문구는 모바일 useOpsMutations·useOpsClockMutations·useOpsClaimToken 과 같다.
  */
-import type { RegisterParticipantInput } from '@/core/repositories/ops';
+import type { BulkRegisterRow, RegisterParticipantInput } from '@/core/repositories/ops';
 import type {
   ChipCountInput,
   NoShowInput,
@@ -44,8 +44,48 @@ export function useToggleRegistration(id: string) {
     success: (_r, open) => (open ? '등록을 열었습니다' : '등록을 마감했습니다'),
     optimistic: {
       key: opsKeys.tournamentDetail(id),
-      update: (t, open) => (t ? { ...t, registrationOpen: open } : t),
+      // 수동으로 열면 서버가 자동 마감 설정을 지운다 — 화면도 같이 지워 "다시 닫힐 것처럼" 보이지 않게.
+      update: (t, open) =>
+        t
+          ? {
+              ...t,
+              registrationOpen: open,
+              registrationCloseAfterSort: open ? null : t.registrationCloseAfterSort,
+            }
+          : t,
     },
+  });
+}
+
+/** 레이트 등록 자동 마감 기준(레벨 sort) 설정, null = 해제. */
+export function useSetRegistrationCutoff(id: string) {
+  return useOpsMutation<number | null, void, OpsTournament | null>({
+    op: 'ops.setRegistrationCutoff',
+    run: (afterSort, actor) => opsTournamentService.setRegistrationCutoff(id, actor, afterSort),
+    invalidate: [opsKeys.tournamentDetail(id), opsKeys.events(id)],
+    success: (_r, afterSort) =>
+      afterSort === null ? '자동 마감을 해제했습니다' : '자동 마감을 설정했습니다',
+    optimistic: {
+      key: opsKeys.tournamentDetail(id),
+      update: (t, afterSort) => (t ? { ...t, registrationCloseAfterSort: afterSort } : t),
+    },
+  });
+}
+
+/** 명단 일괄 등록 — 전부 성공하거나 전부 취소된다(서버 원자성). */
+export function useRegisterParticipantsBulk(id: string) {
+  return useOpsMutation({
+    op: 'ops.registerParticipantsBulk',
+    run: (input: { rows: BulkRegisterRow[]; buyInAmount?: number }, actor) =>
+      participantService.registerParticipantsBulk({ ...input, tournamentId: id }, actor),
+    invalidate: [
+      opsKeys.participants(id),
+      opsKeys.tournamentDetail(id),
+      opsKeys.seats(id),
+      opsKeys.liveStats(id),
+      opsKeys.events(id),
+    ],
+    success: (r) => `${r.length}명 등록 완료`,
   });
 }
 

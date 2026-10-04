@@ -5,7 +5,7 @@
  * 확인창 규칙(DESIGN.md + 모바일): 탈락·탈락 취소·노쇼·등록 취소·연결 해제·PIN 재발급 = 확인창.
  * 리바이·애드온·재진입·노쇼 취소 = 즉시(모바일과 같음). 탈락은 성공 뒤 **5초 되돌리기 토스트**.
  */
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ops/ConfirmDialog';
 import type { OpsParticipant, OpsPrize, OpsTournament } from '@/core/types/ops';
@@ -17,6 +17,7 @@ import {
   useIssuePlayerCredentials,
   useReenterParticipant,
   useRegisterParticipant,
+  useRegisterParticipantsBulk,
   useSetParticipantChips,
   useSetParticipantNoShow,
   useUnclaimParticipant,
@@ -24,6 +25,7 @@ import {
   useUpdateParticipant,
 } from '@/hooks/ops/useConsoleMutations';
 import { fmt } from '../format';
+import { BulkRegisterDialog } from './BulkRegisterDialog';
 import {
   bustResultMessage,
   eliminatorCandidates,
@@ -68,6 +70,9 @@ export function usePlayerActions(o: Options) {
   const unclaim = useUnclaimParticipant(id);
   const issue = useIssuePlayerCredentials(id);
   const register = useRegisterParticipant(id);
+  const registerBulk = useRegisterParticipantsBulk(id);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const existingNames = useMemo(() => o.participants.map((x) => x.name), [o.participants]);
 
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -259,6 +264,15 @@ export function usePlayerActions(o: Options) {
         busy={register.isPending}
         onRegister={(values, done) => register.mutate(values, { onSuccess: done })}
       />
+      <BulkRegisterDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        existingNames={existingNames}
+        busy={registerBulk.isPending}
+        onRegister={(rows, buyInAmount, done) =>
+          registerBulk.mutate({ rows, buyInAmount }, { onSuccess: done })
+        }
+      />
       <ChipCountDialog
         key={chipFor?.id ?? 'none'}
         // 열린 동안 realtime·낙관적 반영으로 바뀐 "현재 칩"을 보이도록 최신 행으로 갈아 끼운다.
@@ -307,6 +321,7 @@ export function usePlayerActions(o: Options) {
   return {
     run,
     openRegister: () => setRegisterOpen(true),
+    openBulkRegister: () => setBulkOpen(true),
     dialogs,
     busy:
       rebuy.isPending ||

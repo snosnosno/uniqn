@@ -4,9 +4,14 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
-import { opsParticipantRepository, type RegisterParticipantInput } from '@/repositories/ops';
+import {
+  opsParticipantRepository,
+  type BulkRegisterParticipantsInput,
+  type RegisterParticipantInput,
+} from '@/repositories/ops';
 import {
   registerParticipantSchema,
+  bulkRegisterParticipantsSchema,
   chipCountSchema,
   noShowSchema,
   participantUpdateSchema,
@@ -37,6 +42,40 @@ export async function registerParticipant(
     if (isAppError(error)) throw error;
     throw handleServiceError(error, {
       operation: '참가자 등록',
+      component: COMPONENT,
+      context: { tournamentId: input.tournamentId },
+    });
+  }
+}
+
+/** 일괄 등록(명단 붙여넣기) — 검증 후 한 번의 RPC 로. 전부 성공하거나 전부 취소된다. */
+export async function registerParticipantsBulk(
+  input: BulkRegisterParticipantsInput,
+  actorId: string
+): Promise<{ participantId: string; entryNumber: number }[]> {
+  try {
+    logger.info('ops 참가자 일괄 등록', {
+      component: COMPONENT,
+      tournamentId: input.tournamentId,
+      count: input.rows.length,
+    });
+    const parsed = bulkRegisterParticipantsSchema.safeParse(input);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      // rows.3.name 처럼 순번이 있으면 몇 번째 사람인지 알려 준다. 붙여넣은 글의 줄 번호가 아니라
+      // 명단 안 순번이다(빈 줄은 세지 않는다) — 그래서 '줄'이 아니라 '사람'이라고 한다.
+      const row =
+        issue?.path[0] === 'rows' && typeof issue.path[1] === 'number' ? issue.path[1] : null;
+      const message = issue?.message ?? '입력값을 확인해 주세요.';
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: row === null ? message : `${row + 1}번째 사람: ${message}`,
+      });
+    }
+    return await opsParticipantRepository.registerBulk(parsed.data, actorId);
+  } catch (error) {
+    if (isAppError(error)) throw error;
+    throw handleServiceError(error, {
+      operation: '참가자 일괄 등록',
       component: COMPONENT,
       context: { tournamentId: input.tournamentId },
     });

@@ -26,6 +26,8 @@ export type {
 export type {
   IOpsParticipantRepository,
   RegisterParticipantInput,
+  BulkRegisterRow,
+  BulkRegisterParticipantsInput,
 } from './interfaces/IOpsParticipantRepository';
 export type { IOpsTableRepository, AddTableInput } from './interfaces/IOpsTableRepository';
 export type { IOpsSeatRepository } from './interfaces/IOpsSeatRepository';

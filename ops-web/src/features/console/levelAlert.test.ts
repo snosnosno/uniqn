@@ -26,6 +26,13 @@ describe('levelAlert', () => {
     expect(levelAlert(s(1, 0), s(1, 0))).toBeNull();
   });
 
+  it('다음 레벨이 있으면 00:00 에 울리지 않는다 — 곧 자동 전환음이 울린다(겹침 방지)', () => {
+    expect(levelAlert(s(1, 1), s(1, 0), true)).toBeNull();
+    // 61초에서 0 으로 건너뛰어도 1분 경고로 되돌아가지 않는다
+    expect(levelAlert(s(1, 61), s(1, 0), true)).toBeNull();
+    expect(levelAlert(s(1, 1), s(2, 1200), true)).toBe('levelChange');
+  });
+
   it('61초에서 바로 0 으로 건너뛰면(백그라운드) 시간 종료가 1분 경고보다 우선', () => {
     expect(levelAlert(s(1, 61), s(1, 0))).toBe('timeUp');
   });

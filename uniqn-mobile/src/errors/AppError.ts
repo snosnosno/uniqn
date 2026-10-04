@@ -230,6 +230,9 @@ export const ERROR_CODES = {
   // 묶음 공유 (E6140~)
   BUSINESS_BULK_SHARE_NONE_SHAREABLE: 'E6140', // 선택한 공고가 전부 공유 불가 상태
 
+  // 라이브 운영(ops) 이어서 (E6141~) — E6140 을 묶음 공유가 먼저 써서 건너뛴다
+  OPS_BULK_REGISTER_INVALID: 'E6141', // 일괄 등록 명단 형식 위반(빈 명단·200명 초과·빈 이름)
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -282,6 +285,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
     '신고가 이미 접수되어 처리 중이에요. 잠시 후 다시 시도해주세요.',
   [ERROR_CODES.OPS_CHIPS_INVALID]:
     '칩은 1 이상 20억 이하로 입력해주세요. 칩이 0이 된 참가자는 탈락 처리를 사용해주세요.',
+  [ERROR_CODES.OPS_BULK_REGISTER_INVALID]:
+    '명단을 확인해주세요. 한 번에 200명까지, 이름은 50자 이내로 등록할 수 있어요.',
 
   // 네트워크
   [ERROR_CODES.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',

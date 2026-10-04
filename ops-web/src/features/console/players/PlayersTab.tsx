@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Download, Search, UserPlus } from 'lucide-react';
+import { ClipboardList, Download, Search, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -18,7 +18,7 @@ type Actions = ReturnType<typeof usePlayerActions>;
 
 /**
  * 참가 탭 — 표 + 선택 상세. 선택은 부모(콘솔)가 들고 있어 ≥1024 우측 패널과 공유한다.
- * 단축키: N 등록 · / 찾기 · ↑↓ 선택 · R 리바이 · A 애드온 · C 칩 · X 탈락 · E 수정.
+ * 단축키: N 등록 · B 명단 붙여넣기 · / 찾기 · ↑↓ 선택 · R 리바이 · A 애드온 · C 칩 · X 탈락 · E 수정.
  */
 export function PlayersTab({
   tournament,
@@ -58,6 +58,7 @@ export function PlayersTab({
 
   const keyed: Record<string, () => void> = {
     KeyN: actions.openRegister,
+    KeyB: actions.openBulkRegister,
     Slash: () => searchRef.current?.focus(),
     ArrowDown: () => move(1),
     ArrowUp: () => move(-1),
@@ -99,6 +100,9 @@ export function PlayersTab({
           }
         >
           <Download /> CSV
+        </Button>
+        <Button variant="outline" size="lg" onClick={actions.openBulkRegister}>
+          <ClipboardList /> 명단 <Kbd>B</Kbd>
         </Button>
         <Button size="lg" onClick={actions.openRegister}>
           <UserPlus /> 등록 <Kbd>N</Kbd>

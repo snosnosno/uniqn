@@ -3,7 +3,7 @@ name: ops-web E2E
 # ops-web(대회 운영 웹) 브라우저 E2E — 로컬 Supabase 를 띄워 실제 RPC·RLS·realtime 위에서 돈다.
 # 🔴 pull_request 에 `paths:` 를 두지 않는다(e2e.yml 머리말과 같은 이유 — required check 데드락).
 #    무거운 잡은 `changes` 판정이 true 일 때만 돈다.
-# 범위: w4(콘솔)·w5(좌석)·w56(블라인드·상금·스태프·이력)·w7(공개뷰)·w9(콘솔 도구)·w10(운영 편의).
+# 범위: w4(콘솔)·w5(좌석)·w56(블라인드·상금·스태프·이력)·w7(공개뷰)·w9(콘솔 도구)·w10(운영 편의)·w11(자동 전환·자동 마감·일괄 등록·기기 이름).
 #   w2(인증 메일 왕복)는 다른 E2E 의 세션을 폐기하고, w4-idle 은 66분 방치라 로컬 전용으로 둔다.
 on:
   pull_request:
@@ -133,7 +133,7 @@ jobs:
           npx vite preview --port 4173 --strictPort > preview.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
           status=0
-          for t in w4-console w5-tables w56-console w7-public w9-console-tools w10-ux; do
+          for t in w4-console w5-tables w56-console w7-public w9-console-tools w10-ux w11-auto; do
             echo "::group::$t"
             node "e2e/$t.mjs" || status=1
             echo "::endgroup::"
