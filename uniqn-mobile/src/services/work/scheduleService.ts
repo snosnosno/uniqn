@@ -135,7 +135,11 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  * 합집합인 이유는 둘의 행 집합이 다르기 때문이다 — 단가 미설정 지점은 salaries 에만 없고,
  * contexts 호출이 실패하면 salaries 에만 있다. 어느 한쪽이 죽어도 나머지는 살아남아야 한다.
  * contexts 만 실패 = 종전대로 '이벤트' 표시 + 단가는 정상. salaries 만 실패 = 이름·장소는
- * 보이고 급여만 기본 단가(15,000원)로 폴백. 둘 다 관측 가능하게 로그를 남긴다.
+ * 보이고 급여 계산만 기본 단가(15,000원)로 폴백. 둘 다 관측 가능하게 로그를 남긴다.
+ *
+ * 🔑 salaries 실패는 `salaryLookupFailed` 로 표시 계층에 알린다 — 안 알리면 빈 단가표가
+ *    "구인자가 급여를 안 정했다"와 구별되지 않아 화면이 '급여 미정'이라는 **거짓**을 말한다
+ *    (실제로는 정해져 있는데 못 읽었을 뿐이다).
  */
 async function resolveContainerContexts(
   containerIds: string[]
@@ -159,11 +163,14 @@ async function resolveContainerContexts(
 
   const contexts = contextResult.status === 'fulfilled' ? contextResult.value : new Map();
   const salaries = salaryResult.status === 'fulfilled' ? salaryResult.value : new Map();
+  const salaryLookupFailed = salaryResult.status === 'rejected';
 
   for (const containerId of new Set([...contexts.keys(), ...salaries.keys()])) {
     resolved.set(
       containerId,
-      createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId))
+      createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId), {
+        salaryLookupFailed,
+      })
     );
   }
   return resolved;

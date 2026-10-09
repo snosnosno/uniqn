@@ -283,6 +283,24 @@ describe('createScheduleContainerContext (#6 — 근무표 직접배치 급여 �
     ]);
   });
 
+  it('단가 조회 실패를 넘기면 settlement 에 표시를 단다(안 넘기면 키 자체가 없다)', () => {
+    const failed = createScheduleContainerContext(
+      [],
+      { title: '내 팀' },
+      { salaryLookupFailed: true }
+    );
+    expect(failed.settlement.salaryLookupFailed).toBe(true);
+    expect(failed.settlement.roles).toEqual([]);
+
+    const ok = createScheduleContainerContext(
+      [],
+      { title: '내 팀' },
+      { salaryLookupFailed: false }
+    );
+    expect('salaryLookupFailed' in ok.settlement).toBe(false);
+    expect('salaryLookupFailed' in createScheduleContainerContext([]).settlement).toBe(false);
+  });
+
   it('title 미지정 시 기본 라벨(이벤트)로 폴백한다', () => {
     const context = createScheduleContainerContext(createContainer().roleSalaries);
     expect(context.title).toBe('이벤트');

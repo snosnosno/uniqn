@@ -22,7 +22,7 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/removeUndefined';
-import { getTodayString } from '@/utils/date';
+import { getKstTodayString } from '@/utils/date';
 import { generateUUID } from '@/utils/generateId';
 import { STATUS } from '@/constants';
 import type { VenueContainer } from '@/domains/workSchedule';
@@ -271,7 +271,7 @@ function applySalaryScope<
     scoped = scoped.not(column, 'is', null) as T;
   }
   if (filters.salarySort) {
-    scoped = scoped.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
+    scoped = scoped.or(`last_work_date.is.null,last_work_date.gte.${getKstTodayString()}`) as T;
   }
   return scoped;
 }
@@ -290,10 +290,14 @@ function applySalaryScope<
  *
  * ⚠️ 급여 정렬이 걸리면 `applySalaryScope` 가 같은 술어를 이미 걸어 중복될 수 있으나,
  *   동일 술어의 AND 결합이라 결과 집합은 같다.
+ *
+ *   "오늘"은 **KST 고정**이다(`getKstTodayString`) — `last_work_date` 는 한국 달력 날짜이고, 자동 마감
+ *   크론과 달력 배지 RPC(`get_regular_posting_date_counts`)가 KST 오늘로 센다. 기기 로컬 날짜를 쓰면
+ *   KST 가 아닌 기기에서 배지 숫자와 목록이 자정 전후로 어긋난다.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyForwardLookingScope<T extends { or: any }>(query: T): T {
-  return query.or(`last_work_date.is.null,last_work_date.gte.${getTodayString()}`) as T;
+  return query.or(`last_work_date.is.null,last_work_date.gte.${getKstTodayString()}`) as T;
 }
 
 /** 목록 페이지 정렬키 — 항상 id 를 마지막 tie-breaker 로 붙여 전순서를 만든다. */

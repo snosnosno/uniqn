@@ -8,6 +8,7 @@ import {
   toDate,
   toISODateString,
   getTodayString,
+  getKstTodayString,
   getYesterdayString,
   toDateString,
   parseDateString,
@@ -99,6 +100,27 @@ describe('getTodayString', () => {
     const today = new Date();
     const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     expect(result).toBe(expected);
+  });
+});
+
+// ============================================================================
+// getKstTodayString
+// ============================================================================
+
+describe('getKstTodayString', () => {
+  // 기기 시간대와 무관해야 한다 — 그래서 로컬 Date 접근자가 아니라 UTC 시각(epoch)으로만 단언한다.
+  it('UTC 15:00 을 넘기면 KST 는 이미 다음 날이다', () => {
+    expect(getKstTodayString(Date.parse('2026-08-12T14:59:59Z'))).toBe('2026-08-12');
+    expect(getKstTodayString(Date.parse('2026-08-12T15:00:00Z'))).toBe('2026-08-13');
+  });
+
+  it('월말·연말 경계도 KST 로 넘어간다', () => {
+    expect(getKstTodayString(Date.parse('2026-12-31T15:00:00Z'))).toBe('2027-01-01');
+    expect(getKstTodayString(Date.parse('2028-02-28T15:00:00Z'))).toBe('2028-02-29');
+  });
+
+  it('인자를 안 주면 지금 시각 기준이다', () => {
+    expect(getKstTodayString()).toBe(getKstTodayString(Date.now()));
   });
 });
 

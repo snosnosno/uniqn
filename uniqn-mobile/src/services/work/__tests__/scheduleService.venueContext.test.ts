@@ -135,6 +135,19 @@ describe('컨테이너 2차 해소 — 두 RPC 조합 4가지', () => {
       '컨테이너 역할 단가 2차 해소 실패 — 기본 단가 폴백 유지',
       expect.anything()
     );
+    // 🔑 빈 단가표가 '미설정'이 아니라 '못 읽음'임을 표시 계층에 알린다 — 안 알리면 화면이
+    //    "급여 미정"이라는 거짓을 말한다(#475 잔여).
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBe(true);
+  });
+
+  it('단가표가 실제로 비어 있으면(조회 성공·0행) 실패 표시를 달지 않는다 — 그건 진짜 미정이다', async () => {
+    mockGetMyVenueContexts.mockImplementation(() =>
+      Promise.resolve(new Map([[CONTAINER_ID, venueContext]]))
+    );
+
+    const schedule = await firstSchedule();
+    expect(schedule?.postingProjection?.settlement.roles).toEqual([]);
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBeUndefined();
   });
 
   it('둘 다 실패: 종전 폴백(이벤트/빈 장소)으로 내려가고 예외는 새어 나가지 않는다', async () => {
