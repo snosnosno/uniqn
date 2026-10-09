@@ -1,6 +1,7 @@
 /**
  * 플레이어뷰 변화 알림 상태 — 직전 폴링과 견줘(`detectPlayerAlerts`) 자리는 선수가 확인할 때까지,
- * 레벨·휴식은 10초 동안 들고 있는다. 소리·진동은 선수가 켠 기기에서만 울린다(`lib/chime`).
+ * 레벨·휴식은 10초 동안 들고 있는다. 소리·진동은 선수가 켠 기기에서만 울린다(`lib/chime` 의 `player` 스위치 —
+ * 운영 콘솔의 클럭음 스위치와 따로 저장된다).
  * 진동은 지원하는 기기에서만(iOS Safari 는 미지원이라 배너와 소리만).
  */
 import { useEffect, useState } from 'react';
@@ -15,8 +16,8 @@ const LEVEL_ALERT_MS = 10_000;
 
 export function notifyPlayer(): void {
   // 소리와 진동을 같은 스위치로 묶는다 — 꺼 둔 기기에서 진동만 울리지 않게.
-  if (!isChimeEnabled()) return;
-  playChime('levelChange');
+  if (!isChimeEnabled('player')) return;
+  playChime('levelChange', 'player');
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     navigator.vibrate([200, 100, 200]);
   }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_BLIND_LEVELS } from '@/core/domains/ops/defaultBlindStructure';
-import { opsBlindLevelsSchema } from '@/core/schemas/opsBlindLevel.schema';
+import {
+  opsBlindLevelsSaveSchema,
+  opsBlindLevelsSchema,
+} from '@/core/schemas/opsBlindLevel.schema';
 import { breakRow, nextRow, toDraftRow, toInput, toInputs } from './blindDraft';
 
 describe('blindDraft', () => {
@@ -9,9 +12,21 @@ describe('blindDraft', () => {
     const r = toInputs(rows);
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.levels).toEqual(DEFAULT_BLIND_LEVELS);
+      // 프리셋·기본 구조에서 온 행은 서버 순번이 없다 → prevSort null(새 행).
+      expect(r.levels).toEqual(DEFAULT_BLIND_LEVELS.map((l) => ({ ...l, prevSort: null })));
       expect(opsBlindLevelsSchema.safeParse(r.levels).success).toBe(true);
+      expect(opsBlindLevelsSaveSchema.safeParse(r.levels).success).toBe(true);
     }
+  });
+
+  it('서버에서 온 행은 저장 전 순번(prevSort)을 싣는다 — 앞 행을 지워도 그 레벨의 정체가 남는다', () => {
+    const server = DEFAULT_BLIND_LEVELS.slice(0, 4).map((l, i) => ({ ...l, sort: i + 1 }));
+    const rows = server.map((l) => toDraftRow(l));
+    // 1번 행 삭제 + 값 수정 + 끝에 새 행 — 표 편집기가 하는 일 그대로
+    const edited = [...rows.slice(1).map((r) => ({ ...r, ante: '25' })), nextRow(rows)];
+    const r = toInputs(edited);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.levels.map((l) => l.prevSort)).toEqual([2, 3, 4, null]);
   });
 
   it('분 칸을 안 건드린 행은 초 단위 원래 시간을 그대로 저장(반올림 소실 없음)', () => {

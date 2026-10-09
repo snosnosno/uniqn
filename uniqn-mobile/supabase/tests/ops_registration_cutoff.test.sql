@@ -1,7 +1,9 @@
 -- ops 레이트 등록 자동 마감(마이그 20261004100000): 설정 RPC 권한·검증 · 자동 전환 시 마감 · 수동 전환 시 마감 ·
 --   수동으로 다시 열면 설정 해제 · 마감 뒤 등록 거부 · 아무도 시계를 안 따라잡은 상태의 등록 거부 · 구조 축소 시 설정 해제.
+-- 마이그 20261010100000: 행에 prev_sort 를 실으면 기준이 순번이 아니라 그 레벨을 따라간다(28~33) ·
+--   해제를 반환값으로 알린다 · 옮겨진 기준이 마지막 순번이면 해제 · 시계가 옮겨진 기준을 이미 넘어 있으면 즉시 마감(34~38).
 BEGIN;
-SELECT plan(27);
+SELECT plan(38);
 
 DO $$
 DECLARE s RECORD;
@@ -156,6 +158,89 @@ SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 2);
 SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
   '[{"level":1,"big_blind":200,"duration_sec":600}]'::jsonb);
 SELECT is(pg_temp.cutoff(), NULL, '구조를 1레벨로 줄여 기준 순번이 사라져도 해제된다');
+
+-- ─── (28~33) prev_sort 따라가기(마이그 20261010100000) — 기준은 순번이 아니라 "그 레벨"이다 ───
+-- [L1, L2, 휴식, L3, L4] · 기준 = 휴식(sort 3)
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":200,"duration_sec":600},
+    {"level":2,"big_blind":400,"duration_sec":600},
+    {"level":2,"big_blind":0,"duration_sec":600,"is_break":true},
+    {"level":3,"big_blind":600,"duration_sec":600},
+    {"level":4,"big_blind":800,"duration_sec":600}]'::jsonb);
+SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 3);
+-- 앞의 L1 을 지운다 → 휴식은 sort 2 가 된다. 기준도 2 로 따라와야 한다(순번 유지였다면 L3 을 가리킨다).
+SELECT is(
+  (public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+    '[{"level":2,"big_blind":400,"duration_sec":600,"prev_sort":2},
+      {"level":2,"big_blind":0,"duration_sec":600,"is_break":true,"prev_sort":3},
+      {"level":3,"big_blind":600,"duration_sec":600,"prev_sort":4},
+      {"level":4,"big_blind":800,"duration_sec":600,"prev_sort":5}]'::jsonb)->>'cutoff_sort')::int,
+  2, '앞 레벨을 지우면 반환 cutoff_sort 가 기준 레벨의 새 순번');
+SELECT is(pg_temp.cutoff(), 2, '기준이 그 레벨(휴식)을 따라 sort 3 → 2 로 옮겨진다');
+SELECT is(
+  (SELECT is_break FROM public.ops_blind_levels WHERE tournament_id = pg_temp.tid() AND sort = pg_temp.cutoff()),
+  true, '옮겨진 기준 순번이 여전히 휴식을 가리킨다');
+-- 기준 앞에 새 레벨을 끼운다(prev_sort null) → 휴식은 sort 3 으로 밀린다.
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":200,"duration_sec":600,"prev_sort":null},
+    {"level":2,"big_blind":400,"duration_sec":600,"prev_sort":1},
+    {"level":2,"big_blind":0,"duration_sec":600,"is_break":true,"prev_sort":2},
+    {"level":3,"big_blind":600,"duration_sec":600,"prev_sort":3},
+    {"level":4,"big_blind":800,"duration_sec":600,"prev_sort":4}]'::jsonb);
+SELECT is(pg_temp.cutoff(), 3, '기준 앞에 레벨을 끼우면 기준이 sort 2 → 3 으로 따라간다');
+-- 기준이던 레벨 자체를 지운다 → 설정 해제(다른 레벨로 조용히 넘어가지 않는다).
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":200,"duration_sec":600,"prev_sort":1},
+    {"level":2,"big_blind":400,"duration_sec":600,"prev_sort":2},
+    {"level":3,"big_blind":600,"duration_sec":600,"prev_sort":4},
+    {"level":4,"big_blind":800,"duration_sec":600,"prev_sort":5}]'::jsonb);
+SELECT is(pg_temp.cutoff(), NULL, '기준이던 레벨을 지우면 자동 마감 설정이 해제된다');
+-- 프리셋으로 통째 교체(모든 행 prev_sort null) → 옛 기준은 새 구조에 없다 → 해제.
+SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 2);
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":100,"duration_sec":900,"prev_sort":null},
+    {"level":2,"big_blind":200,"duration_sec":900,"prev_sort":null},
+    {"level":3,"big_blind":300,"duration_sec":900,"prev_sort":null}]'::jsonb);
+SELECT is(pg_temp.cutoff(), NULL, '프리셋으로 통째 교체하면(전 행 prev_sort null) 설정이 해제된다');
+
+-- ─── (34) 해제는 반환값으로 알린다 — 화면이 운영자에게 경고한다 ───
+SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 2);
+SELECT is(
+  (public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+    '[{"level":1,"big_blind":100,"duration_sec":900,"prev_sort":1},
+      {"level":3,"big_blind":300,"duration_sec":900,"prev_sort":3},
+      {"level":4,"big_blind":400,"duration_sec":900,"prev_sort":null}]'::jsonb)->>'cutoff_cleared')::boolean,
+  true, '기준 레벨이 지워져 설정이 해제되면 cutoff_cleared=true');
+
+-- ─── (35) 옮겨진 기준이 마지막 순번이 되면 해제(넘어갈 곳이 없다) ───
+SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 2);
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":100,"duration_sec":900,"prev_sort":1},
+    {"level":3,"big_blind":300,"duration_sec":900,"prev_sort":2}]'::jsonb);
+SELECT is(pg_temp.cutoff(), NULL, '기준 뒤의 레벨을 다 지워 기준이 마지막 순번이 되면 해제된다');
+
+-- ─── (36~38) 시계가 옮겨진 기준을 이미 넘어 있으면 그 자리에서 마감 ───
+-- [L1, L2, 휴식, L3, L4] · 기준 = 휴식(3) · 시계도 휴식(3). L1 을 지우면 기준은 2, 시계는 순번 3(=L3) — 휴식은 지나갔다.
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":1,"big_blind":200,"duration_sec":600},
+    {"level":2,"big_blind":400,"duration_sec":600},
+    {"level":2,"big_blind":0,"duration_sec":600,"is_break":true},
+    {"level":3,"big_blind":600,"duration_sec":600},
+    {"level":4,"big_blind":800,"duration_sec":600}]'::jsonb);
+SELECT public.ops_clock_set_level(pg_temp.tid(), pg_temp.owner(), 3);
+-- 등록은 (24)에서 자동 마감된 채다 — 다시 연 뒤(설정 해제됨) 기준을 건다.
+SELECT public.ops_toggle_registration(pg_temp.tid(), pg_temp.owner(), true);
+SELECT public.ops_set_registration_cutoff(pg_temp.tid(), pg_temp.owner(), 3);
+SELECT is(pg_temp.is_open(), true, '전제: 기준 레벨(휴식) 진행 중에는 등록이 열려 있다');
+SELECT public.ops_set_blind_levels(pg_temp.tid(), pg_temp.owner(),
+  '[{"level":2,"big_blind":400,"duration_sec":600,"prev_sort":2},
+    {"level":2,"big_blind":0,"duration_sec":600,"is_break":true,"prev_sort":3},
+    {"level":3,"big_blind":600,"duration_sec":600,"prev_sort":4},
+    {"level":4,"big_blind":800,"duration_sec":600,"prev_sort":5}]'::jsonb);
+SELECT is(
+  (SELECT current_level_sort FROM public.ops_clock WHERE tournament_id = pg_temp.tid()) || '|' || pg_temp.cutoff(),
+  '3|2', '시계는 순번 3 에 남고(이제 L3) 기준은 휴식을 따라 2 로 — 시계가 기준을 넘었다');
+SELECT is(pg_temp.is_open(), false, '시계가 옮겨진 기준을 이미 넘어 있으면 저장하는 순간 등록을 닫는다');
 
 SELECT * FROM finish();
 ROLLBACK;

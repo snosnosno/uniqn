@@ -11,19 +11,28 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { useOpsBlindLevels, useOpsClock, useSetBlindLevels } from '@/hooks/ops';
 import { useToastStore } from '@/stores/toastStore';
 import type { OpsBlindLevel } from '@/types/ops';
-import { OPS_BLIND_LEVELS_MAX, type OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import {
+  OPS_BLIND_LEVELS_MAX,
+  type OpsBlindLevelInput,
+  type OpsBlindLevelSaveInput,
+} from '@/schemas/opsBlindLevel.schema';
 import { BlindLevelForm } from './BlindLevelForm';
 import { BlindPresetSheet } from './BlindPresetSheet';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 
-const toInput = (l: OpsBlindLevel): OpsBlindLevelInput => ({
+/**
+ * 서버 행 → draft 행. prevSort(저장 전 순번)를 달아 둔다 — 저장할 때 서버가 이 값으로 레이트 등록
+ * 자동 마감 기준을 "그 레벨"의 새 순번으로 옮긴다(앞 레벨을 지워도 기준이 다른 레벨로 넘어가지 않는다).
+ */
+const toInput = (l: OpsBlindLevel): OpsBlindLevelSaveInput => ({
   level: l.level,
   smallBlind: l.smallBlind,
   bigBlind: l.bigBlind,
   ante: l.ante,
   durationSec: l.durationSec,
   isBreak: l.isBreak,
+  prevSort: l.sort,
 });
 
 type FormState = { mode: 'add' } | { mode: 'edit'; index: number } | null;
@@ -38,7 +47,7 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
   const setLevelsMut = useSetBlindLevels(tournamentId);
 
   const serverDraft = useMemo(() => blindLevels.map(toInput), [blindLevels]);
-  const [draft, setDraft] = useState<OpsBlindLevelInput[]>(serverDraft);
+  const [draft, setDraft] = useState<OpsBlindLevelSaveInput[]>(serverDraft);
   const [dirty, setDirty] = useState(false);
   const [form, setForm] = useState<FormState>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -69,9 +78,10 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
   const onFormSubmit = (input: OpsBlindLevelInput) => {
     if (form?.mode === 'edit') {
       const idx = form.index;
-      setDraft((prev) => prev.map((d, i) => (i === idx ? input : d)));
+      // 값만 고친 것 — 같은 레벨이므로 prevSort 를 물려준다.
+      setDraft((prev) => prev.map((d, i) => (i === idx ? { ...input, prevSort: d.prevSort } : d)));
     } else {
-      setDraft((prev) => [...prev, input]);
+      setDraft((prev) => [...prev, { ...input, prevSort: null }]);
     }
     setDirty(true);
     setAppliedPresetName(null);
@@ -86,7 +96,8 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
 
   // 프리셋 적용 = 전체 교체. draft 교체 + dirty(true) 필수(저장 버튼 활성 조건이 dirty).
   const applyPreset = (levels: OpsBlindLevelInput[], presetName: string) => {
-    setDraft(levels);
+    // 통째 교체 — 옛 구조의 어느 레벨과도 이어지지 않는다(prevSort null).
+    setDraft(levels.map((l) => ({ ...l, prevSort: null })));
     setDirty(true);
     setAppliedPresetName(presetName);
   };
@@ -163,10 +174,10 @@ export function BlindLevelsTab({ tournamentId }: BlindLevelsTabProps) {
 
       <AppFlashList
         data={draft}
-        keyExtractor={(_: OpsBlindLevelInput, index: number) => String(index)}
+        keyExtractor={(_: OpsBlindLevelSaveInput, index: number) => String(index)}
         estimatedItemSize={64}
         contentContainerStyle={{ padding: 16, paddingTop: 4 }}
-        renderItem={({ item, index }: { item: OpsBlindLevelInput; index: number }) => (
+        renderItem={({ item, index }: { item: OpsBlindLevelSaveInput; index: number }) => (
           <Pressable
             onPress={() => setForm({ mode: 'edit', index })}
             accessibilityLabel={`${index + 1}번 레벨 편집`}

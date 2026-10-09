@@ -90,8 +90,9 @@ export function shouldSyncClock(input: {
 
 /**
  * 레벨 알림 — 1분 전 경고·레벨 전환·시간 종료. 진행 중일 때만 울린다(일시정지·시작 전·첫 렌더는 조용히).
- * 시간이 끝나면 서버가 다음 레벨로 넘기므로, 다음 레벨이 있으면 00:00 에는 울리지 않고 곧 이어지는
- * '레벨 전환'만 울린다(두 소리가 겹치지 않게). '시간 종료'는 넘어갈 곳이 없는 마지막 레벨에서만 울린다.
+ * 시간이 끝나면 서버가 다음 레벨로 넘기므로, 곧 넘어갈 상황이면 00:00 에는 울리지 않고 이어지는
+ * '레벨 전환'만 울린다(두 소리가 겹치지 않게). '시간 종료'는 **곧 넘어가지 못할 때** 울린다 —
+ * 마지막 레벨이거나, 인터넷이 끊겨 전환 요청을 보낼 수 없을 때(안 그러면 00:00 이 소리 없이 지나간다).
  */
 export type LevelAlert = 'oneMinute' | 'timeUp' | 'levelChange';
 
@@ -106,17 +107,18 @@ export const WARN_AT_SEC = 60;
 
 /**
  * 직전 틱 → 이번 틱으로 넘어오며 생긴 알림. 같은 상태가 이어지면 null(한 번만 울린다).
- * @param hasNext 다음 레벨이 있는지 — 있으면 00:00 의 '시간 종료'를 내지 않는다(자동 전환음이 대신한다).
+ * @param willAdvance 00:00 에 곧 다음 레벨로 넘어갈 것인지(다음 레벨이 있고 전환 요청을 보낼 수 있다) —
+ *   참이면 00:00 의 '시간 종료'를 내지 않는다(자동 전환음이 대신한다).
  */
 export function levelAlert(
   prev: ClockSample | null,
   next: ClockSample,
-  hasNext = false
+  willAdvance = false
 ): LevelAlert | null {
   if (!prev || !next.isRunning) return null;
   if (prev.sort !== next.sort) return 'levelChange';
   if (prev.isRunning && prev.remainingSec > 0 && next.remainingSec <= 0) {
-    return hasNext ? null : 'timeUp';
+    return willAdvance ? null : 'timeUp';
   }
   if (prev.isRunning && prev.remainingSec > WARN_AT_SEC && next.remainingSec <= WARN_AT_SEC) {
     return 'oneMinute';

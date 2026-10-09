@@ -33,6 +33,13 @@ describe('levelAlert', () => {
     expect(levelAlert(s(1, 1), s(2, 1200), true)).toBe('levelChange');
   });
 
+  it('다음 레벨이 있어도 곧 넘어가지 못하면(오프라인) 00:00 에 시간 종료를 울린다 — 소리 없이 지나가지 않게', () => {
+    // 호출부는 willAdvance = hasNext && online 을 넘긴다. 끊겨 있으면 false.
+    expect(levelAlert(s(1, 1), s(1, 0), false)).toBe('timeUp');
+    // 연결이 돌아와 서버가 넘기면 전환음이 이어진다
+    expect(levelAlert(s(1, 0), s(2, 1200), true)).toBe('levelChange');
+  });
+
   it('61초에서 바로 0 으로 건너뛰면(백그라운드) 시간 종료가 1분 경고보다 우선', () => {
     expect(levelAlert(s(1, 61), s(1, 0))).toBe('timeUp');
   });

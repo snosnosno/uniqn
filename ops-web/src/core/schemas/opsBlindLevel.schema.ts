@@ -32,3 +32,23 @@ export const opsBlindLevelsSchema = z
     message: `블라인드 레벨은 최대 ${OPS_BLIND_LEVELS_MAX}개까지 입력할 수 있습니다`,
   });
 export type OpsBlindLevelsInput = z.infer<typeof opsBlindLevelsSchema>;
+
+/**
+ * 구조 저장(ops_set_blind_levels) 전용 행 — 블라인드 값 + "저장 전 순번" `prevSort`.
+ * 서버는 구조를 통째로 지우고 1..N 으로 다시 매기므로 레벨의 정체를 모른다. prevSort 를 실어 보내면
+ * 레이트 등록 자동 마감 기준이 순번이 아니라 **그 레벨**을 따라 새 순번으로 옮겨진다(마이그 20261010100000).
+ * 서버에서 불러온 행 = 그 행의 sort, 새로 만든 행·프리셋에서 온 행 = null.
+ * 🔑 프리셋 스키마(opsBlindLevelSchema)에는 넣지 않는다 — 프리셋은 levels 를 jsonb 그대로 저장한다.
+ */
+export const opsBlindLevelSaveSchema = opsBlindLevelSchema.extend({
+  prevSort: z.number().int().min(1).nullable().optional(),
+});
+export type OpsBlindLevelSaveInput = z.infer<typeof opsBlindLevelSaveSchema>;
+
+/** 구조 저장 입력 전체(최소 1레벨·최대 100레벨). */
+export const opsBlindLevelsSaveSchema = z
+  .array(opsBlindLevelSaveSchema)
+  .min(1, { message: '블라인드 레벨을 1개 이상 입력해주세요' })
+  .max(OPS_BLIND_LEVELS_MAX, {
+    message: `블라인드 레벨은 최대 ${OPS_BLIND_LEVELS_MAX}개까지 입력할 수 있습니다`,
+  });

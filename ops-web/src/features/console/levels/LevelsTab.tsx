@@ -196,7 +196,8 @@ function LevelsEditor({
         currentLevels={parsed.ok ? parsed.levels : []}
         onApply={(applied: OpsBlindLevelInput[], name: string) =>
           edit(
-            applied.map((l) => toDraftRow(l)),
+            // 프리셋 행은 옛 구조의 어느 레벨과도 이어지지 않는다 — jsonb 에 sort 가 섞여 있어도 순번으로 줍지 않게 뗀다.
+            applied.map((l) => toDraftRow({ ...l, sort: undefined })),
             name
           )
         }
