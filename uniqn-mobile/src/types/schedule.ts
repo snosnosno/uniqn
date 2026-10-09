@@ -90,6 +90,8 @@ export interface SchedulePostingProjection {
     defaultSalary?: SalaryInfo;
     allowances?: PostingCompensation['allowances'];
     taxSettings?: PostingCompensation['taxSettings'];
+    /** 단가 조회 실패 — '급여 미정'이 아니라 '불러오지 못함'으로 표시한다(PostingSettlementContext 와 같은 뜻). */
+    salaryLookupFailed?: boolean;
   };
 }
 

@@ -135,6 +135,19 @@ describe('컨테이너 2차 해소 — 두 RPC 조합 4가지', () => {
       '컨테이너 역할 단가 2차 해소 실패 — 기본 단가 폴백 유지',
       expect.anything()
     );
+    // 🔑 빈 단가표가 '미설정'이 아니라 '못 읽음'임을 표시 계층에 알린다 — 안 알리면 화면이
+    //    "급여 미정"이라는 거짓을 말한다(#475 잔여).
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBe(true);
+  });
+
+  it('단가표가 실제로 비어 있으면(조회 성공·0행) 실패 표시를 달지 않는다 — 그건 진짜 미정이다', async () => {
+    mockGetMyVenueContexts.mockImplementation(() =>
+      Promise.resolve(new Map([[CONTAINER_ID, venueContext]]))
+    );
+
+    const schedule = await firstSchedule();
+    expect(schedule?.postingProjection?.settlement.roles).toEqual([]);
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBeUndefined();
   });
 
   it('둘 다 실패: 종전 폴백(이벤트/빈 장소)으로 내려가고 예외는 새어 나가지 않는다', async () => {
@@ -144,6 +157,9 @@ describe('컨테이너 2차 해소 — 두 RPC 조합 4가지', () => {
     const schedule = await firstSchedule();
     expect(schedule?.jobPostingName).toBe('이벤트');
     expect(schedule?.location).toBe('');
+    // 🔑 함께 죽는 것이 더 흔한 경우다(같은 틱·같은 연결). 이때도 '못 읽음'을 알려야 한다 —
+    //    키 합집합만 돌면 비어 버려 표시가 안 달리고 화면은 다시 '급여 미정'이라고 말한다.
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBe(true);
   });
 
   it('컨테이너가 없으면 두 RPC 를 아예 호출하지 않는다(불필요한 왕복 금지)', async () => {

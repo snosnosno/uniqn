@@ -107,6 +107,24 @@ describe('JobPostingRepository.search — 서버측 검색', () => {
     );
   });
 
+  // 🔑 "끝난 공고"의 기준일은 기기 로컬 날짜가 아니라 KST 오늘이다 — last_work_date 는 한국 달력 날짜이고
+  //    달력 배지 RPC·자동 마감 크론이 KST 로 센다. UTC 15:00 = KST 다음 날 00:00 이라, 이 시각에는
+  //    로컬(UTC 기기라면 08-12)과 KST(08-13)가 갈린다. 기기가 KST 여도 값은 같아 어디서 돌려도 통과한다.
+  it('끝난 공고 하한은 KST 오늘이다 (기기 시간대와 무관)', async () => {
+    jest.useFakeTimers({ now: new Date('2026-08-12T15:30:00Z') });
+    try {
+      const chain = makeChain({ data: [], error: null });
+      mockFrom.mockReturnValue(chain);
+
+      await repo.search('딜러', 300);
+
+      const orArgs = chain.or.mock.calls.map((c) => c[0] as string);
+      expect(orArgs).toContain('last_work_date.is.null,last_work_date.gte.2026-08-13');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('상한만큼만 가져온다 (hasMore 판별용 +1 행 포함)', async () => {
     const chain = makeChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain);

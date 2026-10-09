@@ -142,6 +142,22 @@ export function getTodayString(): string {
 }
 
 /**
+ * KST(UTC+9) 기준 오늘을 YYYY-MM-DD 로 반환 — 기기 시간대와 무관하다(UTC epoch 산술만 사용).
+ *
+ * @description **서버가 KST 날짜로 판정하는 값과 견줄 때** 쓴다. 공고의 `work_date`·`last_work_date` 는
+ *   한국 현장의 달력 날짜이고, 자동 마감 크론(`fn_expire_by_last_work_date`)과 달력 배지 RPC
+ *   (`get_regular_posting_date_counts`)도 KST 오늘로 센다. 기기가 KST 가 아닌데 `getTodayString()`(로컬)을
+ *   하한으로 걸면 자정 전후로 하루가 어긋나, 서버가 끝났다고 보는 공고가 목록에 남거나 반대로 사라진다.
+ *
+ *   화면의 달력·날짜 선택처럼 **사용자가 보는 벽시계 날짜**는 종전대로 `getTodayString()` 을 쓴다 —
+ *   달력 컴포넌트가 로컬 Date 로 날짜를 다루기 때문에 섞으면 오히려 하루 어긋난다.
+ *   (ops 는 같은 이유로 `domains/ops/opsEventDate.ts` 의 `kstDateString` 을 따로 둔다 — ops-web 과 공유하는 사본.)
+ */
+export function getKstTodayString(nowMs: number = Date.now()): string {
+  return new Date(nowMs + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/**
  * 어제 날짜를 YYYY-MM-DD 로 반환 (로컬 시각 기준)
  *
  * @description getTodayString 과 같은 기준(로컬 시각)으로 계산한다. UTC 로 계산하면

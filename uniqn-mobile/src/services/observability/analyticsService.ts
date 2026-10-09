@@ -557,6 +557,29 @@ export function trackOpsFunnel(
 }
 
 /**
+ * 이 앱 세션(방문자)의 공유 계측 버킷 — 앱이 뜰 때 한 번 정해지는 4자(base36).
+ * 식별자가 아니다: 저장하지 않고 새로 열 때마다 바뀐다. 아래 `buildShareFunnelTk` 의 뒷부분으로만 쓴다.
+ */
+const SHARE_VISITOR_BUCKET = Math.random().toString(36).slice(2, 6).padEnd(4, '0');
+
+/**
+ * 공유 퍼널의 anon 통행권 `tk` — 공고 id 앞 8자 + 방문자 버킷 4자(= 12자, 가드의 4~16자 안).
+ *
+ * 🔑 왜 공고 id 만 쓰지 않는가(#478 잔여): 가드 트리거의 anon 상한은 **`tk` 값 하나당 시간당 120건**이다
+ *    (20260717090500 `fn_analytics_events_guard`). `tk` 가 공고 id 앞 8자뿐이면 그 상한이 **공고 하나에**
+ *    걸려, 링크가 퍼진 공고는 121번째 열람부터 P0001 로 거부되고 repository 가 에러를 삼켜
+ *    **가장 잘된 공유일수록 숫자가 120 에서 조용히 멈춘다.** 방문자 버킷을 붙이면 상한이
+ *    "한 방문자(앱 세션)가 한 공고에 시간당 120건"이 된다 — 정상 사용으로는 닿지 않고, 한 세션 안의 폭주
+ *    (렌더 루프 등)는 여전히 막힌다. 웹은 새로고침마다 버킷이 바뀌므로 남용 방어선은 아니다(종전에도 아니었다).
+ *
+ *    집계는 `props.job_id`(전체 id)로 한다 — `tk` 는 통행권일 뿐 분석 키가 아니다. 앞 8자를 남긴 것은
+ *    원시 행을 볼 때 어느 공고인지 읽히게 하려는 것뿐이다.
+ */
+export function buildShareFunnelTk(jobId: string, bucket: string = SHARE_VISITOR_BUCKET): string {
+  return `${jobId.slice(0, 8)}${bucket}`;
+}
+
+/**
  * 공고 공유 퍼널 (S3-5) — 로깅 레일 + Supabase 영속 레일 동시 기록.
  *
  * 🔑 `trackEvent` 만 부르면 **Sentry 브레드크럼만 남고 서버에는 아무것도 안 남는다.**
@@ -571,11 +594,11 @@ export function trackShareFunnel(
   //    `props.tk`(4~16자)를 요구하고(20260717090500:51-54), 없으면 P0001 로 거부한다.
   //    그런데 이 두 이벤트의 주 대상은 앱이 없는 구직자 — 정의상 anon 이다. tk 를 안 실으면
   //    repository 가 에러를 삼켜(계측은 throw 금지) **가장 중요한 유입이 무음으로 사라진다.**
-  //    공고 id 앞 8자를 쓴다: ops_public_view_opened 의 토큰 prefix 관례와 같고,
-  //    anon 상한(시간당 120건)이 공고 단위로 걸려 한 공고의 폭주가 다른 공고를 막지 않는다.
+  //    값은 `buildShareFunnelTk` — 공고 id 앞 8자 + 방문자 버킷. 공고 id 만 쓰면 anon 상한(시간당 120건)이
+  //    공고 하나에 걸려 잘 퍼진 공고의 열람 수가 120 에서 멈춘다.
   const payload: Record<string, string> = {
     job_id: props.job_id,
-    tk: props.job_id.slice(0, 8),
+    tk: buildShareFunnelTk(props.job_id),
   };
   if (props.src) {
     payload.src = props.src;
