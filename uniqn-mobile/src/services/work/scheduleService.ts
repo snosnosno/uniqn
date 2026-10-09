@@ -135,7 +135,12 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  * 합집합인 이유는 둘의 행 집합이 다르기 때문이다 — 단가 미설정 지점은 salaries 에만 없고,
  * contexts 호출이 실패하면 salaries 에만 있다. 어느 한쪽이 죽어도 나머지는 살아남아야 한다.
  * contexts 만 실패 = 종전대로 '이벤트' 표시 + 단가는 정상. salaries 만 실패 = 이름·장소는
- * 보이고 급여만 기본 단가(15,000원)로 폴백. 둘 다 관측 가능하게 로그를 남긴다.
+ * 보이고 급여 계산만 기본 단가(15,000원)로 폴백. 둘 다 관측 가능하게 로그를 남긴다.
+ *
+ * 🔑 salaries 실패는 `salaryLookupFailed` 로 표시 계층에 알린다 — 안 알리면 빈 단가표가
+ *    "구인자가 급여를 안 정했다"와 구별되지 않아 화면이 '급여 미정'이라는 **거짓**을 말한다
+ *    (실제로는 정해져 있는데 못 읽었을 뿐이다). 일반 공고 조회에서 빠진 id(삭제된 공고 등)도 이 경로로
+ *    들어오므로 그 행에도 같은 표시가 달린다 — 단가를 확인하지 못한 것은 그쪽도 사실이다.
  */
 async function resolveContainerContexts(
   containerIds: string[]
@@ -159,11 +164,21 @@ async function resolveContainerContexts(
 
   const contexts = contextResult.status === 'fulfilled' ? contextResult.value : new Map();
   const salaries = salaryResult.status === 'fulfilled' ? salaryResult.value : new Map();
+  const salaryLookupFailed = salaryResult.status === 'rejected';
 
-  for (const containerId of new Set([...contexts.keys(), ...salaries.keys()])) {
+  // 단가 조회가 실패했으면 **요청한 전부**에 표시를 단다 — 두 RPC 는 같은 틱에 나가 함께 죽기 쉽고,
+  // 그때 키 합집합은 비어 버려 아무 행에도 표시가 안 달린다(= '급여 미정' 거짓이 그대로 남는다).
+  // 빈 컨텍스트의 이름·장소는 종전 폴백('이벤트'/빈 장소)과 같다.
+  const targetIds = salaryLookupFailed
+    ? new Set([...containerIds, ...contexts.keys()])
+    : new Set([...contexts.keys(), ...salaries.keys()]);
+
+  for (const containerId of targetIds) {
     resolved.set(
       containerId,
-      createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId))
+      createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId), {
+        salaryLookupFailed,
+      })
     );
   }
   return resolved;

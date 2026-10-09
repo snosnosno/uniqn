@@ -13,6 +13,7 @@ export {
   toDateValue,
   toISODateString,
   getTodayString,
+  getKstTodayString,
   getYesterdayString,
   toDateString,
   parseDateString,

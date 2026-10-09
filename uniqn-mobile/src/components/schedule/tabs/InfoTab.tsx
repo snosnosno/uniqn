@@ -81,6 +81,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const timeDisplay = getTimeDisplay(schedule);
   const ownerName = schedule.postingProjection?.ownerName;
   const description = schedule.postingProjection?.description;
+  const salaryLookupFailed = schedule.postingProjection?.settlement.salaryLookupFailed === true;
 
   /**
    * 표시할 급여 — 근거가 없으면 null (감사 3-1).
@@ -359,11 +360,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           title="급여 정보"
         >
           <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
+            {/* 단가를 못 읽은 것과 안 정해진 것은 다르다 — 못 읽었는데 '미정'이라 하면 거짓이다. */}
             <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-              급여 미정
+              {salaryLookupFailed ? '급여 정보를 불러오지 못했어요' : '급여 미정'}
             </Text>
             <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
-              구인자가 급여를 확정하면 이 화면에 표시돼요.
+              {salaryLookupFailed
+                ? '잠시 후 근무 목록을 새로고침해 주세요. 급여가 정해지지 않았다는 뜻은 아니에요.'
+                : '구인자가 급여를 확정하면 이 화면에 표시돼요.'}
             </Text>
           </View>
         </Section>

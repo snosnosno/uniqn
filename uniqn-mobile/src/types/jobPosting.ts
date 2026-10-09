@@ -433,6 +433,11 @@ export interface PostingSettlementContext {
   defaultSalary?: SalaryInfo;
   allowances?: PostingCompensation['allowances'];
   taxSettings?: PostingCompensation['taxSettings'];
+  /**
+   * 단가를 **조회하지 못했다**(RPC 실패). roles 가 빈 것이 "구인자가 급여를 안 정했다"가 아니라
+   * "모른다"는 뜻이므로, 화면은 '급여 미정' 대신 불러오기 실패를 말해야 한다(감사 #475 잔여).
+   */
+  salaryLookupFailed?: boolean;
 }
 
 export interface PostingFacts {

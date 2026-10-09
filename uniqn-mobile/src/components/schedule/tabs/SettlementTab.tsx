@@ -119,6 +119,9 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
   const canShowComputedSettlement =
     !!agreedSalary && !(agreedSalary.type === 'other' && agreedSalary.amount <= 0);
 
+  /** 단가 조회 실패(RPC) — 근거가 없는 이유가 '미정'이 아니라 '못 읽음'이다. 안내 문구만 바꾼다. */
+  const salaryLookupFailed = schedule.postingProjection?.settlement.salaryLookupFailed === true;
+
   const allowances: Allowances | undefined = useMemo(() => {
     if (schedule.settlementBreakdown?.allowances) {
       return schedule.settlementBreakdown.allowances;
@@ -239,7 +242,9 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         {!canShowComputedSettlement && (
           <View className="mt-4 w-full rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
             <Text className="text-center text-sm text-secondary-600 dark:text-secondary-400 font-sans">
-              급여 미정 — 구인자가 급여를 확정하면 예상 금액을 보여드려요.
+              {salaryLookupFailed
+                ? '급여 정보를 불러오지 못했어요 — 잠시 후 새로고침해 주세요.'
+                : '급여 미정 — 구인자가 급여를 확정하면 예상 금액을 보여드려요.'}
             </Text>
           </View>
         )}
@@ -317,12 +322,15 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
       {!canShowComputedSettlement && !hasFrozenPayrollAmount ? (
         <View className="rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-700 dark:bg-warning-900/20">
+          {/* 단가를 못 읽은 것과 안 정해진 것은 다르다 — 못 읽었는데 '아직 정해지지 않았다'고
+              하면 거짓이다(감사 #475 잔여). */}
           <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
-            급여가 아직 정해지지 않았어요
+            {salaryLookupFailed ? '급여 정보를 불러오지 못했어요' : '급여가 아직 정해지지 않았어요'}
           </Text>
           <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-sans">
-            구인자가 급여를 확정하면 이 화면에 정산 금액이 표시돼요. 급하면 구인자에게 직접 확인해
-            주세요.
+            {salaryLookupFailed
+              ? '잠시 후 근무 목록을 새로고침해 주세요. 급여가 정해지지 않았다는 뜻은 아니에요. 급하면 구인자에게 직접 확인해 주세요.'
+              : '구인자가 급여를 확정하면 이 화면에 정산 금액이 표시돼요. 급하면 구인자에게 직접 확인해 주세요.'}
           </Text>
         </View>
       ) : settlement ? (

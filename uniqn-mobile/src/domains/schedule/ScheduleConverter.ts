@@ -96,7 +96,9 @@ export interface ScheduleContainerContextInput {
  */
 export function createScheduleContainerContext(
   roleSalaries: PostingRoleCatalogEntry[],
-  context?: ScheduleContainerContextInput
+  context?: ScheduleContainerContextInput,
+  /** 단가 조회가 실패했는지 — 빈 단가표가 '미설정'이 아니라 '모름'임을 표시 계층에 알린다. */
+  options?: { salaryLookupFailed?: boolean }
 ): SchedulePostingContext {
   const location = context?.location ?? undefined;
   return {
@@ -120,6 +122,7 @@ export function createScheduleContainerContext(
       //    합의된 적 없는 금액을 확정 금액처럼 보여준다. 계산 결과는 불변
       //    (getRoleSalaryFromRoles 가 내부에서 같은 폴백을 계속 적용한다).
       defaultSalary: undefined,
+      ...(options?.salaryLookupFailed ? { salaryLookupFailed: true } : {}),
     },
   };
 }
