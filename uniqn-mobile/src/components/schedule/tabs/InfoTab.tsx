@@ -366,7 +366,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             </Text>
             <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
               {salaryLookupFailed
-                ? '잠시 후 다시 열어 주세요. 급여가 정해지지 않았다는 뜻은 아니에요.'
+                ? '잠시 후 근무 목록을 새로고침해 주세요. 급여가 정해지지 않았다는 뜻은 아니에요.'
                 : '구인자가 급여를 확정하면 이 화면에 표시돼요.'}
             </Text>
           </View>

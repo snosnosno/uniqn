@@ -139,7 +139,8 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  *
  * 🔑 salaries 실패는 `salaryLookupFailed` 로 표시 계층에 알린다 — 안 알리면 빈 단가표가
  *    "구인자가 급여를 안 정했다"와 구별되지 않아 화면이 '급여 미정'이라는 **거짓**을 말한다
- *    (실제로는 정해져 있는데 못 읽었을 뿐이다).
+ *    (실제로는 정해져 있는데 못 읽었을 뿐이다). 일반 공고 조회에서 빠진 id(삭제된 공고 등)도 이 경로로
+ *    들어오므로 그 행에도 같은 표시가 달린다 — 단가를 확인하지 못한 것은 그쪽도 사실이다.
  */
 async function resolveContainerContexts(
   containerIds: string[]
@@ -165,7 +166,14 @@ async function resolveContainerContexts(
   const salaries = salaryResult.status === 'fulfilled' ? salaryResult.value : new Map();
   const salaryLookupFailed = salaryResult.status === 'rejected';
 
-  for (const containerId of new Set([...contexts.keys(), ...salaries.keys()])) {
+  // 단가 조회가 실패했으면 **요청한 전부**에 표시를 단다 — 두 RPC 는 같은 틱에 나가 함께 죽기 쉽고,
+  // 그때 키 합집합은 비어 버려 아무 행에도 표시가 안 달린다(= '급여 미정' 거짓이 그대로 남는다).
+  // 빈 컨텍스트의 이름·장소는 종전 폴백('이벤트'/빈 장소)과 같다.
+  const targetIds = salaryLookupFailed
+    ? new Set([...containerIds, ...contexts.keys()])
+    : new Set([...contexts.keys(), ...salaries.keys()]);
+
+  for (const containerId of targetIds) {
     resolved.set(
       containerId,
       createScheduleContainerContext(salaries.get(containerId) ?? [], contexts.get(containerId), {

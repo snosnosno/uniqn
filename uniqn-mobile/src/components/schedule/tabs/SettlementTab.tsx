@@ -243,7 +243,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           <View className="mt-4 w-full rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
             <Text className="text-center text-sm text-secondary-600 dark:text-secondary-400 font-sans">
               {salaryLookupFailed
-                ? '급여 정보를 불러오지 못했어요 — 잠시 후 다시 확인해 주세요.'
+                ? '급여 정보를 불러오지 못했어요 — 잠시 후 새로고침해 주세요.'
                 : '급여 미정 — 구인자가 급여를 확정하면 예상 금액을 보여드려요.'}
             </Text>
           </View>
@@ -329,7 +329,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           </Text>
           <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-sans">
             {salaryLookupFailed
-              ? '잠시 후 다시 열어 주세요. 급여가 정해지지 않았다는 뜻은 아니에요. 급하면 구인자에게 직접 확인해 주세요.'
+              ? '잠시 후 근무 목록을 새로고침해 주세요. 급여가 정해지지 않았다는 뜻은 아니에요. 급하면 구인자에게 직접 확인해 주세요.'
               : '구인자가 급여를 확정하면 이 화면에 정산 금액이 표시돼요. 급하면 구인자에게 직접 확인해 주세요.'}
           </Text>
         </View>

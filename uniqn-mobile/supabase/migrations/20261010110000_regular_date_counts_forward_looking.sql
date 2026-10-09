@@ -13,6 +13,11 @@
 --   하한을 시작일이 아니라 **마지막 근무일**에 거는 이유도 목록과 같다: 지난주에 시작해 다음 주까지
 --   이어지는 다중일 공고는 지난 날짜 칸에서도 여전히 열리고 지원할 수 있다(그 칸의 배지는 남는다).
 --
+-- 구형 행: `work_dates` 가 비고 `work_date` 만 있는 행은 동기화 트리거(fn_sync_last_work_date — work_dates 에서만
+--   계산)가 last_work_date 를 못 채워 NULL 이다. NULL 을 그냥 통과시키면 이 행들의 지난 날짜 배지가 그대로 남는다
+--   → 그 폴백 분기에는 `work_date >= KST 오늘` 을 직접 건다. (work_dates 는 있는데 last_work_date 가 NULL 인 것은
+--   날짜 형식이 깨진 행뿐이라 종전대로 통과시킨다.)
+--
 -- 범위 밖: 목록은 active + capacity_full 을 보여 주는데 배지는 active 만 센다(종전 그대로 — 정원 마감
 --   공고를 배지에 셀지는 제품 판단이다).
 --
@@ -41,9 +46,15 @@ CREATE OR REPLACE FUNCTION public.get_regular_posting_date_counts(p_start_date t
     from public.job_postings jp
     where jp.posting_type = 'regular'
       and jp.status = 'active'
-      -- 목록(getList)의 전향 하한과 같은 술어 — 끝난 공고는 배지에서도 뺀다. 값이 없는 구형 행은 통과(fail-open).
-      and (jp.last_work_date is null
-           or jp.last_work_date >= (now() at time zone 'Asia/Seoul')::date)
+      -- 목록(getList)의 전향 하한과 같은 술어 — 끝난 공고는 배지에서도 뺀다.
+      and (jp.last_work_date >= (now() at time zone 'Asia/Seoul')::date
+           or (jp.last_work_date is null
+               and (
+                 -- work_dates 는 있는데 마지막 근무일을 못 뽑은 행(형식이 깨진 날짜) — 통과(fail-open)
+                 (jp.work_dates is not null and array_length(jp.work_dates, 1) > 0)
+                 -- work_date 만 있는 구형 행 — 위 unnest 가 이 값을 쓰므로 여기서 직접 하한을 건다
+                 or jp.work_date >= to_char((now() at time zone 'Asia/Seoul')::date, 'YYYY-MM-DD')
+               )))
   )
   select
     wd as work_date,

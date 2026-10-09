@@ -157,6 +157,9 @@ describe('컨테이너 2차 해소 — 두 RPC 조합 4가지', () => {
     const schedule = await firstSchedule();
     expect(schedule?.jobPostingName).toBe('이벤트');
     expect(schedule?.location).toBe('');
+    // 🔑 함께 죽는 것이 더 흔한 경우다(같은 틱·같은 연결). 이때도 '못 읽음'을 알려야 한다 —
+    //    키 합집합만 돌면 비어 버려 표시가 안 달리고 화면은 다시 '급여 미정'이라고 말한다.
+    expect(schedule?.postingProjection?.settlement.salaryLookupFailed).toBe(true);
   });
 
   it('컨테이너가 없으면 두 RPC 를 아예 호출하지 않는다(불필요한 왕복 금지)', async () => {

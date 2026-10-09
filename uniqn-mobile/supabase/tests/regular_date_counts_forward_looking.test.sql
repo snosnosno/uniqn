@@ -1,10 +1,10 @@
 -- 달력 날짜 배지 RPC(get_regular_posting_date_counts) — 목록과 같은 전향 하한(마이그 20261010110000).
 --   끝난 공고(last_work_date < KST 오늘)는 배지에서 빠진다 · 아직 이어지는 다중일 공고는 지난 날짜 칸에도 남는다 ·
---   last_work_date 가 없는 구형 행은 통과(fail-open) · 권한(anon·authenticated EXECUTE)은 그대로.
+--   work_date 만 있는 구형 행(last_work_date NULL)도 지난 날짜면 빠지고 앞날이면 남는다 · 권한(anon·authenticated EXECUTE)은 그대로.
 --
 -- 다른 테스트·시드가 남긴 공고와 섞이지 않도록 **넣기 전후의 차이**로 단언한다(절대 건수 금지).
 BEGIN;
-SELECT plan(8);
+SELECT plan(9);
 
 DO $$
 DECLARE s RECORD;
@@ -51,13 +51,15 @@ SELECT pg_temp.add_posting('rdc A 어제 하루', ARRAY[pg_temp.kst_today() - 1]
 SELECT pg_temp.add_posting('rdc B 어제~내일', ARRAY[pg_temp.kst_today() - 1, pg_temp.kst_today() + 1]);
 -- C: 오늘 하루짜리 — 경계(오늘은 포함)
 SELECT pg_temp.add_posting('rdc C 오늘 하루', ARRAY[pg_temp.kst_today()]);
--- D: 어제 하루짜리인데 last_work_date 가 없는 구형 행
+-- D·E: 구형 행 — work_dates 가 비고 work_date 만 있다. 동기화 트리거는 work_dates 에서만 계산하므로
+--       work_dates 를 비우면 last_work_date 가 NULL 이 된다(실제 구형 데이터의 모양 그대로).
 DO $$
 DECLARE v_id uuid;
 BEGIN
-  v_id := pg_temp.add_posting('rdc D 구형(마지막 근무일 없음)', ARRAY[pg_temp.kst_today() - 1]);
-  -- last_work_date 만 고치면 동기화 트리거(UPDATE OF work_dates)는 돌지 않는다.
-  UPDATE public.job_postings SET last_work_date = NULL WHERE id = v_id;
+  v_id := pg_temp.add_posting('rdc D 구형 어제', ARRAY[pg_temp.kst_today() - 1]);
+  UPDATE public.job_postings SET work_dates = '{}' WHERE id = v_id;
+  v_id := pg_temp.add_posting('rdc E 구형 내일', ARRAY[pg_temp.kst_today() + 1]);
+  UPDATE public.job_postings SET work_dates = '{}' WHERE id = v_id;
 END $$;
 
 -- ─── (1) 픽스처 확인 — 트리거가 마지막 근무일을 채웠다(전제가 깨지면 아래 단언이 공허해진다) ───
@@ -68,14 +70,14 @@ SELECT is(
 -- ─── (2~4) 어제 칸: 끝난 A 는 빠지고, 이어지는 B 와 구형 D 만 센다 ───
 SELECT is(
   pg_temp.badge(pg_temp.kst_today() - 1) - (SELECT yesterday FROM rdc_before),
-  2::bigint, '어제 칸 배지는 +2 — 끝난 하루짜리(A)는 세지 않고 이어지는 다중일(B)·구형(D)만 센다');
+  1::bigint, '어제 칸 배지는 +1 — 끝난 하루짜리(A)·구형 어제(D)는 세지 않고 이어지는 다중일(B)만 센다');
 SELECT is(
   (SELECT status::text FROM public.job_postings WHERE title = 'rdc A 어제 하루'),
   'active', '빠진 A 는 여전히 active 다 — status 가 아니라 마지막 근무일로 걸렀다');
 SELECT is(
   (SELECT count(*)::int FROM public.job_postings
     WHERE title LIKE 'rdc %' AND last_work_date IS NULL),
-  1, '구형 행(D)은 last_work_date 가 없어도 통과한다(fail-open)');
+  2, '전제: 구형 행(D·E)은 트리거가 last_work_date 를 못 채워 NULL 이다 — NULL 을 그냥 통과시키면 D 가 어제 칸에 남는다');
 
 -- ─── (5~6) 오늘·내일 칸 ───
 SELECT is(
@@ -83,7 +85,11 @@ SELECT is(
   1::bigint, '오늘 칸 배지는 +1 — 오늘이 마지막 근무일인 공고는 포함(경계)');
 SELECT is(
   pg_temp.badge(pg_temp.kst_today() + 1) - (SELECT tomorrow FROM rdc_before),
-  1::bigint, '내일 칸 배지는 +1 — 다중일 공고(B)');
+  2::bigint, '내일 칸 배지는 +2 — 다중일 공고(B) + 구형 내일(E, 앞날의 구형 행은 종전대로 센다)');
+SELECT is(
+  (SELECT count(*)::int FROM public.job_postings
+    WHERE title LIKE 'rdc % 구형 %' AND work_dates = '{}' AND work_date <> ''),
+  2, '전제: 구형 픽스처는 work_dates 가 비고 work_date 만 있다');
 
 -- ─── (7~8) 권한 보존 — CREATE OR REPLACE 가 ACL 을 건드리지 않는다(게스트 둘러보기는 anon 으로 부른다) ───
 SELECT ok(has_function_privilege('anon', 'public.get_regular_posting_date_counts(text,text)', 'EXECUTE'),
