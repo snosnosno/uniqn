@@ -1,3 +1,5 @@
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/domains/ops/roster.ts
+// 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
 /**
  * 명단 붙여넣기 해석(순수) — 엑셀·카톡에서 복사한 줄들을 등록 입력으로 바꾼다.
  * 한 줄 = 한 명. 앞의 번호("1.", "2)")와 엑셀 번호 칸은 떼고, 전화번호로 보이는 부분을 연락처로 가른다.

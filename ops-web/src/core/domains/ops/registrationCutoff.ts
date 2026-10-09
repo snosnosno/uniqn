@@ -1,6 +1,9 @@
+// ⚠️ 자동 생성 파일 — 직접 수정 금지. 정본: uniqn-mobile/src/domains/ops/registrationCutoff.ts
+// 갱신: node scripts/sync-ops-core.mjs (설계 docs/planning/2026-09-27-ops-web-design.md §3.2)
 /**
  * 레이트 등록 자동 마감 — 표시용 파생(순수). 마감 자체는 서버가 한다(레벨이 넘어가는 순간).
  * 기준은 블라인드 구조의 순번(sort)이라 레벨과 브레이크를 모두 고를 수 있다.
+ * 웹 콘솔과 모바일 콘솔이 같은 문구·같은 선택지를 쓰도록 정본에 둔다(ops-web 은 사본).
  */
 import type { OpsBlindLevel } from '@/core/types/ops';
 

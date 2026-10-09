@@ -17,7 +17,7 @@ import { parseAmount } from '@/core/components/ops/payoutRows';
 import type { BulkRegisterRow } from '@/core/repositories/ops';
 import { BULK_REGISTER_MAX } from '@/core/schemas/opsParticipant.schema';
 import { Field } from '@/routes/auth/AuthShell';
-import { parseRoster } from './roster';
+import { parseRoster } from '@/core/domains/ops/roster';
 
 interface Props {
   open: boolean;

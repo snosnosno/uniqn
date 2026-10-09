@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { OpsBlindLevel, OpsTournament } from '@/core/types/ops';
 import { useSetRegistrationCutoff } from '@/hooks/ops/useConsoleMutations';
-import { cutoffLevelName, cutoffOptions, cutoffState } from './registrationCutoff';
+import { cutoffLevelName, cutoffOptions, cutoffState } from '@/core/domains/ops/registrationCutoff';
 
 export function RegistrationCutoff({
   tournament,

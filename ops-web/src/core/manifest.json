@@ -73,17 +73,41 @@
       ],
       "sha256": "fc80df6d8a35be97825fe8eb06d849050d17a550435110ffb8fd87c2aa78e69a"
     },
+    "domains/ops/__tests__/registrationCutoff.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/registrationCutoff.test.ts"
+      ],
+      "sha256": "e126711af3ee2a088704d337f879949930cc616ca199f99d4bbe8bcd3e5d6f81"
+    },
+    "domains/ops/__tests__/roster.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/__tests__/roster.test.ts"
+      ],
+      "sha256": "60a4f6a24d9ba54283f7674addbea14f4703a5cc7e65832de03e80d754a4b2b2"
+    },
     "domains/ops/clock/__tests__/computeClockRemaining.test.ts": {
       "sources": [
         "uniqn-mobile/src/domains/ops/clock/__tests__/computeClockRemaining.test.ts"
       ],
       "sha256": "085493ffdeb952ec23f04896b3b4d5ee0003f843cdc7db2f06d83e5f64e58141"
     },
+    "domains/ops/clock/__tests__/shouldSyncClock.test.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/clock/__tests__/shouldSyncClock.test.ts"
+      ],
+      "sha256": "036ff07f349f37a0867d2e40cf41271ffb1571fd7120b11e40bc4ba3908160e1"
+    },
     "domains/ops/clock/computeClockRemaining.ts": {
       "sources": [
         "uniqn-mobile/src/domains/ops/clock/computeClockRemaining.ts"
       ],
       "sha256": "a737da921b2c3a300fc6f3ca8b806dcd8d9003f77624e2519be0bbe9f49b8166"
+    },
+    "domains/ops/clock/shouldSyncClock.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/clock/shouldSyncClock.ts"
+      ],
+      "sha256": "8714bbfcfe83b110e6b86f069ec2421474f1dc37d679c80bb5c0b5933a8a7b27"
     },
     "domains/ops/defaultBlindStructure.ts": {
       "sources": [
@@ -95,7 +119,7 @@
       "sources": [
         "uniqn-mobile/src/domains/ops/index.ts"
       ],
-      "sha256": "9c3e6613fe0c43e952e12a66654fce6210f2abcedf5e516a349051f046aa47f3"
+      "sha256": "2ed4f7de73ee846790adc9a8245516d2094830e828fd3d6b088fa539cbe7d474"
     },
     "domains/ops/monitor/__tests__/monitorConfig.test.ts": {
       "sources": [
@@ -181,6 +205,12 @@
       ],
       "sha256": "cdff12018baeda9377af298e043c18b67165e9a5f47b91f8123241e8ecdaecb8"
     },
+    "domains/ops/registrationCutoff.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/registrationCutoff.ts"
+      ],
+      "sha256": "2cff32b1c0092c38e088d0dfee73f65487d3a2342615515910cc5a3119210563"
+    },
     "domains/ops/resume/__tests__/selectResumeTournament.test.ts": {
       "sources": [
         "uniqn-mobile/src/domains/ops/resume/__tests__/selectResumeTournament.test.ts"
@@ -192,6 +222,12 @@
         "uniqn-mobile/src/domains/ops/resume/selectResumeTournament.ts"
       ],
       "sha256": "a98d69391e2a7eda40563e3826f928b602b43255b0f4113d4ee45bf37aa4ae32"
+    },
+    "domains/ops/roster.ts": {
+      "sources": [
+        "uniqn-mobile/src/domains/ops/roster.ts"
+      ],
+      "sha256": "fb8c1f80fbe485899659c051416d88c8ea9bd55eefd39a7de36d010c544f3a88"
     },
     "domains/ops/seatAssignment/__tests__/chipDraft.test.ts": {
       "sources": [
