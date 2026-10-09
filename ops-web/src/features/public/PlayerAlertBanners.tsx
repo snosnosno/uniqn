@@ -56,7 +56,7 @@ export function PlayerAlertBanners({
 
 /** 소리·진동 켜기 — 이 기기에만 저장된다. 켜는 순간 한 번 울려 스피커 상태를 확인시킨다. */
 export function PlayerAlertToggle() {
-  const enabled = useChimeEnabled();
+  const enabled = useChimeEnabled('player');
   return (
     <div className="flex items-center gap-3 px-[18px] py-3">
       <p className="flex-1 text-sm">
@@ -70,7 +70,7 @@ export function PlayerAlertToggle() {
         className="h-11"
         aria-pressed={enabled}
         onClick={() => {
-          setChimeEnabled(!enabled);
+          setChimeEnabled(!enabled, 'player');
           if (!enabled) notifyPlayer();
         }}
       >

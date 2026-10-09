@@ -3,7 +3,7 @@ import { isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase } from '@/utils/supabase';
 import { mapOpsRpcError } from './opsRpcError';
 import type { IOpsBlindLevelRepository } from '../interfaces/IOpsBlindLevelRepository';
-import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import type { OpsBlindLevelSaveInput } from '@/schemas/opsBlindLevel.schema';
 import type { OpsBlindLevel } from '@/types/ops';
 
 const TABLE = 'ops_blind_levels' as const;
@@ -33,8 +33,8 @@ export class SupabaseOpsBlindLevelRepository implements IOpsBlindLevelRepository
   async setLevels(
     tournamentId: string,
     actorId: string,
-    levels: readonly OpsBlindLevelInput[]
-  ): Promise<{ count: number; reanchored: boolean }> {
+    levels: readonly OpsBlindLevelSaveInput[]
+  ): Promise<{ count: number; reanchored: boolean; cutoffSort: number | null }> {
     try {
       // 앱 camelCase → DB snake_case jsonb (경계 변환). RPC 가 sort 1..N 을 재부여한다.
       const payload = levels.map((l) => ({
@@ -44,6 +44,8 @@ export class SupabaseOpsBlindLevelRepository implements IOpsBlindLevelRepository
         ante: l.ante,
         duration_sec: l.durationSec,
         is_break: l.isBreak,
+        // prevSort 를 준 행만 키를 싣는다 — 서버는 키가 하나라도 있으면 자동 마감 기준을 그 레벨에 맞춰 옮긴다.
+        ...(l.prevSort !== undefined ? { prev_sort: l.prevSort } : {}),
       }));
       const { data, error } = await supabase.rpc('ops_set_blind_levels', {
         p_tournament_id: tournamentId,
@@ -51,8 +53,8 @@ export class SupabaseOpsBlindLevelRepository implements IOpsBlindLevelRepository
         p_levels: payload,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 블라인드 설정' });
-      const r = data as { count: number; reanchored: boolean };
-      return { count: r.count, reanchored: r.reanchored };
+      const r = data as { count: number; reanchored: boolean; cutoff_sort?: number | null };
+      return { count: r.count, reanchored: r.reanchored, cutoffSort: r.cutoff_sort ?? null };
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 블라인드 설정' });

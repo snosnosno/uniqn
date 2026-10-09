@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
-import type { OpsBlindLevelInput } from '@/schemas/opsBlindLevel.schema';
+import type { OpsBlindLevelSaveInput } from '@/schemas/opsBlindLevel.schema';
 import { saveFailed } from '@/constants/messages';
 
 const toast = {
@@ -42,12 +42,14 @@ export function useSetBlindLevels(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
   return useMutation({
-    mutationFn: (levels: readonly OpsBlindLevelInput[]) => {
+    mutationFn: (levels: readonly OpsBlindLevelSaveInput[]) => {
       requireOnlineForMutation('ops.setBlindLevels');
       return opsBlindLevelService.setLevels(tournamentId, requireActor(actorId), levels);
     },
     onSuccess: () => {
       invalidateClockQueries(qc, tournamentId);
+      // 구조가 바뀌면 서버가 레이트 등록 자동 마감 기준(대회 행)을 옮기거나 지운다.
+      qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
       toast.success('블라인드 구조를 저장했습니다');
     },
     onError: (e) => {

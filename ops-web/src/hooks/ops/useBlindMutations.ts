@@ -4,7 +4,10 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { opsBlindPresetRepository } from '@/core/repositories/ops';
-import type { OpsBlindLevelInput } from '@/core/schemas/opsBlindLevel.schema';
+import type {
+  OpsBlindLevelInput,
+  OpsBlindLevelSaveInput,
+} from '@/core/schemas/opsBlindLevel.schema';
 import * as opsBlindLevelService from '@/core/services/ops/opsBlindLevelService';
 import * as opsBlindPresetService from '@/core/services/ops/opsBlindPresetService';
 import { opsKeys } from './keys';
@@ -13,9 +16,15 @@ import { useOpsMutation } from './opsMutation';
 export function useSetBlindLevels(id: string) {
   return useOpsMutation({
     op: 'ops.setBlindLevels',
-    run: (levels: readonly OpsBlindLevelInput[], actor) =>
+    run: (levels: readonly OpsBlindLevelSaveInput[], actor) =>
       opsBlindLevelService.setLevels(id, actor, levels),
-    invalidate: [opsKeys.clock(id), opsKeys.liveStats(id), opsKeys.blindLevels(id)],
+    // 대회 행까지 — 구조가 바뀌면 서버가 레이트 등록 자동 마감 기준을 옮기거나 지운다.
+    invalidate: [
+      opsKeys.clock(id),
+      opsKeys.liveStats(id),
+      opsKeys.blindLevels(id),
+      opsKeys.tournamentDetail(id),
+    ],
     success: () => '블라인드 구조를 저장했습니다',
   });
 }
