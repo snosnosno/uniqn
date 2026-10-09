@@ -140,6 +140,23 @@ describe('useOpsClockAutoAdvance', () => {
     expect(mockSync).toHaveBeenCalledTimes(2);
   });
 
+  it('레벨이 바뀌면 재시도 기록을 푼다 — 새 레벨의 첫 요청은 간격을 기다리지 않는다', async () => {
+    mockSync.mockResolvedValue(0);
+    const { rerender } = setup(due);
+    await flush();
+    expect(mockSync).toHaveBeenCalledTimes(1);
+
+    // 같은 레벨이면 0.5초 뒤에는 아직 다시 묻지 않는다(대조군)
+    rerender({ clock: { ...due, nowMs: 10_500 } });
+    await flush();
+    expect(mockSync).toHaveBeenCalledTimes(1);
+
+    // 다른 기기가 넘겨 레벨이 바뀌었고, 그 레벨도 이미 끝나 있다(오래 꺼 뒀다 켠 경우) — 곧바로 묻는다
+    rerender({ clock: { ...due, currentSort: 4, nowMs: 10_600 } });
+    await flush();
+    expect(mockSync).toHaveBeenCalledTimes(2);
+  });
+
   it('실패해도 던지지 않고, 다음 간격에 다시 묻는다', async () => {
     mockSync.mockRejectedValueOnce(new Error('rpc down')).mockResolvedValue(1);
     const { rerender } = setup(due);

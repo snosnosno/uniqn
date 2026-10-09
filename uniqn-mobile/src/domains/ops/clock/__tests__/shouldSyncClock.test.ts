@@ -34,6 +34,19 @@ describe('shouldSyncClock — 끝난 레벨 자동 전환 요청 시점', () => 
     expect(shouldSyncClock({ ...base, lastAttemptMs: 7_000, attempts: 3 })).toBe(true);
   });
 
+  it('10번을 넘겨도 안 넘어가면 20초 간격으로 — 시계가 크게 앞선 기기가 3초마다 계속 묻지 않게', () => {
+    // 10번째까지는 3초 간격
+    expect(shouldSyncClock({ ...base, lastAttemptMs: 7_000, attempts: 10 })).toBe(true);
+    // 11번째부터는 3초로는 모자라고 20초가 지나야 한다
+    expect(shouldSyncClock({ ...base, lastAttemptMs: 7_000, attempts: 11 })).toBe(false);
+    expect(shouldSyncClock({ ...base, nowMs: 30_000, lastAttemptMs: 10_001, attempts: 11 })).toBe(
+      false
+    );
+    expect(shouldSyncClock({ ...base, nowMs: 30_000, lastAttemptMs: 10_000, attempts: 11 })).toBe(
+      true
+    );
+  });
+
   it('앞 요청이 돌아오기 전에는 다시 보내지 않는다', () => {
     expect(shouldSyncClock({ ...base, lastAttemptMs: 1_000, attempts: 5, inFlight: true })).toBe(
       false

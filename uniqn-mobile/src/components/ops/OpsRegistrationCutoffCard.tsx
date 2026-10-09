@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SheetModal } from '@/components/ui';
+import { extractUserMessage } from '@/errors';
 import { cutoffLevelName, cutoffOptions, cutoffState, type CutoffState } from '@/domains/ops';
 import { useOpsBlindLevels, useOpsClock, useSetRegistrationCutoff } from '@/hooks/ops';
 import type { OpsTournament } from '@/types/ops';
@@ -72,11 +73,14 @@ export function OpsRegistrationCutoffCard({ tournament }: OpsRegistrationCutoffC
   const dirty = draft !== saved;
   // 닫힌 동안 새 기준을 넣어도 등록을 여는 순간 서버가 지운다 — 해제("사용 안 함")만 받는다.
   const closedBlocksApply = !tournament.registrationOpen && draft !== null;
-  const canApply = dirty && !closedBlocksApply && !setCutoff.isPending;
+  // 시트를 열어 둔 사이 레벨이 넘어가면 고른 값이 선택지에서 빠진다 — 그 값은 서버가 거부하므로 보내지 않는다.
+  const draftGone = !choices.some((c) => c.sort === draft);
+  const canApply = dirty && !closedBlocksApply && !draftGone && !setCutoff.isPending;
 
   const openSheet = () => {
     // 열 때마다 저장값에서 다시 시작한다(다른 기기의 변경·수동 개방으로 해제된 값을 반영).
     setDraft(saved);
+    setCutoff.reset();
     setSheetOpen(true);
   };
 
@@ -138,7 +142,7 @@ export function OpsRegistrationCutoffCard({ tournament }: OpsRegistrationCutoffC
                 key={c.sort ?? 'none'}
                 onPress={() => setDraft(c.sort)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected }}
+                accessibilityState={{ checked: selected }}
                 accessibilityLabel={c.label}
                 className={`min-h-[48px] flex-row items-center justify-between rounded-md border px-3 active:opacity-70 ${
                   selected
@@ -158,6 +162,17 @@ export function OpsRegistrationCutoffCard({ tournament }: OpsRegistrationCutoffC
           {dirty && closedBlocksApply ? (
             <Text className="text-xs text-error-600 dark:text-error-400">
               등록이 닫혀 있어요. 먼저 등록을 연 뒤 자동 마감을 설정해 주세요.
+            </Text>
+          ) : null}
+          {draftGone ? (
+            <Text className="text-xs text-error-600 dark:text-error-400">
+              고른 레벨이 이미 지나갔어요. 다시 골라 주세요.
+            </Text>
+          ) : null}
+          {/* 실패 사유는 시트 안에도 적는다 — 네이티브 토스트는 모달 창 위로 올라오지 못한다. */}
+          {setCutoff.error ? (
+            <Text accessibilityRole="alert" className="text-xs text-error-600 dark:text-error-400">
+              {extractUserMessage(setCutoff.error) || '자동 마감 설정에 실패했습니다'}
             </Text>
           ) : null}
         </View>

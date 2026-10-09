@@ -12,10 +12,18 @@ import { useOpsBlindLevels, useOpsClock } from '@/hooks/ops';
 import { OpsRegistrationCutoffCard, cutoffStatusText } from '../OpsRegistrationCutoffCard';
 
 const mockMutate = jest.fn();
+const mockReset = jest.fn();
+const mockState: { error: unknown } = { error: null };
+const mockCutoffMutation = () => ({
+  mutate: mockMutate,
+  reset: mockReset,
+  isPending: false,
+  error: mockState.error,
+});
 jest.mock('@/hooks/ops', () => ({
   useOpsBlindLevels: jest.fn(),
   useOpsClock: jest.fn(),
-  useSetRegistrationCutoff: jest.fn(() => ({ mutate: mockMutate, isPending: false })),
+  useSetRegistrationCutoff: jest.fn(() => mockCutoffMutation()),
 }));
 
 // SheetModal 실물 대신 children+footer 통과 스텁(레포 관례).
@@ -50,6 +58,8 @@ function setup(currentSort = 1, blindLevels: unknown[] = levels) {
 
 beforeEach(() => {
   mockMutate.mockReset();
+  mockReset.mockReset();
+  mockState.error = null;
 });
 
 describe('OpsRegistrationCutoffCard', () => {
@@ -141,6 +151,47 @@ describe('OpsRegistrationCutoffCard', () => {
     ).toBeTruthy();
     fireEvent.press(getByText('레벨 2 종료 시 ▾'));
     expect(getByLabelText('레벨 2 종료 시')).toBeTruthy();
+  });
+});
+
+describe('OpsRegistrationCutoffCard — 시트 안 안내', () => {
+  it('열어 둔 사이 레벨이 넘어가 고른 값이 사라지면 적용을 막고 다시 고르라고 한다', () => {
+    setup(1);
+    const { getByText, getByLabelText, rerender } = render(
+      <OpsRegistrationCutoffCard tournament={tournament()} />
+    );
+    fireEvent.press(getByText('사용 안 함 ▾'));
+    fireEvent.press(getByLabelText('레벨 1 종료 시'));
+
+    // 시계가 레벨 3 으로 넘어갔다 — 레벨 1 은 이미 지난 레벨(서버가 거부한다)
+    setup(4);
+    rerender(<OpsRegistrationCutoffCard tournament={tournament()} />);
+
+    expect(getByText('고른 레벨이 이미 지나갔어요. 다시 골라 주세요.')).toBeTruthy();
+    fireEvent.press(getByLabelText('자동 마감 적용'));
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('실패 사유를 시트 안에 적는다 — 네이티브 토스트는 모달 위로 올라오지 못한다', () => {
+    setup();
+    mockState.error = new Error('서버가 거절했어요');
+    const { getByText, getByRole, queryByRole } = render(
+      <OpsRegistrationCutoffCard tournament={tournament()} />
+    );
+    expect(queryByRole('alert')).toBeNull(); // 시트가 닫혀 있을 때는 없다
+    fireEvent.press(getByText('사용 안 함 ▾'));
+    // 문구는 공용 오류 변환(extractUserMessage)이 정한다 — 여기서는 안내가 시트 안에 뜨는지만 본다.
+    expect(getByRole('alert')).toBeTruthy();
+  });
+
+  it('선택지는 radio 이고 고른 것만 checked 다', () => {
+    setup();
+    const { getByText, getByLabelText } = render(
+      <OpsRegistrationCutoffCard tournament={tournament()} />
+    );
+    fireEvent.press(getByText('사용 안 함 ▾'));
+    expect(getByLabelText('사용 안 함').props.accessibilityState).toEqual({ checked: true });
+    expect(getByLabelText('레벨 1 종료 시').props.accessibilityState).toEqual({ checked: false });
   });
 });
 

@@ -8,10 +8,17 @@
  * 자동 전환을 다시 요청하기까지 기다리는 시간 — 서버가 아직 "안 끝났다"고 본 경우의 재시도 간격.
  * 화면 시계가 서버보다 조금 앞서면 첫 요청이 0 을 받는다. 그 오차는 대개 1초 안쪽이라 처음 두 번은
  * 1초 뒤에 다시 묻고, 그래도 안 넘어가면(시계가 크게 어긋났거나 서버 장애) 3초 간격으로 늦춘다.
+ *
+ * 그래도 계속 안 넘어가면 20초 간격까지 늦춘다. 기기 시계가 서버보다 크게 앞서 있으면(수동으로 틀어 둔 기기)
+ * 화면은 매 레벨 끝마다 "끝났다"고 보는데 서버는 아니라서, 상한이 없으면 콘솔이 켜진 내내 3초마다 쓰기 RPC 를
+ * 보낸다. 이 구간에서는 어차피 매분 크론이 넘기므로 화면 요청을 줄여도 전환이 늦어지지 않는다.
  */
 export const CLOCK_SYNC_RETRY_MS = 3000;
 export const CLOCK_SYNC_FAST_RETRY_MS = 1000;
 export const CLOCK_SYNC_FAST_RETRIES = 2;
+/** 이 횟수를 넘겨도 안 넘어가면 느린 간격으로 — 2회(1초) + 8회(3초) ≈ 26초를 빠르게 물은 뒤다. */
+export const CLOCK_SYNC_SLOW_AFTER = 10;
+export const CLOCK_SYNC_SLOW_RETRY_MS = 20_000;
 
 /**
  * 끝난 레벨을 서버에 따라잡게 할 때인지 — 레벨 시간이 0 이 되면 다음 레벨로 **자동으로** 넘어간다
@@ -33,9 +40,12 @@ export function shouldSyncClock(input: {
   if (!input.isRunning || !input.isExpired || !input.hasNext || !input.online) return false;
   if (input.inFlight) return false;
   if (input.lastAttemptMs === null) return true;
+  const attempts = input.attempts ?? 0;
   const wait =
-    (input.attempts ?? 0) <= CLOCK_SYNC_FAST_RETRIES
+    attempts <= CLOCK_SYNC_FAST_RETRIES
       ? CLOCK_SYNC_FAST_RETRY_MS
-      : CLOCK_SYNC_RETRY_MS;
+      : attempts <= CLOCK_SYNC_SLOW_AFTER
+        ? CLOCK_SYNC_RETRY_MS
+        : CLOCK_SYNC_SLOW_RETRY_MS;
   return input.nowMs - input.lastAttemptMs >= wait;
 }
