@@ -1,9 +1,10 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { useOpsClock } from '@/hooks/ops';
+import { useOpsClock, useOpsClockAutoAdvance } from '@/hooks/ops';
 import { OpsClockStrip } from '../OpsClockStrip';
 
 jest.mock('@/hooks/ops', () => ({
   useOpsClock: jest.fn(),
+  useOpsClockAutoAdvance: jest.fn(),
 }));
 // 시트 본문은 무거운 의존(ClockControl) → 가벼운 스텁.
 // 모킹 문형은 레포 관례(factory 안 JSX — TablesTab.test.tsx:55-63): 컴포넌트 직접 함수호출 금지.
@@ -67,5 +68,26 @@ describe('OpsClockStrip', () => {
     );
     fireEvent.press(getByRole('button'));
     expect(getByText('SHEET_OPEN')).toBeTruthy();
+  });
+
+  // 스트립은 콘솔 어느 탭에서도 떠 있다 — 자동 전환 요청이 여기 한 곳에서만 걸려야 한다.
+  it('클럭 상태를 자동 전환 훅에 그대로 넘긴다', () => {
+    (useOpsClock as jest.Mock).mockReturnValue({
+      clock: { isRunning: true, currentLevelSort: 4 },
+      currentLevel: { level: 4, smallBlind: 100, bigBlind: 200, ante: 0 },
+      remainingSec: 0,
+      isExpired: true,
+      hasNext: true,
+      nowMs: 12345,
+      levelMissing: false,
+    });
+    render(<OpsClockStrip tournamentId="t1" onNavigateToLevels={jest.fn()} />);
+    expect(useOpsClockAutoAdvance).toHaveBeenLastCalledWith('t1', {
+      isRunning: true,
+      isExpired: true,
+      hasNext: true,
+      currentSort: 4,
+      nowMs: 12345,
+    });
   });
 });

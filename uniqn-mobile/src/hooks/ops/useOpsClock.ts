@@ -64,9 +64,19 @@ export function useOpsClock(tournamentId: string | undefined) {
     [clock?.levelStartedAt, clock?.pausedRemainingSec, currentLevel?.durationSec, isRunning, nowMs]
   );
 
+  // 다음 레벨이 있는가 — 자동 전환 요청(useOpsClockAutoAdvance)이 마지막 레벨에서 멈추는 기준.
+  const currentSort = clock?.currentLevelSort ?? null;
+  const hasNext = useMemo(
+    () => currentSort !== null && blindLevels.some((l) => l.sort === currentSort + 1),
+    [blindLevels, currentSort]
+  );
+
   return {
     clock,
     currentLevel,
+    hasNext,
+    /** 1초 틱(진행 중일 때만 갱신) — 자동 전환 요청의 재시도 간격 계산에 쓴다 */
+    nowMs,
     remainingSec: remaining.remainingSec,
     isExpired: remaining.isExpired,
     levelMissing: remaining.levelMissing,

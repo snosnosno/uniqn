@@ -4,6 +4,7 @@ import { useToggleRegistration, useSetTournamentStatus } from '@/hooks/ops';
 import { LiveStatsPanel } from './LiveStatsPanel';
 import { MonitorLinkButton } from './MonitorLinkButton';
 import { MonitorConfigCard } from './MonitorConfigCard';
+import { OpsRegistrationCutoffCard } from './OpsRegistrationCutoffCard';
 import { TournamentResultCard } from './TournamentResultCard';
 import type { OpsTournament, OpsTournamentStatus } from '@/types/ops';
 
@@ -61,6 +62,9 @@ export function OpsStatusTab({ tournament }: OpsStatusTabProps) {
           </Pressable>
         </View>
       )}
+
+      {/* 등록 접수 바로 아래 — 같은 것(등록)을 다루는 설정이 한곳에 모인다 */}
+      {!isCompleted && <OpsRegistrationCutoffCard tournament={tournament} />}
 
       <View className="mx-1 mt-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
         <Text className="text-content-primary dark:text-off-white">

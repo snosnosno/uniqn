@@ -1,7 +1,7 @@
 /** 상시 클럭 스트립(L1). 축약 표시 + 탭 시 제어 시트. 모든 탭 위에 고정. */
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useOpsClock } from '@/hooks/ops';
+import { useOpsClock, useOpsClockAutoAdvance } from '@/hooks/ops';
 import { formatNumber as fmt } from '@/utils/formatters/currency';
 import { OpsClockControlSheet } from './OpsClockControlSheet';
 
@@ -24,7 +24,17 @@ function remainingWords(totalSec: number): string {
 }
 
 export function OpsClockStrip({ tournamentId, onNavigateToLevels }: OpsClockStripProps) {
-  const { currentLevel, remainingSec } = useOpsClock(tournamentId);
+  const { clock, currentLevel, remainingSec, isExpired, hasNext, nowMs } =
+    useOpsClock(tournamentId);
+  // 레벨 시간이 0 이 되면 서버에 "따라잡아 달라"고 요청한다(다음 레벨로 자동 전환).
+  // 이 스트립은 콘솔 어느 탭에서도 떠 있어, 요청이 콘솔당 정확히 한 곳에서만 나간다.
+  useOpsClockAutoAdvance(tournamentId, {
+    isRunning: clock?.isRunning ?? false,
+    isExpired,
+    hasNext,
+    currentSort: clock?.currentLevelSort ?? null,
+    nowMs,
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // 정적 라벨은 화면이 담은 정보(레벨·남은 시간)를 스크린리더에서 숨긴다 —

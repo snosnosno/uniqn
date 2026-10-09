@@ -51,7 +51,7 @@ export function cutoffState(input: {
   registrationOpen: boolean;
 }): CutoffState {
   const { levels, cutoffSort, currentSort, registrationOpen } = input;
-  if (cutoffSort == null) return { kind: 'none' };
+  if (cutoffSort === null || cutoffSort === undefined) return { kind: 'none' };
   const name = cutoffLevelName(levels, cutoffSort);
   if (!name) return { kind: 'orphan' };
   if (!registrationOpen && currentSort > cutoffSort) return { kind: 'closed', label: name };

@@ -24,7 +24,11 @@ import { trackOpsFunnel } from '@/services/observability/analyticsService';
 import { requireOnlineForMutation } from '@/services/offline/remoteMutationGuard';
 import { logger } from '@/utils/logger';
 import { extractUserMessage } from '@/errors';
-import type { CreateOpsTournamentInput, RegisterParticipantInput } from '@/repositories/ops';
+import type {
+  BulkRegisterRow,
+  CreateOpsTournamentInput,
+  RegisterParticipantInput,
+} from '@/repositories/ops';
 import type {
   OpsTournament,
   OpsTournamentStatus,
@@ -118,6 +122,31 @@ export function useToggleRegistration(tournamentId: string) {
   });
 }
 
+/** 레이트 등록 자동 마감 기준(블라인드 순번) 설정 — null 이면 해제. 마감 자체는 서버가 레벨 전환 때 한다. */
+export function useSetRegistrationCutoff(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (afterSort: number | null) => {
+      requireOnlineForMutation('ops.setRegistrationCutoff');
+      return opsTournamentService.setRegistrationCutoff(
+        tournamentId,
+        requireActor(actorId),
+        afterSort
+      );
+    },
+    onSuccess: (_data, afterSort) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      toast.success(afterSort === null ? '자동 마감을 해제했습니다' : '자동 마감을 설정했습니다');
+    },
+    onError: (error) => {
+      logger.error('ops 등록 자동 마감 설정 실패', toError(error));
+      toast.error(extractUserMessage(error) || '자동 마감 설정에 실패했습니다');
+    },
+  });
+}
+
 /** S1 A4: 대회 복제 — 성공 시 목록 무효화 + 새 대회 id 반환(호출부가 상세로 이동). */
 export function useDuplicateTournament() {
   const queryClient = useQueryClient();
@@ -206,6 +235,34 @@ export function useRegisterParticipant(tournamentId: string) {
     onError: (error) => {
       logger.error('ops 참가자 등록 실패', toError(error));
       toast.error(extractUserMessage(error) || '등록에 실패했습니다');
+    },
+  });
+}
+
+/** 명단 일괄 등록 — 전부 성공하거나 전부 취소된다(서버 원자성). */
+export function useRegisterParticipantsBulk(tournamentId: string) {
+  const queryClient = useQueryClient();
+  const actorId = useAuthStore((s) => s.user?.uid);
+  return useMutation({
+    mutationFn: (input: { rows: BulkRegisterRow[]; buyInAmount?: number }) => {
+      requireOnlineForMutation('ops.registerParticipantsBulk');
+      return opsParticipantService.registerParticipantsBulk(
+        { ...input, tournamentId },
+        requireActor(actorId)
+      );
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.participants(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
+      // 자동 착석 대회는 좌석·통계도 함께 바뀐다.
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.seats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.liveStats(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ops.events(tournamentId) });
+      toast.success(`${result.length}명 등록 완료`);
+    },
+    onError: (error) => {
+      logger.error('ops 참가자 일괄 등록 실패', toError(error));
+      toast.error(extractUserMessage(error) || '일괄 등록에 실패했습니다');
     },
   });
 }

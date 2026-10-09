@@ -13,6 +13,7 @@ export { useOpsBlindLevels } from './useOpsBlindLevels';
 export { useOpsBlindPresets, useSaveBlindPreset, useDeleteBlindPreset } from './useOpsBlindPresets';
 export { useOpsLiveStats } from './useOpsLiveStats';
 export { useOpsClock } from './useOpsClock';
+export { useOpsClockAutoAdvance } from './useOpsClockAutoAdvance';
 export { useOpsEvents } from './useOpsEvents';
 export { useMonitorSnapshot } from './useMonitorSnapshot';
 export { useRotateMonitorToken } from './useOpsMonitorToken';
@@ -25,7 +26,9 @@ export {
   useSetPrizePaid,
   useSetTournamentStatus,
   useToggleRegistration,
+  useSetRegistrationCutoff,
   useRegisterParticipant,
+  useRegisterParticipantsBulk,
   useAddRebuy,
   useAddAddon,
   useBustParticipant,
