@@ -38,6 +38,13 @@ function invalidateClockQueries(qc: ReturnType<typeof useQueryClient>, tournamen
   qc.invalidateQueries({ queryKey: queryKeys.ops.blindLevels(tournamentId) });
 }
 
+/** 구조 저장 안내 — 이 저장으로 레이트 등록 자동 마감이 해제됐으면 함께 알린다. */
+export function blindLevelsSavedMessage(cutoffCleared: boolean): string {
+  return cutoffCleared
+    ? '블라인드 구조를 저장했습니다. 기준 레벨이 없어져 등록 자동 마감은 해제됐어요'
+    : '블라인드 구조를 저장했습니다';
+}
+
 export function useSetBlindLevels(tournamentId: string) {
   const qc = useQueryClient();
   const actorId = useAuthStore((s) => s.user?.uid);
@@ -46,11 +53,12 @@ export function useSetBlindLevels(tournamentId: string) {
       requireOnlineForMutation('ops.setBlindLevels');
       return opsBlindLevelService.setLevels(tournamentId, requireActor(actorId), levels);
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       invalidateClockQueries(qc, tournamentId);
       // 구조가 바뀌면 서버가 레이트 등록 자동 마감 기준(대회 행)을 옮기거나 지운다.
       qc.invalidateQueries({ queryKey: queryKeys.ops.tournamentDetail(tournamentId) });
-      toast.success('블라인드 구조를 저장했습니다');
+      // 기준이던 레벨이 없어져 자동 마감이 꺼졌으면 말해 준다 — 안 알리면 운영자는 걸어 둔 줄 안다.
+      toast.success(blindLevelsSavedMessage(result.cutoffCleared));
     },
     onError: (e) => {
       logger.error('ops 블라인드 설정 실패', toError(e));

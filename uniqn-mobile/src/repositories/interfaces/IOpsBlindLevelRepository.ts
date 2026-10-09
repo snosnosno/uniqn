@@ -10,11 +10,19 @@ export interface IOpsBlindLevelRepository {
   listByTournament(tournamentId: string): Promise<OpsBlindLevel[]>;
   /**
    * 블라인드 구조 전체 교체. camelCase 입력을 snake_case jsonb 로 변환해 RPC 호출.
-   * 행에 prevSort 가 있으면(값 또는 null) 자동 마감 기준이 그 레벨을 따라간다. cutoffSort = 저장 뒤 기준 순번.
+   * 행에 prevSort 가 있으면(값 또는 null) 자동 마감 기준이 그 레벨을 따라간다. cutoffSort = 저장 뒤 기준 순번,
+   * cutoffCleared = 이 저장으로 자동 마감 설정이 해제됐는가(기준 레벨이 없어졌다 — 화면이 알려야 한다).
    */
   setLevels(
     tournamentId: string,
     actorId: string,
     levels: readonly OpsBlindLevelSaveInput[]
-  ): Promise<{ count: number; reanchored: boolean; cutoffSort: number | null }>;
+  ): Promise<OpsSetBlindLevelsResult>;
+}
+
+export interface OpsSetBlindLevelsResult {
+  count: number;
+  reanchored: boolean;
+  cutoffSort: number | null;
+  cutoffCleared: boolean;
 }

@@ -56,10 +56,13 @@ export function ConsoleClock({
     const next: ClockSample = { sort, remainingSec: clock.remainingSec, isRunning };
     const alert =
       // 오프라인이면 00:00 에 넘어가지 못한다 → '시간 종료'를 울려 운영자가 알게 한다.
-      clock.blindLevels.length > 0 ? levelAlert(prevSample.current, next, hasNext && online) : null;
+      // navigator.onLine 은 "공유기만 살아 있고 인터넷은 끊긴" 현장에서 true 라 실시간 연결도 함께 본다.
+      clock.blindLevels.length > 0
+        ? levelAlert(prevSample.current, next, hasNext && online && connected)
+        : null;
     prevSample.current = next;
     if (alert) playChime(alert);
-  }, [sort, clock.remainingSec, isRunning, clock.blindLevels.length, hasNext, online]);
+  }, [sort, clock.remainingSec, isRunning, clock.blindLevels.length, hasNext, online, connected]);
 
   // 자동 전환 — 레벨 시간이 0 이 되면 서버에 "끝난 레벨을 따라잡아 달라"고 요청한다(다음 레벨로 넘어간다).
   // 이 콘솔이 꺼져 있어도 전광판 폴링·매분 크론이 넘기지만, 콘솔이 켜져 있으면 00:00 즉시 넘어간다.

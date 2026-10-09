@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { isAppError } from '@/core/errors/AppError';
 import { handleSupabaseError, toCamelCase } from '@/lib/supabaseUtils';
 import { mapOpsRpcError } from './opsRpcError';
-import type { IOpsBlindLevelRepository } from '../interfaces/IOpsBlindLevelRepository';
+import type {
+  IOpsBlindLevelRepository,
+  OpsSetBlindLevelsResult,
+} from '../interfaces/IOpsBlindLevelRepository';
 import type { OpsBlindLevelSaveInput } from '@/core/schemas/opsBlindLevel.schema';
 import type { OpsBlindLevel } from '@/core/types/ops';
 
@@ -36,7 +39,7 @@ export class SupabaseOpsBlindLevelRepository implements IOpsBlindLevelRepository
     tournamentId: string,
     actorId: string,
     levels: readonly OpsBlindLevelSaveInput[]
-  ): Promise<{ count: number; reanchored: boolean; cutoffSort: number | null }> {
+  ): Promise<OpsSetBlindLevelsResult> {
     try {
       // 앱 camelCase → DB snake_case jsonb (경계 변환). RPC 가 sort 1..N 을 재부여한다.
       const payload = levels.map((l) => ({
@@ -55,8 +58,18 @@ export class SupabaseOpsBlindLevelRepository implements IOpsBlindLevelRepository
         p_levels: payload,
       });
       if (error) mapOpsRpcError(error, { operation: 'ops 블라인드 설정' });
-      const r = data as { count: number; reanchored: boolean; cutoff_sort?: number | null };
-      return { count: r.count, reanchored: r.reanchored, cutoffSort: r.cutoff_sort ?? null };
+      const r = data as {
+        count: number;
+        reanchored: boolean;
+        cutoff_sort?: number | null;
+        cutoff_cleared?: boolean;
+      };
+      return {
+        count: r.count,
+        reanchored: r.reanchored,
+        cutoffSort: r.cutoff_sort ?? null,
+        cutoffCleared: r.cutoff_cleared === true,
+      };
     } catch (error) {
       if (isAppError(error)) throw error;
       mapOpsRpcError(error, { operation: 'ops 블라인드 설정' });

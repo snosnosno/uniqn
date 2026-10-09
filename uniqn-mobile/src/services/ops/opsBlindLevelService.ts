@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
 import { opsBlindLevelRepository } from '@/repositories/ops';
+import type { OpsSetBlindLevelsResult } from '@/repositories/interfaces/IOpsBlindLevelRepository';
 import {
   opsBlindLevelsSaveSchema,
   type OpsBlindLevelSaveInput,
@@ -16,7 +17,7 @@ export async function setLevels(
   tournamentId: string,
   actorId: string,
   levels: readonly OpsBlindLevelSaveInput[]
-): Promise<{ count: number; reanchored: boolean; cutoffSort: number | null }> {
+): Promise<OpsSetBlindLevelsResult> {
   try {
     logger.info('ops 블라인드 설정', { component: COMPONENT, tournamentId, count: levels.length });
     const parsed = opsBlindLevelsSaveSchema.safeParse(levels);

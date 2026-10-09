@@ -20,11 +20,18 @@
 --
 -- 범위 밖: 현재 레벨(ops_clock.current_level_sort)은 종전대로 순번 clamp 만 한다 — 진행 중 저장은
 --   화면이 "타이머가 재계산됩니다" 로 확인을 받는 기존 계약이다.
+--   다만 그 결과로 **현재 순번이 옮겨진 기준을 이미 넘어 있으면 그 자리에서 등록을 닫는다.**
+--     예) [L1, L2, 휴식(3), L3, L4] · 기준 = 휴식 · 시계도 휴식(3). L1 을 지우면 기준은 2(휴식)로 가고
+--         시계는 순번 3 에 남아 L3 이 된다 — 휴식은 지나갔다. 안 닫으면 "휴식 종료 시 마감"이 L3 이 끝날
+--         때까지 열려 있고, 화면은 이미 지난 휴식을 "끝나면 닫아요" 라고 안내한다(직접 설정에서는
+--         ops_set_registration_cutoff 가 거부하는 "이미 지난 레벨" 상태). 수동으로 레벨을 넘겼을 때와 같은 규칙이다.
 --
 -- 계약: 기존 함수 CREATE OR REPLACE(시그니처 동일) — 신규 함수·트리거·정책 없음 → 파리티 257/106 불변.
 --       ACL 은 CREATE OR REPLACE 로 보존(anon REVOKE · authenticated GRANT).
---       반환에 `cutoff_sort`(저장 뒤 기준 순번, 없으면 null)를 더한다 — 기존 키(count·reanchored)는 그대로.
--- 회귀 고정: supabase/tests/ops_registration_cutoff.test.sql (28~33)
+--       반환에 `cutoff_sort`(저장 뒤 기준 순번, 없으면 null) · `cutoff_cleared`(이 저장으로 설정이 해제됐는가)
+--       를 더한다 — 기존 키(count·reanchored)는 그대로. 화면은 cutoff_cleared 로 운영자에게 해제를 알린다
+--       (안 알리면 "설정이 사라졌는데 운영자는 모른다"가 그대로 남는다). 이벤트 payload 에도 남긴다.
+-- 회귀 고정: supabase/tests/ops_registration_cutoff.test.sql (28~38)
 
 CREATE OR REPLACE FUNCTION public.ops_set_blind_levels(p_tournament_id uuid, p_actor_id uuid, p_levels jsonb) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
@@ -88,8 +95,10 @@ BEGIN
       COALESCE((a->>'is_break')::boolean, false),
       v_sort);
     -- 옛 기준 순번을 달고 온 행 = 기준이던 그 레벨. 같은 prev_sort 가 둘이면(잘못된 요청) 앞의 것을 따른다.
+    --   캐스트는 CASE 로 감싼다 — JSON null 을 numeric 으로 캐스트하면 예외이고, AND 의 평가 순서는 보장되지 않는다.
     IF v_tracks AND v_cutoff IS NOT NULL AND v_new_cutoff IS NULL
-       AND jsonb_typeof(a->'prev_sort') = 'number' AND (a->'prev_sort')::numeric = v_cutoff THEN
+       AND (CASE WHEN jsonb_typeof(a->'prev_sort') = 'number'
+                 THEN (a->'prev_sort')::numeric END) = v_cutoff THEN
       v_new_cutoff := v_sort;
     END IF;
   END LOOP;
@@ -130,10 +139,22 @@ BEGIN
 
   INSERT INTO public.ops_events (tournament_id, type, actor_id, payload)
   VALUES (p_tournament_id, 'level_set', p_actor_id,
-          jsonb_build_object('action', 'blind_levels_set', 'count', v_count, 'reanchored', v_reanchored));
+          jsonb_build_object('action', 'blind_levels_set', 'count', v_count, 'reanchored', v_reanchored)
+          || CASE WHEN v_cutoff IS NOT NULL AND v_new_cutoff IS DISTINCT FROM v_cutoff
+                  THEN jsonb_build_object('cutoff_from', v_cutoff, 'cutoff_sort', v_new_cutoff)
+                  ELSE '{}'::jsonb END);
+
+  -- 기준이 옮겨졌는데 시계의 현재 순번이 이미 그 기준을 넘어 있으면 지금 닫는다(헤더 "범위 밖" 참조).
+  -- 수동으로 레벨을 넘겼을 때와 같은 판정 함수 — 열려 있고 현재 순번 > 기준일 때만 닫고 이벤트를 남긴다.
+  IF v_new_cutoff IS NOT NULL AND v_new_cutoff IS DISTINCT FROM v_cutoff
+     AND COALESCE(v_new_sort, v_cur_sort) IS NOT NULL THEN
+    PERFORM public.fn_ops_apply_registration_cutoff(
+      p_tournament_id, COALESCE(v_new_sort, v_cur_sort), p_actor_id);
+  END IF;
 
   RETURN jsonb_build_object('tournament_id', p_tournament_id, 'count', v_count, 'reanchored', v_reanchored,
-                            'cutoff_sort', v_new_cutoff);
+                            'cutoff_sort', v_new_cutoff,
+                            'cutoff_cleared', v_cutoff IS NOT NULL AND v_new_cutoff IS NULL);
 END;
 $$;
 

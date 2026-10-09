@@ -25,7 +25,11 @@ export function useSetBlindLevels(id: string) {
       opsKeys.blindLevels(id),
       opsKeys.tournamentDetail(id),
     ],
-    success: () => '블라인드 구조를 저장했습니다',
+    // 기준이던 레벨이 없어져 자동 마감이 꺼졌으면 말해 준다 — 안 알리면 운영자는 걸어 둔 줄 안다.
+    success: (r) =>
+      r.cutoffCleared
+        ? '블라인드 구조를 저장했습니다. 기준 레벨이 없어져 등록 자동 마감은 해제됐어요'
+        : '블라인드 구조를 저장했습니다',
   });
 }
 

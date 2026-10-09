@@ -68,7 +68,7 @@ describe('SupabaseOpsBlindLevelRepository.setLevels', () => {
         },
       ],
     });
-    expect(result).toEqual({ count: 2, reanchored: false, cutoffSort: 1 });
+    expect(result).toEqual({ count: 2, reanchored: false, cutoffSort: 1, cutoffCleared: false });
   });
 
   it('prevSort 를 안 준 행에는 prev_sort 키를 만들지 않는다 — 서버가 종전(순번 유지) 동작을 고른다', async () => {
@@ -80,6 +80,17 @@ describe('SupabaseOpsBlindLevelRepository.setLevels', () => {
     expect(payload).toHaveLength(1);
     expect('prev_sort' in payload[0]).toBe(false);
     // 구 서버(반환에 cutoff_sort 없음)여도 깨지지 않는다
-    expect(result).toEqual({ count: 1, reanchored: false, cutoffSort: null });
+    expect(result).toEqual({ count: 1, reanchored: false, cutoffSort: null, cutoffCleared: false });
+  });
+
+  it('서버가 자동 마감 해제를 알리면(cutoff_cleared) 그대로 전달한다 — 화면이 운영자에게 경고한다', async () => {
+    mockRpc.mockResolvedValue({
+      data: { count: 1, reanchored: false, cutoff_sort: null, cutoff_cleared: true },
+      error: null,
+    });
+
+    const result = await repo.setLevels('t1', 'u1', [{ ...level, prevSort: null }]);
+
+    expect(result.cutoffCleared).toBe(true);
   });
 });
