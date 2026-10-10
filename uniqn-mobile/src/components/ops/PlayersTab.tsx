@@ -4,6 +4,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { AppFlashList } from '@/components/ui/AppFlashList';
 import { PlayerClaimButton } from './PlayerClaimButton';
 import { OpsParticipantActionSheet } from './OpsParticipantActionSheet';
+import { OpsBulkRegisterSheet } from './OpsBulkRegisterSheet';
 import type { OpsParticipant, OpsTournament } from '@/types/ops';
 
 import { formatNumber as fmt } from '@/utils/formatters/currency';
@@ -30,12 +31,28 @@ export function PlayersTab({
   // 행 탭 → 액션시트 대상 참가자. null 이면 닫힘.
   const [sheetParticipant, setSheetParticipant] = useState<OpsParticipant | null>(null);
 
+  // 명단 붙여넣기(여러 명 한 번에) — 단건 등록은 FAB, 일괄은 여기. 등록이 닫혔거나 끝난 대회면 숨긴다.
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const canBulkRegister = tournament.registrationOpen && tournament.status !== 'completed';
+
   return (
     <View className="flex-1">
-      <View className="flex-row items-center px-4 py-2">
+      <View className="min-h-[44px] flex-row items-center justify-between px-4 py-1">
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {tournament.registrationOpen ? '등록 열림' : '등록 마감'}
         </Text>
+        {canBulkRegister ? (
+          <Pressable
+            onPress={() => setBulkOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="명단 붙여넣기로 여러 명 등록"
+            className="min-h-[44px] items-center justify-center rounded-md bg-gray-100 px-3 active:opacity-70 dark:bg-gray-800"
+          >
+            <Text className="font-sans-semibold text-sm text-content-primary dark:text-off-white">
+              명단 붙여넣기
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <AppFlashList
@@ -126,6 +143,13 @@ export function PlayersTab({
         participants={participants}
         onClose={() => setSheetParticipant(null)}
         onOpenPayouts={onOpenPayouts}
+      />
+
+      <OpsBulkRegisterSheet
+        tournamentId={tournamentId}
+        visible={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        existingNames={participants.map((p) => p.name)}
       />
     </View>
   );

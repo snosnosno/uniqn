@@ -1,0 +1,194 @@
+/**
+ * OpsBulkRegisterSheet — 명단 붙여넣기 등록(모바일).
+ *
+ * 고정하는 계약:
+ *  1. 붙여넣은 줄을 해석해 이름·연락처로 보낸다(앞 번호는 뗀다) — 해석은 웹 콘솔과 같은 순수 함수.
+ *  2. 서버가 전부 성공하거나 전부 취소하므로, 오류 줄이 하나라도 있으면 보내지 않는다.
+ *  3. 성공했을 때만 닫고 비운다 — 실패하면 명단이 남아야 고쳐서 다시 보낸다.
+ */
+import { act, render, fireEvent } from '@testing-library/react-native';
+import { BULK_PREVIEW_MAX, OpsBulkRegisterSheet, pickPreviewRows } from '../OpsBulkRegisterSheet';
+
+const mockMutate = jest.fn();
+const mockReset = jest.fn();
+const mockState: { error: unknown } = { error: null };
+jest.mock('@/hooks/ops', () => ({
+  useRegisterParticipantsBulk: jest.fn(() => ({
+    mutate: mockMutate,
+    reset: mockReset,
+    isPending: false,
+    error: mockState.error,
+  })),
+}));
+
+// SheetModal 실물 대신 children+footer 통과 스텁(레포 관례).
+jest.mock('@/components/ui', () => ({
+  SheetModal: ({ visible, children, footer }: any) => {
+    const { View } = require('react-native');
+    return visible ? (
+      <View>
+        {children}
+        {footer}
+      </View>
+    ) : null;
+  },
+}));
+
+beforeEach(() => {
+  mockMutate.mockReset();
+  mockReset.mockReset();
+  mockState.error = null;
+});
+
+function open(existingNames: string[] = []) {
+  const onClose = jest.fn();
+  const utils = render(
+    <OpsBulkRegisterSheet
+      tournamentId="t1"
+      visible
+      onClose={onClose}
+      existingNames={existingNames}
+    />
+  );
+  return { ...utils, onClose };
+}
+
+describe('OpsBulkRegisterSheet', () => {
+  it('비어 있으면 0명 등록 버튼이 막혀 있다', () => {
+    const { getByLabelText } = open();
+    fireEvent.press(getByLabelText('0명 등록'));
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('줄을 해석해 이름·연락처로 보낸다 — 앞 번호를 떼고 바이인은 숫자로', () => {
+    const { getByLabelText } = open();
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동\n김철수 010-1234-5678\n3. 이영희');
+    fireEvent.changeText(getByLabelText('바이인 금액'), '100,000');
+    fireEvent.press(getByLabelText('3명 등록'));
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+    expect(mockMutate.mock.calls[0][0]).toEqual({
+      rows: [
+        { name: '홍길동', phone: undefined },
+        { name: '김철수', phone: '010-1234-5678' },
+        { name: '이영희', phone: undefined },
+      ],
+      buyInAmount: 100000,
+    });
+  });
+
+  it('바이인을 안 적으면 금액 없이 보낸다(0원으로 기록하지 않는다)', () => {
+    const { getByLabelText } = open();
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동');
+    fireEvent.press(getByLabelText('1명 등록'));
+    expect(mockMutate.mock.calls[0][0].buyInAmount).toBeUndefined();
+  });
+
+  it('오류 줄이 하나라도 있으면 보내지 않는다 — 전부 성공하거나 전부 취소라서', () => {
+    const { getByLabelText, getByText } = open();
+    // '이름' 은 표 머리글 — 사람 이름으로 등록되면 안 된다
+    fireEvent.changeText(getByLabelText('등록할 명단'), '이름\n홍길동');
+    expect(getByText('머리글 줄이에요. 지워 주세요')).toBeTruthy();
+    fireEvent.press(getByLabelText('1명 등록'));
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('이미 등록된 이름은 막지 않고 표시만 한다(동명이인)', () => {
+    const { getByLabelText, getByText } = open(['홍길동']);
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동');
+    expect(getByText('이미 등록된 이름이에요')).toBeTruthy();
+    fireEvent.press(getByLabelText('1명 등록'));
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it('숫자가 없는 금액은 막는다', () => {
+    const { getByLabelText, getByText } = open();
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동');
+    fireEvent.changeText(getByLabelText('바이인 금액'), 'abc');
+    expect(getByText('금액은 숫자로 입력해 주세요')).toBeTruthy();
+    fireEvent.press(getByLabelText('1명 등록'));
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('실패하면 닫지 않고 명단을 그대로 둔다 · 성공하면 닫는다', () => {
+    const { getByLabelText, onClose } = open();
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동');
+    fireEvent.press(getByLabelText('1명 등록'));
+
+    // 아직 성공 콜백이 안 불렸다(실패했거나 진행 중) — 열려 있고 명단이 남아 있다
+    expect(onClose).not.toHaveBeenCalled();
+    expect(getByLabelText('등록할 명단').props.value).toBe('홍길동');
+
+    act(() => {
+      mockMutate.mock.calls[0][1].onSuccess();
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // 🔑 네이티브 토스트는 앱 루트에 떠서 모달 창 위로 못 올라온다. 이 시트는 화면 전체를 덮으므로
+  //    실패 사유를 시트 안에 적지 않으면 버튼만 되돌아오고 아무 안내가 없다.
+  it('실패 사유를 시트 안에 적고, 한 명도 등록되지 않았음을 밝힌다', () => {
+    mockState.error = new Error('등록이 마감되었습니다');
+    const { getByText } = open();
+    expect(getByText('등록하지 못했어요')).toBeTruthy();
+    expect(getByText(/한 명도 등록되지 않았어요/)).toBeTruthy();
+  });
+
+  it('고치기 시작하면 지난 실패 안내를 내린다', () => {
+    mockState.error = new Error('등록이 마감되었습니다');
+    const { getByLabelText } = open();
+    fireEvent.changeText(getByLabelText('등록할 명단'), '홍길동');
+    expect(mockReset).toHaveBeenCalled();
+  });
+
+  it('닫았다 다시 열면 빈 폼에서 시작한다 — 직전 바이인이 다음 명단 전원에게 기록되지 않게', () => {
+    const onClose = jest.fn();
+    const props = { tournamentId: 't1', onClose, existingNames: [] as string[] };
+    const { getByLabelText, rerender } = render(<OpsBulkRegisterSheet {...props} visible />);
+    fireEvent.changeText(getByLabelText('등록할 명단'), '1조 홍길동');
+    fireEvent.changeText(getByLabelText('바이인 금액'), '50000');
+
+    rerender(<OpsBulkRegisterSheet {...props} visible={false} />);
+    rerender(<OpsBulkRegisterSheet {...props} visible />);
+
+    expect(getByLabelText('등록할 명단').props.value).toBe('');
+    expect(getByLabelText('바이인 금액').props.value).toBe('');
+  });
+});
+
+describe('pickPreviewRows — 긴 명단의 미리보기', () => {
+  const row = (line: number, extra: Record<string, string> = {}) => ({
+    line,
+    name: `이름${line}`,
+    ...extra,
+  });
+
+  it('상한보다 짧으면 전부 그대로', () => {
+    const rows = [row(1), row(2), row(3)];
+    expect(pickPreviewRows(rows)).toEqual(rows);
+  });
+
+  it('길면 상한까지만 — 200명을 다 그리지 않는다', () => {
+    const rows = Array.from({ length: 200 }, (_, i) => row(i + 1));
+    expect(pickPreviewRows(rows)).toHaveLength(BULK_PREVIEW_MAX);
+  });
+
+  it('🔑 확인이 필요한 줄(오류·경고)은 뒤쪽에 있어도 빠지지 않는다', () => {
+    const rows = Array.from({ length: 200 }, (_, i) =>
+      i === 150
+        ? row(151, { error: '이름이 비었어요' })
+        : i === 199
+          ? row(200, { warning: '이미 등록된 이름이에요' })
+          : row(i + 1)
+    );
+    const picked = pickPreviewRows(rows);
+    expect(picked.map((r) => r.line)).toEqual(expect.arrayContaining([151, 200]));
+    // 붙여넣은 순서를 지킨다
+    expect(picked.map((r) => r.line)).toEqual([...picked.map((r) => r.line)].sort((a, b) => a - b));
+  });
+
+  it('문제 줄이 상한보다 많아도 전부 보여 준다(고쳐야 등록되므로)', () => {
+    const rows = Array.from({ length: 50 }, (_, i) => row(i + 1, { error: '이름이 비었어요' }));
+    expect(pickPreviewRows(rows)).toHaveLength(50);
+  });
+});

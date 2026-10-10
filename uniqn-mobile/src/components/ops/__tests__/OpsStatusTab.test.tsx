@@ -9,6 +9,12 @@ jest.mock('@/hooks/ops', () => ({
 jest.mock('../LiveStatsPanel', () => ({ LiveStatsPanel: () => null }));
 jest.mock('../MonitorLinkButton', () => ({ MonitorLinkButton: () => null }));
 jest.mock('../MonitorConfigCard', () => ({ MonitorConfigCard: () => null }));
+jest.mock('../OpsRegistrationCutoffCard', () => ({
+  OpsRegistrationCutoffCard: () => {
+    const { Text } = require('react-native');
+    return <Text>자동마감카드</Text>;
+  },
+}));
 jest.mock('../TournamentResultCard', () => ({
   TournamentResultCard: () => {
     const { Text } = require('react-native');
@@ -38,6 +44,15 @@ describe('OpsStatusTab', () => {
     );
     expect(getByText('결과카드')).toBeTruthy();
     expect(queryByText('열림 (마감하기)')).toBeNull();
+  });
+
+  it('자동 마감 설정은 진행 중에만 — 끝난 대회에는 등록 설정이 없다', () => {
+    expect(render(<OpsStatusTab tournament={base} />).getByText('자동마감카드')).toBeTruthy();
+    expect(
+      render(<OpsStatusTab tournament={{ ...base, status: 'completed' }} />).queryByText(
+        '자동마감카드'
+      )
+    ).toBeNull();
   });
 
   it('등록 토글 탭 → toggleMut.mutate(반대값)', () => {

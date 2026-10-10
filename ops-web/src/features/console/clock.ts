@@ -52,41 +52,13 @@ export function clockView(
   };
 }
 
-/**
- * 자동 전환을 다시 요청하기까지 기다리는 시간 — 서버가 아직 "안 끝났다"고 본 경우의 재시도 간격.
- * 화면 시계가 서버보다 조금 앞서면 첫 요청이 0 을 받는다. 그 오차는 대개 1초 안쪽이라 처음 두 번은
- * 1초 뒤에 다시 묻고, 그래도 안 넘어가면(시계가 크게 어긋났거나 서버 장애) 3초 간격으로 늦춘다.
- */
-export const CLOCK_SYNC_RETRY_MS = 3000;
-export const CLOCK_SYNC_FAST_RETRY_MS = 1000;
-export const CLOCK_SYNC_FAST_RETRIES = 2;
-
-/**
- * 끝난 레벨을 서버에 따라잡게 할 때인지 — 레벨 시간이 0 이 되면 다음 레벨로 **자동으로** 넘어간다
- * (서버 fn_ops_clock_roll_forward). 콘솔은 00:00 을 보는 즉시 요청하고, 안 넘어갔으면 간격을 두고 다시 묻는다.
- * 마지막 레벨은 넘어갈 곳이 없어 요청하지 않는다(00:00 에서 멈춘다).
- */
-export function shouldSyncClock(input: {
-  isRunning: boolean;
-  isExpired: boolean;
-  hasNext: boolean;
-  online: boolean;
-  nowMs: number;
-  lastAttemptMs: number | null;
-  /** 이 레벨에서 이미 요청한 횟수 */
-  attempts?: number;
-  /** 앞 요청이 아직 돌아오지 않았다 */
-  inFlight?: boolean;
-}): boolean {
-  if (!input.isRunning || !input.isExpired || !input.hasNext || !input.online) return false;
-  if (input.inFlight) return false;
-  if (input.lastAttemptMs === null) return true;
-  const wait =
-    (input.attempts ?? 0) <= CLOCK_SYNC_FAST_RETRIES
-      ? CLOCK_SYNC_FAST_RETRY_MS
-      : CLOCK_SYNC_RETRY_MS;
-  return input.nowMs - input.lastAttemptMs >= wait;
-}
+// 자동 전환 요청 시점 판정은 정본(모바일과 공유)에 있다 — 여기서는 화면 쪽 이름으로 다시 내보낸다.
+export {
+  CLOCK_SYNC_FAST_RETRIES,
+  CLOCK_SYNC_FAST_RETRY_MS,
+  CLOCK_SYNC_RETRY_MS,
+  shouldSyncClock,
+} from '@/core/domains/ops/clock/shouldSyncClock';
 
 /**
  * 레벨 알림 — 1분 전 경고·레벨 전환·시간 종료. 진행 중일 때만 울린다(일시정지·시작 전·첫 렌더는 조용히).

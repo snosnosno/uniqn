@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest';
-import { cutoffLevelName, cutoffOptions, cutoffState } from './registrationCutoff';
+import { cutoffLevelName, cutoffOptions, cutoffState } from '../registrationCutoff';
 
 // 레벨 1 · 레벨 2 · 휴식 · 레벨 3 · 레벨 4
 const levels = [
