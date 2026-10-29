@@ -440,3 +440,10 @@ v_lines := v_lines || '';   -- v_lines 는 text[]
 - 신규 RPC `get_admin_daily_active_users` — count(DISTINCT) 는 PostgREST 로 못 하고, 행을 끌어오면 1000행 상한에서 조용히 잘리므로 서버 집계. 🔑 **측정 실패 = null, 0 과 섞지 않는다**([[vacuous-verification]] 유형 2 "구조적 0" 의 예방형).
 - 파리티 225 → 226. prod 적용 전까지 주간 parity-smoke 는 1 차이로 red — 적용과 동기.
 - 계기: 출시 준비도 점검 9·10번(가입·지원 집계 불가 / DAU 항상 0).
+
+## [2026-10-29] note | Supabase 10/30 기본 GRANT 중단 대응 — 테이블 명시 GRANT 백필 + 누락 가드 (PR #562, 마이그 20261020120000)
+- Supabase 가 2026-10-30 부터 public **신규 테이블**에 Data API GRANT 를 자동 부여하지 않는다. preview branch·로컬 `db reset`·신규 프로젝트처럼 마이그를 처음부터 재실행하는 환경도 "신규"다.
+- 기본 privilege 에 기대던 4개(`ops_blind_presets`·`push_tickets`·`job_posting_announcements`·`work_schedule_audit_events`)에 명시 GRANT 백필. 추가 전용이라 prod 는 no-op. prod 적용 완료(prod-migrate run #47).
+- 🔑 **새 테이블은 같은 마이그 파일 안에 GRANT 필수** — `npm run check:table-grants`(quality·CI 매트릭스)가 `service_role` GRANT 누락을 막는다. anon/authenticated 범위는 테이블별 설계.
+- 🔑 GRANT 를 pgTAP 으로 단언하면 공허하다 — 픽스처 `jpc_helpers.sql` 의 `GRANT ALL ON ALL TABLES` 와 baseline `ALTER DEFAULT PRIVILEGES` 가 재실행 시 권한을 되살린다([[vacuous-verification]]). 마이그 **소스**를 정적 대조해야 잡힌다.
+- `prod-migrate` 는 `workflow_dispatch` 전용 — 머지로 자동 적용되지 않는다. 머지 후 수동 실행을 잊지 말 것.
